@@ -1,50 +1,137 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { listen } from '@tauri-apps/api/event';
+	import { invoke } from '@tauri-apps/api/core';
+	import { onMount } from 'svelte';
 
-	interface BinaryImageData {
+	type OcrDebugImagePayload = {
+		png_bytes: number[];
 		width: number;
 		height: number;
-		data: number[];
-	}
+		upscale_amount: number;
+	};
 
-	let canvas: HTMLCanvasElement;
-	let ctx: CanvasRenderingContext2D | null = null;
+	type OcrTextPayload = {
+		text: string;
+	};
+
+	let hotkey = 'Home';
+	let status = '';
+	let debugImageUrl = '';
+	let debugImageInfo = '';
+	let ocrText = '';
+	let isImageFullscreen = false;
 
 	onMount(() => {
-		ctx = canvas.getContext('2d');
+		let unlistenImage: (() => void) | undefined;
+		let unlistenText: (() => void) | undefined;
+		let activeUrl = '';
 
-		const unlistenBinaryImage = listen<BinaryImageData>('binary-image', async ({ payload }) => {
-			console.log('Received binary image data:', payload);
-
-			const rgba = new Uint8ClampedArray(payload.width * payload.height * 4);
-
-			let src = 0;
-			let dst = 0;
-
-			while (src < payload.data.length) {
-				rgba[dst++] = payload.data[src++];
-				rgba[dst++] = payload.data[src++];
-				rgba[dst++] = payload.data[src++];
-				rgba[dst++] = 255;
-			}
-
-			const imageData = new ImageData(rgba, payload.width, payload.height);
-
-			if (!ctx) return;
-
-			canvas.width = imageData.width;
-			canvas.height = imageData.height;
-			ctx.putImageData(imageData, 0, 0);
+		listen<OcrDebugImagePayload>('ocr_debug_image', (event) => {
+			const payload = event.payload;
+			const bytes = new Uint8Array(payload.png_bytes);
+			const blob = new Blob([bytes], { type: 'image/png' });
+			const nextUrl = URL.createObjectURL(blob);
+			if (activeUrl) URL.revokeObjectURL(activeUrl);
+			activeUrl = nextUrl;
+			debugImageUrl = nextUrl;
+			debugImageInfo = `${payload.width}x${payload.height} (upscale ${payload.upscale_amount}x)`;
+		}).then((cleanup) => {
+			unlistenImage = cleanup;
 		});
 
+		listen<OcrTextPayload>('ocr_text_result', (event) => {
+			ocrText = event.payload?.text ?? '';
+		}).then((cleanup) => {
+			unlistenText = cleanup;
+		});
+
+		(async () => {
+			try {
+				hotkey = await invoke<string>('get_hotkey');
+			} catch (error) {
+				status = String(error);
+			}
+		})();
+
 		return () => {
-			unlistenBinaryImage.then((f) => f());
+			unlistenImage?.();
+			unlistenText?.();
+			if (activeUrl) URL.revokeObjectURL(activeUrl);
 		};
 	});
+
+	async function saveHotkey() {
+		status = '';
+		try {
+			await invoke('set_hotkey', { hotkey });
+			status = 'Saved';
+		} catch (error) {
+			status = String(error);
+		}
+	}
+
+	function openImageFullscreen() {
+		isImageFullscreen = true;
+	}
+
+	function closeImageFullscreen() {
+		isImageFullscreen = false;
+	}
 </script>
 
-<div>
-	Binary image:
-	<canvas bind:this={canvas} class="w-full"></canvas>
-</div>
+<main class="p-4 max-w-md">
+	<h1 class="font-semibold text-xl">Dashboard</h1>
+	<p class="mt-2 text-sm">Set global shortcut (examples: Home, Ctrl+Shift+H).</p>
+
+	<div class="flex items-center gap-2 mt-4">
+		<input class="px-2 py-1 border rounded w-full" bind:value={hotkey} placeholder="Home" />
+		<button class="px-3 py-1 border rounded" onclick={saveHotkey}>Save</button>
+	</div>
+
+	{#if status}
+		<p class="mt-2 text-sm">{status}</p>
+	{/if}
+
+	{#if debugImageUrl}
+		<div class="mt-4">
+			<p class="text-sm">OCR Input ({debugImageInfo})</p>
+			<img
+				src={debugImageUrl}
+				alt="OCR debug input"
+				class="mt-2 border rounded w-full cursor-zoom-in"
+				onclick={openImageFullscreen}
+			/>
+		</div>
+	{/if}
+
+	{#if ocrText}
+		<div class="mt-4">
+			<p class="text-sm">OCR Text</p>
+			<textarea
+				class="mt-2 p-2 border rounded w-full h-40 text-sm"
+				readonly
+				value={ocrText}
+			></textarea>
+		</div>
+	{/if}
+</main>
+
+{#if isImageFullscreen && debugImageUrl}
+	<div
+		class="z-50 fixed inset-0 flex justify-center items-center bg-black/90 p-4"
+		onclick={closeImageFullscreen}
+	>
+		<button
+			class="top-4 right-4 absolute bg-white px-3 py-1 border rounded text-black"
+			onclick={closeImageFullscreen}
+		>
+			Close
+		</button>
+		<img
+			src={debugImageUrl}
+			alt="OCR debug input fullscreen"
+			class="max-w-full max-h-full object-contain"
+			onclick={(e) => e.stopPropagation()}
+		/>
+	</div>
+{/if}

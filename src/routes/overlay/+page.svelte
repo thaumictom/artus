@@ -1,59 +1,39 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { listen } from '@tauri-apps/api/event';
+	import { onMount } from 'svelte';
 
-	interface OcrWordBox {
+	type OcrWord = {
 		text: string;
-		left: number;
-		top: number;
-		right: number;
-		bottom: number;
-	}
+		x: number;
+		y: number;
+		width: number;
+		height: number;
+	};
 
-	interface OcrOverlayData {
-		window_left: number;
-		window_top: number;
-		words: OcrWordBox[];
-	}
-
-	let overlayWords: OcrWordBox[] = [];
-	let windowLeft = 0;
-	let windowTop = 0;
-	let showOverlay = false;
-	let timeoutId: number;
+	let words: OcrWord[] = [];
 
 	onMount(() => {
-		const unlistenOverlay = listen<OcrOverlayData>('ocr-overlay', ({ payload }) => {
-			windowLeft = payload.window_left;
-			windowTop = payload.window_top;
-			overlayWords = payload.words;
-			showOverlay = true;
+		let unlisten: (() => void) | undefined;
 
-			clearTimeout(timeoutId);
-			timeoutId = window.setTimeout(() => {
-				showOverlay = false;
-			}, 15000);
+		listen<{ words: OcrWord[] }>('ocr_result', (event) => {
+			words = event.payload?.words ?? [];
+		}).then((cleanup) => {
+			unlisten = cleanup;
 		});
 
 		return () => {
-			unlistenOverlay.then((f) => f());
+			unlisten?.();
 		};
 	});
 </script>
 
-<main
-	class="fixed inset-0 pointer-events-none transition-opacity duration-200 {showOverlay
-		? 'opacity-100'
-		: 'opacity-0'}"
->
-	{#if showOverlay}
-		{#each overlayWords as word}
-			<div
-				class="absolute bg-black/70 px-1 border border-green-400 rounded font-mono text-green-400 text-sm whitespace-nowrap"
-				style="left: {windowLeft + word.left}px; top: {windowTop + word.top}px;"
-			>
-				{word.text}
-			</div>
-		{/each}
-	{/if}
+<main class="relative w-screen h-screen pointer-events-none">
+	{#each words as word}
+		<div
+			class="absolute bg-black p-1 border rounded-sm font-semibold text-teal-400 text-sm whitespace-pre-line"
+			style={`left:${word.x}px;top:${word.y}px;`}
+		>
+			{word.text}
+		</div>
+	{/each}
 </main>
