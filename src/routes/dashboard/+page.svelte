@@ -95,12 +95,13 @@
 	{#if debugImageUrl}
 		<div class="mt-4">
 			<p class="text-sm">OCR Input ({debugImageInfo})</p>
-			<img
-				src={debugImageUrl}
-				alt="OCR debug input"
-				class="mt-2 border rounded w-full cursor-zoom-in"
+			<button
+				type="button"
+				class="bg-transparent mt-2 p-0 border rounded w-full cursor-zoom-in"
 				onclick={openImageFullscreen}
-			/>
+			>
+				<img src={debugImageUrl} alt="OCR debug input" class="w-full" />
+			</button>
 		</div>
 	{/if}
 
@@ -119,7 +120,11 @@
 {#if isImageFullscreen && debugImageUrl}
 	<div
 		class="z-50 fixed inset-0 flex justify-center items-center bg-black/90 p-4"
+		role="button"
+		tabindex="0"
 		onclick={closeImageFullscreen}
+		onkeydown={(e) =>
+			e.key === 'Enter' || e.key === ' ' || e.key === 'Escape' ? closeImageFullscreen() : null}
 	>
 		<button
 			class="top-4 right-4 absolute bg-white px-3 py-1 border rounded text-black"
@@ -127,11 +132,17 @@
 		>
 			Close
 		</button>
-		<img
-			src={debugImageUrl}
-			alt="OCR debug input fullscreen"
-			class="max-w-full max-h-full object-contain"
+		<div
+			role="button"
+			tabindex="0"
 			onclick={(e) => e.stopPropagation()}
-		/>
+			onkeydown={(e) => e.stopPropagation()}
+		>
+			<img
+				src={debugImageUrl}
+				alt="OCR debug input fullscreen"
+				class="max-w-full max-h-full object-none"
+			/>
+		</div>
 	</div>
 {/if}

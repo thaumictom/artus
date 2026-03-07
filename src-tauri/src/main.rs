@@ -1,5 +1,7 @@
+mod dictionary;
 mod hotkeys;
 mod ocr;
+mod prices;
 mod state;
 
 use state::AppState;
@@ -29,6 +31,7 @@ fn main() {
             let _ = overlay.set_focusable(false);
 
             hotkeys::register_initial(app.handle())?;
+            dictionary::refresh_dictionary_on_start(app.handle().clone());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

@@ -4,23 +4,30 @@ use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
 use image::{DynamicImage, GrayImage, ImageFormat};
+use imageproc::distance_transform::Norm;
+use imageproc::morphology::{dilate_mut, erode_mut};
 use kreuzberg_tesseract::{TessPageIteratorLevel, TessPageSegMode, TesseractAPI};
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, Position, Runtime, Size};
 use xcap::Window;
 
+use crate::dictionary;
 use crate::state::AppState;
 
 const OCR_WHITELIST: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 -";
+const STRICT_NAMES: bool = true;
+const STRICT_NAME_SCORE_THRESHOLD: f64 = 0.72;
 const PASS_IMAGE_TO_FRONTEND: bool = true;
-const PASS_TEXT_TO_FRONTEND: bool = true;
+const PASS_TEXT_TO_FRONTEND: bool = false;
 const TARGET_R: u8 = 158;
 const TARGET_G: u8 = 159;
 const TARGET_B: u8 = 167;
-pub const HORIZONTAL_WORD_GAP_FACTOR: f64 = 2.0;
-pub const SAME_LINE_VERTICAL_FACTOR: f64 = 0.8;
-pub const MERGE_LINE_VERTICAL_FACTOR: f64 = 1.2;
-pub const MAX_MERGED_LINES: usize = 3;
+const ENABLE_MORPHOLOGY: bool = true;
+pub const BINARY_FILTER_SPILL_THRESHOLD: u8 = 0;
+pub const HORIZONTAL_WORD_GAP_FACTOR: f64 = 1.2;
+pub const SAME_LINE_VERTICAL_FACTOR: f64 = 0.5;
+pub const MERGE_LINE_VERTICAL_FACTOR: f64 = 1.0;
+pub const MAX_MERGED_LINES: usize = 2;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct OcrWord {
@@ -90,10 +97,11 @@ pub fn capture_active_window<R: Runtime>(app: &AppHandle<R>) -> Result<(), Strin
     );
 
     let preprocess_started = Instant::now();
-    let filtered = binary_target_filter(&image);
+    let mut filtered = binary_target_filter(&image);
+    apply_morphology(&mut filtered);
 
     println!(
-        "[ocr] preprocess (binary filter): {:?}",
+        "[ocr] preprocess (binary filter + erosion): {:?}",
         preprocess_started.elapsed()
     );
 
@@ -179,7 +187,7 @@ pub fn capture_active_window<R: Runtime>(app: &AppHandle<R>) -> Result<(), Strin
         }
     }
 
-    let grouped_words = group_words_into_blocks(&words);
+    let grouped_words = apply_strict_names(app, group_words_into_blocks(&words))?;
     println!(
         "[ocr] parse OCR words: {:?} ({} words -> {} blocks)",
         parse_started.elapsed(),
@@ -271,7 +279,9 @@ fn binary_target_filter(source: &image::RgbaImage) -> GrayImage {
             let r = raw[src_idx];
             let g = raw[src_idx + 1];
             let b = raw[src_idx + 2];
-            output[y * width + x] = if r == TARGET_R && g == TARGET_G && b == TARGET_B {
+            output[y * width + x] = if matches_target_color(r, g, b, TARGET_R, TARGET_G, TARGET_B)
+            // || matches_target_color(r, g, b, TARGET_R_ALT, TARGET_G_ALT, TARGET_B_ALT)
+            {
                 0
             } else {
                 255
@@ -283,6 +293,22 @@ fn binary_target_filter(source: &image::RgbaImage) -> GrayImage {
         .expect("invalid binary filter output dimensions")
 }
 
+fn apply_morphology(source: &mut GrayImage) {
+    if !ENABLE_MORPHOLOGY {
+        return;
+    }
+
+    // Experimental
+    erode_mut(source, Norm::L1, 1);
+    dilate_mut(source, Norm::L1, 1);
+}
+
+fn matches_target_color(r: u8, g: u8, b: u8, target_r: u8, target_g: u8, target_b: u8) -> bool {
+    r.abs_diff(target_r) <= BINARY_FILTER_SPILL_THRESHOLD
+        && g.abs_diff(target_g) <= BINARY_FILTER_SPILL_THRESHOLD
+        && b.abs_diff(target_b) <= BINARY_FILTER_SPILL_THRESHOLD
+}
+
 fn gray_to_png_bytes(gray: &GrayImage) -> Result<Vec<u8>, String> {
     let mut bytes = Vec::new();
     let mut cursor = Cursor::new(&mut bytes);
@@ -290,6 +316,107 @@ fn gray_to_png_bytes(gray: &GrayImage) -> Result<Vec<u8>, String> {
         .write_to(&mut cursor, ImageFormat::Png)
         .map_err(|err| format!("failed to encode debug image: {err}"))?;
     Ok(bytes)
+}
+
+fn apply_strict_names<R: Runtime>(
+    app: &AppHandle<R>,
+    words: Vec<OcrWord>,
+) -> Result<Vec<OcrWord>, String> {
+    if !STRICT_NAMES {
+        return Ok(words);
+    }
+
+    let dictionary = load_strict_name_dictionary(app)?;
+    if dictionary.is_empty() {
+        return Ok(vec![]);
+    }
+
+    Ok(words
+        .into_iter()
+        .filter_map(|word| {
+            match_closest_dictionary_name(&dictionary, &word.text)
+                .map(|text| OcrWord { text, ..word })
+        })
+        .collect())
+}
+
+fn load_strict_name_dictionary<R: Runtime>(app: &AppHandle<R>) -> Result<Vec<String>, String> {
+    dictionary::load_cached_dictionary_names(app)
+}
+
+fn normalize_dictionary_name(name: &str) -> String {
+    name.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+fn match_closest_dictionary_name(dictionary: &[String], fragment: &str) -> Option<String> {
+    let normalized_fragment = normalize_dictionary_name(fragment);
+    if normalized_fragment.is_empty() {
+        return None;
+    }
+
+    let mut best_name = None;
+    let mut best_score = 0.0;
+
+    for candidate in dictionary {
+        let score = normalized_similarity(&normalized_fragment, candidate);
+        if score > best_score {
+            best_score = score;
+            best_name = Some(candidate.clone());
+        }
+    }
+
+    if best_score >= STRICT_NAME_SCORE_THRESHOLD {
+        best_name
+    } else {
+        None
+    }
+}
+
+fn normalized_similarity(left: &str, right: &str) -> f64 {
+    let left = left.to_ascii_lowercase();
+    let right = right.to_ascii_lowercase();
+
+    if left == right {
+        return 1.0;
+    }
+
+    let max_len = left.chars().count().max(right.chars().count());
+    if max_len == 0 {
+        return 1.0;
+    }
+
+    let distance = levenshtein_distance(&left, &right);
+    1.0 - (distance as f64 / max_len as f64)
+}
+
+fn levenshtein_distance(left: &str, right: &str) -> usize {
+    let left_chars = left.chars().collect::<Vec<_>>();
+    let right_chars = right.chars().collect::<Vec<_>>();
+
+    if left_chars.is_empty() {
+        return right_chars.len();
+    }
+    if right_chars.is_empty() {
+        return left_chars.len();
+    }
+
+    let mut previous_row = (0..=right_chars.len()).collect::<Vec<_>>();
+    let mut current_row = vec![0; right_chars.len() + 1];
+
+    for (left_index, left_char) in left_chars.iter().enumerate() {
+        current_row[0] = left_index + 1;
+
+        for (right_index, right_char) in right_chars.iter().enumerate() {
+            let substitution_cost = usize::from(left_char != right_char);
+            current_row[right_index + 1] = (current_row[right_index] + 1)
+                .min(previous_row[right_index + 1] + 1)
+                .min(previous_row[right_index] + substitution_cost);
+        }
+
+        previous_row.clone_from_slice(&current_row);
+    }
+
+    previous_row[right_chars.len()]
 }
 
 fn resolve_tessdata<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf, String> {
