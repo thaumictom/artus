@@ -14,7 +14,7 @@ use xcap::Window;
 use crate::dictionary;
 use crate::state::AppState;
 
-const OCR_WHITELIST: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 -";
+const OCR_WHITELIST: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789- ";
 const STRICT_NAMES: bool = true;
 const STRICT_NAME_SCORE_THRESHOLD: f64 = 0.72;
 const PASS_IMAGE_TO_FRONTEND: bool = true;
@@ -22,7 +22,7 @@ const PASS_TEXT_TO_FRONTEND: bool = false;
 const TARGET_R: u8 = 158;
 const TARGET_G: u8 = 159;
 const TARGET_B: u8 = 167;
-const ENABLE_MORPHOLOGY: bool = true;
+const ENABLE_MORPHOLOGY: bool = false;
 pub const BINARY_FILTER_SPILL_THRESHOLD: u8 = 0;
 pub const HORIZONTAL_WORD_GAP_FACTOR: f64 = 1.2;
 pub const SAME_LINE_VERTICAL_FACTOR: f64 = 0.5;
