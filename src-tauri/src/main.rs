@@ -1,7 +1,6 @@
 mod dictionary;
 mod hotkeys;
 mod ocr;
-mod prices;
 mod state;
 
 use state::AppState;
