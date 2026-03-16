@@ -12,6 +12,7 @@ use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, Positio
 use xcap::Window;
 
 use crate::dictionary;
+use crate::market_prices;
 use crate::state::AppState;
 
 const OCR_WHITELIST: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789- ";
@@ -32,6 +33,7 @@ pub const MAX_MERGED_LINES: usize = 2;
 #[derive(Debug, Clone, Serialize)]
 pub struct OcrWord {
     pub text: String,
+    pub price: Option<String>,
     pub x: f64,
     pub y: f64,
     pub width: f64,
@@ -59,6 +61,7 @@ pub struct OcrTextPayload {
 #[derive(Debug, Clone)]
 struct RawWord {
     text: String,
+    price: Option<String>,
     x: f64,
     y: f64,
     width: f64,
@@ -171,6 +174,7 @@ pub fn capture_active_window<R: Runtime>(app: &AppHandle<R>) -> Result<(), Strin
             {
                 words.push(OcrWord {
                     text,
+                    price: None,
                     x: left as f64,
                     y: top as f64,
                     width: (right - left) as f64,
@@ -187,7 +191,10 @@ pub fn capture_active_window<R: Runtime>(app: &AppHandle<R>) -> Result<(), Strin
         }
     }
 
-    let grouped_words = apply_strict_names(app, group_words_into_blocks(&words))?;
+    let grouped_words = apply_market_prices(
+        app,
+        apply_strict_names(app, group_words_into_blocks(&words))?,
+    );
     println!(
         "[ocr] parse OCR words: {:?} ({} words -> {} blocks)",
         parse_started.elapsed(),
@@ -340,6 +347,16 @@ fn apply_strict_names<R: Runtime>(
         .collect())
 }
 
+fn apply_market_prices<R: Runtime>(app: &AppHandle<R>, words: Vec<OcrWord>) -> Vec<OcrWord> {
+    words
+        .into_iter()
+        .map(|mut word| {
+            word.price = market_prices::lookup_price_for_name(app, &word.text);
+            word
+        })
+        .collect()
+}
+
 fn load_strict_name_dictionary<R: Runtime>(app: &AppHandle<R>) -> Result<Vec<String>, String> {
     dictionary::load_cached_dictionary_names(app)
 }
@@ -446,6 +463,7 @@ fn group_words_into_blocks(words: &[OcrWord]) -> Vec<OcrWord> {
         .iter()
         .map(|word| RawWord {
             text: word.text.clone(),
+            price: word.price.clone(),
             x: word.x,
             y: word.y,
             width: word.width,
@@ -518,6 +536,9 @@ fn group_words_into_blocks(words: &[OcrWord]) -> Vec<OcrWord> {
                     if gap <= max_gap {
                         segment.text.push(' ');
                         segment.text.push_str(&word.text);
+                        if segment.price.is_none() {
+                            segment.price = word.price.clone();
+                        }
                         let right = (segment.x + segment.width).max(word.x + word.width);
                         let bottom = (segment.y + segment.height).max(word.y + word.height);
                         segment.x = segment.x.min(word.x);
@@ -608,6 +629,7 @@ fn group_words_into_blocks(words: &[OcrWord]) -> Vec<OcrWord> {
 
         merged_blocks.push(OcrWord {
             text: merged_text,
+            price: first.price.clone(),
             x: merged_x,
             y: merged_y,
             width: merged_right - merged_x,

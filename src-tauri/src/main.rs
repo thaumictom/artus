@@ -1,5 +1,6 @@
 mod dictionary;
 mod hotkeys;
+mod market_prices;
 mod ocr;
 mod state;
 

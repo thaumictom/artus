@@ -102,6 +102,16 @@ pub fn load_cached_dictionary_names<R: Runtime>(app: &AppHandle<R>) -> Result<Ve
     Ok(build_dictionary_names(&cache.items))
 }
 
+pub fn load_cached_dictionary_items<R: Runtime>(
+    app: &AppHandle<R>,
+) -> Result<Vec<DictionaryItem>, String> {
+    let cache_path = cache_path(app)?;
+    let cache = load_cache(&cache_path)?
+        .ok_or_else(|| "warframe_dictionary.json has not been cached yet".to_string())?;
+
+    Ok(cache.items)
+}
+
 fn fetch_items() -> Result<Vec<DictionaryItem>, String> {
     let response = reqwest::blocking::Client::new()
         .get(DICTIONARY_ENDPOINT)
