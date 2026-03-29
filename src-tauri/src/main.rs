@@ -1,5 +1,6 @@
 mod dictionary;
 mod hotkeys;
+mod layer_shell;
 mod market_prices;
 mod ocr;
 mod state;
@@ -33,9 +34,14 @@ fn main() {
 
             overlay.hide()?;
 
-            // Wayland compositors can reject these early input/focus mutations.
+            let layer_shell_enabled = layer_shell::configure_overlay_window(&overlay)?;
+
+            // Apply input pass-through eagerly on non-Wayland.
             if !is_wayland {
                 let _ = overlay.set_ignore_cursor_events(true);
+                let _ = overlay.set_focusable(false);
+            } else if layer_shell_enabled {
+                // Keep the overlay non-focusable on Wayland; click-through is re-applied when shown.
                 let _ = overlay.set_focusable(false);
             }
 
@@ -53,10 +59,7 @@ fn main() {
 
 #[cfg(target_os = "linux")]
 fn apply_wayland_workarounds() -> bool {
-    let is_wayland = env::var_os("WAYLAND_DISPLAY").is_some()
-        || env::var("XDG_SESSION_TYPE")
-            .map(|value| value.eq_ignore_ascii_case("wayland"))
-            .unwrap_or(false);
+    let is_wayland = layer_shell::is_wayland_session();
 
     if is_wayland && env::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").is_none() {
         // Safety: this runs before the Tauri runtime starts and before any worker threads are spawned.

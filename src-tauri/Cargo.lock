@@ -169,6 +169,9 @@ name = "artus"
 version = "0.1.0"
 dependencies = [
  "active-win-pos-rs",
+ "cairo-rs",
+ "gtk",
+ "gtk-layer-shell",
  "image",
  "imageproc",
  "kreuzberg-tesseract",
@@ -2114,6 +2117,34 @@ dependencies = [
  "libc",
  "pango",
  "pkg-config",
+]
+
+[[package]]
+name = "gtk-layer-shell"
+version = "0.8.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bc759b3184830a547b31549ab40c4b54450ab702bba79ba23f049bc1d1e3ca98"
+dependencies = [
+ "bitflags 2.11.0",
+ "gdk",
+ "glib",
+ "glib-sys",
+ "gtk",
+ "gtk-layer-shell-sys",
+ "libc",
+]
+
+[[package]]
+name = "gtk-layer-shell-sys"
+version = "0.7.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b4eee067e022416d53a70de69d3d3929d8a6e687f3278b8934faa671750fa6eb"
+dependencies = [
+ "gdk-sys",
+ "glib-sys",
+ "gtk-sys",
+ "libc",
+ "system-deps 7.0.7",
 ]
 
 [[package]]

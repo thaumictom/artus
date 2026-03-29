@@ -14,6 +14,9 @@ tauri = { version = "2", features = [] }
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+gtk-layer-shell = { version = "0.8.2", optional = true }
+gtk = { version = "0.18", optional = true }
+cairo-rs = { version = "0.18", optional = true }
 
 tauri-plugin-global-shortcut = "2.3.1"
 active-win-pos-rs = "*"
@@ -22,3 +25,7 @@ image = "*"
 imageproc = "0.26.1"
 kreuzberg-tesseract = "4.3.3"
 reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
+
+[features]
+default = []
+wayland-layer-shell = ["dep:gtk-layer-shell", "dep:gtk", "dep:cairo-rs"]

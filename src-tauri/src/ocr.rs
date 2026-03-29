@@ -12,6 +12,7 @@ use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, Positio
 use xcap::Window;
 
 use crate::dictionary;
+use crate::layer_shell;
 use crate::market_prices;
 use crate::state::AppState;
 
@@ -222,15 +223,48 @@ pub fn capture_active_window<R: Runtime>(app: &AppHandle<R>) -> Result<(), Strin
         .get_webview_window("overlay")
         .ok_or("overlay window not found")?;
 
-    overlay
-        .set_position(Position::Physical(PhysicalPosition::new(x, y)))
-        .map_err(|err| format!("failed to position overlay: {err}"))?;
+    let used_layer_shell_positioning =
+        layer_shell::set_overlay_geometry(&overlay, x, y).unwrap_or(false);
+
+    if !used_layer_shell_positioning {
+        overlay
+            .set_position(Position::Physical(PhysicalPosition::new(x, y)))
+            .map_err(|err| format!("failed to position overlay: {err}"))?;
+    }
+
     overlay
         .set_size(Size::Physical(PhysicalSize::new(width, height)))
         .map_err(|err| format!("failed to resize overlay: {err}"))?;
     overlay
         .show()
         .map_err(|err| format!("failed to show overlay: {err}"))?;
+
+    if !layer_shell::is_wayland_session() || used_layer_shell_positioning {
+        let _ = overlay.set_ignore_cursor_events(true);
+        let _ = overlay.set_focusable(false);
+    }
+
+    let force_click_applied = layer_shell::force_click_through(&overlay).unwrap_or(false);
+    if layer_shell::is_wayland_session() && !force_click_applied {
+        eprintln!("[overlay] click-through not applied on initial show");
+    }
+
+    if layer_shell::is_wayland_session() {
+        let app_handle_retry = app.clone();
+        std::thread::spawn(move || {
+            std::thread::sleep(Duration::from_millis(60));
+            if let Some(overlay_retry) = app_handle_retry.get_webview_window("overlay") {
+                let _ = overlay_retry.set_ignore_cursor_events(true);
+                let _ = overlay_retry.set_focusable(false);
+                let retry_applied =
+                    layer_shell::force_click_through(&overlay_retry).unwrap_or(false);
+                if !retry_applied {
+                    eprintln!("[overlay] click-through not applied on delayed retry");
+                }
+            }
+        });
+    }
+
     overlay
         .emit(
             "ocr_result",
