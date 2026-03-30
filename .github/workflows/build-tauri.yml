@@ -1,0 +1,88 @@
+name: Build Tauri Artifacts
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            artifact_name: artus-windows-exe
+          - os: ubuntu-24.04
+            artifact_name: artus-linux-appimage
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            librsvg2-dev \
+            patchelf
+          sudo apt-get install -y libayatana-appindicator3-dev || sudo apt-get install -y libappindicator3-dev
+
+      - name: Install JS dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Windows NSIS bundle
+        if: runner.os == 'Windows'
+        run: pnpm tauri build --bundles nsis
+
+      - name: Build Linux AppImage bundle
+        if: runner.os == 'Linux'
+        run: pnpm tauri build --bundles appimage
+
+      - name: Collect Windows artifact
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem -Path src-tauri/target/release/bundle/nsis -Filter *.exe | Select-Object -First 1
+          if (-not $exe) {
+            throw "No .exe file found in src-tauri/target/release/bundle/nsis"
+          }
+          New-Item -ItemType Directory -Path dist -Force | Out-Null
+          Copy-Item $exe.FullName dist/artus-windows.exe
+
+      - name: Collect Linux artifact
+        if: runner.os == 'Linux'
+        run: |
+          APPIMAGE=$(find src-tauri/target/release/bundle/appimage -maxdepth 1 -type f -name '*.AppImage' | head -n 1)
+          if [ -z "$APPIMAGE" ]; then
+            echo "No .AppImage file found in src-tauri/target/release/bundle/appimage"
+            exit 1
+          fi
+          mkdir -p dist
+          cp "$APPIMAGE" dist/artus-linux.AppImage
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: dist/*
+          if-no-files-found: error
