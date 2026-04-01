@@ -24,12 +24,16 @@
 	let rowSelection = $state<RowSelectionState>({});
 
 	const globalTextFilter: FilterFn<TData> = (row, _columnId, filterValue) => {
-		const searchValue = String(filterValue ?? '').trim().toLowerCase();
+		const searchValue = String(filterValue ?? '')
+			.trim()
+			.toLowerCase();
 		if (!searchValue) return true;
 
-		return row
-			.getVisibleCells()
-			.some((cell) => String(cell.getValue() ?? '').toLowerCase().includes(searchValue));
+		return row.getVisibleCells().some((cell) =>
+			String(cell.getValue() ?? '')
+				.toLowerCase()
+				.includes(searchValue),
+		);
 	};
 
 	const table = createSvelteTable({
@@ -134,11 +138,13 @@
 		</select>
 	{/if}
 
-	<button type="button" class="px-2 py-1 border rounded" onclick={clearFilters}>Reset filters</button>
+	<button type="button" class="px-2 py-1 border rounded" onclick={clearFilters}>
+		Reset filters
+	</button>
 	<div class="ml-auto text-sm">{markedCount} marked</div>
 	<button
 		type="button"
-		class="px-2 py-1 border rounded disabled:opacity-50"
+		class="disabled:opacity-50 px-2 py-1 border rounded"
 		disabled={markedCount === 0}
 		onclick={clearMarked}
 	>
@@ -159,7 +165,8 @@
 									<button
 										type="button"
 										class="w-full text-left"
-										onclick={() => header.column.toggleSorting(header.column.getIsSorted() === 'asc')}
+										onclick={() =>
+											header.column.toggleSorting(header.column.getIsSorted() === 'asc')}
 									>
 										<FlexRender
 											content={header.column.columnDef.header}
@@ -185,7 +192,8 @@
 						<input
 							type="checkbox"
 							checked={row.getIsSelected()}
-							onchange={(event) => row.toggleSelected((event.currentTarget as HTMLInputElement).checked)}
+							onchange={(event) =>
+								row.toggleSelected((event.currentTarget as HTMLInputElement).checked)}
 							aria-label={`Mark row ${row.id}`}
 						/>
 					</Table.Cell>
