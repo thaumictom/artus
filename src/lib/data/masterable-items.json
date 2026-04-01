@@ -1,0 +1,4748 @@
+[
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/SapientPrimary/SapientPrimaryWeapon",
+    "name": "Acceltra",
+    "category": "Primary",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/PrimeAcceltra/PrimeAcceltraWeapon",
+    "name": "Acceltra Prime",
+    "category": "Primary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Melee/GrineerTylAxeAndBoar/RegorAxeShield",
+    "name": "Ack & Brunt",
+    "category": "Melee",
+    "masteryReq": 3
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/ClanTech/Bio/AcidDartPistol",
+    "name": "Acrid",
+    "category": "Secondary",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Types/Game/CatbrowPet/MirrorCatbrowPetPowerSuit",
+    "name": "Adarza Kavat",
+    "category": "Pets",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/ThrowingWeapons/GrnVorStickyBomb/GrnVorStickyBomb",
+    "name": "Aegrit",
+    "category": "Secondary",
+    "masteryReq": 11
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/TnRifleErsatz/TnRifleErsatzWeapon",
+    "name": "Aeolak",
+    "category": "Primary",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/TnHopliteSpear/TnHopliteSpearGunWeapon",
+    "name": "Afentis",
+    "category": "Primary",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Akimbo/AkimboAutoPistols",
+    "name": "Afuris",
+    "category": "Secondary",
+    "masteryReq": 4
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/PrimeAfuris/PrimeAFurisWeapon",
+    "name": "Afuris Prime",
+    "category": "Secondary",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Archwing/Melee/ArchSwordHook/ArchHookSwordWeapon",
+    "name": "Agkuza",
+    "category": "Arch-Melee",
+    "masteryReq": 3
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/SapientPistol/SapientPistol",
+    "name": "Akarius",
+    "category": "Secondary",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/PrimeAkarius/PrimeAkariusWeapon",
+    "name": "Akarius Prime",
+    "category": "Secondary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeaponPS",
+    "name": "Akaten",
+    "category": "Primary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Akimbo/AkimboBolto",
+    "name": "Akbolto",
+    "category": "Secondary",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/PrimeAkbolto/PrimeAkBoltoWeapon",
+    "name": "Akbolto Prime",
+    "category": "Secondary",
+    "masteryReq": 13
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Akimbo/AkimboShotGun",
+    "name": "Akbronco",
+    "category": "Secondary",
+    "masteryReq": 2
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Akimbo/PrimeAkimboShotGun",
+    "name": "Akbronco Prime",
+    "category": "Secondary",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/TigrisRedeemerSetPistol/TnoBladedPistols",
+    "name": "Akjagara",
+    "category": "Secondary",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/PrimeAkjagara/AkJagaraPrime",
+    "name": "Akjagara Prime",
+    "category": "Secondary",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Akimbo/AkimboPistol",
+    "name": "Aklato",
+    "category": "Secondary",
+    "masteryReq": 3
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Akimbo/AkLexPistols",
+    "name": "Aklex",
+    "category": "Secondary",
+    "masteryReq": 4
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Akimbo/AkLexPrimePistols",
+    "name": "Aklex Prime",
+    "category": "Secondary",
+    "masteryReq": 15
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Akimbo/DualMagnus",
+    "name": "Akmagnus",
+    "category": "Secondary",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Akimbo/DualMagnusPrime",
+    "name": "Akmagnus Prime",
+    "category": "Secondary",
+    "masteryReq": 15
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/SomaSidearm/AkimboSomaPistols",
+    "name": "Aksomati",
+    "category": "Secondary",
+    "masteryReq": 9
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/PrimeAksomati/PrimeAksomati",
+    "name": "Aksomati Prime",
+    "category": "Secondary",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/TennoUzi/TennoUzi",
+    "name": "Akstiletto",
+    "category": "Secondary",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/PrimeAkstiletto/PrimeAkstiletto",
+    "name": "Akstiletto Prime",
+    "category": "Secondary",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Akimbo/DualVastos",
+    "name": "Akvasto",
+    "category": "Secondary",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/PrimeVasto/AkPrimeVasto/AkPrimeVastoPistol",
+    "name": "Akvasto Prime",
+    "category": "Secondary",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/HarlequinGun/HarlequinPistols",
+    "name": "Akzani",
+    "category": "Secondary",
+    "masteryReq": 4
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/GyreRifle/GyreRifleWeapon",
+    "name": "Alternox",
+    "category": "Primary",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/PrimeAlternox/PrimeAlternoxWeapon",
+    "name": "Alternox Prime",
+    "category": "Primary",
+    "masteryReq": 13
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Polearms/Naginata/ShrineMaidenNaginataWeapon",
+    "name": "Amanata",
+    "category": "Melee",
+    "masteryReq": 2
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/LongGuns/CrpArSniper/CrpArSniperRifle",
+    "name": "Ambassador",
+    "category": "Primary",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Archwing/SupportJetPack/SupportJetPack",
+    "name": "Amesha",
+    "category": "Archwing",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Staff/GrnStaff",
+    "name": "Amphis",
+    "category": "Melee",
+    "masteryReq": 5
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/LongGuns/ChainLightningGun/ChainLightningRifle",
+    "name": "Amprex",
+    "category": "Primary",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/Pistols/CrpHandRL/CorpusHandRocketLauncher",
+    "name": "Angstrum",
+    "category": "Secondary",
+    "masteryReq": 4
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Scythe/ParisScythe/ParisScythe",
+    "name": "Anku",
+    "category": "Melee",
+    "masteryReq": 3
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Gauntlet/Gauntlet",
+    "name": "Ankyros",
+    "category": "Melee",
+    "masteryReq": 2
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Gauntlet/PrimeAnkyros/PrimeAnkyros",
+    "name": "Ankyros Prime",
+    "category": "Melee",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Archwing/Primary/NokkoArchGun/NokkoArchGun",
+    "name": "Arbucep",
+    "category": "Arch-Gun",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/LongGuns/CrpShotgun/CrpShotgun",
+    "name": "Arca Plasmor",
+    "category": "Primary",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/Pistols/SniperPistol/CrpScopeGun",
+    "name": "Arca Scisco",
+    "category": "Secondary",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/Melee/Hammer/CorpusHammerWeapon",
+    "name": "Arca Titron",
+    "category": "Melee",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/SwordsAndBoards/DaxDuviriMaceShieldWeapon",
+    "name": "Argo & Vel",
+    "category": "Melee",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/LongGuns/LaserAimRifle/LaserAimRifle",
+    "name": "Argonak",
+    "category": "Primary",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Types/Sentinels/SentinelWeapons/Gremlin",
+    "name": "Artax",
+    "category": "Primary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/Melee/InfWarfan/InfWarfanWeapon",
+    "name": "Arum Spinosa",
+    "category": "Melee",
+    "masteryReq": 11
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Ninja/Ninja",
+    "name": "Ash",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Ninja/AshPrime",
+    "name": "Ash Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/TnGlassShotgun/TnGlassShotgunGun",
+    "name": "Astilla",
+    "category": "Primary",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/PrimeAstilla/AstillaPrimeWeapon",
+    "name": "Astilla Prime",
+    "category": "Primary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/TnJetTurbine/TnJetTurbinePistolWeapon",
+    "name": "Athodai",
+    "category": "Secondary",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Brawler/Brawler",
+    "name": "Atlas",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Brawler/AtlasPrime",
+    "name": "Atlas Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Pistols/HeatGun/GrnHeatGun",
+    "name": "Atomos",
+    "category": "Secondary",
+    "masteryReq": 5
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Melee/GrineerWhip/GrineerWhip",
+    "name": "Atterax",
+    "category": "Melee",
+    "masteryReq": 5
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/TnoPrmryXbow/TnoPrmryXbowWeapon",
+    "name": "Attica",
+    "category": "Primary",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Lasria/AK47/TC2024AK47Weapon",
+    "name": "Ax-52",
+    "category": "Primary",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/SundialGun/SundialPistol",
+    "name": "Azima",
+    "category": "Secondary",
+    "masteryReq": 6
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/DaxDuviriTwoHandedKatana/DaxDuviriTwoHandedKatanaWeapon",
+    "name": "Azothane",
+    "category": "Melee",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Types/Vehicles/Hoverboard/HoverboardParts/PartComponents/HoverboardSolarisA/HoverboardSolarisADeck",
+    "name": "Bad Baby",
+    "category": "Misc",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Tip/TipOne",
+    "name": "Balla",
+    "category": "Melee",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/AutomaticHandCrossbow/AutoCrossBow",
+    "name": "Ballistica",
+    "category": "Secondary",
+    "masteryReq": 2
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/PrimeBallistica/PrimeBallistica",
+    "name": "Ballistica Prime",
+    "category": "Secondary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Banshee/Banshee",
+    "name": "Banshee",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Banshee/BansheePrime",
+    "name": "Banshee Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Pacifist/Pacifist",
+    "name": "Baruuk",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Pacifist/BaruukPrime",
+    "name": "Baruuk Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Sentients/SentRifleNewWar/SentRifleNewWarGun",
+    "name": "Basmu",
+    "category": "Primary",
+    "masteryReq": 11
+  },
+  {
+    "uniqueName": "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeaponIP",
+    "name": "Batoten",
+    "category": "Primary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/LongGuns/CrpSentExperimentRifle/CrpSentExperimentRifle",
+    "name": "Battacor",
+    "category": "Primary",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/TnSMG/TnSMGWeapon",
+    "name": "Baza",
+    "category": "Primary",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/PrimeBaza/PrimeBazaGun",
+    "name": "Baza Prime",
+    "category": "Primary",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetParts/ZanukaPetPartHeadB",
+    "name": "Bhaira Hound",
+    "category": "Pets",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Staff/Staff",
+    "name": "Bo",
+    "category": "Melee",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Staff/PrimeBo/PrimeBoWeapon",
+    "name": "Bo Prime",
+    "category": "Melee",
+    "masteryReq": 5
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Shotgun/FullAutoShotgun",
+    "name": "Boar",
+    "category": "Primary",
+    "masteryReq": 2
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Shotgun/PrimeBoar",
+    "name": "Boar Prime",
+    "category": "Primary",
+    "masteryReq": 11
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Tonfa/Boltonfa/Boltonfa",
+    "name": "Boltace",
+    "category": "Melee",
+    "masteryReq": 4
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistol/CrossBow",
+    "name": "Bolto",
+    "category": "Secondary",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Rifle/BoltoRifle",
+    "name": "Boltor",
+    "category": "Primary",
+    "masteryReq": 2
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/PrimeBoltor/PrimeBoltor",
+    "name": "Boltor Prime",
+    "category": "Primary",
+    "masteryReq": 13
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/EntratiMech/ThanoTech",
+    "name": "Bonewidow",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Pistols/GrineerHandShotgun/GrineerHandCannon",
+    "name": "Brakk",
+    "category": "Secondary",
+    "masteryReq": 6
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Rifle/Rifle",
+    "name": "Braton",
+    "category": "Primary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Rifle/BratonPrime",
+    "name": "Braton Prime",
+    "category": "Primary",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Rifle/VIPRifle",
+    "name": "Braton Vandal",
+    "category": "Primary",
+    "masteryReq": 4
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Melee/GrnQueenSceptre/GrnQueenSceptreWeapon",
+    "name": "Broken Scepter",
+    "category": "Melee",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/StalkerTwo/StalkerTwoSmallSword",
+    "name": "Broken War",
+    "category": "Melee",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistol/HandShotGun",
+    "name": "Bronco",
+    "category": "Secondary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistol/BroncoPrime",
+    "name": "Bronco Prime",
+    "category": "Secondary",
+    "masteryReq": 4
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/LongGuns/InfArmCannon/InfArmCannon",
+    "name": "Bubonico",
+    "category": "Primary",
+    "masteryReq": 13
+  },
+  {
+    "uniqueName": "/Lotus/Types/Sentinels/SentinelWeapons/BurstLaserPistol",
+    "name": "Burst Laser",
+    "category": "Primary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Types/Sentinels/SentinelWeapons/PrimeBurstLaserPistol",
+    "name": "Burst Laser Prime",
+    "category": "Primary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Rifle/BurstRifle",
+    "name": "Burston",
+    "category": "Primary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/PrimeBurston/PrimeBurston",
+    "name": "Burston Prime",
+    "category": "Primary",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/LongGuns/GrnGorgSniperRifle/GrnGorgSniperRifle",
+    "name": "Buzlok",
+    "category": "Primary",
+    "masteryReq": 11
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Staff/SingleStaff",
+    "name": "Cadus",
+    "category": "Melee",
+    "masteryReq": 4
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Sentient/Sentient",
+    "name": "Caliban",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Sentient/CalibanPrime",
+    "name": "Caliban Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/ThrowingWeapons/TnChoirframeKunai/TnChoirframeKunai",
+    "name": "Cantare",
+    "category": "Secondary",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/LongGuns/GrenadeLauncher/CarminePenta",
+    "name": "Carmine Penta",
+    "category": "Primary",
+    "masteryReq": 6
+  },
+  {
+    "uniqueName": "/Lotus/Types/Sentinels/SentinelPowersuits/CarrierPowerSuit",
+    "name": "Carrier",
+    "category": "Sentinels",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Types/Sentinels/SentinelPowersuits/PrimeCarrierPowerSuit",
+    "name": "Carrier Prime",
+    "category": "Sentinels",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Polearms/TnHalberdPolearm/TnHalberdPolearmWeapon",
+    "name": "Cassowar",
+    "category": "Melee",
+    "masteryReq": 5
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/ThrowingWeapons/StickyBomb/StickyBombs",
+    "name": "Castanas",
+    "category": "Secondary",
+    "masteryReq": 3
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/Pistols/InfBeamPistol/InfBeamPistol",
+    "name": "Catabolyst",
+    "category": "Secondary",
+    "masteryReq": 11
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/SolarisUnited/Secondary/SUModularSecondarySet1/Barrel/SUModularSecondaryBarrelAPart",
+    "name": "Catchmoon",
+    "category": "Misc",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/Melee/InfEmbolistScythe/InfestedScythe",
+    "name": "Caustacyst",
+    "category": "Melee",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/TnAlchemistShotgun/TnAlchemistShotgun",
+    "name": "Cedo",
+    "category": "Primary",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/PrimeCedo/PrimeCedoWeapon",
+    "name": "Cedo Prime",
+    "category": "Primary",
+    "masteryReq": 15
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Archwing/Melee/Archswordandshield/ArchSwordShield",
+    "name": "Centaur",
+    "category": "Arch-Melee",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Dagger/CeramicDagger",
+    "name": "Ceramic Dagger",
+    "category": "Melee",
+    "masteryReq": 3
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/Melee/Glaives/PunctureGlaive/PunctureGlaiveWeapon",
+    "name": "Cerata",
+    "category": "Melee",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Bows/AntlerBow/AntlerBow",
+    "name": "Cernos",
+    "category": "Primary",
+    "masteryReq": 6
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Bows/PrimeCernos/PrimeCernos",
+    "name": "Cernos Prime",
+    "category": "Primary",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/Pistols/CorpusMinigun/CorpusMinigun",
+    "name": "Cestra",
+    "category": "Secondary",
+    "masteryReq": 4
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/StalkerMios/OperationsLacera",
+    "name": "Ceti Lacera",
+    "category": "Melee",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Types/Game/KubrowPet/RetrieverKubrowPetPowerSuit",
+    "name": "Chesa Kubrow",
+    "category": "Pets",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Dragon/Dragon",
+    "name": "Chroma",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Dragon/ChromaPrime",
+    "name": "Chroma Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Bows/DaxDuviriAsymetricalBow/DaxDuviriAsymmetricalLongBowPlayerWeapon",
+    "name": "Cinta",
+    "category": "Primary",
+    "masteryReq": 6
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Geode/Geode",
+    "name": "Citrine",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/SwordsAndBoards/PacifistShieldAndSword/PacifistShieldSword",
+    "name": "Cobra & Crane",
+    "category": "Melee",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/SwordsAndBoards/PrimeCobraAndCrane/PrimeCobraAndCraneWeapon",
+    "name": "Cobra & Crane Prime",
+    "category": "Melee",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/InfestedLich/LongGuns/1999InfShotgun/1999InfShotgunWeapon",
+    "name": "Coda Bassocyst",
+    "category": "Primary",
+    "masteryReq": 17
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/InfestedLich/LongGuns/CodaBubonico/CodaBubonicoCannon",
+    "name": "Coda Bubonico",
+    "category": "Primary",
+    "masteryReq": 17
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/InfestedLich/Pistols/CodaCatabolyst",
+    "name": "Coda Catabolyst",
+    "category": "Secondary",
+    "masteryReq": 17
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/InfestedLich/Melee/CodaCaustacyst/CodaCaustacyst",
+    "name": "Coda Caustacyst",
+    "category": "Melee",
+    "masteryReq": 17
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/InfestedLich/LongGuns/CodaHema",
+    "name": "Coda Hema",
+    "category": "Primary",
+    "masteryReq": 17
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/InfestedLich/Melee/CodaHirudo",
+    "name": "Coda Hirudo",
+    "category": "Melee",
+    "masteryReq": 17
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/InfestedLich/Melee/CodaMire",
+    "name": "Coda Mire",
+    "category": "Melee",
+    "masteryReq": 17
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/InfestedLich/Melee/InfestedHammer/InfLichHammerWeapon",
+    "name": "Coda Motovore",
+    "category": "Melee",
+    "masteryReq": 17
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/InfestedLich/Melee/CodaPathocyst/CodaPathocyst",
+    "name": "Coda Pathocyst",
+    "category": "Melee",
+    "masteryReq": 17
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/InfestedLich/Pistols/CodaPox",
+    "name": "Coda Pox",
+    "category": "Secondary",
+    "masteryReq": 17
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/InfestedLich/LongGuns/CodaSporothrix",
+    "name": "Coda Sporothrix",
+    "category": "Primary",
+    "masteryReq": 17
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/InfestedLich/LongGuns/CodaSynapse",
+    "name": "Coda Synapse",
+    "category": "Primary",
+    "masteryReq": 17
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/InfestedLich/Pistols/CodaTysis",
+    "name": "Coda Tysis",
+    "category": "Secondary",
+    "masteryReq": 17
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/LongGuns/CrpSplitLaser/CrpSplitLaser",
+    "name": "Convectrix",
+    "category": "Primary",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/TnHeavyShotgun/TnHeavyShotgunGun",
+    "name": "Corinth",
+    "category": "Primary",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/PrimeCorinth/PrimeCorinth",
+    "name": "Corinth Prime",
+    "category": "Primary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Archwing/Primary/ThanoTechArchGun/ThanoTechArchGun",
+    "name": "Cortege",
+    "category": "Arch-Gun",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Archwing/Melee/ExaltedArchScythe/ExaltedAWScytheWeapon",
+    "name": "Corufell",
+    "category": "Melee",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Archwing/Primary/LaunchGrenade/ArchCannon",
+    "name": "Corvas",
+    "category": "Arch-Gun",
+    "masteryReq": 1
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Archwing/Primary/PrimeCorvas/PrimeCorvasWeapon",
+    "name": "Corvas Prime",
+    "category": "Arch-Gun",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Types/Friendly/Pets/CreaturePets/HornedInfestedCatbrowPetPowerSuit",
+    "name": "Crescent Vulpaphyla",
+    "category": "Pets",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/CronusSword/CronusLongSword",
+    "name": "Cronus",
+    "category": "Melee",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/CryoxionWeapon",
+    "name": "Cryotra",
+    "category": "Primary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/Pistols/CrpSentAmalgPistol/CrpSentAmalgPistol",
+    "name": "Cyanex",
+    "category": "Secondary",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Tip/TipFour",
+    "name": "Cyath",
+    "category": "Melee",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/Pistols/CrpChargeGun/CrpChargeGun",
+    "name": "Cycron",
+    "category": "Secondary",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Archwing/Primary/ArchBurstGun/ArchBurstGun",
+    "name": "Cyngas",
+    "category": "Arch-Gun",
+    "masteryReq": 4
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Frumentarius/Frumentarius",
+    "name": "Cyte-09",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Dagath/Dagath",
+    "name": "Dagath",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Bows/AsymetricalBow/AsymetricalBow",
+    "name": "Daikyu",
+    "category": "Primary",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Bows/PrimeDaikyu/PrimeDaikyuBow",
+    "name": "Daikyu Prime",
+    "category": "Primary",
+    "masteryReq": 15
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/CronusSword/PrimeCronusLongSword",
+    "name": "Dakra Prime",
+    "category": "Melee",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Pagemaster/Pagemaster",
+    "name": "Dante",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Dagger/DarkDagger",
+    "name": "Dark Dagger",
+    "category": "Melee",
+    "masteryReq": 2
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/DarkSword/DarkSwordDaggerHybridWeapon",
+    "name": "Dark Split-Sword",
+    "category": "Melee",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/DarkSword/DarkLongSword",
+    "name": "Dark Sword",
+    "category": "Melee",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon",
+    "name": "Deconstructor",
+    "category": "Primary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Types/Sentinels/SentinelWeapons/DeconstructorPrime/PrimeHeliosGlaiveWeapon",
+    "name": "Deconstructor Prime",
+    "category": "Primary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Tip/TipFive",
+    "name": "Dehtat",
+    "category": "Melee",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/ClanTech/Energy/EnergyRifle",
+    "name": "Dera",
+    "category": "Primary",
+    "masteryReq": 4
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/ClanTech/Energy/DeraVandal",
+    "name": "Dera Vandal",
+    "category": "Primary",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/ThrowingWeapons/StalkerKunai",
+    "name": "Despair",
+    "category": "Secondary",
+    "masteryReq": 4
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/TnoRapier/TnoRapier",
+    "name": "Destreza",
+    "category": "Melee",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/PRapier/DestrezaPrime",
+    "name": "Destreza Prime",
+    "category": "Melee",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Types/Sentinels/SentinelWeapons/DethMachineRifle",
+    "name": "Deth Machine Rifle",
+    "category": "Primary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Types/Sentinels/SentinelWeapons/PrimeDethMachineRifle",
+    "name": "Deth Machine Rifle Prime",
+    "category": "Primary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Types/Sentinels/SentinelPowersuits/DethCubePowerSuit",
+    "name": "Dethcube",
+    "category": "Sentinels",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Types/Sentinels/SentinelPowersuits/PrimeDethCubePowerSuit",
+    "name": "Dethcube Prime",
+    "category": "Sentinels",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/Pistols/CorpusHandShotgun/CorpusHandCannon",
+    "name": "Detron",
+    "category": "Secondary",
+    "masteryReq": 6
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/DexTheSecond/DexTheSecond",
+    "name": "Dex Dakra",
+    "category": "Melee",
+    "masteryReq": 6
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/DexFuris/DexFuris",
+    "name": "Dex Furis",
+    "category": "Secondary",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/KatanaAndWakizashi/Dex2023Nikana/Dex2023Nikana",
+    "name": "Dex Nikana",
+    "category": "Melee",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/DexTheThird/DexTheThird",
+    "name": "Dex Sybaris",
+    "category": "Primary",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Types/Sentinels/SentinelPowersuits/ArcDronePowerSuit",
+    "name": "Diriga",
+    "category": "Sentinels",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Types/Sentinels/SentinelPowersuits/GubberPowerSuit",
+    "name": "Djinn",
+    "category": "Sentinels",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Ostron/Melee/ModularMelee02/Tip/TipEleven",
+    "name": "Dokrahm",
+    "category": "Melee",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetParts/ZanukaPetPartHeadA",
+    "name": "Dorma Hound",
+    "category": "Pets",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/TnDagathBladeWhip/TnDagathBladeWhip",
+    "name": "Dorrclave",
+    "category": "Melee",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/KatanaAndWakizashi/LowKatana",
+    "name": "Dragon Nikana",
+    "category": "Melee",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/LongGuns/GrineerFlakCannon/FlakCannon",
+    "name": "Drakgoon",
+    "category": "Primary",
+    "masteryReq": 5
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Bows/StalkerBow",
+    "name": "Dread",
+    "category": "Primary",
+    "masteryReq": 5
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/Pistols/CorpusMinigun/DualCorpusMinigun",
+    "name": "Dual Cestra",
+    "category": "Secondary",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Melee/GrineerMachetteAndCleaver/DualCleaverWeapon",
+    "name": "Dual Cleavers",
+    "category": "Melee",
+    "masteryReq": 5
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/InfestedLich/Pistols/1999InfSporePistol/1999InfSporePistolWeapon",
+    "name": "Dual Coda Torxica",
+    "category": "Secondary",
+    "masteryReq": 17
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Archwing/Primary/ArchwingHeavyPistols/ArchHeavyPistols",
+    "name": "Dual Decurion",
+    "category": "Arch-Gun",
+    "masteryReq": 1
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/DualShortSword/DualEtherSword",
+    "name": "Dual Ether",
+    "category": "Melee",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/DualShortSword/DualHeatSwords",
+    "name": "Dual Heat Swords",
+    "category": "Melee",
+    "masteryReq": 3
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Axe/DualInfestedAxesWeapon",
+    "name": "Dual Ichor",
+    "category": "Melee",
+    "masteryReq": 6
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/DualKamas/DualKamas",
+    "name": "Dual Kamas",
+    "category": "Melee",
+    "masteryReq": 1
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/PrimeDualKamas/PrimeDualKamas",
+    "name": "Dual Kamas Prime",
+    "category": "Melee",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/QuillSword/QuillDualSwords",
+    "name": "Dual Keres",
+    "category": "Melee",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/PrimeDualKeres/PrimeDualKeresWeapon",
+    "name": "Dual Keres Prime",
+    "category": "Melee",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Soma/SomaDualKamas",
+    "name": "Dual Raza",
+    "category": "Melee",
+    "masteryReq": 6
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/DualShortSword/DualShortSword",
+    "name": "Dual Skana",
+    "category": "Melee",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/Pistols/InfVomitGun/InfVomitGunWep",
+    "name": "Dual Toxocyst",
+    "category": "Secondary",
+    "masteryReq": 11
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Lasria/LasGooSickle/LasGooSicklePlayerWeapon",
+    "name": "Dual Viciss",
+    "category": "Melee",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Axe/DualAxeWeapon",
+    "name": "Dual Zoren",
+    "category": "Melee",
+    "masteryReq": 2
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Axe/PrimeZoren/PrimeZorenAxeWeapon",
+    "name": "Dual Zoren Prime",
+    "category": "Melee",
+    "masteryReq": 13
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Polearms/DaxDuviriPolearm/DaxDuviriPolearmWeapon",
+    "name": "Edun",
+    "category": "Melee",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Lasria/LasGooAK/LasGooAKPlayerWeapon",
+    "name": "Efv-5 Jupiter",
+    "category": "Primary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Lasria/LasGooPistol/LasGooPistolPlayerWeapon",
+    "name": "Efv-8 Mars",
+    "category": "Secondary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Thanotech/EntSphereHammer/EntSphereHammer",
+    "name": "Ekhein",
+    "category": "Melee",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Archwing/DemolitionJetPack/DemolitionJetPack",
+    "name": "Elytron",
+    "category": "Archwing",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Ember/Ember",
+    "name": "Ember",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Ember/EmberPrime",
+    "name": "Ember Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/Pistols/InfestedPistol",
+    "name": "Embolist",
+    "category": "Secondary",
+    "masteryReq": 9
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/ThreeLeaf/ThreeLeaf",
+    "name": "Endura",
+    "category": "Melee",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/TnInkRifle/TnInkRifleWeapon",
+    "name": "Enkaus",
+    "category": "Primary",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/TnWraitheSidearm/TnWraitheSidearmWeapon",
+    "name": "Epitaph",
+    "category": "Secondary",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/PrimeEpitaph/PrimeEpitaphSidearmWeapon",
+    "name": "Epitaph Prime",
+    "category": "Secondary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/YinYang/YinYang",
+    "name": "Equinox",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/YinYang/EquinoxPrime",
+    "name": "Equinox Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/DualDagger/DualEtherDagger",
+    "name": "Ether Daggers",
+    "category": "Melee",
+    "masteryReq": 6
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Scythe/EtherScytheWeapon",
+    "name": "Ether Reaper",
+    "category": "Melee",
+    "masteryReq": 4
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/LongSword/EtherSword",
+    "name": "Ether Sword",
+    "category": "Melee",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/AllNew1hSG/AllNew1hSG",
+    "name": "Euphona Prime",
+    "category": "Secondary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Bows/TnChoirBow/TnChoirBow",
+    "name": "Evensong",
+    "category": "Primary",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Excalibur/Excalibur",
+    "name": "Excalibur",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Excalibur/ExcaliburPrime",
+    "name": "Excalibur Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Excalibur/ExcaliburUmbra",
+    "name": "Excalibur Umbra",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/LongGuns/CrpShapeBlast/CrpShapeBlastShotgun",
+    "name": "Exergis",
+    "category": "Primary",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/Melee/Glaive/CrpGlaive/CrpGlaive",
+    "name": "Falcor",
+    "category": "Melee",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/DualDagger/DualDagger",
+    "name": "Fang",
+    "category": "Melee",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/DualDagger/FangPrimeDagger",
+    "name": "Fang Prime",
+    "category": "Melee",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Zariman/LongGuns/PumpShotgun/ZarimanPumpShotgun",
+    "name": "Felarx",
+    "category": "Primary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/LongGuns/Spears/Railgun/CorpusRailgun",
+    "name": "Ferrox",
+    "category": "Primary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Types/Vehicles/Hoverboard/HoverboardParts/PartComponents/HoverboardInfestedB/HoverboardInfestedBDeck",
+    "name": "Feverspine",
+    "category": "Misc",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Types/Vehicles/Hoverboard/HoverboardParts/PartComponents/HoverboardCorpusA/HoverboardCorpusADeck",
+    "name": "Flatbelly",
+    "category": "Misc",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Archwing/Primary/RocketArtillery/ArchRocketCrossbow",
+    "name": "Fluctus",
+    "category": "Arch-Gun",
+    "masteryReq": 2
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/ClanTech/Energy/CrpLaserRifle",
+    "name": "Flux Rifle",
+    "category": "Primary",
+    "masteryReq": 6
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Inkblot/Inkblot",
+    "name": "Follie",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Hammer/HammerWeapon",
+    "name": "Fragor",
+    "category": "Melee",
+    "masteryReq": 2
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/PrimeFragor/PrimeFragor",
+    "name": "Fragor Prime",
+    "category": "Melee",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Frost/Frost",
+    "name": "Frost",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Frost/FrostPrime",
+    "name": "Frost Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/TnWispRifle/TnWispRifle",
+    "name": "Fulmin",
+    "category": "Primary",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/PrimeFulmin/PrimeFulmin",
+    "name": "Fulmin Prime",
+    "category": "Primary",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Fist/Fist",
+    "name": "Furax",
+    "category": "Melee",
+    "masteryReq": 5
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Fist/FuraxWraith",
+    "name": "Furax Wraith",
+    "category": "Melee",
+    "masteryReq": 9
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistol/AutoPistol",
+    "name": "Furis",
+    "category": "Secondary",
+    "masteryReq": 1
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/ThrowingWeapons/GlassKunai/GlassKunaiWeapon",
+    "name": "Fusilai",
+    "category": "Secondary",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Melee/Scythe/GrnDrillScythe/GrnDrillScythe",
+    "name": "Galariak Prime",
+    "category": "Melee",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/GreatSword/TennoGreatSword",
+    "name": "Galatine",
+    "category": "Melee",
+    "masteryReq": 3
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/PrimeGalatine/PrimeGalatine",
+    "name": "Galatine Prime",
+    "category": "Melee",
+    "masteryReq": 13
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/Melee/Whips/CrpShockGrip/CrpShockGripWhipWeapon",
+    "name": "Galvacord",
+    "category": "Melee",
+    "masteryReq": 6
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Syndicates/CephalonSuda/Pistols/CSDroidArray",
+    "name": "Gammacor",
+    "category": "Secondary",
+    "masteryReq": 2
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Glass/Glass",
+    "name": "Gara",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Glass/GaraPrime",
+    "name": "Gara Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Garuda/Garuda",
+    "name": "Garuda",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Garuda/GarudaPrime",
+    "name": "Garuda Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Runner/Runner",
+    "name": "Gauss",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Runner/GaussPrime",
+    "name": "Gauss Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/PersianMachete/DjinnMachete",
+    "name": "Gazal Machete",
+    "category": "Melee",
+    "masteryReq": 5
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/SolarisUnited/Secondary/SUModularSecondarySet1/Barrel/SUModularSecondaryBarrelDPart",
+    "name": "Gaze",
+    "category": "Misc",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Melee/GrnGhoulSaw/GrnGhoulSawPlayer",
+    "name": "Ghoulsaw",
+    "category": "Melee",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Glaives/LightGlaive/LightGlaiveWeapon",
+    "name": "Glaive",
+    "category": "Melee",
+    "masteryReq": 1
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Glaives/PrimeGlaive/PrimeGlaiveWeapon",
+    "name": "Glaive Prime",
+    "category": "Melee",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/LongGuns/CrpFreezeRay/CrpFreezeRayRifle",
+    "name": "Glaxion",
+    "category": "Primary",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/LongGuns/CrpFreezeRay/Vandal/CrpFreezeRayVandalRifle",
+    "name": "Glaxion Vandal",
+    "category": "Primary",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Rifle/HeavyRifle",
+    "name": "Gorgon",
+    "category": "Primary",
+    "masteryReq": 3
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/LongGuns/WraithGorgon/WraithGorgon",
+    "name": "Gorgon Wraith",
+    "category": "Primary",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/LongGuns/GrnOrokinRifle/GrnOrokinRifleWeapon",
+    "name": "Gotva Prime",
+    "category": "Primary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/LongGuns/GrineerAssaultRifle/GrnAssaultRifle",
+    "name": "Grakata",
+    "category": "Primary",
+    "masteryReq": 5
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/GreatSword/GreatSword",
+    "name": "Gram",
+    "category": "Melee",
+    "masteryReq": 2
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/PrimeGram/PrimeGram",
+    "name": "Gram Prime",
+    "category": "Melee",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Archwing/Primary/RepurposedGrineerAntiAircraftGun/ArchGRNAAGun",
+    "name": "Grattler",
+    "category": "Arch-Gun",
+    "masteryReq": 4
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Devourer/Devourer",
+    "name": "Grendel",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Devourer/GrendelPrime",
+    "name": "Grendel Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Grimoire/TnDoppelgangerGrimoire",
+    "name": "Grimoire",
+    "category": "Secondary",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Grimoire/TnGrimoire",
+    "name": "Grimoire",
+    "category": "Secondary",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/LongGuns/GrineerLeverActionRifle/GLARifle",
+    "name": "Grinlok",
+    "category": "Primary",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Polearms/TnGuandaoPolearm/TnGuandaoPolearmWeapon",
+    "name": "Guandao",
+    "category": "Melee",
+    "masteryReq": 4
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Polearms/PrimeGuandao/PrimeGuandaoWeapon",
+    "name": "Guandao Prime",
+    "category": "Melee",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Warfan/WarfanWeapon",
+    "name": "Gunsen",
+    "category": "Melee",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Warfan/PrimeGunsen/PrimeGunsenWeapon",
+    "name": "Gunsen Prime",
+    "category": "Melee",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Gyre/Gyre",
+    "name": "Gyre",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Gyre/GyrePrime",
+    "name": "Gyre Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Melee/GrnBoomerang/GrnBoomerang",
+    "name": "Halikar",
+    "category": "Melee",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Melee/GrnBoomerang/HalikarWraithWeapon",
+    "name": "Halikar Wraith",
+    "category": "Melee",
+    "masteryReq": 13
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Scythe/TnChoirScythe/TnChoirScythe",
+    "name": "Harmony",
+    "category": "Melee",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/LongGuns/GrnHarpoonGun/GrnHarpoonGun",
+    "name": "Harpak",
+    "category": "Primary",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Priest/Priest",
+    "name": "Harrow",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Priest/HarrowPrime",
+    "name": "Harrow Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Scythe/StalkerScytheWeapon",
+    "name": "Hate",
+    "category": "Melee",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Dagger/Dagger",
+    "name": "Heat Dagger",
+    "category": "Melee",
+    "masteryReq": 3
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/HeatSword/HeatLongSword",
+    "name": "Heat Sword",
+    "category": "Melee",
+    "masteryReq": 3
+  },
+  {
+    "uniqueName": "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetParts/ZanukaPetPartHeadC",
+    "name": "Hec Hound",
+    "category": "Pets",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Shotgun/QuadShotgun",
+    "name": "Hek",
+    "category": "Primary",
+    "masteryReq": 4
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Cephalon/Melee/Hammer/CephHammerWeapon",
+    "name": "Heliocor",
+    "category": "Melee",
+    "masteryReq": 9
+  },
+  {
+    "uniqueName": "/Lotus/Types/Sentinels/SentinelPowersuits/MeleePetPowerSuit",
+    "name": "Helios",
+    "category": "Sentinels",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Types/Sentinels/SentinelPowersuits/PrimeHeliosPowerSuit",
+    "name": "Helios Prime",
+    "category": "Sentinels",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Types/Game/KubrowPet/ChargerKubrowPetPowerSuit",
+    "name": "Helminth Charger",
+    "category": "Pets",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/SwarmerWeapon",
+    "name": "Helstrum",
+    "category": "Primary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/LongGuns/InfWFAccompanyingPri/InfestedBurstRifle",
+    "name": "Hema",
+    "category": "Primary",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/HeavyScythe/DuviriScythe/DuviriHeavyScytheWeapon",
+    "name": "Hespar",
+    "category": "Melee",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/Gunbrella/ShrineMaidenGunbrellaWeapon",
+    "name": "Higasa",
+    "category": "Primary",
+    "masteryReq": 2
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/ThrowingWeapons/TennoStars",
+    "name": "Hikou",
+    "category": "Secondary",
+    "masteryReq": 2
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/ThrowingWeapons/PrimeThrowingStar/PrimeHikou",
+    "name": "Hikou Prime",
+    "category": "Secondary",
+    "masteryReq": 4
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/IronFrame/IronFrame",
+    "name": "Hildryn",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/IronFrame/IronFramePrime",
+    "name": "Hildryn Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/LongGuns/BurstRifle/GrnBurstRifle",
+    "name": "Hind",
+    "category": "Primary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/Melee/InfWFAccompanyingSparring/InfestedKogake",
+    "name": "Hirudo",
+    "category": "Melee",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Types/Game/KubrowPet/FurtiveKubrowPetPowerSuit",
+    "name": "Huras Kubrow",
+    "category": "Pets",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Pirate/Pirate",
+    "name": "Hydroid",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Pirate/HydroidPrime",
+    "name": "Hydroid Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/QuillDartgun/QuillDartGunWeapon",
+    "name": "Hystrix",
+    "category": "Secondary",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/PrimeHystrix/PrimeHystrixWeapon",
+    "name": "Hystrix Prime",
+    "category": "Secondary",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/ClanTech/Chemical/FlameThrower",
+    "name": "Ignis",
+    "category": "Primary",
+    "masteryReq": 5
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/ClanTech/Chemical/FlameThrowerWraith",
+    "name": "Ignis Wraith",
+    "category": "Primary",
+    "masteryReq": 9
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Archwing/Primary/FoldingMachineGun/ArchMachineGun",
+    "name": "Imperator",
+    "category": "Arch-Gun",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Archwing/Primary/FoldingMachineGun/ArchMachineGunVandal",
+    "name": "Imperator Vandal",
+    "category": "Arch-Gun",
+    "masteryReq": 5
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Sandman/Sandman",
+    "name": "Inaros",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Sandman/InarosPrime",
+    "name": "Inaros Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Zariman/Melee/Dagger/ZarimanDaggerWeapon",
+    "name": "Innodem",
+    "category": "Melee",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Archwing/StealthJetPack/StealthJetPack",
+    "name": "Itzal",
+    "category": "Archwing",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Ranger/Ranger",
+    "name": "Ivara",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Ranger/IvaraPrime",
+    "name": "Ivara Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Choir/Choir",
+    "name": "Jade",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Melee/GrineerJetPoweredPolearm/GrineerJetPolearm",
+    "name": "Jat Kittag",
+    "category": "Melee",
+    "masteryReq": 5
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Melee/GrnKusarigama/GrnKusarigamaWeapon",
+    "name": "Jat Kusar",
+    "category": "Melee",
+    "masteryReq": 11
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/LongGuns/GrnFlameSpear/GrnFlameSpear",
+    "name": "Javlok",
+    "category": "Primary",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/JawSword/JawLongSword",
+    "name": "Jaw Sword",
+    "category": "Melee",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/DualKamas/SingleKama",
+    "name": "Kama",
+    "category": "Melee",
+    "masteryReq": 1
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/LongGuns/GrineerM16Homage/GrineerM16Rifle",
+    "name": "Karak",
+    "category": "Primary",
+    "masteryReq": 1
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/LongGuns/GrineerM16Homage/KarakWraith",
+    "name": "Karak Wraith",
+    "category": "Primary",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/KrisDagger/KrisDagger",
+    "name": "Karyst",
+    "category": "Melee",
+    "masteryReq": 6
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/PrimeKaryst/PrimeKrisDagger",
+    "name": "Karyst Prime",
+    "category": "Melee",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Archwing/Melee/ArchScythe/ArchScythe",
+    "name": "Kaszas",
+    "category": "Arch-Melee",
+    "masteryReq": 4
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/Melee/InfTransformClaw/InfTransformClawsWeapon",
+    "name": "Keratinos",
+    "category": "Melee",
+    "masteryReq": 9
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Melee/GrineerHalberd/GrnHalberd",
+    "name": "Kesheg",
+    "category": "Melee",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Glaives/Boomerang/BoomerangWeapon",
+    "name": "Kestrel",
+    "category": "Melee",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Glaives/PrimeKestrel/PrimeKestrel",
+    "name": "Kestrel Prime",
+    "category": "Melee",
+    "masteryReq": 11
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Khora/Khora",
+    "name": "Khora",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Khora/KhoraPrime",
+    "name": "Khora Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/TnPriestPistolScope/TnPriestPistolWeapon",
+    "name": "Knell",
+    "category": "Secondary",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/PrimeKnell/PrimeKnellWeapon",
+    "name": "Knell Prime",
+    "category": "Secondary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Archwing/Melee/GrnArchHand/GrnArchHandWeapon",
+    "name": "Knux",
+    "category": "Arch-Melee",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/BrassKnuckles/BrassKnuckles",
+    "name": "Kogake",
+    "category": "Melee",
+    "masteryReq": 2
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/PrimeKogake/KogakePrimeKnuckles",
+    "name": "Kogake Prime",
+    "category": "Melee",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/LongGuns/GrnSpark/GrnSparkRifle",
+    "name": "Kohm",
+    "category": "Primary",
+    "masteryReq": 5
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Pistols/GrnKohmPistol/GrnKohmPistol",
+    "name": "Kohmak",
+    "category": "Secondary",
+    "masteryReq": 5
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/LongGuns/CrpSentAmlgSniper/CrpSentAmlgSniper",
+    "name": "Komorex",
+    "category": "Primary",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/TnYareliPistol/TnYareliPistolWeapon",
+    "name": "Kompressa",
+    "category": "Secondary",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/PrimeKompressa/PrimeKompressa",
+    "name": "Kompressa Prime",
+    "category": "Secondary",
+    "masteryReq": 13
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Melee/GrnSparring/GrnSpiderSparring/GrnSpiderSparring",
+    "name": "Korrudo",
+    "category": "Melee",
+    "masteryReq": 9
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Archon/Melee/Trident/ArchonTridentPlayerWep",
+    "name": "Korumm",
+    "category": "Melee",
+    "masteryReq": 13
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Koumei/Koumei",
+    "name": "Koumei",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/GrineerPistol/GrnHeavyPistol",
+    "name": "Kraken",
+    "category": "Secondary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/Melee/CrpVenusHatchet/CrpVenusHatchet",
+    "name": "Kreska",
+    "category": "Melee",
+    "masteryReq": 6
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Melee/GrnEgyptSwd/GrnEgyptSwdWeapon",
+    "name": "Krohkur",
+    "category": "Melee",
+    "masteryReq": 9
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Tonfa/TonfaContestWinner/TennoTonfa",
+    "name": "Kronen",
+    "category": "Melee",
+    "masteryReq": 3
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Tonfa/TonfaContestWinnerPrime/TonfaContestWinnerPrimeWeapon",
+    "name": "Kronen Prime",
+    "category": "Melee",
+    "masteryReq": 13
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Tip/TipSix",
+    "name": "Kronsh",
+    "category": "Melee",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/PaxDuviricus/PaxDuviricus",
+    "name": "Kullervo",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Pistols/GrnTorpedoPistol/GrnTorpedoPistol",
+    "name": "Kulstar",
+    "category": "Secondary",
+    "masteryReq": 5
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/ThrowingWeapons/Kunai",
+    "name": "Kunai",
+    "category": "Secondary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/HeavyWeapons/GrnHeavyGrenadeLauncher",
+    "name": "Kuva Ayanga",
+    "category": "Arch-Gun",
+    "masteryReq": 13
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/KuvaLich/Secondaries/Brakk/KuvaBrakk",
+    "name": "Kuva Brakk",
+    "category": "Secondary",
+    "masteryReq": 13
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Bows/GrnBow/GrnBowWeapon",
+    "name": "Kuva Bramma",
+    "category": "Primary",
+    "masteryReq": 15
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/LongGuns/GrnKuvaLichRifle/GrnKuvaLichRifleWeapon",
+    "name": "Kuva Chakkhurr",
+    "category": "Primary",
+    "masteryReq": 15
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/KuvaLich/LongGuns/Drakgoon/KuvaDrakgoon",
+    "name": "Kuva Drakgoon",
+    "category": "Primary",
+    "masteryReq": 13
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/KuvaLich/Melee/Ghoulsaw/KuvaGhoulSaw",
+    "name": "Kuva Ghoulsaw",
+    "category": "Melee",
+    "masteryReq": 13
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/KuvaLich/HeavyWeapons/Grattler/KuvaGrattler",
+    "name": "Kuva Grattler",
+    "category": "Arch-Gun",
+    "masteryReq": 15
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/KuvaLich/LongGuns/Hek/KuvaHekWeapon",
+    "name": "Kuva Hek",
+    "category": "Primary",
+    "masteryReq": 15
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/KuvaLich/LongGuns/Hind/KuvaHind",
+    "name": "Kuva Hind",
+    "category": "Primary",
+    "masteryReq": 15
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/KuvaLich/LongGuns/Karak/KuvaKarak",
+    "name": "Kuva Karak",
+    "category": "Primary",
+    "masteryReq": 13
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/KuvaLich/LongGuns/Kohm/KuvaKohm",
+    "name": "Kuva Kohm",
+    "category": "Primary",
+    "masteryReq": 13
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/KuvaLich/Secondaries/Kraken/KuvaKraken",
+    "name": "Kuva Kraken",
+    "category": "Secondary",
+    "masteryReq": 15
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/KuvaLich/Secondaries/Nukor/KuvaNukor",
+    "name": "Kuva Nukor",
+    "category": "Secondary",
+    "masteryReq": 13
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/KuvaLich/LongGuns/Ogris/KuvaOgris",
+    "name": "Kuva Ogris",
+    "category": "Primary",
+    "masteryReq": 15
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/KuvaLich/LongGuns/Quartakk/KuvaQuartakk",
+    "name": "Kuva Quartakk",
+    "category": "Primary",
+    "masteryReq": 13
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/KuvaLich/Secondaries/Seer/KuvaSeer",
+    "name": "Kuva Seer",
+    "category": "Secondary",
+    "masteryReq": 15
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Melee/GrnKuvaLichScythe/GrnKuvaLichScytheWeapon",
+    "name": "Kuva Shildeg",
+    "category": "Melee",
+    "masteryReq": 13
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/KuvaLich/LongGuns/Sobek/KuvaSobek",
+    "name": "Kuva Sobek",
+    "category": "Primary",
+    "masteryReq": 15
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/KuvaLich/LongGuns/Tonkor/KuvaTonkor",
+    "name": "Kuva Tonkor",
+    "category": "Primary",
+    "masteryReq": 13
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/KuvaLich/Secondaries/Stubba/KuvaStubba",
+    "name": "Kuva Twin Stubbas",
+    "category": "Secondary",
+    "masteryReq": 13
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/KuvaLich/LongGuns/Zarr/KuvaZarr",
+    "name": "Kuva Zarr",
+    "category": "Primary",
+    "masteryReq": 15
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/StalkerMios/StalkerMios",
+    "name": "Lacera",
+    "category": "Melee",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeaponIS",
+    "name": "Lacerten",
+    "category": "Primary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Zariman/Pistols/HeavyPistol/ZarimanHeavyPistol",
+    "name": "Laetum",
+    "category": "Secondary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetHeadLambeo",
+    "name": "Lambeo Moa",
+    "category": "Pets",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/ClanTech/Energy/Railgun",
+    "name": "Lanka",
+    "category": "Primary",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Archwing/Primary/TnShieldframeArchGun/TnShieldFrameArchGun",
+    "name": "Larkspur",
+    "category": "Arch-Gun",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Archwing/Primary/PrimeLarkspur/PrimeLarkspurWeapon",
+    "name": "Larkspur Prime",
+    "category": "Arch-Gun",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Types/Sentinels/SentinelWeapons/LaserRifle",
+    "name": "Laser Rifle",
+    "category": "Primary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistol/Pistol",
+    "name": "Lato",
+    "category": "Secondary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistol/LatoPrime",
+    "name": "Lato Prime",
+    "category": "Secondary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistol/LatoVandal",
+    "name": "Lato Vandal",
+    "category": "Secondary",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Rifle/SemiAutoRifle",
+    "name": "Latron",
+    "category": "Primary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Rifle/LatronPrime",
+    "name": "Latron Prime",
+    "category": "Primary",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/WraithLatron/WraithLatron",
+    "name": "Latron Wraith",
+    "category": "Primary",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Alchemist/Alchemist",
+    "name": "Lavos",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Alchemist/LavosPrime",
+    "name": "Lavos Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/Melee/Whip/CorpusWhipWeapon",
+    "name": "Lecta",
+    "category": "Melee",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/Bow/Longbow/CrpBow",
+    "name": "Lenz",
+    "category": "Primary",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/Melee/TipedoStaff/InfTipedoStaff",
+    "name": "Lesion",
+    "category": "Melee",
+    "masteryReq": 9
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistol/HeavyPistol",
+    "name": "Lex",
+    "category": "Secondary",
+    "masteryReq": 3
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/PrimeLex/PrimeLex",
+    "name": "Lex Prime",
+    "category": "Secondary",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Magician/Magician",
+    "name": "Limbo",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Magician/LimboPrime",
+    "name": "Limbo Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Loki/Loki",
+    "name": "Loki",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Loki/LokiPrime",
+    "name": "Loki Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Melee/GrineerMachetteAndCleaver/Machete",
+    "name": "Machete",
+    "category": "Melee",
+    "masteryReq": 1
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Melee/GrineerMachetteAndCleaver/WraithMacheteWeapon",
+    "name": "Machete Wraith",
+    "category": "Melee",
+    "masteryReq": 11
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Mag/Mag",
+    "name": "Mag",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Mag/MagPrime",
+    "name": "Mag Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Maces/PaladinMace/PaladinMaceWeapon",
+    "name": "Magistar",
+    "category": "Melee",
+    "masteryReq": 1
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/Magnum/Magnum",
+    "name": "Magnus",
+    "category": "Secondary",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/PrimeMagnus/PrimeMagnusWeapon",
+    "name": "Magnus Prime",
+    "category": "Secondary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Archwing/Primary/TnConcreteArchgun/TnConcreteArchgunWeapon",
+    "name": "Mandonel",
+    "category": "Arch-Gun",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/VoidTrader/VTDetron",
+    "name": "Mara Detron",
+    "category": "Secondary",
+    "masteryReq": 9
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Pistols/GrineerLeverActionPistol/GLAPistol",
+    "name": "Marelok",
+    "category": "Secondary",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/TnChiselKanabo/TnChiselKanabo",
+    "name": "Masseter",
+    "category": "Melee",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/PrimeMasseter/PrimeMasseter",
+    "name": "Masseter Prime",
+    "category": "Melee",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Archwing/Primary/ThanoTechArchLongGun/ThanoTechLongGun",
+    "name": "Mausolon",
+    "category": "Arch-Gun",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Types/Friendly/Pets/CreaturePets/MedjayPredatorKubrowPetPowerSuit",
+    "name": "Medjay Predasite",
+    "category": "Pets",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Cowgirl/Cowgirl",
+    "name": "Mesa",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Cowgirl/MesaPrime",
+    "name": "Mesa Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Tip/TipThree",
+    "name": "Mewan",
+    "category": "Melee",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/Melee/Swords/Mios/Mios",
+    "name": "Mios",
+    "category": "Melee",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Harlequin/Harlequin",
+    "name": "Mirage",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Harlequin/MiragePrime",
+    "name": "Mirage Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/Melee/Swords/Mire/MireSword",
+    "name": "Mire",
+    "category": "Melee",
+    "masteryReq": 5
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/LongGuns/GrineerSawbladeGun/SawBladeGun",
+    "name": "Miter",
+    "category": "Primary",
+    "masteryReq": 6
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/MK1Series/MK1Bo",
+    "name": "Mk1-Bo",
+    "category": "Melee",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Rifle/StartingRifle",
+    "name": "Mk1-Braton",
+    "category": "Primary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/MK1Series/MK1Furax",
+    "name": "Mk1-Furax",
+    "category": "Melee",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/MK1Series/MK1Furis",
+    "name": "Mk1-Furis",
+    "category": "Secondary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/MK1Series/MK1Kunai",
+    "name": "Mk1-Kunai",
+    "category": "Secondary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/MK1Series/MK1Paris",
+    "name": "Mk1-Paris",
+    "category": "Primary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/MK1Series/MK1Strun",
+    "name": "Mk1-Strun",
+    "category": "Primary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Archwing/Primary/ThanoTechGrenadeLaunch/ThanoTechGrenadeLauncher",
+    "name": "Morgha",
+    "category": "Arch-Gun",
+    "masteryReq": 15
+  },
+  {
+    "uniqueName": "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/HextraWeapon",
+    "name": "Multron",
+    "category": "Primary",
+    "masteryReq": 3
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/Bow/InfCernosBow/InfCernos",
+    "name": "Mutalist Cernos",
+    "category": "Primary",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/LongGuns/InfCrpShockSwarm/InfCrpShockSwarmRifle",
+    "name": "Mutalist Quanta",
+    "category": "Primary",
+    "masteryReq": 2
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/GarudaCrossbow/GarudaCrossbow",
+    "name": "Nagantaka",
+    "category": "Primary",
+    "masteryReq": 9
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/PrimeNagantaka/PrimeNagantakaWeapon",
+    "name": "Nagantaka Prime",
+    "category": "Primary",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/CutlassAndPoignard/CutlassPoignardSwords",
+    "name": "Nami Skyla",
+    "category": "Melee",
+    "masteryReq": 2
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/PrimeNamiSkyla/PrimeNamiSkyla",
+    "name": "Nami Skyla Prime",
+    "category": "Melee",
+    "masteryReq": 11
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/CutlassAndPoignard/TennoCutlass",
+    "name": "Nami Solo",
+    "category": "Melee",
+    "masteryReq": 6
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Bows/Omicrus/OmicrusPlayerWep",
+    "name": "Nataruk",
+    "category": "Primary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Types/Sentinels/SentinelPowersuits/EmpyreanSentinelPowerSuit",
+    "name": "Nautilus",
+    "category": "Sentinels",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Types/Sentinels/SentinelPowersuits/NautilusPrimeSentinelPowerSuit",
+    "name": "Nautilus Prime",
+    "category": "Sentinels",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Types/Vehicles/Hoverboard/HoverboardParts/PartComponents/HoverboardCorpusB/HoverboardCorpusBDeck",
+    "name": "Needlenose",
+    "category": "Misc",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Necro/Necro",
+    "name": "Nekros",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Necro/NekrosPrime",
+    "name": "Nekros Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Archon/Melee/DualDaggers/ArchonDualDaggersPlayerWep",
+    "name": "Nepheri",
+    "category": "Melee",
+    "masteryReq": 13
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Nezha/Nezha",
+    "name": "Nezha",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Nezha/NezhaPrime",
+    "name": "Nezha Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Infestation/Infestation",
+    "name": "Nidus",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Infestation/InfestationPrime",
+    "name": "Nidus Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/KatanaAndWakizashi/Katana",
+    "name": "Nikana",
+    "category": "Melee",
+    "masteryReq": 4
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/PrimeKatana/PrimeNikana",
+    "name": "Nikana Prime",
+    "category": "Melee",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Nunchaku/Nunchaku/Nunchaku",
+    "name": "Ninkondi",
+    "category": "Melee",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/PrimeNinkondi/PrimeNikondi",
+    "name": "Ninkondi Prime",
+    "category": "Melee",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Nokko/Nokko",
+    "name": "Nokko",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/AntiMatter/Anti",
+    "name": "Nova",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/AntiMatter/NovaPrime",
+    "name": "Nova Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Pistols/GrineerMicrowavegun/GrnMicrowavePistol",
+    "name": "Nukor",
+    "category": "Secondary",
+    "masteryReq": 4
+  },
+  {
+    "uniqueName": "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetHeadMelee",
+    "name": "Nychus Moa",
+    "category": "Pets",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Jade/Jade",
+    "name": "Nyx",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Jade/NyxPrime",
+    "name": "Nyx Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Paladin/Paladin",
+    "name": "Oberon",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Paladin/PaladinPrime",
+    "name": "Oberon Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/Melee/KickAndPunch/KickPunchWeapon",
+    "name": "Obex",
+    "category": "Melee",
+    "masteryReq": 4
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Bard/Bard",
+    "name": "Octavia",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Bard/OctaviaPrime",
+    "name": "Octavia Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/Pistols/CrpSentExperimentPistol/CrpSentExperimentPistol",
+    "name": "Ocucor",
+    "category": "Secondary",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Archwing/StandardJetPack/StandardJetPack",
+    "name": "Odonata",
+    "category": "Archwing",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Archwing/PrimeJetPack/PrimeJetPack",
+    "name": "Odonata Prime",
+    "category": "Archwing",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/ClanTech/Chemical/RocketLauncher",
+    "name": "Ogris",
+    "category": "Primary",
+    "masteryReq": 9
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/Melee/CrpTonfa/CrpTonfa",
+    "name": "Ohma",
+    "category": "Melee",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/TennoSai/TennoSais",
+    "name": "Okina",
+    "category": "Melee",
+    "masteryReq": 5
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/PrimeOkina/PrimeOkina",
+    "name": "Okina Prime",
+    "category": "Melee",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetHeadOloro",
+    "name": "Oloro Moa",
+    "category": "Pets",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Archwing/Melee/Archaxe/ArchAxeWeapon",
+    "name": "Onorix",
+    "category": "Arch-Melee",
+    "masteryReq": 1
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Thanotech/EntratiWristGun/EntratiWristGunWeapon",
+    "name": "Onos",
+    "category": "Secondary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Tip/TipTwo",
+    "name": "Ooltha",
+    "category": "Melee",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/LongGuns/CrpBFG/CrpBFG",
+    "name": "Opticor",
+    "category": "Primary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/LongGuns/CrpBFG/Vandal/VandalCrpBFG",
+    "name": "Opticor Vandal",
+    "category": "Primary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Oraxia/Oraxia",
+    "name": "Oraxia",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Polearms/PolearmWeapon",
+    "name": "Orthos",
+    "category": "Melee",
+    "masteryReq": 2
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Polearms/PrimePolearmWeapon",
+    "name": "Orthos Prime",
+    "category": "Melee",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Glaives/TeshinGlaive/TnTeshinGlaiveWep",
+    "name": "Orvius",
+    "category": "Melee",
+    "masteryReq": 5
+  },
+  {
+    "uniqueName": "/Lotus/Types/Sentinels/SentinelPowersuits/RadarPowerSuit",
+    "name": "Oxylus",
+    "category": "Sentinels",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/TnBardPistol/TnBardPistolGun",
+    "name": "Pandero",
+    "category": "Secondary",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/PrimePandero/PanderoPrimeWeapon",
+    "name": "Pandero Prime",
+    "category": "Secondary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/PrimePangolinSword/PrimePangolinSword",
+    "name": "Pangolin Prime",
+    "category": "Melee",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/PangolinSword/PangolinLongSword",
+    "name": "Pangolin Sword",
+    "category": "Melee",
+    "masteryReq": 3
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/Miter/TnoMiter",
+    "name": "Panthera",
+    "category": "Primary",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/PrimePanthera/PrimePanthera",
+    "name": "Panthera Prime",
+    "category": "Primary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Types/Friendly/Pets/CreaturePets/ArmoredInfestedCatbrowPetPowerSuit",
+    "name": "Panzer Vulpaphyla",
+    "category": "Pets",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetHeadPara",
+    "name": "Para Moa",
+    "category": "Pets",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Orokin/BallasSword/BallasSwordWeapon",
+    "name": "Paracesis",
+    "category": "Melee",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/LongGuns/QuantaFullyInfested/InfQuantaRifle",
+    "name": "Paracyst",
+    "category": "Primary",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Bows/HuntingBow",
+    "name": "Paris",
+    "category": "Primary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Bows/PrimeHuntingBow",
+    "name": "Paris Prime",
+    "category": "Primary",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/Melee/InfBoomerang/InfBoomerangWeapon",
+    "name": "Pathocyst",
+    "category": "Melee",
+    "masteryReq": 9
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/TnRailjackGreatKatana/TnRailJackGreatKatanaWeapon",
+    "name": "Pennant",
+    "category": "Melee",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/LongGuns/GrenadeLauncher/GrenadeLauncher",
+    "name": "Penta",
+    "category": "Primary",
+    "masteryReq": 6
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/TnQuadSniper/TnQuadSniper",
+    "name": "Perigale",
+    "category": "Primary",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Archwing/Primary/ArchLongRifle/ArchLongRifle",
+    "name": "Phaedra",
+    "category": "Arch-Gun",
+    "masteryReq": 3
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/LongGuns/Tentacluster/InfestedShotgun",
+    "name": "Phage",
+    "category": "Primary",
+    "masteryReq": 11
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/RevenantShotgun/RevenantShotgun",
+    "name": "Phantasma",
+    "category": "Primary",
+    "masteryReq": 9
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/PrimePhantasma/PhantasmaPrimeShotgun",
+    "name": "Phantasma Prime",
+    "category": "Primary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Types/Friendly/Pets/CreaturePets/PharaohPredatorKubrowPetPowerSuit",
+    "name": "Pharaoh Predasite",
+    "category": "Pets",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Zariman/LongGuns/SemiAutoRifle/ZarimanSemiAutoRifle",
+    "name": "Phenmor",
+    "category": "Primary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Ostron/Melee/ModularMeleeInfested/Tips/InfestedTipTwo",
+    "name": "Plague Keewar",
+    "category": "Melee",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Ostron/Melee/ModularMeleeInfested/Tips/InfestedTipOne",
+    "name": "Plague Kripath",
+    "category": "Melee",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/PlasmaSword/PlasmaLongSword",
+    "name": "Plasma Sword",
+    "category": "Melee",
+    "masteryReq": 4
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/Pistols/CrpSonificBlastor/CrpBlastorWeapon",
+    "name": "Plinx",
+    "category": "Secondary",
+    "masteryReq": 6
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/Pistols/InfProximityStars/InfProximityStars",
+    "name": "Pox",
+    "category": "Secondary",
+    "masteryReq": 9
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Zariman/Melee/Tonfas/ZarimanTonfaWeapon",
+    "name": "Praedos",
+    "category": "Melee",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Types/Sentinels/SentinelWeapons/PrimeLaserRifle",
+    "name": "Prime Laser Rifle",
+    "category": "Primary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/Pistols/CrpHandRL/PrismaAngstrum",
+    "name": "Prisma Angstrum",
+    "category": "Secondary",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Types/Sentinels/SentinelWeapons/PrismaBurstLaserPistol",
+    "name": "Prisma Burst Laser",
+    "category": "Primary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Melee/GrineerMachetteAndCleaver/PrismaDualCleavers",
+    "name": "Prisma Dual Cleavers",
+    "category": "Melee",
+    "masteryReq": 9
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Archwing/Primary/ArchwingHeavyPistols/Prisma/PrismaArchHeavyPistols",
+    "name": "Prisma Dual Decurions",
+    "category": "Arch-Gun",
+    "masteryReq": 1
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/LongGuns/VoidTraderGorgon/VTGorgon",
+    "name": "Prisma Gorgon",
+    "category": "Primary",
+    "masteryReq": 11
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/VoidTrader/PrismaGrakata",
+    "name": "Prisma Grakata",
+    "category": "Primary",
+    "masteryReq": 11
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/LongGuns/GrineerLeverActionRifle/PrismaGrinlokWeapon",
+    "name": "Prisma Grinlok",
+    "category": "Primary",
+    "masteryReq": 11
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/Bow/Longbow/PrismaLenz/PrismaLenzWeapon",
+    "name": "Prisma Lenz",
+    "category": "Primary",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Melee/GrineerMachetteAndCleaver/PrismaMachete",
+    "name": "Prisma Machete",
+    "category": "Melee",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/Melee/KickAndPunch/PrismaObex",
+    "name": "Prisma Obex",
+    "category": "Melee",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/Melee/CrpTonfa/CrpPrismaTonfa",
+    "name": "Prisma Ohma",
+    "category": "Melee",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Types/Sentinels/SentinelPowersuits/PrismaShadePowerSuit",
+    "name": "Prisma Shade",
+    "category": "Sentinels",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/VoidTrader/PrismaSkana",
+    "name": "Prisma Skana",
+    "category": "Melee",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/LongGuns/CorpusUMP/PrismaCorpusUMP",
+    "name": "Prisma Tetra",
+    "category": "Primary",
+    "masteryReq": 4
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Pistols/GrineerBulbousSMG/Prisma/PrismaTwinGremlinsWeapon",
+    "name": "Prisma Twin Gremlins",
+    "category": "Secondary",
+    "masteryReq": 11
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Archwing/Melee/VoidTraderArchsword/VTArchSwordWeapon",
+    "name": "Prisma Veritux",
+    "category": "Arch-Melee",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Bows/PrimeDerelictCernos/DerelictCernos",
+    "name": "Proboscis Cernos",
+    "category": "Primary",
+    "masteryReq": 15
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Odalisk/Odalisk",
+    "name": "Protea",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Odalisk/ProteaPrime",
+    "name": "Protea Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/ClanTech/Energy/ElectroProd",
+    "name": "Prova",
+    "category": "Melee",
+    "masteryReq": 3
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/ClanTech/Energy/VandalElectroProd",
+    "name": "Prova Vandal",
+    "category": "Melee",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/Melee/Nunchaku/InfNunchuck/InfNunchuck",
+    "name": "Pulmonars",
+    "category": "Melee",
+    "masteryReq": 11
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/Melee/Staff/InfStaff/InfStaff",
+    "name": "Pupacyst",
+    "category": "Melee",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Lasria/LasGrenadeLauncher/LasrianNoxPlayerWeapon",
+    "name": "Purgator 1",
+    "category": "Primary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/SawnOffShotgun/TennoHandShotgun",
+    "name": "Pyrana",
+    "category": "Secondary",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/PrimePyrana/PrimePyranaPistol",
+    "name": "Pyrana Prime",
+    "category": "Secondary",
+    "masteryReq": 13
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/ConcreteFrame/ConcreteFrame",
+    "name": "Qorvex",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/LongGuns/CrpShockRifle/CrpShockRifle",
+    "name": "Quanta",
+    "category": "Primary",
+    "masteryReq": 4
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/LongGuns/CrpShockRifle/QuantaVandal",
+    "name": "Quanta Vandal",
+    "category": "Primary",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/LongGuns/GrnFourBarrelRifle/GrnFourBarrelRifleWeapon",
+    "name": "Quartakk",
+    "category": "Primary",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Warfan/TnBrokenFrameWarfan/TnBrokenFrameWarfanWeapon",
+    "name": "Quassus",
+    "category": "Melee",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Warfan/PrimeQuassus/PrimeQuassusWeapon",
+    "name": "Quassus Prime",
+    "category": "Melee",
+    "masteryReq": 13
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Pistols/GrnAmphisPistol/GrnAmphisPistol",
+    "name": "Quatz",
+    "category": "Secondary",
+    "masteryReq": 9
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/TnRailjackRifle/RailjackRifleGun",
+    "name": "Quellor",
+    "category": "Primary",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Ostron/Melee/ModularMelee02/Tip/TipTen",
+    "name": "Rabvee",
+    "category": "Melee",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Types/Game/KubrowPet/GuardKubrowPetPowerSuit",
+    "name": "Raksa Kubrow",
+    "category": "Pets",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Syndicates/RedVeil/Pistols/RVBallistica",
+    "name": "Rakta Ballistica",
+    "category": "Secondary",
+    "masteryReq": 6
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Syndicates/RedVeil/Bows/RVCernos",
+    "name": "Rakta Cernos",
+    "category": "Primary",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Syndicates/RedVeil/Melee/RVDarkDagger",
+    "name": "Rakta Dark Dagger",
+    "category": "Melee",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Archwing/Melee/ArchHammer/ArchHammer",
+    "name": "Rathbone",
+    "category": "Arch-Melee",
+    "masteryReq": 6
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/SolarisUnited/Secondary/SUModularSecondarySet1/Barrel/SUModularSecondaryBarrelCPart",
+    "name": "Rattleguts",
+    "category": "Misc",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/PaxDuviricusShotgun/PaxDuviricusShotgun",
+    "name": "Rauta",
+    "category": "Primary",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Scythe/ReaperWeapon",
+    "name": "Reaper Prime",
+    "category": "Melee",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/TnBeltFedRifle/TnBeltFedRifleWeapon",
+    "name": "Reconifex",
+    "category": "Primary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Gunblade/TnoGunblade",
+    "name": "Redeemer",
+    "category": "Melee",
+    "masteryReq": 4
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Gunblade/RedeemerPrime/RedeemerPrimeWep",
+    "name": "Redeemer Prime",
+    "category": "Melee",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Revenant/Revenant",
+    "name": "Revenant",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Revenant/RevenantPrime",
+    "name": "Revenant Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Rhino/Rhino",
+    "name": "Rhino",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Rhino/RhinoPrime",
+    "name": "Rhino Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/1999EntHybridPistolWeapon/1999EntHybridPistolWeapon",
+    "name": "Riot-848",
+    "category": "Secondary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Melee/GrineerClaws/GrnClaws",
+    "name": "Ripkas",
+    "category": "Melee",
+    "masteryReq": 5
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/FiveShotSniper/FiveShotSniper",
+    "name": "Rubico",
+    "category": "Primary",
+    "masteryReq": 6
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/RubicoPrime/RubicoPrimeWeapon",
+    "name": "Rubico Prime",
+    "category": "Primary",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Operator/Melee/DrifterTazer/DrifterTazerPlayerWep",
+    "name": "Rumblejack",
+    "category": "Melee",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Types/Vehicles/Hoverboard/HoverboardParts/PartComponents/HoverboardCorpusC/HoverboardCorpusCDeck",
+    "name": "Runway",
+    "category": "Misc",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Thanotech/EntFistIncarnon/EntFistIncarnon",
+    "name": "Ruvox",
+    "category": "Melee",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Pistols/GrnOrokinPistol/GrnOrokinPistol",
+    "name": "Sagek Prime",
+    "category": "Secondary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Types/Game/KubrowPet/AdventurerKubrowPetPowerSuit",
+    "name": "Sahasa Kubrow",
+    "category": "Pets",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Hammer/DaxDuviriHammer/DaxDuviriHammerWeapon",
+    "name": "Sampotes",
+    "category": "Melee",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Syndicates/NewLoka/Pistols/NLCastanas",
+    "name": "Sancti Castanas",
+    "category": "Secondary",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Syndicates/NewLoka/Melee/NLMagistar",
+    "name": "Sancti Magistar",
+    "category": "Melee",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Syndicates/NewLoka/LongGuns/NLTigris",
+    "name": "Sancti Tigris",
+    "category": "Primary",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Axe/WolfFrameAxeWeapon",
+    "name": "Sarofang",
+    "category": "Melee",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Gunblade/GunbladeAutomatic/TnoGunbladeAutomatic",
+    "name": "Sarpa",
+    "category": "Melee",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Saryn/Saryn",
+    "name": "Saryn",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Saryn/SarynPrime",
+    "name": "Saryn Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Axe/AxeWeapon",
+    "name": "Scindo",
+    "category": "Melee",
+    "masteryReq": 2
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Axe/PrimeScindo/PrimeScindoWeapon",
+    "name": "Scindo Prime",
+    "category": "Melee",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/Melee/Whip/InfestedWhip/InfestedWhipWeapon",
+    "name": "Scoliac",
+    "category": "Melee",
+    "masteryReq": 6
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/TnPriestSpear/TnPriestSpearGun",
+    "name": "Scourge",
+    "category": "Primary",
+    "masteryReq": 6
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/PrimeScourge/PrimeScourgeWeapon",
+    "name": "Scourge Prime",
+    "category": "Primary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/ThrowingWeapons/TnOraxiaFlechette/TnOraxiaFlechette",
+    "name": "Scyotid",
+    "category": "Secondary",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Syndicates/PerrinSequence/Pistols/PSDualCestra",
+    "name": "Secura Dual Cestra",
+    "category": "Secondary",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Syndicates/PerrinSequence/Melee/PSLecta",
+    "name": "Secura Lecta",
+    "category": "Melee",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Syndicates/PerrinSequence/LongGuns/PSPenta",
+    "name": "Secura Penta",
+    "category": "Primary",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/GrineerPistol/GrnScopedPistolPlayer",
+    "name": "Seer",
+    "category": "Secondary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Ostron/Melee/ModularMelee02/Tip/TipNine",
+    "name": "Sepfahn",
+    "category": "Melee",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Thanotech/ThanoPistol/ThanotechPistol",
+    "name": "Sepulcrum",
+    "category": "Secondary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/Melee/Polearm/CorpusPolearm01/CorpusPolearmWeapon",
+    "name": "Serro",
+    "category": "Melee",
+    "masteryReq": 6
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Wraith/Wraith",
+    "name": "Sevagoth",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Wraith/SevagothPrime",
+    "name": "Sevagoth Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Types/Sentinels/SentinelPowersuits/ShadePowerSuit",
+    "name": "Shade",
+    "category": "Sentinels",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Types/Sentinels/SentinelPowersuits/PrimeShadePowerSuit",
+    "name": "Shade Prime",
+    "category": "Sentinels",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Nunchaku/TnoNunchaku/TnoNunchaku",
+    "name": "Shaku",
+    "category": "Melee",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Sentients/Shedu/SheduHeavyWeapon",
+    "name": "Shedu",
+    "category": "Primary",
+    "masteryReq": 13
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Melee/GrineerCombatKnife/GrineerCombatKnife",
+    "name": "Sheev",
+    "category": "Melee",
+    "masteryReq": 5
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Hammer/IceHammer/IceHammer",
+    "name": "Sibear",
+    "category": "Melee",
+    "masteryReq": 6
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistol/BurstPistol",
+    "name": "Sicarus",
+    "category": "Secondary",
+    "masteryReq": 3
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/PrimeSicarus/PrimeSicarusPistol",
+    "name": "Sicarus Prime",
+    "category": "Secondary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/SwordsAndBoards/SundialSwordBoard/SundialBoardSword",
+    "name": "Sigma & Octantis",
+    "category": "Melee",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/SwordsAndBoards/MeleeContestWinnerOne/TennoSwordShield",
+    "name": "Silva & Aegis",
+    "category": "Melee",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/PrimeSilvaAegis/PrimeSilvaAegis",
+    "name": "Silva & Aegis Prime",
+    "category": "Melee",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Cephalon/Primary/CephPrimary/CephPrimary",
+    "name": "Simulor",
+    "category": "Primary",
+    "masteryReq": 5
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Operator/Pistols/DrifterPistol/DrifterPistolPlayerWeapon",
+    "name": "Sirocco",
+    "category": "Primary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/LongSword/LongSword",
+    "name": "Skana",
+    "category": "Melee",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/LongSword/SkanaPrime",
+    "name": "Skana Prime",
+    "category": "Melee",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/UmbraKatana/UmbraKatana",
+    "name": "Skiajati",
+    "category": "Melee",
+    "masteryReq": 11
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Melee/GrnSharbola/GrnSharbolaWeapon",
+    "name": "Slaytra",
+    "category": "Melee",
+    "masteryReq": 13
+  },
+  {
+    "uniqueName": "/Lotus/Types/Friendly/Pets/CreaturePets/VulpineInfestedCatbrowPetPowerSuit",
+    "name": "Sly Vulpaphyla",
+    "category": "Pets",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Types/Game/CatbrowPet/CheshireCatbrowPetPowerSuit",
+    "name": "Smeeta Kavat",
+    "category": "Pets",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Rifle/SniperRifle",
+    "name": "Snipetron",
+    "category": "Primary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Rifle/VandalSniperRifle",
+    "name": "Snipetron Vandal",
+    "category": "Primary",
+    "masteryReq": 5
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Shotgun/DoubleBarrelShotgun",
+    "name": "Sobek",
+    "category": "Primary",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Rifle/TennoAR",
+    "name": "Soma",
+    "category": "Primary",
+    "masteryReq": 6
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/PrimeSoma/PrimeSomaRifle",
+    "name": "Soma Prime",
+    "category": "Primary",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/Pistols/CrpAirPistol/CrpAirPistolArray",
+    "name": "Sonicor",
+    "category": "Secondary",
+    "masteryReq": 2
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/ClanTech/Energy/CrpLaserPistol",
+    "name": "Spectra",
+    "category": "Secondary",
+    "masteryReq": 4
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/Pistols/CorpusModularPistol/Vandal/CrpLaserPistolVandal",
+    "name": "Spectra Vandal",
+    "category": "Secondary",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Whips/SpiderWhip/SpiderWhipWeapon",
+    "name": "Spinnerex",
+    "category": "Melee",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/ThrowingWeapons/LiDagger/LiDagger",
+    "name": "Spira",
+    "category": "Secondary",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/ThrowingWeapons/PrimeLiDagger/PrimeLiDagger",
+    "name": "Spira Prime",
+    "category": "Secondary",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/LongGuns/InfSniperRifle/InfSniperRifle",
+    "name": "Sporothrix",
+    "category": "Primary",
+    "masteryReq": 13
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/LongGuns/CrpRubanRifle/CrpRubanRifle",
+    "name": "Stahlta",
+    "category": "Primary",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/Pistols/CrpElectroMag/CrpElectroMag",
+    "name": "Staticor",
+    "category": "Secondary",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/TnoLotusPodShotgun/TnoLotusPodShotgun",
+    "name": "Steflos",
+    "category": "Primary",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Types/Sentinels/SentinelWeapons/SentBioWeapon",
+    "name": "Stinger",
+    "category": "Primary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/TennoTommyGun/TennoTommyGunRifle",
+    "name": "Stradavar",
+    "category": "Primary",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/PrimeStradavar/PrimeStradavarGun",
+    "name": "Stradavar Prime",
+    "category": "Primary",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/Melee/Gunblade/CrpGunBlade/CrpGunbladeWeapon",
+    "name": "Stropha",
+    "category": "Melee",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Shotgun/Shotgun",
+    "name": "Strun",
+    "category": "Primary",
+    "masteryReq": 1
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/PrimeStrun/PrimeStrunWeapon",
+    "name": "Strun Prime",
+    "category": "Primary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Shotgun/ShotgunVandal",
+    "name": "Strun Wraith",
+    "category": "Primary",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Pistols/GrnUzi/GrnUziWeapon",
+    "name": "Stubba",
+    "category": "Secondary",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Pistols/GrineerCrossbow/GrineerGooGun",
+    "name": "Stug",
+    "category": "Secondary",
+    "masteryReq": 2
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Hoplite/Hoplite",
+    "name": "Styanax",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Types/Friendly/PlayerControllable/Weapons/DuviriDualSwordsWeapon",
+    "name": "Sun & Moon",
+    "category": "Melee",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Types/Game/KubrowPet/HunterKubrowPetPowerSuit",
+    "name": "Sunika Kubrow",
+    "category": "Pets",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/ClanTech/Energy/CrpHeavyRifle",
+    "name": "Supra",
+    "category": "Primary",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/LongGuns/Machinegun/SupraVandal",
+    "name": "Supra Vandal",
+    "category": "Primary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Types/Sentinels/SentinelWeapons/SentShotgun",
+    "name": "Sweeper",
+    "category": "Primary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Types/Sentinels/SentinelWeapons/PrimeSentShotgun",
+    "name": "Sweeper Prime",
+    "category": "Primary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/DaxDuviriKatana/DaxDuviriKatanaWeapon",
+    "name": "Syam",
+    "category": "Melee",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/TnoLeverAction/TnoLeverActionRifle",
+    "name": "Sybaris",
+    "category": "Primary",
+    "masteryReq": 5
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/PrimeSybaris/PrimeSybarisRifle",
+    "name": "Sybaris Prime",
+    "category": "Primary",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Melee/GrnTrident/GrnTridentWeapon",
+    "name": "Sydon",
+    "category": "Melee",
+    "masteryReq": 5
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/LongGuns/InfestedRifle",
+    "name": "Synapse",
+    "category": "Primary",
+    "masteryReq": 11
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Syndicates/CephalonSuda/Pistols/CSSynoidGammacor",
+    "name": "Synoid Gammacor",
+    "category": "Secondary",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Syndicates/CephalonSuda/Melee/CSHeliocor",
+    "name": "Synoid Heliocor",
+    "category": "Melee",
+    "masteryReq": 11
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Syndicates/CephalonSuda/LongGuns/CSSimulor",
+    "name": "Synoid Simulor",
+    "category": "Primary",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/SwordsAndBoards/MortiforShieldAndSword/MortiforShieldAndSword",
+    "name": "Tak & Lug",
+    "category": "Melee",
+    "masteryReq": 9
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/ThrowingWeapons/U18ThrowingKnives/U18throwingknives",
+    "name": "Talons",
+    "category": "Secondary",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/TnTwoHandedKatana/TnTwoHandedKatana",
+    "name": "Tatsu",
+    "category": "Melee",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/PrimeTatsu/PrimeTatsuWeapon",
+    "name": "Tatsu Prime",
+    "category": "Melee",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Types/Sentinels/SentinelPowersuits/TnSentinelCrossPowerSuit",
+    "name": "Taxon",
+    "category": "Sentinels",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/TazronWeapon",
+    "name": "Tazicor",
+    "category": "Primary",
+    "masteryReq": 3
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Gauntlet/BrawlerKnuckles/BrawlerKnuckles",
+    "name": "Tekko",
+    "category": "Melee",
+    "masteryReq": 6
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/PrimeTekko/PrimeTekko",
+    "name": "Tekko Prime",
+    "category": "Melee",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Syndicates/ArbitersOfHexis/Pistols/AHAkbolto",
+    "name": "Telos Akbolto",
+    "category": "Secondary",
+    "masteryReq": 11
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Syndicates/ArbitersOfHexis/Melee/AHBoltace",
+    "name": "Telos Boltace",
+    "category": "Melee",
+    "masteryReq": 11
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Syndicates/ArbitersOfHexis/LongGuns/AHBoltor",
+    "name": "Telos Boltor",
+    "category": "Primary",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Temple/Temple",
+    "name": "Temple",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/Melee/ShieldAndSword/CrpHammerShield/CrpHammerShield",
+    "name": "Tenet Agendus",
+    "category": "Melee",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/BoardExec/Primary/CrpBEArcaPlasmor/CrpBEArcaPlasmor",
+    "name": "Tenet Arca Plasmor",
+    "category": "Primary",
+    "masteryReq": 16
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/BoardExec/Secondary/CrpBECycron/CrpBECycron",
+    "name": "Tenet Cycron",
+    "category": "Secondary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/BoardExec/Secondary/CrpBEDetron/CrpBEDetron",
+    "name": "Tenet Detron",
+    "category": "Secondary",
+    "masteryReq": 16
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/Pistols/CrpBriefcaseAkimbo/CrpBriefcaseAkimboPistol",
+    "name": "Tenet Diplos",
+    "category": "Secondary",
+    "masteryReq": 16
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/LongGuns/CrpBriefcaseLauncher/CrpBriefcaseLauncher",
+    "name": "Tenet Envoy",
+    "category": "Primary",
+    "masteryReq": 16
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/CrpBigSlash/CrpBigSlash",
+    "name": "Tenet Exec",
+    "category": "Melee",
+    "masteryReq": 16
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/BoardExec/Primary/CrpBEFerrox/CrpBEFerrox",
+    "name": "Tenet Ferrox",
+    "category": "Primary",
+    "masteryReq": 16
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/BoardExec/Primary/CrpBEFluxRifle/CrpBEFluxRifle",
+    "name": "Tenet Flux Rifle",
+    "category": "Primary",
+    "masteryReq": 16
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/BoardExec/Primary/CrpBEGlaxion/CrpBEGlaxion",
+    "name": "Tenet Glaxion",
+    "category": "Primary",
+    "masteryReq": 16
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/Melee/CrpBriefcaseScythe/CrpBriefcaseScythe",
+    "name": "Tenet Grigori",
+    "category": "Melee",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/Melee/CrpBriefcase2HKatana/CrpBriefcase2HKatana",
+    "name": "Tenet Livia",
+    "category": "Melee",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/BoardExec/Secondary/CrpBEPlinx/CrpBEPlinxWeapon",
+    "name": "Tenet Plinx",
+    "category": "Secondary",
+    "masteryReq": 6
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/BoardExec/Primary/CrpBEQuanta/CrpBEQuanta",
+    "name": "Tenet Quanta",
+    "category": "Primary",
+    "masteryReq": 16
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/Pistols/CrpIgniterPistol/CrpIgniterPistol",
+    "name": "Tenet Spirex",
+    "category": "Secondary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/BoardExec/Primary/CrpBETetra/CrpBETetra",
+    "name": "Tenet Tetra",
+    "category": "Primary",
+    "masteryReq": 16
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/TnBardRifle/TnBardRifle",
+    "name": "Tenora",
+    "category": "Primary",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/PrimeTenora/TenoraPrimeWeapon",
+    "name": "Tenora Prime",
+    "category": "Primary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/LongGuns/CorpusUMP/CorpusUMP",
+    "name": "Tetra",
+    "category": "Primary",
+    "masteryReq": 3
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Zariman/Melee/HeavyScythe/ZarimanHeavyScythe/ZarimanHeavyScytheWeapon",
+    "name": "Thalys",
+    "category": "Melee",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/TnModQuestRifle/TnModQuestRifleWeapon",
+    "name": "Thornbak",
+    "category": "Primary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/DrakeRifle/DrakeRifle",
+    "name": "Tiberon",
+    "category": "Primary",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/PrimeTiberon/PrimeTiberonRifle",
+    "name": "Tiberon Prime",
+    "category": "Primary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/DoubleBarrelShotgun/TennoDoubleBarrelShotgun",
+    "name": "Tigris",
+    "category": "Primary",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/PrimeTigris/PrimeTigris",
+    "name": "Tigris Prime",
+    "category": "Primary",
+    "masteryReq": 13
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Staff/MonkSpade/TnoMonkStaff",
+    "name": "Tipedo",
+    "category": "Melee",
+    "masteryReq": 3
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Staff/TipedoPrime/TipedoPrimeWeapon",
+    "name": "Tipedo Prime",
+    "category": "Melee",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Fairy/Fairy",
+    "name": "Titania",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Fairy/TitaniaPrime",
+    "name": "Titania Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/SolarisUnited/Secondary/SUModularSecondarySet1/Barrel/SUModularSecondaryBarrelBPart",
+    "name": "Tombfinger",
+    "category": "Misc",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Polearms/FlowerPowerPolearm/FlowerPowerPolearmWep",
+    "name": "Tonbo",
+    "category": "Melee",
+    "masteryReq": 3
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Melee/Tonfa/GrnChainSawTonfa/GrnChainSawTonfaWeapon",
+    "name": "Tonkkatt",
+    "category": "Melee",
+    "masteryReq": 9
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/LongGuns/GrnGrenadeLauncher/GrnGrenadeLauncher",
+    "name": "Tonkor",
+    "category": "Primary",
+    "masteryReq": 5
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/ClanTech/Bio/BioWeapon",
+    "name": "Torid",
+    "category": "Primary",
+    "masteryReq": 4
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Trinity/Trinity",
+    "name": "Trinity",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Trinity/TrinityPrime",
+    "name": "Trinity Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Thanotech/ThanoRifle/ThanotechRifle",
+    "name": "Trumna",
+    "category": "Primary",
+    "masteryReq": 13
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/PrimeTrumna/PrimeTrumnaWeapon",
+    "name": "Trumna Prime",
+    "category": "Primary",
+    "masteryReq": 15
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Melee/GrnDualFireAxe/GrnDualFireAxe",
+    "name": "Twin Basolk",
+    "category": "Melee",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/LongGuns/GrineerAssaultRifle/TwinGrakatas",
+    "name": "Twin Grakatas",
+    "category": "Secondary",
+    "masteryReq": 9
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/GrineerPistol/GrineerAkimboPistol",
+    "name": "Twin Gremlins",
+    "category": "Secondary",
+    "masteryReq": 5
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Pistols/GrnDWUniques/GrnTwinKohmaks",
+    "name": "Twin Kohmak",
+    "category": "Secondary",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Melee/GrnEgyptSwd/DualGrnEgyptSwdWeapon",
+    "name": "Twin Krohkur",
+    "category": "Melee",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Pistols/GrnQueenGuardDualPistol/GrnQueenGuardDualPistols",
+    "name": "Twin Rogga",
+    "category": "Secondary",
+    "masteryReq": 9
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Akimbo/AkimboViperPistols",
+    "name": "Twin Vipers",
+    "category": "Secondary",
+    "masteryReq": 5
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Pistols/WraithTwinVipers/WraithTwinVipers",
+    "name": "Twin Vipers Wraith",
+    "category": "Secondary",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/Pistols/InfestedDartPistol/InfestedDartPistol",
+    "name": "Tysis",
+    "category": "Secondary",
+    "masteryReq": 9
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/DemonFrame/DemonFrame",
+    "name": "Uriel",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/PrimeLightningGun/PrimeLightningGun",
+    "name": "Vadarya Prime",
+    "category": "Primary",
+    "masteryReq": 15
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Berserker/Berserker",
+    "name": "Valkyr",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Berserker/ValkyrPrime",
+    "name": "Valkyr Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Types/Game/CatbrowPet/VampireCatbrowPetPowerSuit",
+    "name": "Vasca Kavat",
+    "category": "Pets",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Melee/GunBlade/GrnGunBlade/GrnGunblade",
+    "name": "Vastilok",
+    "category": "Melee",
+    "masteryReq": 9
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistol/RevolverPistol",
+    "name": "Vasto",
+    "category": "Secondary",
+    "masteryReq": 4
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/PrimeVasto/PrimeVastoPistol",
+    "name": "Vasto Prime",
+    "category": "Secondary",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Trapper/Trapper",
+    "name": "Vauban",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Trapper/TrapperPrime",
+    "name": "Vauban Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Syndicates/SteelMeridian/LongGuns/SMHek",
+    "name": "Vaykor Hek",
+    "category": "Primary",
+    "masteryReq": 12
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Syndicates/SteelMeridian/Pistols/SMMarelok",
+    "name": "Vaykor Marelok",
+    "category": "Secondary",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Syndicates/SteelMeridian/Melee/SMSydon",
+    "name": "Vaykor Sydon",
+    "category": "Melee",
+    "masteryReq": 11
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Rifle/TennoSniperRifle",
+    "name": "Vectis",
+    "category": "Primary",
+    "masteryReq": 2
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/PrimeVectis/PrimeVectisRifle",
+    "name": "Vectis Prime",
+    "category": "Primary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/TnRevolverRifle/TnRevolverRifleGun",
+    "name": "Veldt",
+    "category": "Primary",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Archwing/Primary/Railgun/ArchRailgun",
+    "name": "Velocitus",
+    "category": "Arch-Gun",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/TnOdaliskSmg/TnOdaliskSmgPistol",
+    "name": "Velox",
+    "category": "Secondary",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/PrimeVelox/PrimeVeloxPistol",
+    "name": "Velox Prime",
+    "category": "Secondary",
+    "masteryReq": 13
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Sentients/SentJointedScythe/SentJointedScytheWeapon",
+    "name": "Venato",
+    "category": "Melee",
+    "masteryReq": 9
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Scythe/PrimeVento/PrimeVentoScythe",
+    "name": "Venato Prime",
+    "category": "Melee",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Claws/TennoClaws",
+    "name": "Venka",
+    "category": "Melee",
+    "masteryReq": 4
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/PrimeVenKa/PrimeVenkaClaws",
+    "name": "Venka Prime",
+    "category": "Melee",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Archon/Melee/Whip/ArchonWhipPlayerWep",
+    "name": "Verdilac",
+    "category": "Melee",
+    "masteryReq": 13
+  },
+  {
+    "uniqueName": "/Lotus/Types/Sentinels/SentinelWeapons/SentinelFreezeRayRifle",
+    "name": "Verglas",
+    "category": "Primary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Types/Sentinels/SentinelWeapons/SentinelFreezeRayPrimeRifle",
+    "name": "Verglas Prime",
+    "category": "Primary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Warfan/TnMoonWarfan/MoonWarfanWeapon",
+    "name": "Vericres",
+    "category": "Melee",
+    "masteryReq": 8
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Archwing/Melee/Archsword/ArchSwordWeapon",
+    "name": "Veritux",
+    "category": "Arch-Melee",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Lasria/LasSilencedPistol/LasSilencedPistolWeapon",
+    "name": "Vesper 77",
+    "category": "Secondary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Bayonet/TnBayonetRifleWeapon",
+    "name": "Vinquibus",
+    "category": "Primary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/GrineerPistol/GrineerLightPistol",
+    "name": "Viper",
+    "category": "Secondary",
+    "masteryReq": 4
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/Pistols/WraithSingleViper/WraithSingleViper",
+    "name": "Viper Wraith",
+    "category": "Secondary",
+    "masteryReq": 4
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/NWIIIOrokinSword/NWOrokinSword",
+    "name": "Vitrica",
+    "category": "Melee",
+    "masteryReq": 13
+  },
+  {
+    "uniqueName": "/Lotus/Types/Friendly/Pets/CreaturePets/VizierPredatorKubrowPetPowerSuit",
+    "name": "Vizier Predasite",
+    "category": "Pets",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/EntratiMech/NechroTech",
+    "name": "Voidrig",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Hammer/GlassHammer/GlassHammer",
+    "name": "Volnus",
+    "category": "Melee",
+    "masteryReq": 9
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/PrimeVolnus/VolnusPrimeWeapon",
+    "name": "Volnus Prime",
+    "category": "Melee",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Volt/Volt",
+    "name": "Volt",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Volt/VoltPrime",
+    "name": "Volt Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Werewolf/Werewolf",
+    "name": "Voruna",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/ThermocorMoaWeapon",
+    "name": "Vulcax",
+    "category": "Primary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/LongGuns/GrineerSniperRifle/GrnSniperRifle",
+    "name": "Vulkar",
+    "category": "Primary",
+    "masteryReq": 3
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/LongGuns/GrineerSniperRifle/VulkarWraith",
+    "name": "Vulkar Wraith",
+    "category": "Primary",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Types/Sentinels/SentinelWeapons/SentElecRailgun",
+    "name": "Vulklok",
+    "category": "Primary",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Swords/StalkerTwo/StalkerTwoGreatSword",
+    "name": "War",
+    "category": "Melee",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Wisp/Wisp",
+    "name": "Wisp",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Wisp/WispPrime",
+    "name": "Wisp Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/Hammer/ThrowingHammer",
+    "name": "Wolf Sledge",
+    "category": "Melee",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/MonkeyKing/MonkeyKing",
+    "name": "Wukong",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/MonkeyKing/WukongPrime",
+    "name": "Wukong Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Types/Sentinels/SentinelPowersuits/WyrmPowerSuit",
+    "name": "Wyrm",
+    "category": "Sentinels",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Types/Sentinels/SentinelPowersuits/PrimeWyrmPowerSuit",
+    "name": "Wyrm Prime",
+    "category": "Sentinels",
+    "masteryReq": null
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/BrokenFrame/BrokenFrame",
+    "name": "Xaku",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/BrokenFrame/XakuPrime",
+    "name": "Xaku Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Corpus/Melee/Glaive/CrpGhostCatcherGlaive/CrpGhostCatcherGlaive",
+    "name": "Xoris",
+    "category": "Melee",
+    "masteryReq": 4
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Yareli/Yareli",
+    "name": "Yareli",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Yareli/YareliPrime",
+    "name": "Yareli Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/TnGuandoPistol/TnGuandoPistolGun",
+    "name": "Zakti",
+    "category": "Secondary",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/PrimeZakti/PrimeZaktiPistol",
+    "name": "Zakti Prime",
+    "category": "Secondary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Grineer/LongGuns/GrnCannon/GrnCannonWeapon",
+    "name": "Zarr",
+    "category": "Primary",
+    "masteryReq": 7
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Melee/SunDialAxe/SundialAxeWeapon",
+    "name": "Zenistar",
+    "category": "Melee",
+    "masteryReq": 6
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/LoginPrimary/SundialRifle",
+    "name": "Zenith",
+    "category": "Primary",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Tengu/Tengu",
+    "name": "Zephyr",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Powersuits/Tengu/ZephyrPrime",
+    "name": "Zephyr Prime",
+    "category": "Warframes",
+    "masteryReq": 0
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/RepeatingCrossbow/RepeatingCrossbow",
+    "name": "Zhuge",
+    "category": "Primary",
+    "masteryReq": 10
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/LongGuns/PrimeZhuge/PrimeZhugeCrossbow",
+    "name": "Zhuge Prime",
+    "category": "Primary",
+    "masteryReq": 14
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/ConclaveLeverPistol/ConclaveLeverPistol",
+    "name": "Zylok",
+    "category": "Secondary",
+    "masteryReq": 6
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Tenno/Pistols/PrimeZylok/ZylokPrimePistol",
+    "name": "Zylok Prime",
+    "category": "Secondary",
+    "masteryReq": 13
+  },
+  {
+    "uniqueName": "/Lotus/Weapons/Infested/Pistols/InfUzi/InfUziWeapon",
+    "name": "Zymos",
+    "category": "Secondary",
+    "masteryReq": 11
+  }
+]

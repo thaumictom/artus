@@ -17,6 +17,7 @@ fn main() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(
             GlobalShortcutBuilder::new()
                 .with_handler(|app, shortcut, event| {
