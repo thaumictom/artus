@@ -18,20 +18,28 @@ use crate::state::AppState;
 
 const OCR_WHITELIST: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789- ";
 const STRICT_NAMES: bool = true;
-const STRICT_NAME_SCORE_THRESHOLD: f64 = 0.75;
+const STRICT_NAME_MIN_SCORE_THRESHOLD: f64 = 0.6;
+const STRICT_NAME_HIGH_CONFIDENCE_THRESHOLD: f64 = 0.75;
 const PASS_IMAGE_TO_FRONTEND: bool = true;
 const PASS_TEXT_TO_FRONTEND: bool = false;
 const TARGET_R: u8 = 158;
 const TARGET_G: u8 = 159;
 const TARGET_B: u8 = 167;
 const ENABLE_MORPHOLOGY: bool = false;
+// Allowed per-channel RGB distance from the target color for a pixel to be treated as text.
 pub const BINARY_FILTER_SPILL_THRESHOLD: u8 = 0;
-pub const HORIZONTAL_WORD_GAP_FACTOR: f64 = 1.2;
-pub const SAME_LINE_VERTICAL_FACTOR: f64 = 0.5;
+// Max horizontal gap (scaled by average word height) for joining words on the same line.
+pub const HORIZONTAL_WORD_GAP_FACTOR: f64 = 0.75;
+// Max vertical center distance (scaled by line height) for assigning words to one line.
+pub const SAME_LINE_VERTICAL_FACTOR: f64 = 0.25;
+// Max vertical gap (scaled by line height) for merging nearby lines into one block.
 pub const MERGE_LINE_VERTICAL_FACTOR: f64 = 1.5;
+// Maximum number of detected lines to merge into a single OCR block.
 pub const MAX_MERGED_LINES: usize = 3;
-pub const CENTER_ALIGNED_MERGE_FACTOR: f64 = 4.0;
-pub const CENTER_ALIGNED_HORIZONTAL_GAP_FACTOR: f64 = 5.0;
+// Max horizontal center offset (scaled by line height) tolerated for center-aligned line merges.
+pub const CENTER_ALIGNED_MERGE_FACTOR: f64 = 3.0;
+// Max horizontal box gap (scaled by line height) allowed when center-aligned lines do not overlap.
+pub const CENTER_ALIGNED_HORIZONTAL_GAP_FACTOR: f64 = 3.0;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct OcrWord {
@@ -387,7 +395,8 @@ fn apply_market_prices<R: Runtime>(app: &AppHandle<R>, words: Vec<OcrWord>) -> V
     words
         .into_iter()
         .map(|mut word| {
-            word.price = market_prices::lookup_price_for_name(app, &word.text);
+            let lookup_name = word.text.strip_prefix('*').unwrap_or(&word.text);
+            word.price = market_prices::lookup_price_for_name(app, lookup_name);
             word
         })
         .collect()
@@ -418,10 +427,15 @@ fn match_closest_dictionary_name(dictionary: &[String], fragment: &str) -> Optio
         }
     }
 
-    if best_score >= STRICT_NAME_SCORE_THRESHOLD {
-        best_name
+    let best_name = best_name?;
+    if best_score < STRICT_NAME_MIN_SCORE_THRESHOLD {
+        return None;
+    }
+
+    if best_score < STRICT_NAME_HIGH_CONFIDENCE_THRESHOLD {
+        Some(format!("*{best_name}"))
     } else {
-        None
+        Some(best_name)
     }
 }
 
