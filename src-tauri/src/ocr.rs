@@ -1,4 +1,6 @@
+use std::collections::BTreeMap;
 use std::env;
+use std::fs;
 use std::io::Cursor;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
@@ -7,8 +9,10 @@ use image::{DynamicImage, GrayImage, ImageFormat};
 use imageproc::distance_transform::Norm;
 use imageproc::morphology::{dilate_mut, erode_mut};
 use kreuzberg_tesseract::{TessPageIteratorLevel, TessPageSegMode, TesseractAPI};
-use serde::Serialize;
-use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, Position, Runtime, Size};
+use serde::{Deserialize, Serialize};
+use tauri::{
+    AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, Position, Runtime, Size, State,
+};
 use xcap::Window;
 
 use crate::dictionary;
@@ -22,9 +26,8 @@ const STRICT_NAME_MIN_SCORE_THRESHOLD: f64 = 0.6;
 const STRICT_NAME_HIGH_CONFIDENCE_THRESHOLD: f64 = 0.75;
 const PASS_IMAGE_TO_FRONTEND: bool = true;
 const PASS_TEXT_TO_FRONTEND: bool = false;
-const TARGET_R: u8 = 158;
-const TARGET_G: u8 = 159;
-const TARGET_B: u8 = 167;
+const DEFAULT_OCR_THEME: &str = "EQUINOX";
+const DEFAULT_OCR_TARGET_RGB: [u8; 3] = [158, 159, 167];
 const ENABLE_MORPHOLOGY: bool = false;
 // Allowed per-channel RGB distance from the target color for a pixel to be treated as text.
 pub const BINARY_FILTER_SPILL_THRESHOLD: u8 = 0;
@@ -69,6 +72,24 @@ pub struct OcrTextPayload {
     pub text: String,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct OcrThemeOption {
+    pub name: String,
+    pub rgb: [u8; 3],
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct OcrThemeSettingsPayload {
+    pub themes: Vec<OcrThemeOption>,
+    pub selected_theme: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct ThemeColorsToml {
+    #[serde(default)]
+    primary: BTreeMap<String, [u8; 3]>,
+}
+
 #[derive(Debug, Clone)]
 struct RawWord {
     text: String,
@@ -77,6 +98,80 @@ struct RawWord {
     y: f64,
     width: f64,
     height: f64,
+}
+
+#[tauri::command]
+pub fn get_ocr_theme_settings<R: Runtime>(
+    app: AppHandle<R>,
+    state: State<'_, AppState>,
+) -> Result<OcrThemeSettingsPayload, String> {
+    let themes = load_primary_theme_options(&app)?;
+    if themes.is_empty() {
+        return Err("no primary OCR themes found in theme_colors.toml".to_string());
+    }
+
+    let fallback = themes
+        .iter()
+        .find(|theme| theme.name == DEFAULT_OCR_THEME)
+        .cloned()
+        .unwrap_or_else(|| themes[0].clone());
+
+    let mut selected_theme = state
+        .ocr_theme
+        .lock()
+        .map_err(|_| "failed to read OCR theme".to_string())?;
+
+    let resolved = themes
+        .iter()
+        .find(|theme| theme.name == *selected_theme)
+        .cloned()
+        .unwrap_or_else(|| {
+            *selected_theme = fallback.name.clone();
+            fallback
+        });
+
+    let mut target_rgb = state
+        .ocr_target_rgb
+        .lock()
+        .map_err(|_| "failed to read OCR target RGB".to_string())?;
+    *target_rgb = resolved.rgb;
+
+    Ok(OcrThemeSettingsPayload {
+        themes,
+        selected_theme: selected_theme.clone(),
+    })
+}
+
+#[tauri::command]
+pub fn set_ocr_theme<R: Runtime>(
+    app: AppHandle<R>,
+    state: State<'_, AppState>,
+    theme: String,
+) -> Result<(), String> {
+    let requested_theme = theme.trim();
+    if requested_theme.is_empty() {
+        return Err("theme must not be empty".to_string());
+    }
+
+    let themes = load_primary_theme_options(&app)?;
+    let selected = themes
+        .iter()
+        .find(|candidate| candidate.name.eq_ignore_ascii_case(requested_theme))
+        .cloned()
+        .ok_or_else(|| format!("unknown OCR theme: {requested_theme}"))?;
+
+    let mut selected_theme = state
+        .ocr_theme
+        .lock()
+        .map_err(|_| "failed to update OCR theme".to_string())?;
+    let mut target_rgb = state
+        .ocr_target_rgb
+        .lock()
+        .map_err(|_| "failed to update OCR target RGB".to_string())?;
+
+    *selected_theme = selected.name;
+    *target_rgb = selected.rgb;
+    Ok(())
 }
 
 pub fn capture_active_window<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
@@ -111,7 +206,14 @@ pub fn capture_active_window<R: Runtime>(app: &AppHandle<R>) -> Result<(), Strin
     );
 
     let preprocess_started = Instant::now();
-    let mut filtered = binary_target_filter(&image);
+    let target_rgb = app
+        .state::<AppState>()
+        .ocr_target_rgb
+        .lock()
+        .map(|value| *value)
+        .unwrap_or(DEFAULT_OCR_TARGET_RGB);
+
+    let mut filtered = binary_target_filter(&image, target_rgb);
     apply_morphology(&mut filtered);
 
     println!(
@@ -318,7 +420,7 @@ pub fn capture_active_window<R: Runtime>(app: &AppHandle<R>) -> Result<(), Strin
     Ok(())
 }
 
-fn binary_target_filter(source: &image::RgbaImage) -> GrayImage {
+fn binary_target_filter(source: &image::RgbaImage, target_rgb: [u8; 3]) -> GrayImage {
     let width = source.width() as usize;
     let height = source.height() as usize;
     let raw = source.as_raw();
@@ -330,13 +432,14 @@ fn binary_target_filter(source: &image::RgbaImage) -> GrayImage {
             let r = raw[src_idx];
             let g = raw[src_idx + 1];
             let b = raw[src_idx + 2];
-            output[y * width + x] = if matches_target_color(r, g, b, TARGET_R, TARGET_G, TARGET_B)
-            // || matches_target_color(r, g, b, TARGET_R_ALT, TARGET_G_ALT, TARGET_B_ALT)
-            {
-                0
-            } else {
-                255
-            };
+            output[y * width + x] =
+                if matches_target_color(r, g, b, target_rgb[0], target_rgb[1], target_rgb[2])
+                // || matches_target_color(r, g, b, TARGET_R_ALT, TARGET_G_ALT, TARGET_B_ALT)
+                {
+                    0
+                } else {
+                    255
+                };
         }
     }
 
@@ -502,6 +605,48 @@ fn resolve_tessdata<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf, String> {
         .into_iter()
         .find(|path| path.exists())
         .ok_or_else(|| "could not find tessdata directory".to_string())
+}
+
+fn resolve_theme_colors_path<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf, String> {
+    let mut candidates = vec![];
+
+    if let Ok(resource_dir) = app.path().resource_dir() {
+        candidates.push(resource_dir.join("theme_colors.toml"));
+        candidates.push(resource_dir.join("src").join("theme_colors.toml"));
+    }
+
+    if let Ok(cwd) = env::current_dir() {
+        candidates.push(cwd.join("src-tauri").join("src").join("theme_colors.toml"));
+        candidates.push(cwd.join("src").join("theme_colors.toml"));
+        candidates.push(cwd.join("theme_colors.toml"));
+    }
+
+    candidates
+        .into_iter()
+        .find(|path| path.exists())
+        .ok_or_else(|| "could not find theme_colors.toml".to_string())
+}
+
+fn load_primary_theme_options<R: Runtime>(
+    app: &AppHandle<R>,
+) -> Result<Vec<OcrThemeOption>, String> {
+    let path = resolve_theme_colors_path(app)?;
+    let contents = fs::read_to_string(&path)
+        .map_err(|err| format!("failed to read {}: {err}", path.display()))?;
+    let parsed: ThemeColorsToml = toml::from_str(&contents)
+        .map_err(|err| format!("failed to parse {}: {err}", path.display()))?;
+
+    let themes = parsed
+        .primary
+        .into_iter()
+        .map(|(name, rgb)| OcrThemeOption { name, rgb })
+        .collect::<Vec<_>>();
+
+    if themes.is_empty() {
+        return Err("primary section in theme_colors.toml is empty".to_string());
+    }
+
+    Ok(themes)
 }
 
 fn ranges_overlap(left_start: f64, left_end: f64, right_start: f64, right_end: f64) -> bool {

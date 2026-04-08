@@ -3,6 +3,8 @@
 	import { invoke } from '@tauri-apps/api/core';
 	import { onMount } from 'svelte';
 
+	import * as Select from '$lib/components/ui/select/index.js';
+
 	type OcrDebugImagePayload = {
 		png_bytes: number[];
 		width: number;
@@ -14,8 +16,22 @@
 		text: string;
 	};
 
+	type OcrThemeOption = {
+		name: string;
+		rgb: [number, number, number];
+	};
+
+	type OcrThemeSettingsPayload = {
+		themes: OcrThemeOption[];
+		selected_theme: string;
+	};
+
 	let hotkey = $state('Home');
-	let status = $state('');
+	let hotkeyStatus = $state('');
+	let themeStatus = $state('');
+	let ocrThemes = $state<OcrThemeOption[]>([]);
+	let selectedOcrTheme = $state('EQUINOX');
+	let isThemeInitialized = $state(false);
 	let debugImageUrl = $state('');
 	let debugImageInfo = $state('');
 	let ocrText = $state('');
@@ -47,9 +63,17 @@
 
 		(async () => {
 			try {
-				hotkey = await invoke<string>('get_hotkey');
+				const [savedHotkey, themeSettings] = await Promise.all([
+					invoke<string>('get_hotkey'),
+					invoke<OcrThemeSettingsPayload>('get_ocr_theme_settings'),
+				]);
+
+				hotkey = savedHotkey;
+				ocrThemes = themeSettings.themes;
+				selectedOcrTheme = themeSettings.selected_theme;
+				isThemeInitialized = true;
 			} catch (error) {
-				status = String(error);
+				themeStatus = String(error);
 			}
 		})();
 
@@ -61,13 +85,51 @@
 	});
 
 	async function saveHotkey() {
-		status = '';
+		hotkeyStatus = '';
 		try {
 			await invoke('set_hotkey', { hotkey });
-			status = 'Saved';
+			hotkeyStatus = 'Saved';
 		} catch (error) {
-			status = String(error);
+			hotkeyStatus = String(error);
 		}
+	}
+
+	async function saveOcrTheme(theme: string = selectedOcrTheme) {
+		themeStatus = '';
+		try {
+			await invoke('set_ocr_theme', { theme });
+			themeStatus = `OCR theme set to ${formatThemeName(theme)}`;
+		} catch (error) {
+			themeStatus = String(error);
+		}
+	}
+
+	function handleOcrThemeChange(theme: string) {
+		selectedOcrTheme = theme;
+		if (!isThemeInitialized) {
+			return;
+		}
+		void saveOcrTheme(theme);
+	}
+
+	function formatThemeName(theme: string): string {
+		return theme
+			.toLowerCase()
+			.split('_')
+			.map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+			.join(' ');
+	}
+
+	function formatThemeOption(theme: OcrThemeOption): string {
+		return `${formatThemeName(theme.name)} (${theme.rgb[0]}, ${theme.rgb[1]}, ${theme.rgb[2]})`;
+	}
+
+	function selectedThemeLabel(): string {
+		const selected = ocrThemes.find((theme) => theme.name === selectedOcrTheme);
+		if (!selected) {
+			return formatThemeName(selectedOcrTheme);
+		}
+		return formatThemeOption(selected);
 	}
 
 	function openImageFullscreen() {
@@ -87,8 +149,31 @@
 		<button class="px-3 py-1 border rounded" onclick={saveHotkey}>Save</button>
 	</div>
 
-	{#if status}
-		<p class="mt-2 text-sm">{status}</p>
+	{#if hotkeyStatus}
+		<p class="mt-2 text-sm">{hotkeyStatus}</p>
+	{/if}
+
+	<div class="mt-6">
+		<p class="text-sm">OCR Theme (Primary)</p>
+		<Select.Root
+			type="single"
+			bind:value={selectedOcrTheme}
+			onValueChange={handleOcrThemeChange}
+			items={ocrThemes.map((theme) => ({ value: theme.name, label: formatThemeName(theme.name) }))}
+		>
+			<Select.Trigger class="mt-2 w-full">{selectedThemeLabel()}</Select.Trigger>
+			<Select.Content>
+				{#each ocrThemes as theme (theme.name)}
+					<Select.Item value={theme.name} label={formatThemeName(theme.name)}>
+						{formatThemeOption(theme)}
+					</Select.Item>
+				{/each}
+			</Select.Content>
+		</Select.Root>
+	</div>
+
+	{#if themeStatus}
+		<p class="mt-2 text-sm">{themeStatus}</p>
 	{/if}
 
 	{#if debugImageUrl}

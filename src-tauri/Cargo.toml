@@ -14,6 +14,7 @@ tauri = { version = "2", features = [] }
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+toml = "0.8"
 gtk-layer-shell = { version = "0.8.2", optional = true }
 gtk = { version = "0.18", optional = true }
 cairo-rs = { version = "0.18", optional = true }
@@ -24,7 +25,11 @@ xcap = "*"
 image = "*"
 imageproc = "0.26.1"
 kreuzberg-tesseract = "4.3.3"
-reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
+reqwest = { version = "0.12", default-features = false, features = [
+	"blocking",
+	"json",
+	"rustls-tls",
+] }
 tauri-plugin-store = "2"
 
 [features]

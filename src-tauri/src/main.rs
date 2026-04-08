@@ -52,7 +52,9 @@ fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             hotkeys::get_hotkey,
-            hotkeys::set_hotkey
+            hotkeys::set_hotkey,
+            ocr::get_ocr_theme_settings,
+            ocr::set_ocr_theme
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

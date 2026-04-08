@@ -183,6 +183,7 @@ dependencies = [
  "tauri-plugin-global-shortcut",
  "tauri-plugin-opener",
  "tauri-plugin-store",
+ "toml 0.8.2",
  "xcap",
 ]
 
