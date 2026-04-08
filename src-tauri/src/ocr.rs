@@ -18,7 +18,7 @@ use crate::state::AppState;
 
 const OCR_WHITELIST: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789- ";
 const STRICT_NAMES: bool = true;
-const STRICT_NAME_SCORE_THRESHOLD: f64 = 0.72;
+const STRICT_NAME_SCORE_THRESHOLD: f64 = 0.75;
 const PASS_IMAGE_TO_FRONTEND: bool = true;
 const PASS_TEXT_TO_FRONTEND: bool = false;
 const TARGET_R: u8 = 158;
@@ -28,8 +28,10 @@ const ENABLE_MORPHOLOGY: bool = false;
 pub const BINARY_FILTER_SPILL_THRESHOLD: u8 = 0;
 pub const HORIZONTAL_WORD_GAP_FACTOR: f64 = 1.2;
 pub const SAME_LINE_VERTICAL_FACTOR: f64 = 0.5;
-pub const MERGE_LINE_VERTICAL_FACTOR: f64 = 1.0;
-pub const MAX_MERGED_LINES: usize = 2;
+pub const MERGE_LINE_VERTICAL_FACTOR: f64 = 1.5;
+pub const MAX_MERGED_LINES: usize = 3;
+pub const CENTER_ALIGNED_MERGE_FACTOR: f64 = 4.0;
+pub const CENTER_ALIGNED_HORIZONTAL_GAP_FACTOR: f64 = 5.0;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct OcrWord {
@@ -488,6 +490,46 @@ fn resolve_tessdata<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf, String> {
         .ok_or_else(|| "could not find tessdata directory".to_string())
 }
 
+fn ranges_overlap(left_start: f64, left_end: f64, right_start: f64, right_end: f64) -> bool {
+    left_start.max(right_start) <= left_end.min(right_end)
+}
+
+fn horizontal_gap(left_start: f64, left_end: f64, right_start: f64, right_end: f64) -> f64 {
+    if left_end < right_start {
+        right_start - left_end
+    } else if right_end < left_start {
+        left_start - right_end
+    } else {
+        0.0
+    }
+}
+
+fn can_merge_multiline_segment(
+    upper_left: f64,
+    upper_right: f64,
+    upper_height: f64,
+    lower: &RawWord,
+) -> bool {
+    let lower_left = lower.x;
+    let lower_right = lower.x + lower.width;
+
+    if ranges_overlap(upper_left, upper_right, lower_left, lower_right) {
+        return true;
+    }
+
+    let max_height = upper_height.max(lower.height);
+    let upper_center = (upper_left + upper_right) * 0.5;
+    let lower_center = (lower_left + lower_right) * 0.5;
+    let center_delta = (upper_center - lower_center).abs();
+    let center_tolerance = max_height * CENTER_ALIGNED_MERGE_FACTOR;
+    if center_delta > center_tolerance {
+        return false;
+    }
+
+    let gap = horizontal_gap(upper_left, upper_right, lower_left, lower_right);
+    gap <= max_height * CENTER_ALIGNED_HORIZONTAL_GAP_FACTOR
+}
+
 fn group_words_into_blocks(words: &[OcrWord]) -> Vec<OcrWord> {
     if words.is_empty() {
         return vec![];
@@ -622,43 +664,45 @@ fn group_words_into_blocks(words: &[OcrWord]) -> Vec<OcrWord> {
         let mut merged_right = first.x + first.width;
         let mut merged_bottom = first.y + first.height;
 
-        let mut second_line_index = None;
-        for next_index in (index + 1)..line_segments.len() {
-            if consumed[next_index] {
-                continue;
+        let mut merged_line_count = 1usize;
+        while merged_line_count < MAX_MERGED_LINES {
+            let merged_height = merged_bottom - merged_y;
+            let mut next_line_index = None;
+
+            for next_index in (index + 1)..line_segments.len() {
+                if consumed[next_index] {
+                    continue;
+                }
+
+                let next = &line_segments[next_index];
+                let next_bottom = next.y + next.height;
+                let vertical_gap = horizontal_gap(merged_y, merged_bottom, next.y, next_bottom);
+                if vertical_gap > merged_height.max(next.height) * MERGE_LINE_VERTICAL_FACTOR {
+                    if next.y >= merged_bottom {
+                        break;
+                    }
+                    continue;
+                }
+
+                if can_merge_multiline_segment(merged_x, merged_right, merged_height, next) {
+                    next_line_index = Some(next_index);
+                    break;
+                }
             }
+
+            let Some(next_index) = next_line_index else {
+                break;
+            };
 
             let next = &line_segments[next_index];
-            let vertical_gap = next.y - merged_bottom;
-            if vertical_gap < 0.0 {
-                continue;
-            }
-            if vertical_gap > first.height.max(next.height) * MERGE_LINE_VERTICAL_FACTOR {
-                break;
-            }
-
-            let first_left = merged_x;
-            let first_right = merged_right;
-            let next_left = next.x;
-            let next_right = next.x + next.width;
-            let overlap = first_left.max(next_left) <= first_right.min(next_right);
-            if overlap {
-                second_line_index = Some(next_index);
-                break;
-            }
-        }
-
-        if let Some(next_index) = second_line_index {
-            if MAX_MERGED_LINES >= 2 {
-                let next = &line_segments[next_index];
-                consumed[next_index] = true;
-                merged_text.push('\n');
-                merged_text.push_str(&next.text);
-                merged_x = merged_x.min(next.x);
-                merged_y = merged_y.min(next.y);
-                merged_right = merged_right.max(next.x + next.width);
-                merged_bottom = merged_bottom.max(next.y + next.height);
-            }
+            consumed[next_index] = true;
+            merged_text.push(' ');
+            merged_text.push_str(&next.text);
+            merged_x = merged_x.min(next.x);
+            merged_y = merged_y.min(next.y);
+            merged_right = merged_right.max(next.x + next.width);
+            merged_bottom = merged_bottom.max(next.y + next.height);
+            merged_line_count += 1;
         }
 
         merged_blocks.push(OcrWord {
