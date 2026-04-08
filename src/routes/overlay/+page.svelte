@@ -12,7 +12,7 @@
 		height: number;
 	};
 
-	let words: OcrWord[] = [];
+	let words: OcrWord[] = $state([]);
 
 	onMount(() => {
 		let unlisten: (() => void) | undefined;

@@ -14,12 +14,12 @@
 		text: string;
 	};
 
-	let hotkey = 'Home';
-	let status = '';
-	let debugImageUrl = '';
-	let debugImageInfo = '';
-	let ocrText = '';
-	let isImageFullscreen = false;
+	let hotkey = $state('Home');
+	let status = $state('');
+	let debugImageUrl = $state('');
+	let debugImageInfo = $state('');
+	let ocrText = $state('');
+	let isImageFullscreen = $state(false);
 
 	onMount(() => {
 		let unlistenImage: (() => void) | undefined;
