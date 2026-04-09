@@ -29,6 +29,10 @@ const DEFAULT_OCR_THEME: &str = "EQUINOX";
 const DEFAULT_OCR_TARGET_RGB: [u8; 3] = [158, 159, 167];
 const THEME_COLORS_TOML: &str = include_str!("theme_colors.toml");
 const ENABLE_MORPHOLOGY: bool = false;
+#[cfg(target_os = "windows")]
+const EMBEDDED_TRAINEDDATA_BYTES: &[u8] = include_bytes!(env!("OCR_EMBEDDED_TRAINEDDATA_PATH"));
+#[cfg(target_os = "windows")]
+const EMBEDDED_TRAINEDDATA_FILENAME: &str = env!("OCR_EMBEDDED_TRAINEDDATA_FILENAME");
 // Allowed per-channel RGB distance from the target color for a pixel to be treated as text.
 pub const BINARY_FILTER_SPILL_THRESHOLD: u8 = 0;
 // Max horizontal gap (scaled by average word height) for joining words on the same line.
@@ -590,6 +594,17 @@ fn levenshtein_distance(left: &str, right: &str) -> usize {
 }
 
 fn resolve_tessdata<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf, String> {
+    let mut checked_paths = Vec::new();
+
+    #[cfg(target_os = "windows")]
+    {
+        match resolve_embedded_tessdata(app) {
+            Ok(path) if has_traineddata_files(&path) => return Ok(path),
+            Ok(path) => checked_paths.push(path.display().to_string()),
+            Err(err) => checked_paths.push(format!("embedded: {err}")),
+        }
+    }
+
     let mut candidates = vec![];
 
     if let Ok(resource_dir) = app.path().resource_dir() {
@@ -609,7 +624,6 @@ fn resolve_tessdata<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf, String> {
         candidates.push(cwd.join("tessdata"));
     }
 
-    let mut checked_paths = Vec::new();
     for candidate in candidates {
         if has_traineddata_files(&candidate) {
             return Ok(candidate);
@@ -621,6 +635,30 @@ fn resolve_tessdata<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf, String> {
         "could not find tessdata directory (checked: {})",
         checked_paths.join(", ")
     ))
+}
+
+#[cfg(target_os = "windows")]
+fn resolve_embedded_tessdata<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf, String> {
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|err| format!("failed to resolve app data dir: {err}"))?;
+    let tessdata_dir = app_data_dir.join("tessdata");
+
+    std::fs::create_dir_all(&tessdata_dir)
+        .map_err(|err| format!("failed to create embedded tessdata dir: {err}"))?;
+
+    let traineddata_path = tessdata_dir.join(EMBEDDED_TRAINEDDATA_FILENAME);
+    let should_write = std::fs::metadata(&traineddata_path)
+        .map(|meta| meta.len() != EMBEDDED_TRAINEDDATA_BYTES.len() as u64)
+        .unwrap_or(true);
+
+    if should_write {
+        std::fs::write(&traineddata_path, EMBEDDED_TRAINEDDATA_BYTES)
+            .map_err(|err| format!("failed to write embedded traineddata: {err}"))?;
+    }
+
+    Ok(tessdata_dir)
 }
 
 fn has_traineddata_files(path: &Path) -> bool {
