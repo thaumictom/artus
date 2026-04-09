@@ -47,15 +47,21 @@ pub fn set_hotkey<R: Runtime>(
     Ok(())
 }
 
-pub fn register_initial<R: Runtime>(app: &AppHandle<R>) -> Result<(), Box<dyn std::error::Error>> {
+pub fn register_initial<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
     let shortcut = app
         .state::<AppState>()
         .hotkey
         .lock()
-        .map_err(|_| "failed to read startup hotkey")?
+        .map_err(|_| "failed to read startup hotkey".to_string())?
         .clone();
 
-    app.global_shortcut().register(shortcut.as_str())?;
+    if let Err(err) = app.global_shortcut().register(shortcut.as_str()) {
+        eprintln!(
+            "[hotkeys] startup shortcut '{}' unavailable: {}",
+            shortcut, err
+        );
+    }
+
     Ok(())
 }
 

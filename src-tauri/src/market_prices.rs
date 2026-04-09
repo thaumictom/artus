@@ -1,13 +1,13 @@
 use std::collections::HashMap;
-use std::env;
-use std::fs;
-use std::path::PathBuf;
 use std::sync::OnceLock;
 
 use serde::Deserialize;
-use tauri::{AppHandle, Manager, Runtime};
+use tauri::{AppHandle, Runtime};
 
 use crate::dictionary;
+
+const EMBEDDED_MARKET_STATISTICS_JSON: &str =
+    include_str!("../data/warframe_market_statistics.json");
 
 #[derive(Debug, Deserialize)]
 struct MarketStatisticsRoot {
@@ -33,7 +33,7 @@ static MARKET_PRICES: OnceLock<Result<HashMap<String, String>, String>> = OnceLo
 static DICTIONARY_NAME_TO_SLUG: OnceLock<Result<HashMap<String, String>, String>> = OnceLock::new();
 
 pub fn lookup_price_for_name<R: Runtime>(app: &AppHandle<R>, name: &str) -> Option<String> {
-    let prices = match load_market_prices(app) {
+    let prices = match load_market_prices() {
         Ok(prices) => prices,
         Err(err) => {
             eprintln!("[market_prices] failed to load market prices: {err}");
@@ -78,23 +78,10 @@ fn load_name_to_slug_map<R: Runtime>(
     }
 }
 
-fn load_market_prices<R: Runtime>(
-    app: &AppHandle<R>,
-) -> Result<&'static HashMap<String, String>, String> {
+fn load_market_prices() -> Result<&'static HashMap<String, String>, String> {
     let prices = MARKET_PRICES.get_or_init(|| {
-        let path = resolve_market_statistics_path(app)?;
-        let contents = fs::read_to_string(&path).map_err(|err| {
-            format!(
-                "failed to read market statistics file {}: {err}",
-                path.display()
-            )
-        })?;
-        let parsed: MarketStatisticsRoot = serde_json::from_str(&contents).map_err(|err| {
-            format!(
-                "failed to parse market statistics JSON {}: {err}",
-                path.display()
-            )
-        })?;
+        let parsed: MarketStatisticsRoot = serde_json::from_str(EMBEDDED_MARKET_STATISTICS_JSON)
+            .map_err(|err| format!("failed to parse embedded market statistics JSON: {err}"))?;
 
         let mut prices = HashMap::new();
         for entry in parsed.item_statistics {
@@ -121,32 +108,6 @@ fn load_market_prices<R: Runtime>(
         Ok(value) => Ok(value),
         Err(err) => Err(err.clone()),
     }
-}
-
-fn resolve_market_statistics_path<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf, String> {
-    let mut candidates = vec![];
-
-    if let Ok(resource_dir) = app.path().resource_dir() {
-        candidates.push(
-            resource_dir
-                .join("data")
-                .join("warframe_market_statistics.json"),
-        );
-    }
-
-    if let Ok(cwd) = env::current_dir() {
-        candidates.push(
-            cwd.join("src-tauri")
-                .join("data")
-                .join("warframe_market_statistics.json"),
-        );
-        candidates.push(cwd.join("data").join("warframe_market_statistics.json"));
-    }
-
-    candidates
-        .into_iter()
-        .find(|path| path.exists())
-        .ok_or_else(|| "could not find warframe_market_statistics.json".to_string())
 }
 
 fn normalize_lookup_name(name: &str) -> String {
