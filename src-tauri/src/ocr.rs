@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::env;
 use std::io::Cursor;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 
 use image::{DynamicImage, GrayImage, ImageFormat};
@@ -594,6 +594,14 @@ fn resolve_tessdata<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf, String> {
 
     if let Ok(resource_dir) = app.path().resource_dir() {
         candidates.push(resource_dir.join("tessdata"));
+        candidates.push(resource_dir);
+    }
+
+    if let Ok(current_exe) = env::current_exe() {
+        if let Some(exe_dir) = current_exe.parent() {
+            candidates.push(exe_dir.join("tessdata"));
+            candidates.push(exe_dir.to_path_buf());
+        }
     }
 
     if let Ok(cwd) = env::current_dir() {
@@ -601,10 +609,37 @@ fn resolve_tessdata<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf, String> {
         candidates.push(cwd.join("tessdata"));
     }
 
-    candidates
-        .into_iter()
-        .find(|path| path.exists())
-        .ok_or_else(|| "could not find tessdata directory".to_string())
+    let mut checked_paths = Vec::new();
+    for candidate in candidates {
+        if has_traineddata_files(&candidate) {
+            return Ok(candidate);
+        }
+        checked_paths.push(candidate.display().to_string());
+    }
+
+    Err(format!(
+        "could not find tessdata directory (checked: {})",
+        checked_paths.join(", ")
+    ))
+}
+
+fn has_traineddata_files(path: &Path) -> bool {
+    if !path.is_dir() {
+        return false;
+    }
+
+    std::fs::read_dir(path)
+        .ok()
+        .map(|entries| {
+            entries.filter_map(Result::ok).any(|entry| {
+                entry
+                    .path()
+                    .extension()
+                    .and_then(|ext| ext.to_str())
+                    .is_some_and(|ext| ext.eq_ignore_ascii_case("traineddata"))
+            })
+        })
+        .unwrap_or(false)
 }
 
 fn load_primary_theme_options<R: Runtime>(
