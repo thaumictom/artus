@@ -1,6 +1,5 @@
 use std::collections::BTreeMap;
 use std::env;
-use std::fs;
 use std::io::Cursor;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
@@ -28,6 +27,7 @@ const PASS_IMAGE_TO_FRONTEND: bool = true;
 const PASS_TEXT_TO_FRONTEND: bool = false;
 const DEFAULT_OCR_THEME: &str = "EQUINOX";
 const DEFAULT_OCR_TARGET_RGB: [u8; 3] = [158, 159, 167];
+const THEME_COLORS_TOML: &str = include_str!("theme_colors.toml");
 const ENABLE_MORPHOLOGY: bool = false;
 // Allowed per-channel RGB distance from the target color for a pixel to be treated as text.
 pub const BINARY_FILTER_SPILL_THRESHOLD: u8 = 0;
@@ -607,34 +607,11 @@ fn resolve_tessdata<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf, String> {
         .ok_or_else(|| "could not find tessdata directory".to_string())
 }
 
-fn resolve_theme_colors_path<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf, String> {
-    let mut candidates = vec![];
-
-    if let Ok(resource_dir) = app.path().resource_dir() {
-        candidates.push(resource_dir.join("theme_colors.toml"));
-        candidates.push(resource_dir.join("src").join("theme_colors.toml"));
-    }
-
-    if let Ok(cwd) = env::current_dir() {
-        candidates.push(cwd.join("src-tauri").join("src").join("theme_colors.toml"));
-        candidates.push(cwd.join("src").join("theme_colors.toml"));
-        candidates.push(cwd.join("theme_colors.toml"));
-    }
-
-    candidates
-        .into_iter()
-        .find(|path| path.exists())
-        .ok_or_else(|| "could not find theme_colors.toml".to_string())
-}
-
 fn load_primary_theme_options<R: Runtime>(
-    app: &AppHandle<R>,
+    _app: &AppHandle<R>,
 ) -> Result<Vec<OcrThemeOption>, String> {
-    let path = resolve_theme_colors_path(app)?;
-    let contents = fs::read_to_string(&path)
-        .map_err(|err| format!("failed to read {}: {err}", path.display()))?;
-    let parsed: ThemeColorsToml = toml::from_str(&contents)
-        .map_err(|err| format!("failed to parse {}: {err}", path.display()))?;
+    let parsed: ThemeColorsToml = toml::from_str(THEME_COLORS_TOML)
+        .map_err(|err| format!("failed to parse embedded theme colors: {err}"))?;
 
     let themes = parsed
         .primary
