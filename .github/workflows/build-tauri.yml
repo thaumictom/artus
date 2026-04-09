@@ -45,6 +45,7 @@ jobs:
             libwebkit2gtk-4.1-dev \
             librsvg2-dev \
             libpipewire-0.3-dev \
+            libgbm-dev \
             patchelf
           sudo apt-get install -y libayatana-appindicator3-dev || sudo apt-get install -y libappindicator3-dev
 
@@ -53,7 +54,7 @@ jobs:
 
       - name: Build Windows portable executable
         if: runner.os == 'Windows'
-        run: pnpm tauri build --bundles none
+        run: pnpm tauri build --no-bundle
 
       - name: Build Linux AppImage bundle
         if: runner.os == 'Linux'
