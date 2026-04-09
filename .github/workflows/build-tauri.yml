@@ -65,11 +65,16 @@ jobs:
         shell: pwsh
         run: |
           $exe = "src-tauri/target/release/artus.exe"
+          $tessdata = "src-tauri/tessdata"
           if (-not (Test-Path $exe)) {
             throw "No portable executable found at $exe"
           }
+          if (-not (Test-Path $tessdata)) {
+            throw "No tessdata directory found at $tessdata"
+          }
           New-Item -ItemType Directory -Path dist -Force | Out-Null
           Copy-Item $exe dist/artus-windows.exe
+          Copy-Item $tessdata -Destination dist/tessdata -Recurse -Force
 
       - name: Collect Linux artifact
         if: runner.os == 'Linux'
