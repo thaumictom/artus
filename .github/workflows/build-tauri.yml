@@ -44,15 +44,16 @@ jobs:
           sudo apt-get install -y \
             libwebkit2gtk-4.1-dev \
             librsvg2-dev \
+            libpipewire-0.3-dev \
             patchelf
           sudo apt-get install -y libayatana-appindicator3-dev || sudo apt-get install -y libappindicator3-dev
 
       - name: Install JS dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build Windows NSIS bundle
+      - name: Build Windows portable executable
         if: runner.os == 'Windows'
-        run: pnpm tauri build --bundles nsis
+        run: pnpm tauri build --bundles none
 
       - name: Build Linux AppImage bundle
         if: runner.os == 'Linux'
@@ -62,12 +63,12 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $exe = Get-ChildItem -Path src-tauri/target/release/bundle/nsis -Filter *.exe | Select-Object -First 1
-          if (-not $exe) {
-            throw "No .exe file found in src-tauri/target/release/bundle/nsis"
+          $exe = "src-tauri/target/release/artus.exe"
+          if (-not (Test-Path $exe)) {
+            throw "No portable executable found at $exe"
           }
           New-Item -ItemType Directory -Path dist -Force | Out-Null
-          Copy-Item $exe.FullName dist/artus-windows.exe
+          Copy-Item $exe dist/artus-windows.exe
 
       - name: Collect Linux artifact
         if: runner.os == 'Linux'
