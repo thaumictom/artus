@@ -46,6 +46,14 @@ fn main() {
                 let _ = overlay.set_focusable(false);
             }
 
+            if let Err(err) = ocr::load_persisted_overlay_duration(&app.handle()) {
+                eprintln!("[ocr] failed to load persisted overlay duration: {err}");
+            }
+
+            if let Err(err) = ocr::load_persisted_overlay_mode(&app.handle()) {
+                eprintln!("[ocr] failed to load persisted overlay mode: {err}");
+            }
+
             hotkeys::register_initial(app.handle())?;
             dictionary::refresh_dictionary_on_start(app.handle().clone());
             market_prices::initialize_market_prices_on_start(app.handle().clone());
@@ -57,7 +65,11 @@ fn main() {
             market_prices::get_market_prices_status,
             market_prices::refresh_market_prices,
             ocr::get_ocr_theme_settings,
-            ocr::set_ocr_theme
+            ocr::set_ocr_theme,
+            ocr::get_overlay_duration_secs,
+            ocr::set_overlay_duration_secs,
+            ocr::get_overlay_toggle_mode,
+            ocr::set_overlay_toggle_mode
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

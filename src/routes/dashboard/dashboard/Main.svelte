@@ -34,11 +34,18 @@
 		loaded_price_count: number;
 	};
 
+	const MIN_OVERLAY_DURATION_SECS = 1;
+	const MAX_OVERLAY_DURATION_SECS = 60;
+
 	let hotkey = $state('Home');
 	let hotkeyStatus = $state('');
 	let themeStatus = $state('');
+	let overlayDurationStatus = $state('');
+	let overlayModeStatus = $state('');
 	let ocrThemes = $state<OcrThemeOption[]>([]);
 	let selectedOcrTheme = $state('EQUINOX');
+	let overlayDurationInput = $state(10);
+	let overlayToggleMode = $state(false);
 	let isThemeInitialized = $state(false);
 	let debugImageUrl = $state('');
 	let debugImageInfo = $state('');
@@ -94,15 +101,20 @@
 
 		(async () => {
 			try {
-				const [savedHotkey, themeSettings, marketStatus] = await Promise.all([
-					invoke<string>('get_hotkey'),
-					invoke<OcrThemeSettingsPayload>('get_ocr_theme_settings'),
-					invoke<MarketPricesStatusPayload>('get_market_prices_status'),
-				]);
+				const [savedHotkey, themeSettings, marketStatus, overlayDurationSecs, savedToggleMode] =
+					await Promise.all([
+						invoke<string>('get_hotkey'),
+						invoke<OcrThemeSettingsPayload>('get_ocr_theme_settings'),
+						invoke<MarketPricesStatusPayload>('get_market_prices_status'),
+						invoke<number>('get_overlay_duration_secs'),
+						invoke<boolean>('get_overlay_toggle_mode'),
+					]);
 
 				hotkey = savedHotkey;
 				ocrThemes = themeSettings.themes;
 				selectedOcrTheme = themeSettings.selected_theme;
+				overlayDurationInput = overlayDurationSecs;
+				overlayToggleMode = savedToggleMode;
 				isThemeInitialized = true;
 				applyMarketPricesStatus(marketStatus);
 			} catch (error) {
@@ -145,6 +157,45 @@
 			return;
 		}
 		void saveOcrTheme(theme);
+	}
+
+	async function saveOverlayMode(enabled: boolean = overlayToggleMode) {
+		overlayModeStatus = '';
+
+		try {
+			const savedMode = await invoke<boolean>('set_overlay_toggle_mode', { enabled });
+			overlayToggleMode = savedMode;
+			overlayModeStatus = savedMode
+				? 'Overlay mode set to Toggle (press hotkey again to hide).'
+				: 'Overlay mode set to Timer.';
+		} catch (error) {
+			overlayModeStatus = String(error);
+		}
+	}
+
+	async function saveOverlayDuration() {
+		overlayDurationStatus = '';
+
+		const parsed = Number(overlayDurationInput);
+		const normalized = Number.isFinite(parsed) ? Math.trunc(parsed) : Number.NaN;
+		if (
+			!Number.isFinite(normalized) ||
+			normalized < MIN_OVERLAY_DURATION_SECS ||
+			normalized > MAX_OVERLAY_DURATION_SECS
+		) {
+			overlayDurationStatus = `Duration must be between ${MIN_OVERLAY_DURATION_SECS} and ${MAX_OVERLAY_DURATION_SECS} seconds.`;
+			return;
+		}
+
+		try {
+			const savedSeconds = await invoke<number>('set_overlay_duration_secs', {
+				seconds: normalized,
+			});
+			overlayDurationInput = savedSeconds;
+			overlayDurationStatus = `Overlay duration set to ${savedSeconds}s`;
+		} catch (error) {
+			overlayDurationStatus = String(error);
+		}
 	}
 
 	async function refreshMarketPrices() {
@@ -261,6 +312,57 @@
 
 	{#if themeStatus}
 		<p class="mt-2 text-sm">{themeStatus}</p>
+	{/if}
+
+	<div class="mt-6 p-3 border rounded">
+		<p class="font-medium text-sm">Overlay Mode</p>
+		<label class="flex items-center gap-2 mt-2 text-sm cursor-pointer">
+			<input
+				type="checkbox"
+				bind:checked={overlayToggleMode}
+				onchange={() => void saveOverlayMode(overlayToggleMode)}
+			/>
+			<span>Toggle mode (press once to show, press again to hide)</span>
+		</label>
+		<p class="mt-1 text-xs">
+			{overlayToggleMode
+				? 'Toggle mode ignores the timer and keeps the overlay visible until the next hotkey press.'
+				: 'Timer mode auto-hides the overlay after the configured duration.'}
+		</p>
+	</div>
+
+	{#if overlayModeStatus}
+		<p class="mt-2 text-sm">{overlayModeStatus}</p>
+	{/if}
+
+	<div class="mt-6">
+		<p class="text-sm">Overlay Duration (seconds)</p>
+		<div class="flex items-center gap-2 mt-2">
+			<input
+				type="number"
+				min={MIN_OVERLAY_DURATION_SECS}
+				max={MAX_OVERLAY_DURATION_SECS}
+				step="1"
+				class="px-2 py-1 border rounded w-full"
+				disabled={overlayToggleMode}
+				bind:value={overlayDurationInput}
+			/>
+			<button
+				class="px-3 py-1 border rounded"
+				disabled={overlayToggleMode}
+				onclick={saveOverlayDuration}
+			>
+				Save
+			</button>
+		</div>
+		<p class="mt-1 text-xs">
+			Range: {MIN_OVERLAY_DURATION_SECS}-{MAX_OVERLAY_DURATION_SECS} seconds.
+			{overlayToggleMode ? ' Disabled while Toggle mode is enabled.' : ''}
+		</p>
+	</div>
+
+	{#if overlayDurationStatus}
+		<p class="mt-2 text-sm">{overlayDurationStatus}</p>
 	{/if}
 
 	<div class="mt-6 p-3 border rounded">

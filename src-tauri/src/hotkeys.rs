@@ -1,3 +1,4 @@
+use std::sync::atomic::Ordering;
 use std::str::FromStr;
 
 use tauri::{AppHandle, Manager, Runtime, State};
@@ -72,6 +73,34 @@ pub fn on_pressed<R: Runtime>(app: &AppHandle<R>, shortcut: &Shortcut) {
     };
 
     if shortcut.into_string() != configured {
+        return;
+    }
+
+    let app_state = app.state::<AppState>();
+    let toggle_mode_enabled = app_state
+        .overlay_toggle_mode
+        .lock()
+        .map(|value| *value)
+        .unwrap_or(false);
+
+    if toggle_mode_enabled {
+        if app_state
+            .overlay_toggle_in_flight
+            .swap(true, Ordering::AcqRel)
+        {
+            return;
+        }
+
+        let app_handle = app.clone();
+        std::thread::spawn(move || {
+            if let Err(err) = ocr::toggle_overlay_hotkey(&app_handle) {
+                eprintln!("toggle overlay failed: {err}");
+            }
+            app_handle
+                .state::<AppState>()
+                .overlay_toggle_in_flight
+                .store(false, Ordering::Release);
+        });
         return;
     }
 

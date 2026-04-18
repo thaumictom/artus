@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize};
 use tauri::{
     AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, Position, Runtime, Size, State,
 };
+use tauri_plugin_store::StoreExt;
 use xcap::Window;
 
 use crate::dictionary;
@@ -20,13 +21,20 @@ use crate::market_prices;
 use crate::state::AppState;
 
 const OCR_WHITELIST: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789[]- ";
-const STRICT_NAMES: bool = false;
+const STRICT_NAMES: bool = true;
 const STRICT_NAME_MIN_SCORE_THRESHOLD: f64 = 0.6;
 const STRICT_NAME_HIGH_CONFIDENCE_THRESHOLD: f64 = 0.75;
 const PASS_IMAGE_TO_FRONTEND: bool = true;
 const PASS_TEXT_TO_FRONTEND: bool = false;
 const DEFAULT_OCR_THEME: &str = "EQUINOX";
 const DEFAULT_OCR_TARGET_RGB: [u8; 3] = [158, 159, 167];
+const DEFAULT_OVERLAY_DURATION_SECS: u64 = 10;
+const MIN_OVERLAY_DURATION_SECS: u64 = 1;
+const MAX_OVERLAY_DURATION_SECS: u64 = 60;
+const DEFAULT_OVERLAY_TOGGLE_MODE: bool = false;
+const SETTINGS_STORE_PATH: &str = "settings.json";
+const OVERLAY_DURATION_STORE_KEY: &str = "overlay_duration_secs";
+const OVERLAY_TOGGLE_MODE_STORE_KEY: &str = "overlay_toggle_mode";
 const THEME_COLORS_TOML: &str = include_str!("theme_colors.toml");
 const ENABLE_MORPHOLOGY: bool = false;
 #[cfg(target_os = "windows")]
@@ -178,7 +186,165 @@ pub fn set_ocr_theme<R: Runtime>(
     Ok(())
 }
 
+#[tauri::command]
+pub fn get_overlay_duration_secs(state: State<'_, AppState>) -> Result<u64, String> {
+    state
+        .overlay_duration_secs
+        .lock()
+        .map(|value| *value)
+        .map_err(|_| "failed to read overlay duration".to_string())
+}
+
+#[tauri::command]
+pub fn set_overlay_duration_secs<R: Runtime>(
+    app: AppHandle<R>,
+    state: State<'_, AppState>,
+    seconds: u64,
+) -> Result<u64, String> {
+    if !(MIN_OVERLAY_DURATION_SECS..=MAX_OVERLAY_DURATION_SECS).contains(&seconds) {
+        return Err(format!(
+            "overlay duration must be between {MIN_OVERLAY_DURATION_SECS} and {MAX_OVERLAY_DURATION_SECS} seconds"
+        ));
+    }
+
+    let store = app
+        .store(SETTINGS_STORE_PATH)
+        .map_err(|err| format!("failed to open settings store: {err}"))?;
+    store.set(OVERLAY_DURATION_STORE_KEY, seconds);
+    store
+        .save()
+        .map_err(|err| format!("failed to save overlay duration: {err}"))?;
+
+    let mut overlay_duration_secs = state
+        .overlay_duration_secs
+        .lock()
+        .map_err(|_| "failed to update overlay duration".to_string())?;
+    *overlay_duration_secs = seconds;
+    Ok(*overlay_duration_secs)
+}
+
+#[tauri::command]
+pub fn get_overlay_toggle_mode(state: State<'_, AppState>) -> Result<bool, String> {
+    state
+        .overlay_toggle_mode
+        .lock()
+        .map(|value| *value)
+        .map_err(|_| "failed to read overlay mode".to_string())
+}
+
+#[tauri::command]
+pub fn set_overlay_toggle_mode<R: Runtime>(
+    app: AppHandle<R>,
+    state: State<'_, AppState>,
+    enabled: bool,
+) -> Result<bool, String> {
+    let store = app
+        .store(SETTINGS_STORE_PATH)
+        .map_err(|err| format!("failed to open settings store: {err}"))?;
+    store.set(OVERLAY_TOGGLE_MODE_STORE_KEY, enabled);
+    store
+        .save()
+        .map_err(|err| format!("failed to save overlay mode: {err}"))?;
+
+    let mut overlay_toggle_mode = state
+        .overlay_toggle_mode
+        .lock()
+        .map_err(|_| "failed to update overlay mode".to_string())?;
+    *overlay_toggle_mode = enabled;
+    Ok(*overlay_toggle_mode)
+}
+
+pub fn load_persisted_overlay_duration<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
+    let store = app
+        .store(SETTINGS_STORE_PATH)
+        .map_err(|err| format!("failed to load settings store: {err}"))?;
+
+    let Some(saved_value) = store.get(OVERLAY_DURATION_STORE_KEY) else {
+        return Ok(());
+    };
+
+    let Some(saved_seconds) = saved_value.as_u64() else {
+        return Ok(());
+    };
+
+    if !(MIN_OVERLAY_DURATION_SECS..=MAX_OVERLAY_DURATION_SECS).contains(&saved_seconds) {
+        return Ok(());
+    }
+
+    let app_state = app.state::<AppState>();
+    let mut overlay_duration_secs = app_state
+        .overlay_duration_secs
+        .lock()
+        .map_err(|_| "failed to apply persisted overlay duration".to_string())?;
+    *overlay_duration_secs = saved_seconds;
+    Ok(())
+}
+
+pub fn load_persisted_overlay_mode<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
+    let store = app
+        .store(SETTINGS_STORE_PATH)
+        .map_err(|err| format!("failed to load settings store: {err}"))?;
+
+    let Some(saved_value) = store.get(OVERLAY_TOGGLE_MODE_STORE_KEY) else {
+        let app_state = app.state::<AppState>();
+        let mut overlay_toggle_mode = app_state
+            .overlay_toggle_mode
+            .lock()
+            .map_err(|_| "failed to apply default overlay mode".to_string())?;
+        *overlay_toggle_mode = DEFAULT_OVERLAY_TOGGLE_MODE;
+        return Ok(());
+    };
+
+    let Some(saved_mode) = saved_value.as_bool() else {
+        return Ok(());
+    };
+
+    let app_state = app.state::<AppState>();
+    let mut overlay_toggle_mode = app_state
+        .overlay_toggle_mode
+        .lock()
+        .map_err(|_| "failed to apply persisted overlay mode".to_string())?;
+    *overlay_toggle_mode = saved_mode;
+    Ok(())
+}
+
 pub fn capture_active_window<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
+    capture_active_window_with_mode(app, true)
+}
+
+pub fn toggle_overlay_hotkey<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
+    let overlay = app
+        .get_webview_window("overlay")
+        .ok_or("overlay window not found")?;
+    let is_visible = overlay
+        .is_visible()
+        .map_err(|err| format!("failed to read overlay visibility: {err}"))?;
+
+    if is_visible {
+        let _ = bump_overlay_sequence(app)?;
+        overlay
+            .hide()
+            .map_err(|err| format!("failed to hide overlay: {err}"))?;
+        return Ok(());
+    }
+
+    capture_active_window_with_mode(app, false)
+}
+
+fn bump_overlay_sequence<R: Runtime>(app: &AppHandle<R>) -> Result<u64, String> {
+    let app_state = app.state::<AppState>();
+    let mut guard = app_state
+        .overlay_sequence
+        .lock()
+        .map_err(|_| "failed to update overlay sequence".to_string())?;
+    *guard += 1;
+    Ok(*guard)
+}
+
+fn capture_active_window_with_mode<R: Runtime>(
+    app: &AppHandle<R>,
+    should_auto_hide: bool,
+) -> Result<(), String> {
     let total_started = Instant::now();
 
     let discovery_started = Instant::now();
@@ -391,33 +557,33 @@ pub fn capture_active_window<R: Runtime>(app: &AppHandle<R>) -> Result<(), Strin
         .map_err(|err| format!("failed to emit OCR result: {err}"))?;
     println!("[ocr] overlay show + emit: {:?}", overlay_started.elapsed());
 
-    let sequence = {
-        let app_state = app.state::<AppState>();
-        let mut guard = app_state
-            .overlay_sequence
-            .lock()
-            .map_err(|_| "failed to update overlay sequence")?;
-        *guard += 1;
-        *guard
-    };
+    let sequence = bump_overlay_sequence(app)?;
 
-    let app_handle = app.clone();
-    std::thread::spawn(move || {
-        std::thread::sleep(Duration::from_secs(10));
-        let current_sequence = app_handle
+    if should_auto_hide {
+        let app_handle = app.clone();
+        let overlay_duration_secs = app
             .state::<AppState>()
-            .overlay_sequence
+            .overlay_duration_secs
             .lock()
             .map(|value| *value)
-            .unwrap_or(0);
-        if current_sequence != sequence {
-            return;
-        }
+            .unwrap_or(DEFAULT_OVERLAY_DURATION_SECS);
+        std::thread::spawn(move || {
+            std::thread::sleep(Duration::from_secs(overlay_duration_secs));
+            let current_sequence = app_handle
+                .state::<AppState>()
+                .overlay_sequence
+                .lock()
+                .map(|value| *value)
+                .unwrap_or(0);
+            if current_sequence != sequence {
+                return;
+            }
 
-        if let Some(overlay) = app_handle.get_webview_window("overlay") {
-            let _ = overlay.hide();
-        }
-    });
+            if let Some(overlay) = app_handle.get_webview_window("overlay") {
+                let _ = overlay.hide();
+            }
+        });
+    }
 
     println!("[ocr] total: {:?}", total_started.elapsed());
 

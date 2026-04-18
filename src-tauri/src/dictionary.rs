@@ -138,12 +138,17 @@ fn fetch_items() -> Result<Vec<DictionaryItem>, String> {
     Ok(response
         .data
         .into_iter()
+        .filter(|item| !has_relic_tag(&item.tags))
         .map(|item| DictionaryItem {
             slug: item.slug,
             tags: item.tags,
             name: normalize_dictionary_name(&item.i18n.en.name),
         })
         .collect())
+}
+
+fn has_relic_tag(tags: &[String]) -> bool {
+    tags.iter().any(|tag| tag.eq_ignore_ascii_case("relic"))
 }
 
 fn build_dictionary_names(items: &[DictionaryItem]) -> Vec<String> {
@@ -178,9 +183,12 @@ fn cache_path<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf, String> {
 
 fn load_cache(cache_path: &Path) -> Result<Option<DictionaryCache>, String> {
     match fs::read_to_string(cache_path) {
-        Ok(contents) => serde_json::from_str(&contents)
-            .map(Some)
-            .map_err(|err| format!("failed to parse cached dictionary JSON: {err}")),
+        Ok(contents) => {
+            let mut cache: DictionaryCache = serde_json::from_str(&contents)
+                .map_err(|err| format!("failed to parse cached dictionary JSON: {err}"))?;
+            cache.items.retain(|item| !has_relic_tag(&item.tags));
+            Ok(Some(cache))
+        }
         Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(None),
         Err(err) => Err(format!("failed to read cached dictionary file: {err}")),
     }
