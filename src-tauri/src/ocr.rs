@@ -19,8 +19,8 @@ use crate::layer_shell;
 use crate::market_prices;
 use crate::state::AppState;
 
-const OCR_WHITELIST: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789- ";
-const STRICT_NAMES: bool = true;
+const OCR_WHITELIST: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789[]- ";
+const STRICT_NAMES: bool = false;
 const STRICT_NAME_MIN_SCORE_THRESHOLD: f64 = 0.6;
 const STRICT_NAME_HIGH_CONFIDENCE_THRESHOLD: f64 = 0.75;
 const PASS_IMAGE_TO_FRONTEND: bool = true;
@@ -40,7 +40,7 @@ pub const HORIZONTAL_WORD_GAP_FACTOR: f64 = 0.75;
 // Max vertical center distance (scaled by line height) for assigning words to one line.
 pub const SAME_LINE_VERTICAL_FACTOR: f64 = 0.25;
 // Max vertical gap (scaled by line height) for merging nearby lines into one block.
-pub const MERGE_LINE_VERTICAL_FACTOR: f64 = 1.5;
+pub const MERGE_LINE_VERTICAL_FACTOR: f64 = 1.0;
 // Maximum number of detected lines to merge into a single OCR block.
 pub const MAX_MERGED_LINES: usize = 3;
 // Max horizontal center offset (scaled by line height) tolerated for center-aligned line merges.
