@@ -1,12 +1,19 @@
 use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager, Runtime};
 
 const DICTIONARY_ENDPOINT: &str = "https://api.warframe.market/v2/items";
+const HTTP_USER_AGENT: &str = concat!(
+    env!("CARGO_PKG_NAME"),
+    "/",
+    env!("CARGO_PKG_VERSION"),
+    " (+https://github.com/thaumictom/artus)"
+);
+const DICTIONARY_HTTP_TIMEOUT_SECS: u64 = 20;
 const CACHE_FILE_NAME: &str = "warframe_dictionary.json";
 const MAX_CACHE_AGE_SECS: u64 = 72 * 60 * 60;
 
@@ -113,7 +120,13 @@ pub fn load_cached_dictionary_items<R: Runtime>(
 }
 
 fn fetch_items() -> Result<Vec<DictionaryItem>, String> {
-    let response = reqwest::blocking::Client::new()
+    let client = reqwest::blocking::Client::builder()
+        .user_agent(HTTP_USER_AGENT)
+        .timeout(Duration::from_secs(DICTIONARY_HTTP_TIMEOUT_SECS))
+        .build()
+        .map_err(|err| format!("failed to build dictionary HTTP client: {err}"))?;
+
+    let response = client
         .get(DICTIONARY_ENDPOINT)
         .send()
         .map_err(|err| format!("failed to fetch dictionary: {err}"))?
