@@ -37,6 +37,12 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
+      # Speeds up subsequent builds significantly
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: 'src-tauri'
+
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: |
@@ -59,6 +65,13 @@ jobs:
       - name: Build Linux AppImage bundle
         if: runner.os == 'Linux'
         run: pnpm tauri build --bundles appimage
+
+      # Compresses the resulting .exe payload directly
+      - name: Compress Windows executable with UPX
+        if: runner.os == 'Windows'
+        run: |
+          choco install upx
+          upx -9 src-tauri/target/release/artus.exe
 
       - name: Collect Windows artifact
         if: runner.os == 'Windows'

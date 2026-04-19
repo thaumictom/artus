@@ -35,3 +35,10 @@ tauri-plugin-store = "2"
 [features]
 default = []
 wayland-layer-shell = ["dep:gtk-layer-shell", "dep:gtk", "dep:cairo-rs"]
+
+[profile.release]
+panic = "abort"   # Disables unwinding (saves size)
+codegen-units = 1 # Slower compile, but better optimization
+lto = true        # Link-time optimization (removes dead code)
+opt-level = "s"   # Optimize for size (use "z" if you want to try even smaller)
+strip = true      # Strips symbols
