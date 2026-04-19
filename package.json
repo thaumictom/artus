@@ -38,7 +38,7 @@
 		"bits-ui": "^2.16.5",
 		"clsx": "^2.1.1",
 		"remixicon-svelte": "^0.0.5",
-		"shadcn-svelte": "^1.2.6",
+		"shadcn-svelte": "^1.2.7",
 		"svelte": "^5.0.0",
 		"svelte-check": "^4.0.0",
 		"tailwind-merge": "^3.5.0",
