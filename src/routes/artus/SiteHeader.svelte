@@ -34,10 +34,14 @@
 </script>
 
 <header class="flex justify-between items-center pl-4 border-b w-full" data-tauri-drag-region>
-	<b class="text-sm">{title}</b>
-	<div class="flex overflow-hidden">
+	<div class="flex items-center select-none">
+		<div class="font-expanded font-black text-secondary text-xs uppercase">Artus</div>
+		<div class="bg-secondary mx-4 w-px h-3 text-xs"></div>
+		<div>{title}</div>
+	</div>
+	<div class="flex *:px-4 *:h-10 overflow-hidden">
 		<Button variant="ghost" onclick={minimize} aria-label="Minimize window" class="border-0!">
-			<Icon icon="lucide:minus" aria-hidden="true" />
+			<Icon icon="mdi:minimize" aria-hidden="true" />
 		</Button>
 		<Button
 			variant="ghost"
@@ -46,9 +50,9 @@
 			class="border-0!"
 		>
 			{#if isMaximized}
-				<Icon icon="lucide:minimize" class="text-xs" aria-hidden="true" />
+				<Icon icon="mdi:window-restore" class="text-xs" aria-hidden="true" />
 			{:else}
-				<Icon icon="lucide:maximize" aria-hidden="true" />
+				<Icon icon="mdi:window-maximize" aria-hidden="true" />
 			{/if}
 		</Button>
 		<Button
@@ -57,7 +61,7 @@
 			aria-label="Close window"
 			class="hover:bg-destructive/50! border-0!"
 		>
-			<Icon icon="lucide:x" aria-hidden="true" />
+			<Icon icon="mdi:window-close" aria-hidden="true" />
 		</Button>
 	</div>
 </header>

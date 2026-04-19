@@ -35,7 +35,7 @@
 								isActive={activeSection === section}
 								onclick={() => (activeSection = section)}
 							>
-								<Icon icon={section.icon} class="text-lg" aria-hidden="true"></Icon>
+								<Icon icon={section.icon} class="text-2xl" aria-hidden="true"></Icon>
 								<span>{section.label}</span>
 							</Sidebar.MenuButton>
 						</Sidebar.MenuItem>

@@ -1,8 +1,8 @@
 @import 'tailwindcss';
-@import "tw-animate-css";
-@import "shadcn-svelte/tailwind.css";
-@import "@fontsource-variable/geist";
-@import "@fontsource-variable/ibm-plex-sans";
+@import 'tw-animate-css';
+@import 'shadcn-svelte/tailwind.css';
+@import '@fontsource-variable/archivo';
+@import '@fontsource-variable/archivo/wdth.css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -86,8 +86,8 @@ body {
 }
 
 @theme inline {
-	--font-sans: 'Geist Variable', sans-serif;
-	--font-heading: 'Geist Variable', sans-serif;
+	--font-sans: 'Archivo Variable', sans-serif;
+	--font-heading: 'Archivo Variable', sans-serif;
 	--color-sidebar-ring: var(--sidebar-ring);
 	--color-sidebar-border: var(--sidebar-border);
 	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -137,5 +137,11 @@ body {
 	}
 	html {
 		@apply font-sans;
+	}
+}
+
+@layer utilities {
+	.font-expanded {
+		font-variation-settings: 'wdth' 125;
 	}
 }

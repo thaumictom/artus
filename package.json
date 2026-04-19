@@ -14,6 +14,7 @@
 	},
 	"license": "MIT",
 	"dependencies": {
+		"@fontsource-variable/archivo": "^5.2.8",
 		"@tailwindcss/vite": "^4.1.18",
 		"@tanstack/table-core": "^8.21.3",
 		"@tauri-apps/api": "^2",
