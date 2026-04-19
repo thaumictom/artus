@@ -5,7 +5,6 @@
 
 	type OcrWord = {
 		text: string;
-		price?: string;
 		x: number;
 		y: number;
 		width: number;
@@ -36,7 +35,7 @@
 			class="absolute bg-black/70 p-1 border rounded-sm font-semibold text-teal-400 text-sm whitespace-pre-line"
 			style={`left:${word.x}px;top:${word.y}px;`}
 		>
-			{word.text}{word.price ? ` - ${word.price}` : ''}
+			{word.text}
 		</div>
 	{/each}
 </main>

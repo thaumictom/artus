@@ -1,7 +1,5 @@
-mod dictionary;
 mod hotkeys;
 mod layer_shell;
-mod market_prices;
 mod ocr;
 mod state;
 
@@ -55,15 +53,11 @@ fn main() {
             }
 
             hotkeys::register_initial(app.handle())?;
-            dictionary::refresh_dictionary_on_start(app.handle().clone());
-            market_prices::initialize_market_prices_on_start(app.handle().clone());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             hotkeys::get_hotkey,
             hotkeys::set_hotkey,
-            market_prices::get_market_prices_status,
-            market_prices::refresh_market_prices,
             ocr::get_ocr_theme_settings,
             ocr::set_ocr_theme,
             ocr::get_overlay_duration_secs,

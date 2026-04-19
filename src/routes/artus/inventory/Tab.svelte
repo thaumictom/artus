@@ -1,23 +1,19 @@
 <script lang="ts">
 	import { listen } from '@tauri-apps/api/event';
 	import { onMount } from 'svelte';
+	import type { ComponentProps } from 'svelte';
 
 	import InventoryMain from './Main.svelte';
 
 	type OcrWord = {
 		text: string;
-		price?: string | null;
 	};
 
 	type OcrResultPayload = {
 		words?: OcrWord[];
 	};
 
-	type InventoryItem = {
-		name: string;
-		quantity: number;
-		medianPrice: string | null;
-	};
+	type InventoryItem = ComponentProps<typeof InventoryMain>['items'][number];
 
 	const INVENTORY_STORAGE_KEY = 'artus.inventory.v1';
 
@@ -58,12 +54,7 @@
 	});
 
 	function normalizeDetectedName(name: string): string {
-		return name.replace(/^\*+/, '').split(/\s+/).filter(Boolean).join(' ').trim();
-	}
-
-	function normalizeMedianPrice(price: string | null | undefined): string | null {
-		const normalized = price?.trim() ?? '';
-		return normalized.length > 0 ? normalized : null;
+		return name.split(/\s+/).filter(Boolean).join(' ').trim();
 	}
 
 	function loadPersistedInventoryItems() {
@@ -118,7 +109,6 @@
 			const candidate = entry as {
 				name?: unknown;
 				quantity?: unknown;
-				medianPrice?: unknown;
 			};
 
 			const normalizedName =
@@ -134,17 +124,11 @@
 				continue;
 			}
 
-			const normalizedMedianPrice =
-				typeof candidate.medianPrice === 'string'
-					? normalizeMedianPrice(candidate.medianPrice)
-					: null;
-
 			const existing = mergedByName.get(normalizedName);
 			if (!existing) {
 				mergedByName.set(normalizedName, {
 					name: normalizedName,
 					quantity: numericQuantity,
-					medianPrice: normalizedMedianPrice,
 				});
 				continue;
 			}
@@ -152,22 +136,13 @@
 			mergedByName.set(normalizedName, {
 				name: normalizedName,
 				quantity: existing.quantity + numericQuantity,
-				medianPrice: normalizedMedianPrice ?? existing.medianPrice,
 			});
 		}
 
 		return [...mergedByName.values()];
 	}
 
-	function isLowConfidenceDictionaryMatch(name: string): boolean {
-		return /^\s*\*/.test(name);
-	}
-
 	function addDetectedInventoryItem(word: OcrWord) {
-		if (isLowConfidenceDictionaryMatch(word.text)) {
-			return;
-		}
-
 		const name = normalizeDetectedName(word.text);
 		if (!name) {
 			return;
@@ -175,13 +150,11 @@
 
 		const nextItems = [...inventoryItems];
 		const index = nextItems.findIndex((item) => item.name === name);
-		const detectedPrice = normalizeMedianPrice(word.price);
 
 		if (index === -1) {
 			nextItems.push({
 				name,
 				quantity: 1,
-				medianPrice: detectedPrice,
 			});
 			inventoryItems = nextItems;
 			return;
@@ -191,7 +164,6 @@
 		nextItems[index] = {
 			...existing,
 			quantity: existing.quantity + 1,
-			medianPrice: detectedPrice ?? existing.medianPrice,
 		};
 		inventoryItems = nextItems;
 	}

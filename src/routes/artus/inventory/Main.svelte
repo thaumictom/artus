@@ -4,7 +4,6 @@
 	type InventoryItem = {
 		name: string;
 		quantity: number;
-		medianPrice: string | null;
 	};
 
 	let searchQuery = $state('');
@@ -30,13 +29,6 @@
 
 		return items.filter((item) => item.name.toLowerCase().includes(normalizedSearchQuery));
 	});
-
-	function formatMedianPrice(price: string | null): string {
-		if (!price) {
-			return 'Unknown';
-		}
-		return `${price}p`;
-	}
 </script>
 
 <section class="max-w-5xl">
@@ -81,7 +73,6 @@
 				<Table.Header>
 					<Table.Row>
 						<Table.Head class="top-0 sticky bg-background">Item</Table.Head>
-						<Table.Head class="top-0 sticky bg-background">Median Platinum</Table.Head>
 						<Table.Head class="top-0 sticky bg-background w-24 text-right">Quantity</Table.Head>
 						<Table.Head class="top-0 sticky bg-background w-28 text-right">Adjust</Table.Head>
 					</Table.Row>
@@ -90,7 +81,6 @@
 					{#each filteredItems as item (item.name)}
 						<Table.Row>
 							<Table.Cell class="font-medium">{item.name}</Table.Cell>
-							<Table.Cell>{formatMedianPrice(item.medianPrice)}</Table.Cell>
 							<Table.Cell class="text-right">{item.quantity}</Table.Cell>
 							<Table.Cell>
 								<div class="flex justify-end items-center gap-1">
@@ -115,7 +105,7 @@
 						</Table.Row>
 					{:else}
 						<Table.Row>
-							<Table.Cell colspan={4} class="h-20 text-muted-foreground text-center">
+							<Table.Cell colspan={3} class="h-20 text-muted-foreground text-center">
 								No items match your search.
 							</Table.Cell>
 						</Table.Row>
@@ -123,8 +113,5 @@
 				</Table.Body>
 			</Table.Root>
 		</div>
-		<p class="mt-2 text-muted-foreground text-xs">
-			Prices marked with * come from current offers when daily median is unavailable.
-		</p>
 	{/if}
 </section>

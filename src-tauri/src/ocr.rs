@@ -15,15 +15,10 @@ use tauri::{
 use tauri_plugin_store::StoreExt;
 use xcap::Window;
 
-use crate::dictionary;
 use crate::layer_shell;
-use crate::market_prices;
 use crate::state::AppState;
 
 const OCR_WHITELIST: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789[]- ";
-const STRICT_NAMES: bool = true;
-const STRICT_NAME_MIN_SCORE_THRESHOLD: f64 = 0.6;
-const STRICT_NAME_HIGH_CONFIDENCE_THRESHOLD: f64 = 0.75;
 const PASS_IMAGE_TO_FRONTEND: bool = true;
 const PASS_TEXT_TO_FRONTEND: bool = false;
 const DEFAULT_OCR_THEME: &str = "EQUINOX";
@@ -59,7 +54,6 @@ pub const CENTER_ALIGNED_HORIZONTAL_GAP_FACTOR: f64 = 3.0;
 #[derive(Debug, Clone, Serialize)]
 pub struct OcrWord {
     pub text: String,
-    pub price: Option<String>,
     pub x: f64,
     pub y: f64,
     pub width: f64,
@@ -105,7 +99,6 @@ struct ThemeColorsToml {
 #[derive(Debug, Clone)]
 struct RawWord {
     text: String,
-    price: Option<String>,
     x: f64,
     y: f64,
     width: f64,
@@ -457,7 +450,6 @@ fn capture_active_window_with_mode<R: Runtime>(
             {
                 words.push(OcrWord {
                     text,
-                    price: None,
                     x: left as f64,
                     y: top as f64,
                     width: (right - left) as f64,
@@ -474,10 +466,7 @@ fn capture_active_window_with_mode<R: Runtime>(
         }
     }
 
-    let grouped_words = apply_market_prices(
-        app,
-        apply_strict_names(app, group_words_into_blocks(&words))?,
-    );
+    let grouped_words = group_words_into_blocks(&words);
     println!(
         "[ocr] parse OCR words: {:?} ({} words -> {} blocks)",
         parse_started.elapsed(),
@@ -641,123 +630,6 @@ fn gray_to_png_bytes(gray: &GrayImage) -> Result<Vec<u8>, String> {
     Ok(bytes)
 }
 
-fn apply_strict_names<R: Runtime>(
-    app: &AppHandle<R>,
-    words: Vec<OcrWord>,
-) -> Result<Vec<OcrWord>, String> {
-    if !STRICT_NAMES {
-        return Ok(words);
-    }
-
-    let dictionary = load_strict_name_dictionary(app)?;
-    if dictionary.is_empty() {
-        return Ok(vec![]);
-    }
-
-    Ok(words
-        .into_iter()
-        .filter_map(|word| {
-            match_closest_dictionary_name(&dictionary, &word.text)
-                .map(|text| OcrWord { text, ..word })
-        })
-        .collect())
-}
-
-fn apply_market_prices<R: Runtime>(app: &AppHandle<R>, words: Vec<OcrWord>) -> Vec<OcrWord> {
-    words
-        .into_iter()
-        .map(|mut word| {
-            let lookup_name = word.text.strip_prefix('*').unwrap_or(&word.text);
-            word.price = market_prices::lookup_price_for_name(app, lookup_name);
-            word
-        })
-        .collect()
-}
-
-fn load_strict_name_dictionary<R: Runtime>(app: &AppHandle<R>) -> Result<Vec<String>, String> {
-    dictionary::load_cached_dictionary_names(app)
-}
-
-fn normalize_dictionary_name(name: &str) -> String {
-    name.split_whitespace().collect::<Vec<_>>().join(" ")
-}
-
-fn match_closest_dictionary_name(dictionary: &[String], fragment: &str) -> Option<String> {
-    let normalized_fragment = normalize_dictionary_name(fragment);
-    if normalized_fragment.is_empty() {
-        return None;
-    }
-
-    let mut best_name = None;
-    let mut best_score = 0.0;
-
-    for candidate in dictionary {
-        let score = normalized_similarity(&normalized_fragment, candidate);
-        if score > best_score {
-            best_score = score;
-            best_name = Some(candidate.clone());
-        }
-    }
-
-    let best_name = best_name?;
-    if best_score < STRICT_NAME_MIN_SCORE_THRESHOLD {
-        return None;
-    }
-
-    if best_score < STRICT_NAME_HIGH_CONFIDENCE_THRESHOLD {
-        Some(format!("*{best_name}"))
-    } else {
-        Some(best_name)
-    }
-}
-
-fn normalized_similarity(left: &str, right: &str) -> f64 {
-    let left = left.to_ascii_lowercase();
-    let right = right.to_ascii_lowercase();
-
-    if left == right {
-        return 1.0;
-    }
-
-    let max_len = left.chars().count().max(right.chars().count());
-    if max_len == 0 {
-        return 1.0;
-    }
-
-    let distance = levenshtein_distance(&left, &right);
-    1.0 - (distance as f64 / max_len as f64)
-}
-
-fn levenshtein_distance(left: &str, right: &str) -> usize {
-    let left_chars = left.chars().collect::<Vec<_>>();
-    let right_chars = right.chars().collect::<Vec<_>>();
-
-    if left_chars.is_empty() {
-        return right_chars.len();
-    }
-    if right_chars.is_empty() {
-        return left_chars.len();
-    }
-
-    let mut previous_row = (0..=right_chars.len()).collect::<Vec<_>>();
-    let mut current_row = vec![0; right_chars.len() + 1];
-
-    for (left_index, left_char) in left_chars.iter().enumerate() {
-        current_row[0] = left_index + 1;
-
-        for (right_index, right_char) in right_chars.iter().enumerate() {
-            let substitution_cost = usize::from(left_char != right_char);
-            current_row[right_index + 1] = (current_row[right_index] + 1)
-                .min(previous_row[right_index + 1] + 1)
-                .min(previous_row[right_index] + substitution_cost);
-        }
-
-        previous_row.clone_from_slice(&current_row);
-    }
-
-    previous_row[right_chars.len()]
-}
-
 fn resolve_tessdata<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf, String> {
     let mut checked_paths = Vec::new();
 
@@ -913,7 +785,6 @@ fn group_words_into_blocks(words: &[OcrWord]) -> Vec<OcrWord> {
         .iter()
         .map(|word| RawWord {
             text: word.text.clone(),
-            price: word.price.clone(),
             x: word.x,
             y: word.y,
             width: word.width,
@@ -986,9 +857,6 @@ fn group_words_into_blocks(words: &[OcrWord]) -> Vec<OcrWord> {
                     if gap <= max_gap {
                         segment.text.push(' ');
                         segment.text.push_str(&word.text);
-                        if segment.price.is_none() {
-                            segment.price = word.price.clone();
-                        }
                         let right = (segment.x + segment.width).max(word.x + word.width);
                         let bottom = (segment.y + segment.height).max(word.y + word.height);
                         segment.x = segment.x.min(word.x);
@@ -1081,7 +949,6 @@ fn group_words_into_blocks(words: &[OcrWord]) -> Vec<OcrWord> {
 
         merged_blocks.push(OcrWord {
             text: merged_text,
-            price: first.price.clone(),
             x: merged_x,
             y: merged_y,
             width: merged_right - merged_x,

@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { listen } from '@tauri-apps/api/event';
-	import { invoke } from '@tauri-apps/api/core';
 	import { onMount } from 'svelte';
 
 	type OcrDebugImagePayload = {
@@ -14,40 +13,15 @@
 		text: string;
 	};
 
-	type MarketPricesStatusPayload = {
-		endpoint_last_fetched_at_unix_secs: number | null;
-		last_fetched_data_from: string | null;
-		manual_refresh_cooldown_secs_left: number;
-		last_error: string | null;
-		loaded_price_count: number;
-	};
-
 	let debugImageUrl = $state('');
 	let debugImageInfo = $state('');
 	let ocrText = $state('');
 	let isImageFullscreen = $state(false);
-	let marketPricesStatus = $state<MarketPricesStatusPayload | null>(null);
-	let marketPricesStatusMessage = $state('');
-	let isRefreshingMarketPrices = $state(false);
-	let marketRefreshCooldownSecsLeft = $state(0);
-
-	function applyMarketPricesStatus(status: MarketPricesStatusPayload) {
-		marketPricesStatus = status;
-		marketRefreshCooldownSecsLeft = status.manual_refresh_cooldown_secs_left;
-	}
-
-	function tickMarketRefreshCooldown() {
-		if (marketRefreshCooldownSecsLeft > 0) {
-			marketRefreshCooldownSecsLeft -= 1;
-		}
-	}
 
 	onMount(() => {
 		let unlistenImage: (() => void) | undefined;
 		let unlistenText: (() => void) | undefined;
-		let unlistenMarketStatus: (() => void) | undefined;
 		let activeUrl = '';
-		const cooldownTicker = setInterval(tickMarketRefreshCooldown, 1000);
 
 		listen<OcrDebugImagePayload>('ocr_debug_image', (event) => {
 			const payload = event.payload;
@@ -68,81 +42,12 @@
 			unlistenText = cleanup;
 		});
 
-		listen<MarketPricesStatusPayload>('market_prices_status_updated', (event) => {
-			applyMarketPricesStatus(event.payload);
-		}).then((cleanup) => {
-			unlistenMarketStatus = cleanup;
-		});
-
-		(async () => {
-			try {
-				const marketStatus = await invoke<MarketPricesStatusPayload>('get_market_prices_status');
-				applyMarketPricesStatus(marketStatus);
-			} catch (error) {
-				marketPricesStatusMessage = String(error);
-			}
-		})();
-
 		return () => {
 			unlistenImage?.();
 			unlistenText?.();
-			unlistenMarketStatus?.();
-			clearInterval(cooldownTicker);
 			if (activeUrl) URL.revokeObjectURL(activeUrl);
 		};
 	});
-
-	async function refreshMarketPrices() {
-		if (isRefreshingMarketPrices || marketRefreshCooldownSecsLeft > 0) {
-			return;
-		}
-
-		marketPricesStatusMessage = '';
-		isRefreshingMarketPrices = true;
-
-		try {
-			const nextStatus = await invoke<MarketPricesStatusPayload>('refresh_market_prices');
-			applyMarketPricesStatus(nextStatus);
-			marketPricesStatusMessage = 'Market prices refreshed.';
-		} catch (error) {
-			marketPricesStatusMessage = String(error);
-
-			try {
-				const fallbackStatus = await invoke<MarketPricesStatusPayload>('get_market_prices_status');
-				applyMarketPricesStatus(fallbackStatus);
-			} catch {
-				// Keep the prior UI state if fetching fallback status also fails.
-			}
-		} finally {
-			isRefreshingMarketPrices = false;
-		}
-	}
-
-	function formatEndpointFetchedAt(unixSeconds: number | null | undefined): string {
-		if (!unixSeconds) {
-			return 'Not loaded yet';
-		}
-
-		const date = new Date(unixSeconds * 1000);
-		if (Number.isNaN(date.getTime())) {
-			return 'Unknown';
-		}
-
-		return date.toLocaleString();
-	}
-
-	function formatDataFetchedAt(isoString: string | null | undefined): string {
-		if (!isoString) {
-			return 'Unknown';
-		}
-
-		const date = new Date(isoString);
-		if (Number.isNaN(date.getTime())) {
-			return isoString;
-		}
-
-		return date.toLocaleString();
-	}
 
 	function openImageFullscreen() {
 		isImageFullscreen = true;
@@ -154,40 +59,6 @@
 </script>
 
 <section class="max-w-md">
-	<div class="p-3 border rounded">
-		<p class="font-medium text-sm">Market Endpoint</p>
-		<p class="mt-2 text-sm">
-			Endpoint last fetched at:
-			{formatEndpointFetchedAt(marketPricesStatus?.endpoint_last_fetched_at_unix_secs)}
-		</p>
-		<p class="mt-1 text-sm">
-			Last fetched data from: {formatDataFetchedAt(marketPricesStatus?.last_fetched_data_from)}
-		</p>
-		<p class="mt-1 text-sm">Loaded prices: {marketPricesStatus?.loaded_price_count ?? 0}</p>
-
-		<div class="flex items-center gap-2 mt-3">
-			<button
-				class="px-3 py-1 border rounded"
-				disabled={isRefreshingMarketPrices || marketRefreshCooldownSecsLeft > 0}
-				onclick={refreshMarketPrices}
-			>
-				{isRefreshingMarketPrices ? 'Refreshing...' : 'Refresh'}
-			</button>
-
-			{#if marketRefreshCooldownSecsLeft > 0}
-				<span class="text-xs">Cooldown: {marketRefreshCooldownSecsLeft}s</span>
-			{/if}
-		</div>
-
-		{#if marketPricesStatus?.last_error}
-			<p class="mt-2 text-sm">Last refresh error: {marketPricesStatus.last_error}</p>
-		{/if}
-
-		{#if marketPricesStatusMessage}
-			<p class="mt-2 text-sm">{marketPricesStatusMessage}</p>
-		{/if}
-	</div>
-
 	{#if debugImageUrl}
 		<div class="mt-4">
 			<p class="text-sm">OCR Input ({debugImageInfo})</p>
