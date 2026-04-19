@@ -16,6 +16,7 @@
 
 	const MIN_OVERLAY_DURATION_SECS = 1;
 	const MAX_OVERLAY_DURATION_SECS = 60;
+	const commitHash = import.meta.env.VITE_ARTUS_COMMIT_HASH || 'unknown';
 
 	let hotkey = $state('Home');
 	let hotkeyStatus = $state('');
@@ -224,4 +225,9 @@
 	{#if overlayDurationStatus}
 		<p class="mt-2 text-sm">{overlayDurationStatus}</p>
 	{/if}
+
+	<div class="mt-6 pt-4 border-t">
+		<p class="text-sm">Build Commit</p>
+		<p class="font-mono text-muted-foreground text-xs break-all">{commitHash}</p>
+	</div>
 </section>
