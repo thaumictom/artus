@@ -3,5 +3,13 @@
 	"identifier": "default",
 	"description": "Capability for the main window",
 	"windows": ["artus", "overlay"],
-	"permissions": ["core:default", "opener:default", "store:default"]
+	"permissions": [
+		"core:default",
+		"core:window:allow-close",
+		"core:window:allow-minimize",
+		"core:window:allow-toggle-maximize",
+		"core:window:allow-start-dragging",
+		"opener:default",
+		"store:default"
+	]
 }
