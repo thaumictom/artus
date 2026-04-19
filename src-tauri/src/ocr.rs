@@ -394,7 +394,7 @@ fn capture_active_window_with_mode<R: Runtime>(
     if PASS_IMAGE_TO_FRONTEND {
         let debug_started = Instant::now();
         let png_bytes = gray_to_png_bytes(&filtered)?;
-        if let Some(dashboard) = app.get_webview_window("dashboard") {
+        if let Some(dashboard) = app.get_webview_window("artus") {
             let _ = dashboard.emit(
                 "ocr_debug_image",
                 OcrDebugImagePayload {
@@ -494,7 +494,7 @@ fn capture_active_window_with_mode<R: Runtime>(
             .collect::<Vec<_>>()
             .join("\n\n");
 
-        if let Some(dashboard) = app.get_webview_window("dashboard") {
+        if let Some(dashboard) = app.get_webview_window("artus") {
             let _ = dashboard.emit("ocr_text_result", OcrTextPayload { text });
         }
         println!("[ocr] text emit: {:?}", text_started.elapsed());
@@ -547,14 +547,13 @@ fn capture_active_window_with_mode<R: Runtime>(
         });
     }
 
-    overlay
-        .emit(
-            "ocr_result",
-            OcrPayload {
-                words: grouped_words,
-            },
-        )
-        .map_err(|err| format!("failed to emit OCR result: {err}"))?;
+    app.emit(
+        "ocr_result",
+        OcrPayload {
+            words: grouped_words,
+        },
+    )
+    .map_err(|err| format!("failed to emit OCR result: {err}"))?;
     println!("[ocr] overlay show + emit: {:?}", overlay_started.elapsed());
 
     let sequence = bump_overlay_sequence(app)?;

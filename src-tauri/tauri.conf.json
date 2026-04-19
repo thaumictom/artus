@@ -12,9 +12,9 @@
 	"app": {
 		"windows": [
 			{
-				"title": "artus-dashboard",
-				"label": "dashboard",
-				"url": "/dashboard",
+				"title": "artus",
+				"label": "artus",
+				"url": "/artus",
 				"width": 800,
 				"height": 600
 			},

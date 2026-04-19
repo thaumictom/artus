@@ -1,14 +1,7 @@
 {
-  "$schema": "../gen/schemas/desktop-schema.json",
-  "identifier": "default",
-  "description": "Capability for the main window",
-  "windows": [
-    "dashboard",
-    "overlay"
-  ],
-  "permissions": [
-    "core:default",
-    "opener:default",
-    "store:default"
-  ]
+	"$schema": "../gen/schemas/desktop-schema.json",
+	"identifier": "default",
+	"description": "Capability for the main window",
+	"windows": ["artus", "overlay"],
+	"permissions": ["core:default", "opener:default", "store:default"]
 }
