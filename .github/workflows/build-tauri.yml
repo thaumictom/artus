@@ -13,9 +13,7 @@ jobs:
       matrix:
         include:
           - os: windows-latest
-            artifact_name: artus-windows-exe
           - os: ubuntu-24.04
-            artifact_name: artus-linux-appimage
 
     runs-on: ${{ matrix.os }}
 
@@ -37,7 +35,6 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
-      # Speeds up subsequent builds significantly
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
         with:
@@ -58,46 +55,15 @@ jobs:
       - name: Install JS dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build Windows portable executable
-        if: runner.os == 'Windows'
-        run: pnpm tauri build --no-bundle
-
-      - name: Build Linux AppImage bundle
-        if: runner.os == 'Linux'
-        run: pnpm tauri build --bundles appimage
-
-      # Compresses the resulting .exe payload directly
-      - name: Compress Windows executable with UPX
-        if: runner.os == 'Windows'
-        run: |
-          choco install upx
-          upx -9 src-tauri/target/release/artus.exe
-
-      - name: Collect Windows artifact
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          $exe = "src-tauri/target/release/artus.exe"
-          if (-not (Test-Path $exe)) {
-            throw "No portable executable found at $exe"
-          }
-          New-Item -ItemType Directory -Path dist -Force | Out-Null
-          Copy-Item $exe dist/artus-windows.exe
-
-      - name: Collect Linux artifact
-        if: runner.os == 'Linux'
-        run: |
-          APPIMAGE=$(find src-tauri/target/release/bundle/appimage -maxdepth 1 -type f -name '*.AppImage' | head -n 1)
-          if [ -z "$APPIMAGE" ]; then
-            echo "No .AppImage file found in src-tauri/target/release/bundle/appimage"
-            exit 1
-          fi
-          mkdir -p dist
-          cp "$APPIMAGE" dist/artus-linux.AppImage
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - name: Build and Publish Release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
         with:
-          name: ${{ matrix.artifact_name }}
-          path: dist/*
-          if-no-files-found: error
+          tagName: v__VERSION__
+          releaseName: 'Release v__VERSION__'
+          releaseDraft: false
+          prerelease: false
+          args: ${{ matrix.os == 'ubuntu-24.04' && '--bundles appimage' || '--bundles nsis' }}
