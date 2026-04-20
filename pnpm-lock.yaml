@@ -90,6 +90,9 @@ importers:
       shadcn-svelte:
         specifier: ^1.2.7
         version: 1.2.7(svelte@5.51.2)
+      simple-git-hooks:
+        specifier: ^2.13.1
+        version: 2.13.1
       svelte:
         specifier: ^5.0.0
         version: 5.51.2
@@ -996,6 +999,10 @@ packages:
     peerDependencies:
       svelte: ^5.0.0
 
+  simple-git-hooks@2.13.1:
+    resolution: {integrity: sha512-WszCLXwT4h2k1ufIXAgsbiTOazqqevFCIncOuUBZJ91DdvWcC5+OFkluWRQPrcuSYd8fjq+o2y1QfWqYMoAToQ==}
+    hasBin: true
+
   sirv@3.0.2:
     resolution: {integrity: sha512-2wcC/oGxHis/BoHkkPwldgiPSYcpZK3JU28WoMVv55yHJgcZ8rlXvuG9iZggz+sU1d4bRgIGASwyWqjxu3FM0g==}
     engines: {node: '>=18'}
@@ -1803,6 +1810,8 @@ snapshots:
       postcss: 8.5.6
       svelte: 5.51.2
       tailwind-merge: 3.5.0
+
+  simple-git-hooks@2.13.1: {}
 
   sirv@3.0.2:
     dependencies:

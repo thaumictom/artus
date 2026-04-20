@@ -25,6 +25,7 @@
 	const MIN_OVERLAY_DURATION_SECS = 1;
 	const MAX_OVERLAY_DURATION_SECS = 60;
 	const commitHash = import.meta.env.VITE_ARTUS_COMMIT_HASH || 'unknown';
+	const appVersion = import.meta.env.VITE_ARTUS_VERSION || 'unknown';
 
 	let hotkey = $state('Home');
 	let hotkeyStatus = $state('');
@@ -336,6 +337,6 @@
 
 	<div class="mt-6 pt-4 border-t">
 		<p class="text-sm">Build Commit</p>
-		<p class="font-mono text-muted-foreground text-xs break-all">{commitHash}</p>
+		<p class="font-mono text-muted-foreground text-xs break-all">{commitHash} | v{appVersion}</p>
 	</div>
 </section>

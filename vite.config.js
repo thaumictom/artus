@@ -26,13 +26,25 @@ function resolveCommitHash() {
 	}
 }
 
+function resolveAppVersion() {
+	// @ts-expect-error process is a nodejs global
+	const packageVersion = process.env.npm_package_version;
+	if (typeof packageVersion === "string" && packageVersion.trim().length > 0) {
+		return packageVersion.trim();
+	}
+
+	return "unknown";
+}
+
 const commitHash = resolveCommitHash();
+const appVersion = resolveAppVersion();
 
 // https://vite.dev/config/
 export default defineConfig(async () => ({
 	plugins: [tailwindcss(), sveltekit()],
 	define: {
 		"import.meta.env.VITE_ARTUS_COMMIT_HASH": JSON.stringify(commitHash),
+		"import.meta.env.VITE_ARTUS_VERSION": JSON.stringify(appVersion),
 	},
 
 	// Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
