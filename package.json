@@ -25,6 +25,8 @@
 		"@wfcd/items": "^1.1272.167",
 		"class-variance-authority": "^0.7.1",
 		"mode-watcher": "^1.1.0",
+		"overlayscrollbars": "^2.15.1",
+		"overlayscrollbars-svelte": "^0.5.5",
 		"tailwindcss": "^4.1.18"
 	},
 	"devDependencies": {

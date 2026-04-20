@@ -33,10 +33,10 @@
 	let { title = 'Artus' } = $props();
 </script>
 
-<header class="flex justify-between items-center pl-4 border-b w-full" data-tauri-drag-region>
+<header class="flex justify-between items-center pl-4 w-full" data-tauri-drag-region>
 	<div class="flex items-center select-none">
-		<div class="font-expanded font-black text-secondary text-xs uppercase">Artus</div>
-		<div class="bg-secondary mx-4 w-px h-3 text-xs"></div>
+		<div class="font-expanded font-black text-input text-xs uppercase">Artus</div>
+		<div class="mx-4 bg-border w-px h-3 text-xs"></div>
 		<div>{title}</div>
 	</div>
 	<div class="flex *:px-4 *:h-10 overflow-hidden">

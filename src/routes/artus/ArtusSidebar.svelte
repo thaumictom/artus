@@ -20,19 +20,19 @@
 </script>
 
 <Sidebar.Root
-	class="mt-2 border-0!"
+	class="border-0!"
 	collapsible="icon"
 	onmouseenter={() => (isOpen = false)}
 	onmouseleave={() => (isOpen = false)}
 >
 	<Sidebar.Content>
-		<Sidebar.Group class="pt-0">
+		<Sidebar.Group>
 			<Sidebar.GroupContent>
 				<Sidebar.Menu>
 					{#each sections as section (section.id)}
 						<Sidebar.MenuItem>
 							<Sidebar.MenuButton
-								isActive={activeSection === section}
+								isActive={activeSection?.id === section.id}
 								onclick={() => (activeSection = section)}
 							>
 								<Icon icon={section.icon} class="text-2xl" aria-hidden="true"></Icon>

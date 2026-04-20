@@ -1,8 +1,10 @@
 <script lang="ts">
+	import { OverlayScrollbarsComponent } from 'overlayscrollbars-svelte';
 	import ArtusMainPage from './ArtusMainPage.svelte';
 	import ArtusSidebar from './ArtusSidebar.svelte';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import SiteHeader from './SiteHeader.svelte';
+	import { mode } from 'mode-watcher';
 
 	type ArtusSection = 'dashboard' | 'settings' | 'mastery' | 'inventory';
 
@@ -15,16 +17,20 @@
 
 	let activeSection = $state(sections[0]);
 	let isSidebarOpen = $state(false);
+	let scrollbarTheme = $derived(mode.current === 'dark' ? 'os-theme-light' : 'os-theme-dark');
 </script>
 
-<div class="bg-sidebar">
-	<div data-tauri-drag-region class="bg-sidebar h-2"></div>
-	<Sidebar.Provider bind:open={isSidebarOpen}>
-		<ArtusSidebar {sections} bind:activeSection bind:isOpen={isSidebarOpen} />
+<Sidebar.Provider bind:open={isSidebarOpen} class="h-svh">
+	<ArtusSidebar {sections} bind:activeSection bind:isOpen={isSidebarOpen} />
 
-		<Sidebar.Inset class="mr-2 rounded-[5px] overflow-hidden">
-			<SiteHeader title={activeSection.label} />
+	<Sidebar.Inset class="bg-sidebar">
+		<SiteHeader title={activeSection.label} />
+		<OverlayScrollbarsComponent
+			defer
+			options={{ scrollbars: { theme: scrollbarTheme } }}
+			class="bg-background rounded-tl-[6px] h-full"
+		>
 			<ArtusMainPage activeSection={activeSection.id} />
-		</Sidebar.Inset>
-	</Sidebar.Provider>
-</div>
+		</OverlayScrollbarsComponent>
+	</Sidebar.Inset>
+</Sidebar.Provider>

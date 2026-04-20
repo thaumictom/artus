@@ -14,6 +14,14 @@
 		selected_theme: string;
 	};
 
+	type OcrDictionaryMappingSettingsPayload = {
+		enabled: boolean;
+		threshold: number;
+		hard_disabled: boolean;
+		min_threshold: number;
+		max_threshold: number;
+	};
+
 	const MIN_OVERLAY_DURATION_SECS = 1;
 	const MAX_OVERLAY_DURATION_SECS = 60;
 	const commitHash = import.meta.env.VITE_ARTUS_COMMIT_HASH || 'unknown';
@@ -23,28 +31,45 @@
 	let themeStatus = $state('');
 	let overlayDurationStatus = $state('');
 	let overlayModeStatus = $state('');
+	let dictionaryMappingStatus = $state('');
 	let ocrThemes = $state<OcrThemeOption[]>([]);
 	let selectedOcrTheme = $state('EQUINOX');
 	let overlayDurationInput = $state(10);
 	let overlayToggleMode = $state(false);
+	let dictionaryMappingEnabled = $state(true);
+	let dictionaryMappingThreshold = $state(0.62);
+	let dictionaryMappingHardDisabled = $state(false);
+	let dictionaryMappingMinThreshold = $state(0);
+	let dictionaryMappingMaxThreshold = $state(1);
 	let isThemeInitialized = $state(false);
 
 	onMount(() => {
 		(async () => {
 			try {
-				const [savedHotkey, themeSettings, overlayDurationSecs, savedToggleMode] =
-					await Promise.all([
-						invoke<string>('get_hotkey'),
-						invoke<OcrThemeSettingsPayload>('get_ocr_theme_settings'),
-						invoke<number>('get_overlay_duration_secs'),
-						invoke<boolean>('get_overlay_toggle_mode'),
-					]);
+				const [
+					savedHotkey,
+					themeSettings,
+					overlayDurationSecs,
+					savedToggleMode,
+					dictionaryMappingSettings,
+				] = await Promise.all([
+					invoke<string>('get_hotkey'),
+					invoke<OcrThemeSettingsPayload>('get_ocr_theme_settings'),
+					invoke<number>('get_overlay_duration_secs'),
+					invoke<boolean>('get_overlay_toggle_mode'),
+					invoke<OcrDictionaryMappingSettingsPayload>('get_ocr_dictionary_mapping_settings'),
+				]);
 
 				hotkey = savedHotkey;
 				ocrThemes = themeSettings.themes;
 				selectedOcrTheme = themeSettings.selected_theme;
 				overlayDurationInput = overlayDurationSecs;
 				overlayToggleMode = savedToggleMode;
+				dictionaryMappingEnabled = dictionaryMappingSettings.enabled;
+				dictionaryMappingThreshold = dictionaryMappingSettings.threshold;
+				dictionaryMappingHardDisabled = dictionaryMappingSettings.hard_disabled;
+				dictionaryMappingMinThreshold = dictionaryMappingSettings.min_threshold;
+				dictionaryMappingMaxThreshold = dictionaryMappingSettings.max_threshold;
 				isThemeInitialized = true;
 			} catch (error) {
 				themeStatus = String(error);
@@ -116,6 +141,46 @@
 			overlayDurationStatus = `Overlay duration set to ${savedSeconds}s`;
 		} catch (error) {
 			overlayDurationStatus = String(error);
+		}
+	}
+
+	async function saveDictionaryMappingEnabled(enabled: boolean = dictionaryMappingEnabled) {
+		dictionaryMappingStatus = '';
+
+		try {
+			const savedEnabled = await invoke<boolean>('set_ocr_dictionary_mapping_enabled', {
+				enabled,
+			});
+			dictionaryMappingEnabled = savedEnabled;
+			dictionaryMappingStatus = savedEnabled
+				? 'Dictionary mapping enabled.'
+				: 'Dictionary mapping disabled.';
+		} catch (error) {
+			dictionaryMappingStatus = String(error);
+		}
+	}
+
+	async function saveDictionaryMappingThreshold(threshold: number = dictionaryMappingThreshold) {
+		dictionaryMappingStatus = '';
+
+		const parsed = Number(threshold);
+		if (
+			!Number.isFinite(parsed) ||
+			parsed < dictionaryMappingMinThreshold ||
+			parsed > dictionaryMappingMaxThreshold
+		) {
+			dictionaryMappingStatus = `Threshold must be between ${dictionaryMappingMinThreshold} and ${dictionaryMappingMaxThreshold}.`;
+			return;
+		}
+
+		try {
+			const savedThreshold = await invoke<number>('set_ocr_dictionary_match_threshold', {
+				threshold: parsed,
+			});
+			dictionaryMappingThreshold = savedThreshold;
+			dictionaryMappingStatus = `Dictionary threshold set to ${savedThreshold.toFixed(2)}.`;
+		} catch (error) {
+			dictionaryMappingStatus = String(error);
 		}
 	}
 
@@ -194,6 +259,49 @@
 
 	{#if overlayModeStatus}
 		<p class="mt-2 text-sm">{overlayModeStatus}</p>
+	{/if}
+
+	<div class="mt-6 p-3 border rounded">
+		<p class="font-medium text-sm">Dictionary Mapping</p>
+		<label class="flex items-center gap-2 mt-2 text-sm cursor-pointer">
+			<input
+				type="checkbox"
+				disabled={dictionaryMappingHardDisabled}
+				bind:checked={dictionaryMappingEnabled}
+				onchange={() => void saveDictionaryMappingEnabled(dictionaryMappingEnabled)}
+			/>
+			<span>Map OCR text to dictionary items</span>
+		</label>
+		{#if dictionaryMappingHardDisabled}
+			<p class="mt-1 text-xs">Dictionary mapping is hard-disabled in backend code.</p>
+		{/if}
+
+		<div class="mt-3">
+			<p class="text-xs">Threshold: {dictionaryMappingThreshold.toFixed(2)}</p>
+			<div class="flex items-center gap-2 mt-2">
+				<input
+					type="range"
+					class="w-full"
+					min={dictionaryMappingMinThreshold}
+					max={dictionaryMappingMaxThreshold}
+					step="0.01"
+					disabled={!dictionaryMappingEnabled || dictionaryMappingHardDisabled}
+					bind:value={dictionaryMappingThreshold}
+				/>
+				<button
+					class="px-3 py-1 border rounded"
+					disabled={!dictionaryMappingEnabled || dictionaryMappingHardDisabled}
+					onclick={() => void saveDictionaryMappingThreshold(dictionaryMappingThreshold)}
+				>
+					Save
+				</button>
+			</div>
+			<p class="mt-1 text-xs">Words below this confidence are removed from OCR output.</p>
+		</div>
+	</div>
+
+	{#if dictionaryMappingStatus}
+		<p class="mt-2 text-sm">{dictionaryMappingStatus}</p>
 	{/if}
 
 	<div class="mt-6">

@@ -16,7 +16,7 @@ use tauri_plugin_store::StoreExt;
 use xcap::Window;
 
 use crate::layer_shell;
-use crate::state::AppState;
+use crate::state::{AppState, OcrDictionaryEntry};
 
 const OCR_WHITELIST: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789[]- ";
 const PASS_IMAGE_TO_FRONTEND: bool = true;
@@ -30,8 +30,17 @@ const DEFAULT_OVERLAY_TOGGLE_MODE: bool = false;
 const SETTINGS_STORE_PATH: &str = "settings.json";
 const OVERLAY_DURATION_STORE_KEY: &str = "overlay_duration_secs";
 const OVERLAY_TOGGLE_MODE_STORE_KEY: &str = "overlay_toggle_mode";
+const OCR_DICTIONARY_MAPPING_ENABLED_STORE_KEY: &str = "ocr_dictionary_mapping_enabled";
+const OCR_DICTIONARY_MATCH_THRESHOLD_STORE_KEY: &str = "ocr_dictionary_match_threshold";
 const THEME_COLORS_TOML: &str = include_str!("theme_colors.toml");
 const ENABLE_MORPHOLOGY: bool = false;
+const ENABLE_OCR_DICTIONARY_MAPPING: bool = true;
+const OCR_DICTIONARY_API_URL: &str = "http://api.thaumictom.de/warframe/v1/dictionary.json";
+const OCR_DICTIONARY_HTTP_TIMEOUT_SECS: u64 = 10;
+const DEFAULT_OCR_DICTIONARY_MAPPING_ENABLED: bool = true;
+const DEFAULT_OCR_DICTIONARY_MATCH_THRESHOLD: f64 = 0.62;
+const MIN_OCR_DICTIONARY_MATCH_THRESHOLD: f64 = 0.0;
+const MAX_OCR_DICTIONARY_MATCH_THRESHOLD: f64 = 1.0;
 #[cfg(target_os = "windows")]
 const EMBEDDED_TRAINEDDATA_BYTES: &[u8] = include_bytes!(env!("OCR_EMBEDDED_TRAINEDDATA_PATH"));
 #[cfg(target_os = "windows")]
@@ -58,6 +67,10 @@ pub struct OcrWord {
     pub y: f64,
     pub width: f64,
     pub height: f64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub slug: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mapping_confidence: Option<f64>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -90,10 +103,33 @@ pub struct OcrThemeSettingsPayload {
     pub selected_theme: String,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct OcrDictionaryMappingSettingsPayload {
+    pub enabled: bool,
+    pub threshold: f64,
+    pub hard_disabled: bool,
+    pub min_threshold: f64,
+    pub max_threshold: f64,
+}
+
 #[derive(Debug, Deserialize)]
 struct ThemeColorsToml {
     #[serde(default)]
     primary: BTreeMap<String, [u8; 3]>,
+}
+
+#[derive(Debug, Deserialize)]
+struct DictionaryApiResponse {
+    #[serde(default)]
+    tradeable_items: Vec<DictionaryApiItem>,
+}
+
+#[derive(Debug, Deserialize)]
+struct DictionaryApiItem {
+    name: String,
+    slug: String,
+    #[serde(default)]
+    tags: Vec<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -247,6 +283,93 @@ pub fn set_overlay_toggle_mode<R: Runtime>(
     Ok(*overlay_toggle_mode)
 }
 
+#[tauri::command]
+pub fn get_ocr_dictionary_mapping_settings(
+    state: State<'_, AppState>,
+) -> Result<OcrDictionaryMappingSettingsPayload, String> {
+    let enabled = state
+        .ocr_dictionary_mapping_enabled
+        .lock()
+        .map(|value| *value)
+        .map_err(|_| "failed to read OCR dictionary mapping toggle".to_string())?;
+
+    let threshold = state
+        .ocr_dictionary_match_threshold
+        .lock()
+        .map(|value| *value)
+        .map_err(|_| "failed to read OCR dictionary threshold".to_string())?
+        .clamp(
+            MIN_OCR_DICTIONARY_MATCH_THRESHOLD,
+            MAX_OCR_DICTIONARY_MATCH_THRESHOLD,
+        );
+
+    Ok(OcrDictionaryMappingSettingsPayload {
+        enabled,
+        threshold,
+        hard_disabled: !ENABLE_OCR_DICTIONARY_MAPPING,
+        min_threshold: MIN_OCR_DICTIONARY_MATCH_THRESHOLD,
+        max_threshold: MAX_OCR_DICTIONARY_MATCH_THRESHOLD,
+    })
+}
+
+#[tauri::command]
+pub fn set_ocr_dictionary_mapping_enabled<R: Runtime>(
+    app: AppHandle<R>,
+    state: State<'_, AppState>,
+    enabled: bool,
+) -> Result<bool, String> {
+    let store = app
+        .store(SETTINGS_STORE_PATH)
+        .map_err(|err| format!("failed to open settings store: {err}"))?;
+    store.set(OCR_DICTIONARY_MAPPING_ENABLED_STORE_KEY, enabled);
+    store
+        .save()
+        .map_err(|err| format!("failed to save OCR dictionary mapping toggle: {err}"))?;
+
+    let mut mapping_enabled = state
+        .ocr_dictionary_mapping_enabled
+        .lock()
+        .map_err(|_| "failed to update OCR dictionary mapping toggle".to_string())?;
+    *mapping_enabled = enabled;
+    Ok(*mapping_enabled)
+}
+
+#[tauri::command]
+pub fn set_ocr_dictionary_match_threshold<R: Runtime>(
+    app: AppHandle<R>,
+    state: State<'_, AppState>,
+    threshold: f64,
+) -> Result<f64, String> {
+    if !threshold.is_finite()
+        || !(MIN_OCR_DICTIONARY_MATCH_THRESHOLD..=MAX_OCR_DICTIONARY_MATCH_THRESHOLD)
+            .contains(&threshold)
+    {
+        return Err(format!(
+            "OCR dictionary threshold must be between {MIN_OCR_DICTIONARY_MATCH_THRESHOLD} and {MAX_OCR_DICTIONARY_MATCH_THRESHOLD}"
+        ));
+    }
+
+    let normalized_threshold = (threshold * 100.0).round() / 100.0;
+
+    let store = app
+        .store(SETTINGS_STORE_PATH)
+        .map_err(|err| format!("failed to open settings store: {err}"))?;
+    store.set(
+        OCR_DICTIONARY_MATCH_THRESHOLD_STORE_KEY,
+        normalized_threshold,
+    );
+    store
+        .save()
+        .map_err(|err| format!("failed to save OCR dictionary threshold: {err}"))?;
+
+    let mut match_threshold = state
+        .ocr_dictionary_match_threshold
+        .lock()
+        .map_err(|_| "failed to update OCR dictionary threshold".to_string())?;
+    *match_threshold = normalized_threshold;
+    Ok(*match_threshold)
+}
+
 pub fn load_persisted_overlay_duration<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
     let store = app
         .store(SETTINGS_STORE_PATH)
@@ -299,6 +422,101 @@ pub fn load_persisted_overlay_mode<R: Runtime>(app: &AppHandle<R>) -> Result<(),
         .map_err(|_| "failed to apply persisted overlay mode".to_string())?;
     *overlay_toggle_mode = saved_mode;
     Ok(())
+}
+
+pub fn load_persisted_ocr_dictionary_mapping_settings<R: Runtime>(
+    app: &AppHandle<R>,
+) -> Result<(), String> {
+    let store = app
+        .store(SETTINGS_STORE_PATH)
+        .map_err(|err| format!("failed to load settings store: {err}"))?;
+
+    let app_state = app.state::<AppState>();
+
+    let saved_mapping_enabled = store
+        .get(OCR_DICTIONARY_MAPPING_ENABLED_STORE_KEY)
+        .and_then(|value| value.as_bool())
+        .unwrap_or(DEFAULT_OCR_DICTIONARY_MAPPING_ENABLED);
+
+    let saved_threshold = store
+        .get(OCR_DICTIONARY_MATCH_THRESHOLD_STORE_KEY)
+        .and_then(|value| value.as_f64())
+        .filter(|value| {
+            value.is_finite()
+                && (MIN_OCR_DICTIONARY_MATCH_THRESHOLD..=MAX_OCR_DICTIONARY_MATCH_THRESHOLD)
+                    .contains(value)
+        })
+        .unwrap_or(DEFAULT_OCR_DICTIONARY_MATCH_THRESHOLD);
+
+    let mut mapping_enabled = app_state
+        .ocr_dictionary_mapping_enabled
+        .lock()
+        .map_err(|_| "failed to apply OCR dictionary mapping toggle".to_string())?;
+    *mapping_enabled = saved_mapping_enabled;
+    drop(mapping_enabled);
+
+    let mut match_threshold = app_state
+        .ocr_dictionary_match_threshold
+        .lock()
+        .map_err(|_| "failed to apply OCR dictionary threshold".to_string())?;
+    *match_threshold = saved_threshold;
+
+    Ok(())
+}
+
+pub fn load_ocr_dictionary<R: Runtime>(app: &AppHandle<R>) -> Result<usize, String> {
+    let client = reqwest::blocking::Client::builder()
+        .timeout(Duration::from_secs(OCR_DICTIONARY_HTTP_TIMEOUT_SECS))
+        .build()
+        .map_err(|err| format!("failed to build dictionary client: {err}"))?;
+
+    let response = client
+        .get(OCR_DICTIONARY_API_URL)
+        .send()
+        .map_err(|err| format!("failed to fetch dictionary: {err}"))?
+        .error_for_status()
+        .map_err(|err| format!("dictionary request failed: {err}"))?;
+
+    let payload: DictionaryApiResponse = response
+        .json()
+        .map_err(|err| format!("failed to parse dictionary response: {err}"))?;
+
+    let mut dictionary_entries = payload
+        .tradeable_items
+        .into_iter()
+        .filter_map(|item| {
+            let name = item.name.trim();
+            let slug = item.slug.trim();
+            if name.is_empty() || slug.is_empty() {
+                return None;
+            }
+
+            let normalized_name = normalize_dictionary_text(name);
+            if normalized_name.is_empty() {
+                return None;
+            }
+
+            Some(OcrDictionaryEntry {
+                name: name.to_string(),
+                slug: slug.to_string(),
+                tags: item.tags,
+                normalized_name,
+            })
+        })
+        .collect::<Vec<_>>();
+
+    dictionary_entries.sort_by(|left, right| left.normalized_name.cmp(&right.normalized_name));
+    dictionary_entries.dedup_by(|left, right| left.normalized_name == right.normalized_name);
+
+    let dictionary_len = dictionary_entries.len();
+    let app_state = app.state::<AppState>();
+    let mut dictionary = app_state
+        .ocr_dictionary
+        .lock()
+        .map_err(|_| "failed to store OCR dictionary".to_string())?;
+    *dictionary = dictionary_entries;
+
+    Ok(dictionary_len)
 }
 
 pub fn capture_active_window<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
@@ -454,6 +672,8 @@ fn capture_active_window_with_mode<R: Runtime>(
                     y: top as f64,
                     width: (right - left) as f64,
                     height: (bottom - top) as f64,
+                    slug: None,
+                    mapping_confidence: None,
                 });
             }
         }
@@ -466,17 +686,47 @@ fn capture_active_window_with_mode<R: Runtime>(
         }
     }
 
+    let app_state = app.state::<AppState>();
+    let mapping_enabled = app_state
+        .ocr_dictionary_mapping_enabled
+        .lock()
+        .map(|value| *value)
+        .unwrap_or(DEFAULT_OCR_DICTIONARY_MAPPING_ENABLED);
+    let mapping_threshold = app_state
+        .ocr_dictionary_match_threshold
+        .lock()
+        .map(|value| *value)
+        .unwrap_or(DEFAULT_OCR_DICTIONARY_MATCH_THRESHOLD)
+        .clamp(
+            MIN_OCR_DICTIONARY_MATCH_THRESHOLD,
+            MAX_OCR_DICTIONARY_MATCH_THRESHOLD,
+        );
+
     let grouped_words = group_words_into_blocks(&words);
+    let finalized_words = if ENABLE_OCR_DICTIONARY_MAPPING && mapping_enabled {
+        map_words_to_dictionary(app, &grouped_words, mapping_threshold)
+    } else {
+        grouped_words.clone()
+    };
+    let mapped_count = finalized_words
+        .iter()
+        .filter(|word| word.slug.is_some())
+        .count();
+    let dropped_count = grouped_words.len().saturating_sub(finalized_words.len());
     println!(
-        "[ocr] parse OCR words: {:?} ({} words -> {} blocks)",
+        "[ocr] parse OCR words: {:?} ({} words -> {} blocks, {} mapped, {} dropped, mapping {}, threshold {:.2})",
         parse_started.elapsed(),
         words.len(),
-        grouped_words.len()
+        grouped_words.len(),
+        mapped_count,
+        dropped_count,
+        ENABLE_OCR_DICTIONARY_MAPPING && mapping_enabled,
+        mapping_threshold,
     );
 
     if PASS_TEXT_TO_FRONTEND {
         let text_started = Instant::now();
-        let text = grouped_words
+        let text = finalized_words
             .iter()
             .map(|word| word.text.trim())
             .filter(|text| !text.is_empty())
@@ -539,7 +789,7 @@ fn capture_active_window_with_mode<R: Runtime>(
     app.emit(
         "ocr_result",
         OcrPayload {
-            words: grouped_words,
+            words: finalized_words,
         },
     )
     .map_err(|err| format!("failed to emit OCR result: {err}"))?;
@@ -734,6 +984,160 @@ fn load_primary_theme_options<R: Runtime>(
     }
 
     Ok(themes)
+}
+
+fn map_words_to_dictionary<R: Runtime>(
+    app: &AppHandle<R>,
+    words: &[OcrWord],
+    threshold: f64,
+) -> Vec<OcrWord> {
+    if words.is_empty() {
+        return vec![];
+    }
+
+    let app_state = app.state::<AppState>();
+    let dictionary_guard = match app_state.ocr_dictionary.lock() {
+        Ok(guard) => guard,
+        Err(_) => return words.to_vec(),
+    };
+
+    if dictionary_guard.is_empty() {
+        return words.to_vec();
+    }
+
+    words
+        .iter()
+        .filter_map(|word| map_word_to_dictionary(word, &dictionary_guard, threshold))
+        .collect()
+}
+
+fn map_word_to_dictionary(
+    word: &OcrWord,
+    dictionary: &[OcrDictionaryEntry],
+    threshold: f64,
+) -> Option<OcrWord> {
+    let normalized_word = normalize_dictionary_text(&word.text);
+    if normalized_word.is_empty() {
+        return None;
+    }
+    let normalized_tokens = normalized_word.split_whitespace().collect::<Vec<_>>();
+
+    let mut best_match: Option<(&OcrDictionaryEntry, f64)> = None;
+
+    for candidate in dictionary {
+        let tag_bonus = candidate
+            .tags
+            .iter()
+            .filter_map(|tag| {
+                let normalized_tag = normalize_dictionary_text(tag);
+                if normalized_tag.is_empty() {
+                    None
+                } else {
+                    Some(normalized_tag)
+                }
+            })
+            .filter(|normalized_tag| {
+                normalized_tokens
+                    .iter()
+                    .any(|token| *token == normalized_tag.as_str())
+            })
+            .count() as f64
+            * 0.02;
+
+        let score = (dictionary_similarity_score(&normalized_word, &candidate.normalized_name)
+            + tag_bonus)
+            .min(1.0);
+        match best_match {
+            Some((_, best_score)) if score <= best_score => {}
+            _ => best_match = Some((candidate, score)),
+        }
+    }
+
+    match best_match {
+        Some((candidate, score)) if score >= threshold => {
+            let mut mapped = word.clone();
+            mapped.text = candidate.name.clone();
+            mapped.slug = Some(candidate.slug.clone());
+            mapped.mapping_confidence = Some(score);
+            Some(mapped)
+        }
+        _ => None,
+    }
+}
+
+fn dictionary_similarity_score(left: &str, right: &str) -> f64 {
+    if left == right {
+        return 1.0;
+    }
+
+    let max_len = left.len().max(right.len());
+    if max_len == 0 {
+        return 0.0;
+    }
+
+    let distance = levenshtein_distance(left.as_bytes(), right.as_bytes());
+    let levenshtein_score = 1.0 - distance as f64 / max_len as f64;
+    let overlap_score = token_overlap_score(left, right);
+    (levenshtein_score * 0.85 + overlap_score * 0.15).clamp(0.0, 1.0)
+}
+
+fn token_overlap_score(left: &str, right: &str) -> f64 {
+    let left_tokens = left.split_whitespace().collect::<Vec<_>>();
+    let right_tokens = right.split_whitespace().collect::<Vec<_>>();
+    if left_tokens.is_empty() || right_tokens.is_empty() {
+        return 0.0;
+    }
+
+    let shared_count = left_tokens
+        .iter()
+        .filter(|token| right_tokens.contains(token))
+        .count();
+    shared_count as f64 / left_tokens.len().max(right_tokens.len()) as f64
+}
+
+fn normalize_dictionary_text(value: &str) -> String {
+    value
+        .chars()
+        .map(|ch| {
+            if ch.is_ascii_alphanumeric() {
+                ch.to_ascii_lowercase()
+            } else {
+                ' '
+            }
+        })
+        .collect::<String>()
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+fn levenshtein_distance(left: &[u8], right: &[u8]) -> usize {
+    if left.is_empty() {
+        return right.len();
+    }
+    if right.is_empty() {
+        return left.len();
+    }
+
+    let mut previous_row: Vec<usize> = (0..=right.len()).collect();
+    let mut current_row = vec![0usize; right.len() + 1];
+
+    for (left_index, left_byte) in left.iter().enumerate() {
+        current_row[0] = left_index + 1;
+
+        for (right_index, right_byte) in right.iter().enumerate() {
+            let substitution_cost = if left_byte == right_byte { 0 } else { 1 };
+            let delete_cost = previous_row[right_index + 1] + 1;
+            let insert_cost = current_row[right_index] + 1;
+            let substitute_cost = previous_row[right_index] + substitution_cost;
+
+            current_row[right_index + 1] = delete_cost.min(insert_cost).min(substitute_cost);
+        }
+
+        std::mem::swap(&mut previous_row, &mut current_row);
+    }
+
+    previous_row[right.len()]
 }
 
 fn ranges_overlap(left_start: f64, left_end: f64, right_start: f64, right_end: f64) -> bool {
@@ -953,6 +1357,8 @@ fn group_words_into_blocks(words: &[OcrWord]) -> Vec<OcrWord> {
             y: merged_y,
             width: merged_right - merged_x,
             height: merged_bottom - merged_y,
+            slug: None,
+            mapping_confidence: None,
         });
     }
 

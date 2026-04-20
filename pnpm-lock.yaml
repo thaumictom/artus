@@ -41,6 +41,12 @@ importers:
       mode-watcher:
         specifier: ^1.1.0
         version: 1.1.0(svelte@5.51.2)
+      overlayscrollbars:
+        specifier: ^2.15.1
+        version: 2.15.1
+      overlayscrollbars-svelte:
+        specifier: ^0.5.5
+        version: 0.5.5(overlayscrollbars@2.15.1)(svelte@5.51.2)
       tailwindcss:
         specifier: ^4.1.18
         version: 4.1.18
@@ -918,6 +924,15 @@ packages:
   node-fetch-native@1.6.7:
     resolution: {integrity: sha512-g9yhqoedzIUm0nTnTqAQvueMPVOuIY16bqgAJJC8XOOubYFNwz6IER9qs0Gq2Xd0+CecCKFjtdDTMA4u4xG06Q==}
 
+  overlayscrollbars-svelte@0.5.5:
+    resolution: {integrity: sha512-+dRW3YZSvFbKi5vDCpnUOHuoPLLSdu0BUVVMYZdmfVghu7XkafDRebG2y91/ImPqj6YDAUsz1rcWVYhCJSS/pQ==}
+    peerDependencies:
+      overlayscrollbars: ^2.0.0
+      svelte: ^5.0.0
+
+  overlayscrollbars@2.15.1:
+    resolution: {integrity: sha512-glX26JwjL+Tkzv0JNOWdW4VozP5dGXO+Wx8+TPrdTEJTSYT/8eJS8yXM+fewjU0nFq/JeCa+X+BqABNjC4YZSA==}
+
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
 
@@ -1691,6 +1706,13 @@ snapshots:
   nanoid@3.3.11: {}
 
   node-fetch-native@1.6.7: {}
+
+  overlayscrollbars-svelte@0.5.5(overlayscrollbars@2.15.1)(svelte@5.51.2):
+    dependencies:
+      overlayscrollbars: 2.15.1
+      svelte: 5.51.2
+
+  overlayscrollbars@2.15.1: {}
 
   picocolors@1.1.1: {}
 

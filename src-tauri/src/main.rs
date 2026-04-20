@@ -52,6 +52,15 @@ fn main() {
                 eprintln!("[ocr] failed to load persisted overlay mode: {err}");
             }
 
+            if let Err(err) = ocr::load_persisted_ocr_dictionary_mapping_settings(&app.handle()) {
+                eprintln!("[ocr] failed to load persisted OCR dictionary mapping settings: {err}");
+            }
+
+            match ocr::load_ocr_dictionary(&app.handle()) {
+                Ok(count) => println!("[ocr] loaded dictionary entries: {count}"),
+                Err(err) => eprintln!("[ocr] failed to load OCR dictionary: {err}"),
+            }
+
             hotkeys::register_initial(app.handle())?;
             Ok(())
         })
@@ -63,7 +72,10 @@ fn main() {
             ocr::get_overlay_duration_secs,
             ocr::set_overlay_duration_secs,
             ocr::get_overlay_toggle_mode,
-            ocr::set_overlay_toggle_mode
+            ocr::set_overlay_toggle_mode,
+            ocr::get_ocr_dictionary_mapping_settings,
+            ocr::set_ocr_dictionary_mapping_enabled,
+            ocr::set_ocr_dictionary_match_threshold
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
