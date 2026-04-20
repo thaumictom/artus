@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::atomic::AtomicBool;
 use std::sync::Mutex;
 
@@ -9,6 +10,12 @@ pub struct OcrDictionaryEntry {
     pub normalized_name: String,
 }
 
+#[derive(Debug, Clone)]
+pub struct TradeablePriceEntry {
+    pub median: f64,
+    pub used_current_offer_fallback: bool,
+}
+
 pub struct AppState {
     pub hotkey: Mutex<String>,
     pub overlay_sequence: Mutex<u64>,
@@ -18,6 +25,7 @@ pub struct AppState {
     pub ocr_theme: Mutex<String>,
     pub ocr_target_rgb: Mutex<[u8; 3]>,
     pub ocr_dictionary: Mutex<Vec<OcrDictionaryEntry>>,
+    pub ocr_tradeable_prices: Mutex<HashMap<String, TradeablePriceEntry>>,
     pub ocr_dictionary_mapping_enabled: Mutex<bool>,
     pub ocr_dictionary_match_threshold: Mutex<f64>,
 }
@@ -33,6 +41,7 @@ impl Default for AppState {
             ocr_theme: Mutex::new("EQUINOX".to_string()),
             ocr_target_rgb: Mutex::new([158, 159, 167]),
             ocr_dictionary: Mutex::new(Vec::new()),
+            ocr_tradeable_prices: Mutex::new(HashMap::new()),
             ocr_dictionary_mapping_enabled: Mutex::new(true),
             ocr_dictionary_match_threshold: Mutex::new(0.62),
         }

@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::env;
 use std::io::Cursor;
 use std::path::{Path, PathBuf};
@@ -16,7 +16,7 @@ use tauri_plugin_store::StoreExt;
 use xcap::Window;
 
 use crate::layer_shell;
-use crate::state::{AppState, OcrDictionaryEntry};
+use crate::state::{AppState, OcrDictionaryEntry, TradeablePriceEntry};
 
 const OCR_WHITELIST: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789[]- ";
 const PASS_IMAGE_TO_FRONTEND: bool = true;
@@ -36,6 +36,7 @@ const THEME_COLORS_TOML: &str = include_str!("theme_colors.toml");
 const ENABLE_MORPHOLOGY: bool = false;
 const ENABLE_OCR_DICTIONARY_MAPPING: bool = true;
 const OCR_DICTIONARY_API_URL: &str = "http://api.thaumictom.de/warframe/v1/dictionary.json";
+const TRADEABLE_ITEMS_API_URL: &str = "http://api.thaumictom.de/warframe/v1/tradeable_items.json";
 const OCR_DICTIONARY_HTTP_TIMEOUT_SECS: u64 = 10;
 const DEFAULT_OCR_DICTIONARY_MAPPING_ENABLED: bool = true;
 const DEFAULT_OCR_DICTIONARY_MATCH_THRESHOLD: f64 = 0.62;
@@ -71,6 +72,10 @@ pub struct OcrWord {
     pub slug: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mapping_confidence: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub market_median: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub market_median_from_current_offers: Option<bool>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -130,6 +135,26 @@ struct DictionaryApiItem {
     slug: String,
     #[serde(default)]
     tags: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct TradeableItemsApiResponse {
+    #[serde(default)]
+    tradeable_items: Vec<TradeableItemApiItem>,
+}
+
+#[derive(Debug, Deserialize)]
+struct TradeableItemApiItem {
+    slug: String,
+    #[serde(default)]
+    statistics_today: Vec<TradeableItemStats>,
+    #[serde(default)]
+    current_offers: Vec<TradeableItemStats>,
+}
+
+#[derive(Debug, Deserialize)]
+struct TradeableItemStats {
+    median: Option<f64>,
 }
 
 #[derive(Debug, Clone)]
@@ -519,6 +544,70 @@ pub fn load_ocr_dictionary<R: Runtime>(app: &AppHandle<R>) -> Result<usize, Stri
     Ok(dictionary_len)
 }
 
+pub fn load_tradeable_item_prices<R: Runtime>(app: &AppHandle<R>) -> Result<usize, String> {
+    let client = reqwest::blocking::Client::builder()
+        .timeout(Duration::from_secs(OCR_DICTIONARY_HTTP_TIMEOUT_SECS))
+        .build()
+        .map_err(|err| format!("failed to build tradeable item client: {err}"))?;
+
+    let response = client
+        .get(TRADEABLE_ITEMS_API_URL)
+        .send()
+        .map_err(|err| format!("failed to fetch tradeable items: {err}"))?
+        .error_for_status()
+        .map_err(|err| format!("tradeable items request failed: {err}"))?;
+
+    let payload: TradeableItemsApiResponse = response
+        .json()
+        .map_err(|err| format!("failed to parse tradeable items response: {err}"))?;
+
+    let mut prices_by_slug = HashMap::new();
+
+    for item in payload.tradeable_items {
+        let slug = item.slug.trim();
+        if slug.is_empty() {
+            continue;
+        }
+
+        let statistics_today_median = item
+            .statistics_today
+            .first()
+            .and_then(|entry| entry.median)
+            .filter(|median| median.is_finite());
+
+        let current_offers_median = item
+            .current_offers
+            .first()
+            .and_then(|entry| entry.median)
+            .filter(|median| median.is_finite());
+
+        let Some((median, used_fallback)) = statistics_today_median
+            .map(|value| (value, false))
+            .or_else(|| current_offers_median.map(|value| (value, true)))
+        else {
+            continue;
+        };
+
+        prices_by_slug.insert(
+            slug.to_string(),
+            TradeablePriceEntry {
+                median,
+                used_current_offer_fallback: used_fallback,
+            },
+        );
+    }
+
+    let count = prices_by_slug.len();
+    let app_state = app.state::<AppState>();
+    let mut prices_guard = app_state
+        .ocr_tradeable_prices
+        .lock()
+        .map_err(|_| "failed to store tradeable prices".to_string())?;
+    *prices_guard = prices_by_slug;
+
+    Ok(count)
+}
+
 pub fn capture_active_window<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
     capture_active_window_with_mode(app, true)
 }
@@ -674,6 +763,8 @@ fn capture_active_window_with_mode<R: Runtime>(
                     height: (bottom - top) as f64,
                     slug: None,
                     mapping_confidence: None,
+                    market_median: None,
+                    market_median_from_current_offers: None,
                 });
             }
         }
@@ -1005,15 +1096,34 @@ fn map_words_to_dictionary<R: Runtime>(
         return words.to_vec();
     }
 
+    let needs_price_reload = app_state
+        .ocr_tradeable_prices
+        .lock()
+        .map(|prices| prices.is_empty())
+        .unwrap_or(false);
+
+    if needs_price_reload {
+        match load_tradeable_item_prices(app) {
+            Ok(count) => println!("[ocr] lazy-loaded tradeable item prices: {count}"),
+            Err(err) => eprintln!("[ocr] failed to lazy-load tradeable item prices: {err}"),
+        }
+    }
+
+    let prices_guard = app_state.ocr_tradeable_prices.lock().ok();
+    let prices_by_slug = prices_guard.as_deref();
+
     words
         .iter()
-        .filter_map(|word| map_word_to_dictionary(word, &dictionary_guard, threshold))
+        .filter_map(|word| {
+            map_word_to_dictionary(word, &dictionary_guard, prices_by_slug, threshold)
+        })
         .collect()
 }
 
 fn map_word_to_dictionary(
     word: &OcrWord,
     dictionary: &[OcrDictionaryEntry],
+    prices_by_slug: Option<&HashMap<String, TradeablePriceEntry>>,
     threshold: f64,
 ) -> Option<OcrWord> {
     let normalized_word = normalize_dictionary_text(&word.text);
@@ -1059,6 +1169,15 @@ fn map_word_to_dictionary(
             mapped.text = candidate.name.clone();
             mapped.slug = Some(candidate.slug.clone());
             mapped.mapping_confidence = Some(score);
+
+            if let Some(prices_lookup) = prices_by_slug {
+                if let Some(price_entry) = prices_lookup.get(&candidate.slug) {
+                    mapped.market_median = Some(price_entry.median);
+                    mapped.market_median_from_current_offers =
+                        Some(price_entry.used_current_offer_fallback);
+                }
+            }
+
             Some(mapped)
         }
         _ => None,
@@ -1359,6 +1478,8 @@ fn group_words_into_blocks(words: &[OcrWord]) -> Vec<OcrWord> {
             height: merged_bottom - merged_y,
             slug: None,
             mapping_confidence: None,
+            market_median: None,
+            market_median_from_current_offers: None,
         });
     }
 

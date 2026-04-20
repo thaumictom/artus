@@ -1,5 +1,5 @@
-use std::sync::atomic::Ordering;
 use std::str::FromStr;
+use std::sync::atomic::Ordering;
 
 use tauri::{AppHandle, Manager, Runtime, State};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut};

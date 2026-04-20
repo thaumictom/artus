@@ -4,6 +4,8 @@
 	type InventoryItem = {
 		name: string;
 		quantity: number;
+		marketMedian?: number;
+		marketMedianUsesOfferFallback?: boolean;
 	};
 
 	let searchQuery = $state('');
@@ -29,6 +31,22 @@
 
 		return items.filter((item) => item.name.toLowerCase().includes(normalizedSearchQuery));
 	});
+	const hasOfferFallbackMedian = $derived.by(() =>
+		items.some((item) => item.marketMedianUsesOfferFallback === true),
+	);
+	const marketMedianFormatter = new Intl.NumberFormat(undefined, {
+		minimumFractionDigits: 0,
+		maximumFractionDigits: 2,
+	});
+
+	function formatMarketMedian(item: InventoryItem): string {
+		if (typeof item.marketMedian !== 'number' || !Number.isFinite(item.marketMedian)) {
+			return '—';
+		}
+
+		const formatted = marketMedianFormatter.format(item.marketMedian);
+		return item.marketMedianUsesOfferFallback ? `${formatted}*` : formatted;
+	}
 </script>
 
 <section class="max-w-5xl">
@@ -74,6 +92,7 @@
 					<Table.Row>
 						<Table.Head class="top-0 sticky bg-background">Item</Table.Head>
 						<Table.Head class="top-0 sticky bg-background w-24 text-right">Quantity</Table.Head>
+						<Table.Head class="top-0 sticky bg-background w-24 text-right">Median</Table.Head>
 						<Table.Head class="top-0 sticky bg-background w-28 text-right">Adjust</Table.Head>
 					</Table.Row>
 				</Table.Header>
@@ -82,6 +101,7 @@
 						<Table.Row>
 							<Table.Cell class="font-medium">{item.name}</Table.Cell>
 							<Table.Cell class="text-right">{item.quantity}</Table.Cell>
+							<Table.Cell class="text-right">{formatMarketMedian(item)}</Table.Cell>
 							<Table.Cell>
 								<div class="flex justify-end items-center gap-1">
 									<button
@@ -105,7 +125,7 @@
 						</Table.Row>
 					{:else}
 						<Table.Row>
-							<Table.Cell colspan={3} class="h-20 text-muted-foreground text-center">
+							<Table.Cell colspan={4} class="h-20 text-muted-foreground text-center">
 								No items match your search.
 							</Table.Cell>
 						</Table.Row>
@@ -113,5 +133,9 @@
 				</Table.Body>
 			</Table.Root>
 		</div>
+
+		{#if hasOfferFallbackMedian}
+			<p class="mt-2 text-muted-foreground text-xs">* median from current offers</p>
+		{/if}
 	{/if}
 </section>

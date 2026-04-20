@@ -7,6 +7,8 @@
 
 	type OcrWord = {
 		text: string;
+		market_median?: number;
+		market_median_from_current_offers?: boolean;
 	};
 
 	type OcrResultPayload = {
@@ -55,6 +57,31 @@
 
 	function normalizeDetectedName(name: string): string {
 		return name.split(/\s+/).filter(Boolean).join(' ').trim();
+	}
+
+	function normalizeDetectedMedian(value: unknown): number | undefined {
+		return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+	}
+
+	function buildInventoryItem(
+		name: string,
+		quantity: number,
+		marketMedian?: number,
+		marketMedianUsesOfferFallback?: boolean,
+	): InventoryItem {
+		const item: InventoryItem = {
+			name,
+			quantity,
+		};
+
+		if (marketMedian !== undefined) {
+			item.marketMedian = marketMedian;
+			if (marketMedianUsesOfferFallback !== undefined) {
+				item.marketMedianUsesOfferFallback = marketMedianUsesOfferFallback;
+			}
+		}
+
+		return item;
 	}
 
 	function loadPersistedInventoryItems() {
@@ -109,6 +136,8 @@
 			const candidate = entry as {
 				name?: unknown;
 				quantity?: unknown;
+				marketMedian?: unknown;
+				marketMedianUsesOfferFallback?: unknown;
 			};
 
 			const normalizedName =
@@ -124,19 +153,43 @@
 				continue;
 			}
 
+			const marketMedian = normalizeDetectedMedian(candidate.marketMedian);
+			const marketMedianUsesOfferFallback =
+				marketMedian !== undefined && typeof candidate.marketMedianUsesOfferFallback === 'boolean'
+					? candidate.marketMedianUsesOfferFallback
+					: undefined;
+
 			const existing = mergedByName.get(normalizedName);
 			if (!existing) {
-				mergedByName.set(normalizedName, {
-					name: normalizedName,
-					quantity: numericQuantity,
-				});
+				mergedByName.set(
+					normalizedName,
+					buildInventoryItem(
+						normalizedName,
+						numericQuantity,
+						marketMedian,
+						marketMedianUsesOfferFallback,
+					),
+				);
 				continue;
 			}
 
-			mergedByName.set(normalizedName, {
-				name: normalizedName,
-				quantity: existing.quantity + numericQuantity,
-			});
+			const nextMarketMedian = existing.marketMedian ?? marketMedian;
+			const nextMarketMedianUsesOfferFallback =
+				nextMarketMedian === undefined
+					? undefined
+					: existing.marketMedian !== undefined
+						? existing.marketMedianUsesOfferFallback
+						: marketMedianUsesOfferFallback;
+
+			mergedByName.set(
+				normalizedName,
+				buildInventoryItem(
+					normalizedName,
+					existing.quantity + numericQuantity,
+					nextMarketMedian,
+					nextMarketMedianUsesOfferFallback,
+				),
+			);
 		}
 
 		return [...mergedByName.values()];
@@ -148,23 +201,36 @@
 			return;
 		}
 
+		const marketMedian = normalizeDetectedMedian(word.market_median);
+		const marketMedianUsesOfferFallback =
+			marketMedian !== undefined && typeof word.market_median_from_current_offers === 'boolean'
+				? word.market_median_from_current_offers
+				: undefined;
+
 		const nextItems = [...inventoryItems];
 		const index = nextItems.findIndex((item) => item.name === name);
 
 		if (index === -1) {
-			nextItems.push({
-				name,
-				quantity: 1,
-			});
+			nextItems.push(buildInventoryItem(name, 1, marketMedian, marketMedianUsesOfferFallback));
 			inventoryItems = nextItems;
 			return;
 		}
 
 		const existing = nextItems[index];
-		nextItems[index] = {
-			...existing,
-			quantity: existing.quantity + 1,
-		};
+		const nextMarketMedian = existing.marketMedian ?? marketMedian;
+		const nextMarketMedianUsesOfferFallback =
+			nextMarketMedian === undefined
+				? undefined
+				: existing.marketMedian !== undefined
+					? existing.marketMedianUsesOfferFallback
+					: marketMedianUsesOfferFallback;
+
+		nextItems[index] = buildInventoryItem(
+			name,
+			existing.quantity + 1,
+			nextMarketMedian,
+			nextMarketMedianUsesOfferFallback,
+		);
 		inventoryItems = nextItems;
 	}
 

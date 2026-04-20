@@ -14,6 +14,7 @@ fn main() {
     let is_wayland = apply_wayland_workarounds();
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(
@@ -59,6 +60,11 @@ fn main() {
             match ocr::load_ocr_dictionary(&app.handle()) {
                 Ok(count) => println!("[ocr] loaded dictionary entries: {count}"),
                 Err(err) => eprintln!("[ocr] failed to load OCR dictionary: {err}"),
+            }
+
+            match ocr::load_tradeable_item_prices(&app.handle()) {
+                Ok(count) => println!("[ocr] loaded tradeable item prices: {count}"),
+                Err(err) => eprintln!("[ocr] failed to load tradeable item prices: {err}"),
             }
 
             hotkeys::register_initial(app.handle())?;
