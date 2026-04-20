@@ -42,3 +42,6 @@ codegen-units = 1 # Slower compile, but better optimization
 lto = true        # Link-time optimization (removes dead code)
 opt-level = "s"   # Optimize for size (use "z" if you want to try even smaller)
 strip = true      # Strips symbols
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-updater = "2"
