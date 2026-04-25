@@ -10,10 +10,13 @@
 	} = $props();
 
 	let isSidebarOpen = $state(true);
+	let mouseover = $state(false);
 </script>
 
 <Tabs.List
 	class="flex flex-col justify-between bg-surface px-2 pb-1 h-full text-surface-foreground"
+	onmouseenter={() => (mouseover = true)}
+	onmouseleave={() => (mouseover = false)}
 >
 	<div class="flex flex-col">
 		{#each Object.entries(sections) as [id, section]}
@@ -36,17 +39,28 @@
 			</Tabs.Trigger>
 		{/each}
 	</div>
-	<div>
+	<div class={{ transition: true, 'opacity-100': mouseover, 'opacity-0': !mouseover }}>
 		<Button.Root
-			class="hover:bg-elevated p-1 rounded"
+			class="relative hover:bg-elevated p-1 rounded"
 			aria-label="Toggle sidebar"
 			onclick={() => (isSidebarOpen = !isSidebarOpen)}
 		>
-			{#if isSidebarOpen}
-				<Icon icon="material-symbols:left-panel-close-outline-rounded" class="size-6" />
-			{:else}
-				<Icon icon="material-symbols:left-panel-open-outline-rounded" class="size-6" />
-			{/if}
+			<Icon
+				icon="material-symbols:left-panel-close-outline-rounded"
+				class={{
+					'size-6 absolute transition': true,
+					'opacity-100': isSidebarOpen,
+					'opacity-0': !isSidebarOpen,
+				}}
+			/>
+			<Icon
+				icon="material-symbols:left-panel-open-outline-rounded"
+				class={{
+					'size-6 transition': true,
+					'opacity-100': !isSidebarOpen,
+					'opacity-0': isSidebarOpen,
+				}}
+			/>
 		</Button.Root>
 	</div>
 </Tabs.List>

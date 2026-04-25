@@ -2,6 +2,16 @@ use std::collections::HashMap;
 use std::sync::atomic::AtomicBool;
 use std::sync::Mutex;
 
+pub const HOTKEY_ACTION_SCREENSHOT: &str = "screenshot";
+pub const DEFAULT_SCREENSHOT_HOTKEY: &str = "Home";
+
+fn default_hotkeys() -> HashMap<String, String> {
+    HashMap::from([(
+        HOTKEY_ACTION_SCREENSHOT.to_string(),
+        DEFAULT_SCREENSHOT_HOTKEY.to_string(),
+    )])
+}
+
 #[derive(Debug, Clone)]
 pub struct OcrDictionaryEntry {
     pub name: String,
@@ -17,7 +27,7 @@ pub struct TradeablePriceEntry {
 }
 
 pub struct AppState {
-    pub hotkey: Mutex<String>,
+    pub hotkeys: Mutex<HashMap<String, String>>,
     pub overlay_sequence: Mutex<u64>,
     pub overlay_duration_secs: Mutex<u64>,
     pub overlay_toggle_mode: Mutex<bool>,
@@ -33,7 +43,7 @@ pub struct AppState {
 impl Default for AppState {
     fn default() -> Self {
         Self {
-            hotkey: Mutex::new("Home".to_string()),
+            hotkeys: Mutex::new(default_hotkeys()),
             overlay_sequence: Mutex::new(0),
             overlay_duration_secs: Mutex::new(10),
             overlay_toggle_mode: Mutex::new(false),

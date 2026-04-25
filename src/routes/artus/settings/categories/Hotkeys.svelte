@@ -1,5 +1,9 @@
+<script>
+	import HotkeyCapture from '../components/HotkeyCapture.svelte';
+</script>
+
 <p class="mb-1">Screenshot</p>
-<div class="p-2 border">Input here</div>
+<HotkeyCapture tauriHotkey="screenshot" />
 
 <p class="mt-4 mb-1">Screenshot + add to inventory</p>
-<div class="p-2 border">Input here</div>
+<p class="text-muted-foreground text-sm">Coming soon</p>

@@ -93,6 +93,10 @@ body {
 	.font-expanded {
 		font-variation-settings: 'wdth' 125;
 	}
+
+	.font-condensed {
+		font-variation-settings: 'wdth' 80;
+	}
 }
 
 /*
