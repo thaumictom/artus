@@ -1,36 +1,51 @@
 <script lang="ts">
-	import { OverlayScrollbarsComponent } from 'overlayscrollbars-svelte';
-	import ArtusMainPage from './ArtusMainPage.svelte';
-	import ArtusSidebar from './ArtusSidebar.svelte';
-	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
-	import SiteHeader from './SiteHeader.svelte';
-	import { mode } from 'mode-watcher';
+	// import ArtusMainPage from './ArtusMainPage.svelte';
+	// import ArtusSidebar from './ArtusSidebar.svelte';
+	// import SiteHeader from './SiteHeader.svelte';
+	import SettingsMain from './settings/Main.svelte';
+	import DashboardMain from './dashboard/Main.svelte';
+	import InventoryTab from './inventory/Tab.svelte';
+	import MasteryMain from './mastery/Main.svelte';
 
-	type ArtusSection = 'dashboard' | 'settings' | 'mastery' | 'inventory';
+	import Sidebar from './Sidebar.svelte';
+	import { Tabs } from 'bits-ui';
+	import MainContent from './MainContent.svelte';
+	import Header from './Header.svelte';
+	import type { Sections } from '$lib/types';
 
-	const sections: { id: ArtusSection; label: string; icon: string }[] = [
-		{ id: 'dashboard', label: 'Dashboard', icon: 'mdi:view-dashboard-outline' },
-		{ id: 'mastery', label: 'Mastery', icon: 'mdi:star-outline' },
-		{ id: 'inventory', label: 'Inventory', icon: 'mdi:package-variant-closed' },
-		{ id: 'settings', label: 'Settings', icon: 'mdi:gear-outline' },
-	];
+	const sections: Sections = {
+		dashboard: {
+			label: 'Dashboard',
+			icon: 'material-symbols:space-dashboard-outline-rounded',
+			component: DashboardMain,
+		},
+		mastery: {
+			label: 'Mastery',
+			icon: 'material-symbols:star-outline-rounded',
+			component: MasteryMain,
+		},
+		inventory: {
+			label: 'Inventory',
+			icon: 'material-symbols:package-2-outline',
+			component: InventoryTab,
+		},
+		settings: {
+			label: 'Settings',
+			icon: 'material-symbols:settings-outline-rounded',
+			component: SettingsMain,
+		},
+	};
 
-	let activeSection = $state(sections[0]);
-	let isSidebarOpen = $state(false);
-	let scrollbarTheme = $derived(mode.current === 'dark' ? 'os-theme-light' : 'os-theme-dark');
+	let activeSection = $state('dashboard');
+	const CurrentComponent = $derived.by(() => sections[activeSection].component);
 </script>
 
-<Sidebar.Provider bind:open={isSidebarOpen} class="h-svh">
-	<ArtusSidebar {sections} bind:activeSection bind:isOpen={isSidebarOpen} />
-
-	<Sidebar.Inset class="bg-sidebar">
-		<SiteHeader title={activeSection.label} />
-		<OverlayScrollbarsComponent
-			defer
-			options={{ scrollbars: { theme: scrollbarTheme } }}
-			class="bg-background rounded-tl-[6px] h-full"
-		>
-			<ArtusMainPage activeSection={activeSection.id} />
-		</OverlayScrollbarsComponent>
-	</Sidebar.Inset>
-</Sidebar.Provider>
+<div class="flex flex-col bg-surface h-full">
+	<Header title={sections[activeSection].label}></Header>
+	<Tabs.Root class="flex flex-1 overflow-hidden" orientation="vertical" bind:value={activeSection}>
+		<Sidebar {sections}></Sidebar>
+		<MainContent>
+			<CurrentComponent />
+		</MainContent>
+	</Tabs.Root>
+</div>

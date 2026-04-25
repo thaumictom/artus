@@ -1,6 +1,4 @@
 <script lang="ts">
-	import * as Table from '$lib/components/ui/table/index.js';
-
 	type InventoryItem = {
 		name: string;
 		quantity: number;
@@ -87,7 +85,7 @@
 		</div>
 
 		<div class="mt-3 border rounded-md max-h-112 overflow-y-auto">
-			<Table.Root>
+			<!-- <Table.Root>
 				<Table.Header>
 					<Table.Row>
 						<Table.Head class="top-0 sticky bg-background">Item</Table.Head>
@@ -131,7 +129,7 @@
 						</Table.Row>
 					{/each}
 				</Table.Body>
-			</Table.Root>
+			</Table.Root> -->
 		</div>
 
 		{#if hasOfferFallbackMedian}

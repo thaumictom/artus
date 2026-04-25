@@ -1,7 +1,7 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
-	import Button from '$lib/components/ui/button/button.svelte';
 	import { getCurrentWindow } from '@tauri-apps/api/window';
+	import { Button } from 'bits-ui';
 
 	let isMaximized = $state(false);
 
@@ -33,35 +33,31 @@
 	let { title = 'Artus' } = $props();
 </script>
 
-<header class="flex justify-between items-center pl-4 w-full" data-tauri-drag-region>
+<header class="flex justify-between items-center w-full" data-tauri-drag-region>
+	<!-- Left title -->
 	<div class="flex items-center select-none">
-		<div class="font-expanded font-black text-input text-xs uppercase">Artus</div>
-		<div class="mx-4 bg-border w-px h-3 text-xs"></div>
-		<div>{title}</div>
+		<div class="px-4 font-expanded font-black text-accent text-xs uppercase">Artus</div>
+		<div class="bg-muted w-px h-3 text-xs"></div>
+		<div class="px-4">{title}</div>
 	</div>
-	<div class="flex *:px-4 *:h-10 overflow-hidden">
-		<Button variant="ghost" onclick={minimize} aria-label="Minimize window" class="border-0!">
-			<Icon icon="mdi:minimize" aria-hidden="true" />
-		</Button>
-		<Button
-			variant="ghost"
-			onclick={toggleMaximize}
-			aria-label="Toggle maximize window"
-			class="border-0!"
-		>
+	<!-- Right controls -->
+	<div class="flex *:hover:bg-elevated *:px-4 *:h-10 overflow-hidden *:cursor-pointer">
+		<Button.Root aria-label="Minimize window" onclick={minimize}>
+			<Icon icon="mdi:minimize" />
+		</Button.Root>
+		<Button.Root onclick={toggleMaximize} aria-label="Toggle maximize window">
 			{#if isMaximized}
-				<Icon icon="mdi:window-restore" class="text-xs" aria-hidden="true" />
+				<Icon icon="mdi:window-restore" class="text-xs" />
 			{:else}
-				<Icon icon="mdi:window-maximize" aria-hidden="true" />
+				<Icon icon="mdi:window-maximize" />
 			{/if}
-		</Button>
-		<Button
-			variant="ghost"
+		</Button.Root>
+		<Button.Root
 			onclick={closeWindow}
 			aria-label="Close window"
-			class="hover:bg-destructive/50! border-0!"
+			class="hover:bg-danger! hover:text-danger-foreground"
 		>
-			<Icon icon="mdi:window-close" aria-hidden="true" />
-		</Button>
+			<Icon icon="mdi:window-close" />
+		</Button.Root>
 	</div>
 </header>
