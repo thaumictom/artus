@@ -3,34 +3,25 @@
 	import { toKebabCase } from '@std/text';
 	import WarframeSettings from './categories/WarframeSettings.svelte';
 	import Hotkeys from './categories/Hotkeys.svelte';
+	import MetaInformation from './categories/MetaInformation.svelte';
 
 	let components = [
 		{ name: 'Hotkeys', component: Hotkeys },
 		{ name: 'Warframe Settings', component: WarframeSettings },
 	];
-
-	const commitHash = import.meta.env.VITE_ARTUS_COMMIT_HASH || 'unknown';
-	const appVersion = import.meta.env.VITE_ARTUS_VERSION || 'unknown';
 </script>
 
-<div class="flex">
+<div class="@container flex">
 	<!-- Categories -->
 	<div class="flex-1">
 		{#each components as { name, component: Component }, i}
-			<p class="mb-4 font-expanded font-black" id={toKebabCase(name)}>{name}</p>
+			<h1 class="mb-4 font-black text-lg scroll-mt-4" id={toKebabCase(name)}>
+				{name}
+			</h1>
 			<Component />
-			<Separator.Root class="my-4 bg-border h-px" />
+			<Separator.Root class="my-12 bg-border h-px" />
 		{/each}
-		<div class="flex justify-between gap-2">
-			<div class="flex-1">
-				<p class="text-sm">Build Commit</p>
-				<p class="font-mono text-muted-foreground text-xs break-all">{commitHash}</p>
-			</div>
-			<div class="flex-1">
-				<p class="text-sm">App version</p>
-				<p class="font-mono text-muted-foreground text-xs break-all">{appVersion}</p>
-			</div>
-		</div>
+		<MetaInformation />
 	</div>
 	<!-- Table of contents -->
 	<div class="top-4 sticky ml-4 pl-4 border-border border-l max-w-40 h-min">

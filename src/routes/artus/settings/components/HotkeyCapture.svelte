@@ -106,7 +106,7 @@
 		{#if isLoading}
 			<span class="text-muted-foreground">Loading...</span>
 		{:else if keybind}
-			<span class="font-condensed font-bold text-sm">{formatKeybindForDisplay(keybind)}</span>
+			<span class="font-condensed font-medium">{formatKeybindForDisplay(keybind)}</span>
 		{:else}
 			<span class="text-muted-foreground">No keybind set</span>
 		{/if}

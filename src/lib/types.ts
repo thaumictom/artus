@@ -19,3 +19,18 @@ export type OcrDictionaryMappingSettingsPayload = {
 	min_threshold: number;
 	max_threshold: number;
 };
+
+export type SettingsPayload = {
+	ocr_theme: OcrThemeSettingsPayload;
+	overlay_duration_secs: number;
+	overlay_toggle_mode: boolean;
+	ocr_dictionary_mapping: OcrDictionaryMappingSettingsPayload;
+};
+
+export type SettingsPatchPayload = {
+	ocr_theme?: string;
+	overlay_duration_secs?: number;
+	overlay_toggle_mode?: boolean;
+	ocr_dictionary_mapping_enabled?: boolean;
+	ocr_dictionary_match_threshold?: number;
+};

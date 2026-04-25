@@ -1,6 +1,7 @@
 mod hotkeys;
 mod layer_shell;
 mod ocr;
+mod settings;
 mod state;
 
 #[cfg(target_os = "linux")]
@@ -97,6 +98,8 @@ fn main() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            settings::get_settings,
+            settings::patch_settings,
             hotkeys::get_hotkey,
             hotkeys::set_hotkey,
             ocr::get_ocr_theme_settings,
