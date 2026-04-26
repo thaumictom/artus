@@ -3,13 +3,21 @@ use std::sync::atomic::AtomicBool;
 use std::sync::Mutex;
 
 pub const HOTKEY_ACTION_SCREENSHOT: &str = "screenshot";
-pub const DEFAULT_SCREENSHOT_HOTKEY: &str = "Home";
+pub const DEFAULT_SCREENSHOT_HOTKEY: &str = "Ctrl+Home";
+pub const HOTKEY_ACTION_SCREENSHOT_ADD_TO_INVENTORY: &str = "screenshot_add_inventory";
+pub const DEFAULT_SCREENSHOT_ADD_TO_INVENTORY_HOTKEY: &str = "Ctrl+Shift+Home";
 
 fn default_hotkeys() -> HashMap<String, String> {
-    HashMap::from([(
-        HOTKEY_ACTION_SCREENSHOT.to_string(),
-        DEFAULT_SCREENSHOT_HOTKEY.to_string(),
-    )])
+    HashMap::from([
+        (
+            HOTKEY_ACTION_SCREENSHOT.to_string(),
+            DEFAULT_SCREENSHOT_HOTKEY.to_string(),
+        ),
+        (
+            HOTKEY_ACTION_SCREENSHOT_ADD_TO_INVENTORY.to_string(),
+            DEFAULT_SCREENSHOT_ADD_TO_INVENTORY_HOTKEY.to_string(),
+        ),
+    ])
 }
 
 #[derive(Debug, Clone)]

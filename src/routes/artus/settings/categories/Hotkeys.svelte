@@ -10,6 +10,6 @@
 
 	<div>
 		<p class="mb-1">Screenshot + add to inventory</p>
-		<p class="text-muted-foreground text-sm">Coming soon</p>
+		<HotkeyCapture tauriHotkey="screenshot_add_inventory" />
 	</div>
 </div>

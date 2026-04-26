@@ -5,6 +5,7 @@
 	import SettingsMain from './settings/Main.svelte';
 	import DashboardMain from './dashboard/Main.svelte';
 	import InventoryTab from './inventory/Tab.svelte';
+	import MarketMain from './market/Main.svelte';
 	import MasteryMain from './mastery/Main.svelte';
 
 	import Sidebar from './Sidebar.svelte';
@@ -28,6 +29,11 @@
 			label: 'Inventory',
 			icon: 'material-symbols:package-2-outline',
 			component: InventoryTab,
+		},
+		market: {
+			label: 'Market',
+			icon: 'material-symbols:shopping-cart-outline-rounded',
+			component: MarketMain,
 		},
 		settings: {
 			label: 'Settings',

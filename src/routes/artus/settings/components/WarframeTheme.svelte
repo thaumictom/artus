@@ -94,8 +94,4 @@
 		onValueChange={onThemeChange}
 		disabled={isLoading || isSaving}
 	/>
-
-	{#if status}
-		<p class="text-muted-foreground text-xs">{status}</p>
-	{/if}
 </div>

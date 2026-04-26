@@ -96,7 +96,7 @@
 
 	<div class="data-[disabled=true]:cursor-not-allowed" data-disabled={overlayToggleMode}>
 		<div
-			class="flex flex-col gap-6 data-[disabled=true]:opacity-50 transition-opacity data-[disabled=true]:pointer-events-none"
+			class="flex flex-col gap-3 data-[disabled=true]:opacity-50 transition-opacity data-[disabled=true]:pointer-events-none"
 			data-disabled={overlayToggleMode}
 		>
 			<div>
@@ -121,7 +121,3 @@
 		</div>
 	</div>
 </div>
-
-{#if status}
-	<p class="mt-2 text-muted-foreground text-xs">{status}</p>
-{/if}

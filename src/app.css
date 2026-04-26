@@ -14,60 +14,36 @@ body {
 	width: 100vw;
 	height: 100vh;
 }
-/* 
-		--rp-base: #191724;
-		--rp-surface: #1f1d2e;
-		--rp-overlay: #26233a;
-		--rp-muted: #6e6a86;
-		--rp-subtle: #908caa;
-		--rp-text: #e0def4;
-		--rp-love: #eb6f92;
-		--rp-gold: #f6c177;
-		--rp-rose: #ebbcba;
-		--rp-pine: #31748f;
-		--rp-foam: #9ccfd8;
-		--rp-iris: #c4a7e7;
-		--rp-highlight-low: #21202e;
-		--rp-highlight-med: #403d52;
-		--rp-highlight-high: #524f67; */
-
-/* :root {
-	--chart-1: oklch(0.855 0.138 181.071);
-	--chart-2: oklch(0.704 0.14 182.503);
-	--chart-3: oklch(0.6 0.118 184.704);
-	--chart-4: oklch(0.511 0.096 186.391);
-	--chart-5: oklch(0.437 0.078 188.216);
-} */
 
 @theme inline {
 	--font-sans: 'Archivo Variable', sans-serif;
 	--font-heading: 'Archivo Variable', sans-serif;
 
 	/* Text and backgrounds */
-	--color-background: oklch(0.148 0.004 228.8);
-	--color-foreground: oklch(0.987 0.002 197.1);
+	--color-background: var(--color-mist-900);
+	--color-foreground: var(--color-mist-50);
 
-	--color-surface: oklch(0.218 0.008 223.9);
-	--color-surface-foreground: oklch(0.987 0.002 197.1);
+	--color-surface: var(--color-mist-800);
+	--color-surface-foreground: var(--color-mist-100);
 
-	--color-elevated: oklch(0.274 0.006 286.033);
-	--color-elevated-foreground: oklch(0.985 0 0);
+	--color-elevated: var(--color-mist-700);
+	--color-elevated-foreground: var(--color-mist-200);
 
-	--color-muted: oklch(0.275 0.011 216.9);
-	--color-muted-foreground: oklch(0.723 0.014 214.4);
+	--color-muted: var(--color-mist-600);
+	--color-muted-foreground: var(--color-mist-400);
 
 	/* Colors */
-	--color-accent: oklch(0.437 0.078 188.216);
-	--color-accent-foreground: oklch(0.984 0.014 180.72);
+	--color-accent: var(--color-emerald-500);
+	--color-accent-foreground: var(--color-foreground);
 
-	--color-danger: oklch(0.577 0.245 27.325);
-	--color-danger-foreground: oklch(0.987 0.002 197.1);
+	--color-danger: var(--color-red-500);
+	--color-danger-foreground: var(--color-foreground);
 
-	--color-warn: var(--rp-gold);
-	--color-warn-foreground: var(--rp-gold);
+	--color-warn: var(--color-amber-500);
+	--color-warn-foreground: var(--color-foreground);
 
-	--color-success: var(--rp-pine);
-	--color-success-foreground: var(--rp-pine);
+	--color-success: var(--color-green-500);
+	--color-success-foreground: var(--color-foreground);
 
 	/* Borders and rings */
 	--color-border: var(--color-muted);

@@ -1,5 +1,6 @@
 mod hotkeys;
 mod layer_shell;
+mod market;
 mod ocr;
 mod settings;
 mod state;
@@ -102,6 +103,8 @@ fn main() {
             settings::patch_settings,
             hotkeys::get_hotkey,
             hotkeys::set_hotkey,
+            market::get_market_dictionary_items,
+            market::fetch_market_item_by_slug,
             ocr::get_ocr_theme_settings,
             ocr::set_ocr_theme,
             ocr::get_overlay_duration_secs,

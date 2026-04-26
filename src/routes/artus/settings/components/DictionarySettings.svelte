@@ -99,25 +99,30 @@
 		{/if}
 	</div>
 
-	<div class="flex flex-col gap-6">
-		<div>
-			<p>Dictionary match threshold</p>
-			<p class="text-muted-foreground text-xs">
-				Words below this confidence are removed from OCR output.
-			</p>
-		</div>
-		<Slider
-			min={dictionaryMappingMinThreshold}
-			max={dictionaryMappingMaxThreshold}
-			step={0.01}
-			type="single"
-			disabled={!dictionaryMappingEnabled || dictionaryMappingHardDisabled || isLoading}
-			onValueCommit={() => void saveThreshold(dictionaryMappingThreshold)}
-			bind:value={dictionaryMappingThreshold}
+	<div class="data-[disabled=true]:cursor-not-allowed" data-disabled={!dictionaryMappingEnabled}>
+		<div
+			class="flex flex-col gap-3 data-[disabled=true]:opacity-50 transition-opacity data-[disabled=true]:pointer-events-none"
+			data-disabled={!dictionaryMappingEnabled}
 		>
-			{#snippet thumbLabel({ value })}
-				{(typeof value === 'number' ? value : dictionaryMappingThreshold).toFixed(2)}
-			{/snippet}
-		</Slider>
+			<div>
+				<p>Dictionary match threshold</p>
+				<p class="text-muted-foreground text-xs">
+					Words below this confidence are removed from OCR output.
+				</p>
+			</div>
+			<Slider
+				min={dictionaryMappingMinThreshold}
+				max={dictionaryMappingMaxThreshold}
+				step={0.01}
+				type="single"
+				disabled={!dictionaryMappingEnabled || dictionaryMappingHardDisabled || isLoading}
+				onValueCommit={() => void saveThreshold(dictionaryMappingThreshold)}
+				bind:value={dictionaryMappingThreshold}
+			>
+				{#snippet thumbLabel({ value })}
+					{(typeof value === 'number' ? value : dictionaryMappingThreshold).toFixed(2)}
+				{/snippet}
+			</Slider>
+		</div>
 	</div>
 </div>

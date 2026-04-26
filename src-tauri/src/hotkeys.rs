@@ -7,12 +7,20 @@ use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut}
 use tauri_plugin_store::StoreExt;
 
 use crate::ocr;
-use crate::state::{AppState, DEFAULT_SCREENSHOT_HOTKEY, HOTKEY_ACTION_SCREENSHOT};
+use crate::state::{
+    AppState, DEFAULT_SCREENSHOT_ADD_TO_INVENTORY_HOTKEY, DEFAULT_SCREENSHOT_HOTKEY,
+    HOTKEY_ACTION_SCREENSHOT, HOTKEY_ACTION_SCREENSHOT_ADD_TO_INVENTORY,
+};
 
 const SETTINGS_STORE_PATH: &str = "settings.json";
 const HOTKEYS_STORE_KEY: &str = "hotkeys";
-const HOTKEY_DEFINITIONS: [(&str, &str); 1] =
-    [(HOTKEY_ACTION_SCREENSHOT, DEFAULT_SCREENSHOT_HOTKEY)];
+const HOTKEY_DEFINITIONS: [(&str, &str); 2] = [
+    (HOTKEY_ACTION_SCREENSHOT, DEFAULT_SCREENSHOT_HOTKEY),
+    (
+        HOTKEY_ACTION_SCREENSHOT_ADD_TO_INVENTORY,
+        DEFAULT_SCREENSHOT_ADD_TO_INVENTORY_HOTKEY,
+    ),
+];
 
 #[tauri::command]
 pub fn get_hotkey(state: State<'_, AppState>, action: String) -> Result<String, String> {
@@ -141,6 +149,7 @@ pub fn on_pressed<R: Runtime>(app: &AppHandle<R>, shortcut: &Shortcut) {
 
     match action.as_deref() {
         Some(HOTKEY_ACTION_SCREENSHOT) => trigger_screenshot(app),
+        Some(HOTKEY_ACTION_SCREENSHOT_ADD_TO_INVENTORY) => trigger_screenshot_add_to_inventory(app),
         Some(unknown_action) => {
             eprintln!(
                 "[hotkeys] no runtime handler implemented for action '{}'",
@@ -246,6 +255,15 @@ fn trigger_screenshot<R: Runtime>(app: &AppHandle<R>) {
     std::thread::spawn(move || {
         if let Err(err) = ocr::capture_active_window(&app_handle) {
             eprintln!("ocr failed: {err}");
+        }
+    });
+}
+
+fn trigger_screenshot_add_to_inventory<R: Runtime>(app: &AppHandle<R>) {
+    let app_handle = app.clone();
+    std::thread::spawn(move || {
+        if let Err(err) = ocr::capture_active_window(&app_handle) {
+            eprintln!("ocr inventory capture failed: {err}");
         }
     });
 }
