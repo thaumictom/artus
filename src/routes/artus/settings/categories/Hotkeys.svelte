@@ -2,8 +2,14 @@
 	import HotkeyCapture from '../components/HotkeyCapture.svelte';
 </script>
 
-<p class="mb-1">Screenshot</p>
-<HotkeyCapture tauriHotkey="screenshot" />
+<div class="flex flex-col gap-8">
+	<div>
+		<p class="mb-1">Screenshot</p>
+		<HotkeyCapture tauriHotkey="screenshot" />
+	</div>
 
-<p class="mt-4 mb-1">Screenshot + add to inventory</p>
-<p class="text-muted-foreground text-sm">Coming soon</p>
+	<div>
+		<p class="mb-1">Screenshot + add to inventory</p>
+		<p class="text-muted-foreground text-sm">Coming soon</p>
+	</div>
+</div>

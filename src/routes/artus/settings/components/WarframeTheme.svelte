@@ -82,15 +82,20 @@
 	});
 </script>
 
-<p class="mb-1">In-Game Theme</p>
-<Select
-	type="single"
-	{items}
-	value={selectedTheme}
-	onValueChange={onThemeChange}
-	disabled={isLoading || isSaving}
-/>
+<div class="flex flex-col gap-1">
+	<div class="mb-1">
+		<p>In-Game Theme</p>
+		<p class="text-muted-foreground text-xs">Select the theme that reflects the in-game theme</p>
+	</div>
+	<Select
+		type="single"
+		{items}
+		value={selectedTheme}
+		onValueChange={onThemeChange}
+		disabled={isLoading || isSaving}
+	/>
 
-{#if status}
-	<p class="mt-1 text-muted-foreground text-xs">{status}</p>
-{/if}
+	{#if status}
+		<p class="text-muted-foreground text-xs">{status}</p>
+	{/if}
+</div>

@@ -24,8 +24,6 @@ const PASS_TEXT_TO_FRONTEND: bool = false;
 const DEFAULT_OCR_THEME: &str = "EQUINOX";
 const DEFAULT_OCR_TARGET_RGB: [u8; 3] = [158, 159, 167];
 const DEFAULT_OVERLAY_DURATION_SECS: u64 = 10;
-const MIN_OVERLAY_DURATION_SECS: u64 = 1;
-const MAX_OVERLAY_DURATION_SECS: u64 = 60;
 const DEFAULT_OVERLAY_TOGGLE_MODE: bool = false;
 const SETTINGS_STORE_PATH: &str = "settings.json";
 const OVERLAY_DURATION_STORE_KEY: &str = "overlay_duration_secs";
@@ -255,10 +253,8 @@ pub fn set_overlay_duration_secs<R: Runtime>(
     state: State<'_, AppState>,
     seconds: u64,
 ) -> Result<u64, String> {
-    if !(MIN_OVERLAY_DURATION_SECS..=MAX_OVERLAY_DURATION_SECS).contains(&seconds) {
-        return Err(format!(
-            "overlay duration must be between {MIN_OVERLAY_DURATION_SECS} and {MAX_OVERLAY_DURATION_SECS} seconds"
-        ));
+    if seconds == 0 {
+        return Err("overlay duration must be a positive number of seconds".to_string());
     }
 
     let store = app
@@ -408,7 +404,7 @@ pub fn load_persisted_overlay_duration<R: Runtime>(app: &AppHandle<R>) -> Result
         return Ok(());
     };
 
-    if !(MIN_OVERLAY_DURATION_SECS..=MAX_OVERLAY_DURATION_SECS).contains(&saved_seconds) {
+    if saved_seconds == 0 {
         return Ok(());
     }
 

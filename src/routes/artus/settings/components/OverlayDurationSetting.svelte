@@ -1,29 +1,54 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { Label } from 'bits-ui';
 
+	import Slider from '$lib/components/Slider.svelte';
+	import Switch from '$lib/components/Switch.svelte';
 	import {
-		MAX_OVERLAY_DURATION_SECS,
-		MIN_OVERLAY_DURATION_SECS,
 		getOverlayDurationSecs,
+		getOverlayToggleMode,
 		setOverlayDurationSecs,
+		setOverlayToggleMode,
 	} from '../settings-api';
 
-	let { overlayToggleMode = false }: { overlayToggleMode?: boolean } = $props();
-
-	let isLoading = $state(true);
+	let isModeLoading = $state(true);
+	let isDurationLoading = $state(true);
+	let overlayToggleMode = $state(false);
 	let overlayDurationInput = $state(10);
 	let status = $state<string | null>(null);
 
+	async function loadMode() {
+		isModeLoading = true;
+
+		try {
+			overlayToggleMode = await getOverlayToggleMode();
+		} catch (error) {
+			status = String(error);
+		} finally {
+			isModeLoading = false;
+		}
+	}
+
 	async function loadDuration() {
-		isLoading = true;
-		status = null;
+		isDurationLoading = true;
 
 		try {
 			overlayDurationInput = await getOverlayDurationSecs();
 		} catch (error) {
 			status = String(error);
 		} finally {
-			isLoading = false;
+			isDurationLoading = false;
+		}
+	}
+
+	async function saveMode(enabled: boolean = overlayToggleMode) {
+		status = null;
+
+		try {
+			const savedMode = await setOverlayToggleMode(enabled);
+			overlayToggleMode = savedMode;
+		} catch (error) {
+			status = String(error);
 		}
 	}
 
@@ -33,12 +58,8 @@
 		const parsed = Number(overlayDurationInput);
 		const normalized = Number.isFinite(parsed) ? Math.trunc(parsed) : Number.NaN;
 
-		if (
-			!Number.isFinite(normalized) ||
-			normalized < MIN_OVERLAY_DURATION_SECS ||
-			normalized > MAX_OVERLAY_DURATION_SECS
-		) {
-			status = `Duration must be between ${MIN_OVERLAY_DURATION_SECS} and ${MAX_OVERLAY_DURATION_SECS} seconds.`;
+		if (!Number.isFinite(normalized) || normalized <= 0) {
+			status = 'Duration must be a positive number of seconds.';
 			return;
 		}
 
@@ -52,34 +73,53 @@
 	}
 
 	onMount(() => {
+		void loadMode();
 		void loadDuration();
 	});
 </script>
 
-<div class="mt-6">
-	<p class="text-sm">Overlay Duration (seconds)</p>
-	<div class="flex items-center gap-2 mt-2">
-		<input
-			type="number"
-			min={MIN_OVERLAY_DURATION_SECS}
-			max={MAX_OVERLAY_DURATION_SECS}
-			step="1"
-			class="px-2 py-1 border rounded w-full"
-			disabled={isLoading || overlayToggleMode}
-			bind:value={overlayDurationInput}
+<div class="flex flex-col gap-8">
+	<div class="flex justify-between items-center gap-1">
+		<Label.Root for="overlay-mode-toggle" class="flex-1">
+			<p>Toggle overlay with screenshot keybind</p>
+			<p class="text-muted-foreground text-xs">
+				If enabled, the overlay will be shown until the keybind is pressed again
+			</p>
+		</Label.Root>
+		<Switch
+			id="overlay-mode-toggle"
+			disabled={isModeLoading}
+			onCheckedChange={(mode) => void saveMode(mode)}
+			checked={overlayToggleMode}
 		/>
-		<button
-			class="px-3 py-1 border rounded"
-			disabled={isLoading || overlayToggleMode}
-			onclick={saveDuration}
-		>
-			Save
-		</button>
 	</div>
-	<p class="mt-1 text-muted-foreground text-xs">
-		Range: {MIN_OVERLAY_DURATION_SECS}-{MAX_OVERLAY_DURATION_SECS} seconds.
-		{overlayToggleMode ? ' Disabled while Toggle mode is enabled.' : ''}
-	</p>
+
+	<div class="data-[disabled=true]:cursor-not-allowed" data-disabled={overlayToggleMode}>
+		<div
+			class="flex flex-col gap-6 data-[disabled=true]:opacity-50 transition-opacity data-[disabled=true]:pointer-events-none"
+			data-disabled={overlayToggleMode}
+		>
+			<div>
+				<p>Overlay duration</p>
+				<p class="text-muted-foreground text-xs">
+					Time in seconds that the overlay will be shown after pressing the keybind
+				</p>
+			</div>
+			<Slider
+				min={5}
+				max={120}
+				step={5}
+				type="single"
+				disabled={isDurationLoading || isModeLoading || overlayToggleMode}
+				onValueCommit={saveDuration}
+				bind:value={overlayDurationInput}
+			>
+				{#snippet thumbLabel({ value })}
+					{value}s
+				{/snippet}
+			</Slider>
+		</div>
+	</div>
 </div>
 
 {#if status}

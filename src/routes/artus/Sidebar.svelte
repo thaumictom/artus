@@ -24,12 +24,12 @@
 				<div class="flex items-center h-full">
 					<Icon icon={section.icon} class="size-6" />
 					<span
-						class={{
-							' overflow-hidden text-sm whitespace-nowrap transition-all duration-300 ease-in-out': true,
-							'opacity-100 max-w-20': isSidebarOpen,
-							'opacity-0 max-w-0': !isSidebarOpen,
-						}}
 						aria-hidden={!isSidebarOpen}
+						class={{
+							'overflow-hidden text-sm whitespace-nowrap transition-all duration-300 ease-in-out text-left': true,
+							'opacity-100 w-32': isSidebarOpen,
+							'opacity-0 w-0': !isSidebarOpen,
+						}}
 					>
 						<span class="pr-1 pl-2">
 							{section.label}

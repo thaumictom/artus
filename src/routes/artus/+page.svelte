@@ -43,7 +43,9 @@
 <div class="flex flex-col bg-surface h-full">
 	<Header title={sections[activeSection].label}></Header>
 	<Tabs.Root class="flex flex-1 overflow-hidden" orientation="vertical" bind:value={activeSection}>
-		<Sidebar {sections}></Sidebar>
+		<div>
+			<Sidebar {sections}></Sidebar>
+		</div>
 		<MainContent>
 			<CurrentComponent />
 		</MainContent>

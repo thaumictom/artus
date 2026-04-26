@@ -36,8 +36,12 @@
 <header class="flex justify-between items-center w-full" data-tauri-drag-region>
 	<!-- Left title -->
 	<div class="flex items-center select-none">
-		<div class="px-4 font-expanded font-black text-accent text-xs uppercase">Artus</div>
-		<div class="bg-muted w-px h-3 text-xs"></div>
+		<div
+			class="px-4 font-expanded font-black text-accent text-xs text-center uppercase"
+		>
+			Artus
+		</div>
+		<div class="bg-muted rounded-full w-0.5 h-4 text-xs"></div>
 		<div class="px-4">{title}</div>
 	</div>
 	<!-- Right controls -->

@@ -18,10 +18,10 @@
 	<div class="absolute inset-0">
 		<OverlayScrollbarsComponent
 			defer
-			options={{ scrollbars: { theme: scrollbarTheme } }}
+			options={{ scrollbars: { theme: scrollbarTheme, autoHide: 'move' } }}
 			class="w-full h-full"
 		>
-			<div class="p-4 pr-8 min-h-full">
+			<div class="pr-4 min-h-full">
 				{@render children?.()}
 			</div>
 		</OverlayScrollbarsComponent>

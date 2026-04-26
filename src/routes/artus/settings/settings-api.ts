@@ -7,9 +7,6 @@ import type {
 	SettingsPayload,
 } from '$lib/types';
 
-export const MIN_OVERLAY_DURATION_SECS = 1;
-export const MAX_OVERLAY_DURATION_SECS = 60;
-
 let cachedSettings: SettingsPayload | null = null;
 let inFlightSettingsRequest: Promise<SettingsPayload> | null = null;
 

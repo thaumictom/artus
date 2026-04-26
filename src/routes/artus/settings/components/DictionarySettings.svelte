@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { Label } from 'bits-ui';
 
+	import Slider from '$lib/components/Slider.svelte';
+	import Switch from '$lib/components/Switch.svelte';
 	import {
 		getOcrDictionaryMappingSettings,
 		setOcrDictionaryMappingEnabled,
@@ -72,50 +75,49 @@
 	});
 </script>
 
-<div class="mt-6 p-3 border rounded">
-	<p class="font-medium text-sm">Dictionary Mapping</p>
-	<label class="flex items-center gap-2 mt-2 text-sm cursor-pointer">
-		<input
-			type="checkbox"
-			disabled={isLoading || dictionaryMappingHardDisabled}
-			bind:checked={dictionaryMappingEnabled}
-			onchange={() => void saveEnabled(dictionaryMappingEnabled)}
-		/>
-		<span>Map OCR text to dictionary items</span>
-	</label>
-
-	{#if dictionaryMappingHardDisabled}
-		<p class="mt-1 text-muted-foreground text-xs">
-			Dictionary mapping is hard-disabled in backend code.
-		</p>
-	{/if}
-
-	<div class="mt-3">
-		<p class="text-muted-foreground text-xs">Threshold: {dictionaryMappingThreshold.toFixed(2)}</p>
-		<div class="flex items-center gap-2 mt-2">
-			<input
-				type="range"
-				class="w-full"
-				min={dictionaryMappingMinThreshold}
-				max={dictionaryMappingMaxThreshold}
-				step="0.01"
-				disabled={!dictionaryMappingEnabled || dictionaryMappingHardDisabled || isLoading}
-				bind:value={dictionaryMappingThreshold}
+<div class="flex flex-col gap-8">
+	<div class="flex flex-col gap-1">
+		<div class="flex justify-between items-center gap-1">
+			<Label.Root for="dictionary-mapping-toggle" class="flex-1">
+				<p>Map OCR text to dictionary items</p>
+				<p class="text-muted-foreground text-xs">
+					If enabled, OCR words are matched against known item names and tags
+				</p>
+			</Label.Root>
+			<Switch
+				id="dictionary-mapping-toggle"
+				disabled={isLoading || dictionaryMappingHardDisabled}
+				onCheckedChange={(nextEnabled) => void saveEnabled(nextEnabled)}
+				checked={dictionaryMappingEnabled}
 			/>
-			<button
-				class="px-3 py-1 border rounded"
-				disabled={!dictionaryMappingEnabled || dictionaryMappingHardDisabled || isLoading}
-				onclick={() => void saveThreshold(dictionaryMappingThreshold)}
-			>
-				Save
-			</button>
 		</div>
-		<p class="mt-1 text-muted-foreground text-xs">
-			Words below this confidence are removed from OCR output.
-		</p>
+
+		{#if dictionaryMappingHardDisabled}
+			<p class="text-muted-foreground text-xs">
+				Dictionary mapping is hard-disabled in backend code.
+			</p>
+		{/if}
+	</div>
+
+	<div class="flex flex-col gap-6">
+		<div>
+			<p>Dictionary match threshold</p>
+			<p class="text-muted-foreground text-xs">
+				Words below this confidence are removed from OCR output.
+			</p>
+		</div>
+		<Slider
+			min={dictionaryMappingMinThreshold}
+			max={dictionaryMappingMaxThreshold}
+			step={0.01}
+			type="single"
+			disabled={!dictionaryMappingEnabled || dictionaryMappingHardDisabled || isLoading}
+			onValueCommit={() => void saveThreshold(dictionaryMappingThreshold)}
+			bind:value={dictionaryMappingThreshold}
+		>
+			{#snippet thumbLabel({ value })}
+				{(typeof value === 'number' ? value : dictionaryMappingThreshold).toFixed(2)}
+			{/snippet}
+		</Slider>
 	</div>
 </div>
-
-{#if status}
-	<p class="mt-2 text-muted-foreground text-xs">{status}</p>
-{/if}
