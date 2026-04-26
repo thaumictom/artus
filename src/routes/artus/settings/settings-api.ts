@@ -80,3 +80,11 @@ export function setOcrDictionaryMatchThreshold(threshold: number) {
 		(settings) => settings.ocr_dictionary_mapping.threshold,
 	);
 }
+
+export function getWarframeLogPath() {
+	return getSettings().then((settings) => settings.warframe_log_path);
+}
+
+export function setWarframeLogPath(path: string) {
+	return patchSettings({ warframe_log_path: path }).then((settings) => settings.warframe_log_path);
+}

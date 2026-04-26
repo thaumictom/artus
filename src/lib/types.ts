@@ -25,6 +25,7 @@ export type SettingsPayload = {
 	overlay_duration_secs: number;
 	overlay_toggle_mode: boolean;
 	ocr_dictionary_mapping: OcrDictionaryMappingSettingsPayload;
+	warframe_log_path: string;
 };
 
 export type SettingsPatchPayload = {
@@ -33,4 +34,5 @@ export type SettingsPatchPayload = {
 	overlay_toggle_mode?: boolean;
 	ocr_dictionary_mapping_enabled?: boolean;
 	ocr_dictionary_match_threshold?: number;
+	warframe_log_path?: string;
 };
