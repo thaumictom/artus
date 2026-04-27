@@ -6,5 +6,5 @@
 	const data: MasterableItem[] = masterableItems;
 </script>
 
-<div>Hello</div>
+<div>Work in progress</div>
 <!-- <DataTable {data} {columns} /> -->
