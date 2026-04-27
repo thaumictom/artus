@@ -6,7 +6,7 @@ use tauri::{AppHandle, Emitter, Runtime, State};
 
 use crate::state::AppState;
 
-const MARKET_API_BASE_URL: &str = "https://api.warframe.market/v2/orders/item";
+const MARKET_API_URL: &str = "https://api.warframe.market/v2/orders/item/{slug}/top";
 const MARKET_HTTP_TIMEOUT_SECS: u64 = 10;
 
 #[derive(Debug, Clone, Serialize)]
@@ -73,7 +73,7 @@ pub fn fetch_market_item_by_slug<R: Runtime>(
         .build()
         .map_err(|err| format!("failed to build market client: {err}"))?;
 
-    let request_url = format!("{MARKET_API_BASE_URL}/{slug_key}");
+    let request_url = MARKET_API_URL.replace("{slug}", &slug_key);
     let response = client
         .get(request_url)
         .send()
