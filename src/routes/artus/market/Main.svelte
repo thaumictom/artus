@@ -13,12 +13,42 @@
 		slug: string;
 	};
 
+	type MarketOrder = {
+		id: string;
+		type: 'buy' | 'sell';
+		platinum: number;
+		quantity: number;
+		perTrade: number;
+		visible: boolean;
+		createdAt: string;
+		updatedAt: string;
+		itemId: string;
+		user: {
+			id: string;
+			ingameName: string;
+			slug: string;
+			reputation: number;
+			platform: string;
+			crossplay: boolean;
+			status: string;
+			lastSeen: string;
+		};
+	};
+
+	type MarketResponse = {
+		apiVersion: string;
+		data: {
+			sell: MarketOrder[];
+			buy: MarketOrder[];
+		};
+	};
+
 	let dictionaryItems = $state<MarketDictionaryItem[]>([]);
 	let isLoadingDictionary = $state(true);
 	let isSearching = $state(false);
 	let statusMessage = $state<string | null>(null);
 	let selectedSlug = $state<string | null>(null);
-	let resultJson = $state('');
+	let marketData = $state<MarketResponse | null>(null);
 
 	async function loadDictionaryItems() {
 		isLoadingDictionary = true;
@@ -50,7 +80,7 @@
 		const dictionaryItem = dictionaryItems.find((item) => item.value === slug);
 		if (!dictionaryItem) {
 			selectedSlug = null;
-			resultJson = '';
+			marketData = null;
 			statusMessage = 'No matching dictionary item found.';
 			return;
 		}
@@ -60,13 +90,13 @@
 		statusMessage = null;
 
 		try {
-			const responsePayload = await invoke<unknown>('fetch_market_item_by_slug', {
+			const responsePayload = await invoke<MarketResponse>('fetch_market_item_by_slug', {
 				slug: dictionaryItem.value,
 			});
-			resultJson = JSON.stringify(responsePayload, null, 2);
+			marketData = responsePayload;
 			statusMessage = `Fetched market payload for ${dictionaryItem.label}.`;
 		} catch (error) {
-			resultJson = '';
+			marketData = null;
 			statusMessage = String(error);
 		} finally {
 			isSearching = false;
@@ -76,7 +106,7 @@
 	function handleValueChange(nextValue: string) {
 		if (!nextValue) {
 			selectedSlug = null;
-			resultJson = '';
+			marketData = null;
 			statusMessage = null;
 			return;
 		}
@@ -102,19 +132,114 @@
 	</div>
 </div>
 
-{#if selectedSlug}
-	<p class="mt-2 text-muted-foreground text-xs">Slug: {selectedSlug}</p>
-{/if}
-
 {#if statusMessage}
 	<p class="mt-2 text-muted-foreground text-sm">{statusMessage}</p>
 {/if}
 
-{#if resultJson}
-	<pre
-		class="bg-background mt-4 p-3 border rounded max-h-120 overflow-auto text-xs">{resultJson}</pre>
+{#if marketData}
+	<div class="space-y-8 mt-6 px-8">
+		<!-- Sell Orders -->
+		<div>
+			<h2 class="mb-4 font-semibold text-lg">Sell Orders (Top 5 Cheapest)</h2>
+			{#if marketData.data.sell.length > 0}
+				<div class="border rounded-lg overflow-x-auto">
+					<table class="w-full text-sm">
+						<thead class="bg-muted border-b">
+							<tr>
+								<th class="px-4 py-3 font-medium text-left">Price</th>
+								<th class="px-4 py-3 font-medium text-left">Qty</th>
+								<th class="px-4 py-3 font-medium text-left">Seller</th>
+								<th class="px-4 py-3 font-medium text-left">Rep</th>
+								<th class="px-4 py-3 font-medium text-left">Platform</th>
+								<th class="px-4 py-3 font-medium text-left">Updated</th>
+								<th class="px-4 py-3 font-medium text-left">Status</th>
+							</tr>
+						</thead>
+						<tbody>
+							{#each marketData.data.sell.slice(0, 5) as order (order.id)}
+								<tr class="hover:bg-muted/50 border-b">
+									<td class="px-4 py-3 font-semibold text-green-600">{order.platinum} Pt</td>
+									<td class="px-4 py-3">{order.quantity}</td>
+									<td class="px-4 py-3 text-blue-500">{order.user.ingameName}</td>
+									<td class="px-4 py-3">{order.user.reputation}</td>
+									<td class="px-4 py-3 capitalize">{order.user.platform}</td>
+									<td class="px-4 py-3 text-muted-foreground text-xs">
+										{new Date(order.updatedAt).toLocaleDateString()}
+										{new Date(order.updatedAt).toLocaleTimeString()}
+									</td>
+									<td class="px-4 py-3">
+										<span
+											class="px-2 py-1 rounded font-medium text-xs"
+											class:bg-green-100={order.user.status === 'online'}
+											class:text-green-800={order.user.status === 'online'}
+											class:bg-gray-100={order.user.status !== 'online'}
+											class:text-gray-800={order.user.status !== 'online'}
+										>
+											{order.user.status}
+										</span>
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+			{:else}
+				<p class="text-muted-foreground">No sell orders available.</p>
+			{/if}
+		</div>
+
+		<!-- Buy Orders -->
+		<div>
+			<h2 class="mb-4 font-semibold text-lg">Buy Orders (Top 5 Highest)</h2>
+			{#if marketData.data.buy.length > 0}
+				<div class="border rounded-lg overflow-x-auto">
+					<table class="w-full text-sm">
+						<thead class="bg-muted border-b">
+							<tr>
+								<th class="px-4 py-3 font-medium text-left">Price</th>
+								<th class="px-4 py-3 font-medium text-left">Qty</th>
+								<th class="px-4 py-3 font-medium text-left">Buyer</th>
+								<th class="px-4 py-3 font-medium text-left">Rep</th>
+								<th class="px-4 py-3 font-medium text-left">Platform</th>
+								<th class="px-4 py-3 font-medium text-left">Updated</th>
+								<th class="px-4 py-3 font-medium text-left">Status</th>
+							</tr>
+						</thead>
+						<tbody>
+							{#each marketData.data.buy.slice(0, 5) as order (order.id)}
+								<tr class="hover:bg-muted/50 border-b">
+									<td class="px-4 py-3 font-semibold text-orange-600">{order.platinum} Pt</td>
+									<td class="px-4 py-3">{order.quantity}</td>
+									<td class="px-4 py-3 text-blue-500">{order.user.ingameName}</td>
+									<td class="px-4 py-3">{order.user.reputation}</td>
+									<td class="px-4 py-3 capitalize">{order.user.platform}</td>
+									<td class="px-4 py-3 text-muted-foreground text-xs">
+										{new Date(order.updatedAt).toLocaleDateString()}
+										{new Date(order.updatedAt).toLocaleTimeString()}
+									</td>
+									<td class="px-4 py-3">
+										<span
+											class="px-2 py-1 rounded font-medium text-xs"
+											class:bg-green-100={order.user.status === 'online'}
+											class:text-green-800={order.user.status === 'online'}
+											class:bg-gray-100={order.user.status !== 'online'}
+											class:text-gray-800={order.user.status !== 'online'}
+										>
+											{order.user.status}
+										</span>
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+			{:else}
+				<p class="text-muted-foreground">No buy orders available.</p>
+			{/if}
+		</div>
+	</div>
 {:else}
-	<div class="mt-4 p-3 border rounded text-muted-foreground text-sm">
-		Select an item to fetch its payload from warframe.market.
+	<div class="mx-8 mt-4 p-3 border rounded text-muted-foreground text-sm">
+		Select an item to fetch its prices from warframe.market.
 	</div>
 {/if}
