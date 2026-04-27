@@ -34,7 +34,7 @@ body {
 
 	/* Colors */
 	--color-accent: var(--color-emerald-500);
-	--color-accent-foreground: var(--color-foreground);
+	--color-accent-foreground: var(--color-background);
 
 	--color-danger: var(--color-red-500);
 	--color-danger-foreground: var(--color-foreground);

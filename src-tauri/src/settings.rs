@@ -2,11 +2,13 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager, Runtime};
+use tauri_plugin_store::StoreExt;
 
 use crate::ocr;
 use crate::state::AppState;
 
 const WARFRAME_LOG_FILENAME: &str = "EE.log";
+const SETTINGS_STORE_PATH: &str = "settings.json";
 
 #[derive(Debug, Clone, Serialize)]
 pub struct SettingsPayload {
@@ -15,6 +17,7 @@ pub struct SettingsPayload {
     pub overlay_toggle_mode: bool,
     pub ocr_dictionary_mapping: ocr::OcrDictionaryMappingSettingsPayload,
     pub warframe_log_path: String,
+    pub relic_reward_detection: bool,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -26,6 +29,7 @@ pub struct SettingsPatchPayload {
     pub ocr_dictionary_mapping_enabled: Option<bool>,
     pub ocr_dictionary_match_threshold: Option<f64>,
     pub warframe_log_path: Option<String>,
+    pub relic_reward_detection: Option<bool>,
 }
 
 #[tauri::command]
@@ -36,6 +40,11 @@ pub fn get_settings<R: Runtime>(app: AppHandle<R>) -> Result<SettingsPayload, St
         .lock()
         .map_err(|_| "failed to read warframe log path".to_string())?
         .clone();
+    let relic_reward_detection = app_state
+        .relic_reward_detection
+        .lock()
+        .map(|v| *v)
+        .map_err(|_| "failed to read relic reward detection".to_string())?;
 
     Ok(SettingsPayload {
         ocr_theme: ocr::get_ocr_theme_settings(app.clone(), app.state::<AppState>())?,
@@ -43,6 +52,7 @@ pub fn get_settings<R: Runtime>(app: AppHandle<R>) -> Result<SettingsPayload, St
         overlay_toggle_mode: ocr::get_overlay_toggle_mode(app.state::<AppState>())?,
         ocr_dictionary_mapping: ocr::get_ocr_dictionary_mapping_settings(app.state::<AppState>())?,
         warframe_log_path,
+        relic_reward_detection,
     })
 }
 
@@ -79,7 +89,28 @@ pub fn patch_settings<R: Runtime>(
             .warframe_log_path
             .lock()
             .map_err(|_| "failed to update warframe log path".to_string())?;
-        *warframe_log_path = normalized_path;
+        *warframe_log_path = normalized_path.clone();
+
+        let store = app
+            .store(SETTINGS_STORE_PATH)
+            .map_err(|err| format!("failed to open settings store: {err}"))?;
+        store.set("warframe_log_path", normalized_path);
+        let _ = store.save();
+    }
+
+    if let Some(enabled) = patch.relic_reward_detection {
+        let app_state = app.state::<AppState>();
+        let mut relic_reward_detection = app_state
+            .relic_reward_detection
+            .lock()
+            .map_err(|_| "failed to update relic reward detection".to_string())?;
+        *relic_reward_detection = enabled;
+
+        let store = app
+            .store(SETTINGS_STORE_PATH)
+            .map_err(|err| format!("failed to open settings store: {err}"))?;
+        store.set("relic_reward_detection", enabled);
+        let _ = store.save();
     }
 
     get_settings(app)

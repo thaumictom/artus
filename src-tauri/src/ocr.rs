@@ -637,7 +637,7 @@ fn bump_overlay_sequence<R: Runtime>(app: &AppHandle<R>) -> Result<u64, String> 
     Ok(*guard)
 }
 
-fn capture_active_window_with_mode<R: Runtime>(
+pub fn capture_active_window_with_mode<R: Runtime>(
     app: &AppHandle<R>,
     should_auto_hide: bool,
 ) -> Result<(), String> {

@@ -7,6 +7,7 @@ mod hotkeys;
 mod layer_shell;
 mod market;
 mod ocr;
+mod relic_rewards;
 mod settings;
 mod state;
 mod updater;
@@ -17,6 +18,7 @@ use std::env;
 use state::AppState;
 use tauri::Manager;
 use tauri_plugin_global_shortcut::{Builder as GlobalShortcutBuilder, ShortcutState};
+use tauri_plugin_store::StoreExt;
 
 fn main() {
     let is_wayland = apply_wayland_workarounds();
@@ -74,6 +76,23 @@ fn main() {
                 Ok(count) => println!("[ocr] loaded tradeable item prices: {count}"),
                 Err(err) => eprintln!("[ocr] failed to load tradeable item prices: {err}"),
             }
+
+            // Load persisted settings
+            if let Ok(store) = app.handle().store("settings.json") {
+                let state = app.state::<AppState>();
+                
+                if let Some(enabled) = store.get("relic_reward_detection").and_then(|v| v.as_bool()) {
+                    let mut relic_reward_detection = state.relic_reward_detection.lock().unwrap();
+                    *relic_reward_detection = enabled;
+                }
+                
+                if let Some(path) = store.get("warframe_log_path").and_then(|v| v.as_str().map(|s| s.to_string())) {
+                    let mut warframe_log_path = state.warframe_log_path.lock().unwrap();
+                    *warframe_log_path = path;
+                }
+            }
+
+            relic_rewards::spawn_log_tailer(app.handle().clone());
 
             hotkeys::register_initial(app.handle())?;
 

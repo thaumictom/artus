@@ -88,3 +88,13 @@ export function getWarframeLogPath() {
 export function setWarframeLogPath(path: string) {
 	return patchSettings({ warframe_log_path: path }).then((settings) => settings.warframe_log_path);
 }
+
+export function getRelicRewardDetection() {
+	return getSettings().then((settings) => settings.relic_reward_detection);
+}
+
+export function setRelicRewardDetection(enabled: boolean) {
+	return patchSettings({ relic_reward_detection: enabled }).then(
+		(settings) => settings.relic_reward_detection,
+	);
+}
