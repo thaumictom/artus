@@ -29,6 +29,7 @@
 		"@tauri-apps/plugin-window": "2.0.0-alpha.1",
 		"@wfcd/items": "^1.1272.167",
 		"class-variance-authority": "^0.7.1",
+		"fuzzball": "^2.2.3",
 		"mode-watcher": "^1.1.0",
 		"overlayscrollbars": "^2.15.1",
 		"overlayscrollbars-svelte": "^0.5.5",
