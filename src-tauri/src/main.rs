@@ -1,9 +1,15 @@
+#![cfg_attr(
+    all(not(debug_assertions), target_os = "windows"),
+    windows_subsystem = "windows"
+)]
+
 mod hotkeys;
 mod layer_shell;
 mod market;
 mod ocr;
 mod settings;
 mod state;
+mod updater;
 
 #[cfg(target_os = "linux")]
 use std::env;
@@ -11,7 +17,6 @@ use std::env;
 use state::AppState;
 use tauri::Manager;
 use tauri_plugin_global_shortcut::{Builder as GlobalShortcutBuilder, ShortcutState};
-use tauri_plugin_updater::UpdaterExt;
 
 fn main() {
     let is_wayland = apply_wayland_workarounds();
@@ -72,30 +77,6 @@ fn main() {
 
             hotkeys::register_initial(app.handle())?;
 
-            let app_handle = app.handle().clone();
-            tauri::async_runtime::spawn(async move {
-                let Ok(updater) = app_handle.updater() else {
-                    eprintln!("[updater] failed to create updater instance");
-                    return;
-                };
-
-                match updater.check().await {
-                    Ok(Some(update)) => {
-                        println!("[updater] found update {}", update.version);
-
-                        if let Err(err) = update.download_and_install(|_, _| {}, || {}).await {
-                            eprintln!("[updater] failed to download/install update: {err}");
-                            return;
-                        }
-
-                        println!("[updater] update installed, restarting app");
-                        app_handle.restart();
-                    }
-                    Ok(None) => println!("[updater] no update available"),
-                    Err(err) => eprintln!("[updater] failed to check for updates: {err}"),
-                }
-            });
-
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -113,7 +94,9 @@ fn main() {
             ocr::set_overlay_toggle_mode,
             ocr::get_ocr_dictionary_mapping_settings,
             ocr::set_ocr_dictionary_mapping_enabled,
-            ocr::set_ocr_dictionary_match_threshold
+            ocr::set_ocr_dictionary_match_threshold,
+            updater::check_for_update,
+            updater::download_and_relaunch_update
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
