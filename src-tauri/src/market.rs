@@ -7,6 +7,7 @@ use tauri::{AppHandle, Emitter, Runtime, State};
 use crate::state::AppState;
 
 const MARKET_API_URL: &str = "https://api.warframe.market/v2/orders/item/{slug}";
+const MARKET_STATS_API_URL: &str = "https://api.warframe.market/v1/items/{slug}/statistics";
 const MARKET_HTTP_TIMEOUT_SECS: u64 = 10;
 
 #[derive(Debug, Clone, Serialize)]
@@ -17,6 +18,12 @@ pub struct MarketDictionaryItem {
 
 #[derive(Debug, Clone, Serialize)]
 pub struct MarketItemResultPayload {
+    pub slug: String,
+    pub payload: serde_json::Value,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct MarketItemStatsResultPayload {
     pub slug: String,
     pub payload: serde_json::Value,
 }
@@ -95,4 +102,49 @@ pub fn fetch_market_item_by_slug<R: Runtime>(
     .map_err(|err| format!("failed to emit market response: {err}"))?;
 
     Ok(payload)
+}
+
+#[tauri::command]
+pub fn fetch_market_item_stats_by_slug<R: Runtime>(
+    app: AppHandle<R>,
+    slug: String,
+) -> Result<serde_json::Value, String> {
+    let slug_key = slug.trim().to_ascii_lowercase();
+    if slug_key.is_empty() {
+        return Err("slug cannot be empty".to_string());
+    }
+
+    let client = reqwest::blocking::Client::builder()
+        .timeout(Duration::from_secs(MARKET_HTTP_TIMEOUT_SECS))
+        .build()
+        .map_err(|err| format!("failed to build market client: {err}"))?;
+
+    let request_url = MARKET_STATS_API_URL.replace("{slug}", &slug_key);
+    let response = client
+        .get(request_url)
+        .send()
+        .map_err(|err| format!("failed to fetch market item stats: {err}"))?
+        .error_for_status()
+        .map_err(|err| format!("market stats request failed: {err}"))?;
+
+    let full_payload = response
+        .json::<serde_json::Value>()
+        .map_err(|err| format!("failed to parse market stats response: {err}"))?;
+
+    let stats_90days = full_payload
+        .get("payload")
+        .and_then(|p| p.get("statistics_closed"))
+        .and_then(|s| s.get("90days"))
+        .ok_or_else(|| "could not find 90days statistics in response".to_string())?;
+
+    app.emit(
+        "market_item_stats_result",
+        MarketItemStatsResultPayload {
+            slug: slug_key,
+            payload: stats_90days.clone(),
+        },
+    )
+    .map_err(|err| format!("failed to emit market stats response: {err}"))?;
+
+    Ok(stats_90days.clone())
 }

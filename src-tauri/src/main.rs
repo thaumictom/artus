@@ -111,6 +111,7 @@ fn main() {
             hotkeys::set_hotkey,
             market::get_market_dictionary_items,
             market::fetch_market_item_by_slug,
+            market::fetch_market_item_stats_by_slug,
             ocr::get_ocr_theme_settings,
             ocr::set_ocr_theme,
             ocr::get_overlay_duration_secs,

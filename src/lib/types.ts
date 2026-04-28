@@ -20,6 +20,23 @@ export type OcrDictionaryMappingSettingsPayload = {
 	max_threshold: number;
 };
 
+export type MarketStatEntry = {
+	datetime: string;
+	volume: number;
+	min_price: number;
+	max_price: number;
+	open_price: number;
+	closed_price: number;
+	avg_price: number;
+	wa_price: number;
+	median: number;
+	subtype?: string;
+	donch_top?: number;
+	donch_bot?: number;
+	id: string;
+	moving_avg?: number;
+};
+
 export type SettingsPayload = {
 	ocr_theme: OcrThemeSettingsPayload;
 	overlay_duration_secs: number;

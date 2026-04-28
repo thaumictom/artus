@@ -3,6 +3,8 @@
 	import { Slider } from 'bits-ui';
 	import { invoke } from '@tauri-apps/api/core';
 	import { onMount } from 'svelte';
+	import { LineChart, BarChart } from 'layerchart';
+	import type { MarketStatEntry } from '$lib/types';
 
 	type MarketDictionaryItem = {
 		label: string;
@@ -48,7 +50,24 @@
 	let statusMessage = $state<string | null>(null);
 	let selectedSlug = $state<string | null>(null);
 	let marketData = $state<MarketResponse | null>(null);
+	let marketStats = $state<MarketStatEntry[]>([]);
 	let rankRange = $state<[number, number]>([0, 0]);
+
+	const last14DaysStats = $derived.by(() => {
+		if (marketStats.length === 0) return [];
+		const sorted = [...marketStats].sort(
+			(a, b) => new Date(a.datetime).getTime() - new Date(b.datetime).getTime(),
+		);
+		return sorted.slice(-14);
+	});
+
+	const chartData = $derived(
+		last14DaysStats.map((s) => ({
+			date: new Date(s.datetime),
+			median: s.median,
+			volume: s.volume,
+		})),
+	);
 
 	async function loadDictionaryItems() {
 		isLoadingDictionary = true;
@@ -81,6 +100,7 @@
 		if (!dictionaryItem) {
 			selectedSlug = null;
 			marketData = null;
+			marketStats = [];
 			statusMessage = 'No matching dictionary item found.';
 			return;
 		}
@@ -90,15 +110,24 @@
 		statusMessage = null;
 
 		try {
-			const responsePayload = await invoke<MarketResponse>('fetch_market_item_by_slug', {
-				slug: dictionaryItem.value,
-			});
+			const [responsePayload, statsPayload] = await Promise.all([
+				invoke<MarketResponse>('fetch_market_item_by_slug', {
+					slug: dictionaryItem.value,
+				}),
+				invoke<MarketStatEntry[]>('fetch_market_item_stats_by_slug', {
+					slug: dictionaryItem.value,
+				}),
+			]);
+
 			marketData = responsePayload;
+			marketStats = statsPayload;
+
 			const maxRank = getMaxRank(responsePayload.data) ?? 0;
 			rankRange = [0, maxRank];
 			statusMessage = `Fetched market payload for ${dictionaryItem.label}.`;
 		} catch (error) {
 			marketData = null;
+			marketStats = [];
 			statusMessage = String(error);
 		} finally {
 			isSearching = false;
@@ -109,6 +138,7 @@
 		if (!nextValue) {
 			selectedSlug = null;
 			marketData = null;
+			marketStats = [];
 			statusMessage = null;
 			return;
 		}
@@ -192,7 +222,7 @@
 </div>
 
 {#if statusMessage}
-	<p class="mt-2 text-muted-foreground text-sm">{statusMessage}</p>
+	<p class="mt-2 text-muted-foreground text-sm text-center">{statusMessage}</p>
 {/if}
 
 {#if marketData}
@@ -205,6 +235,52 @@
 	{@const sellOrders = getTopSellOrders(filteredOrders.filter((order) => order.type === 'sell'))}
 	{@const buyOrders = getTopBuyOrders(filteredOrders.filter((order) => order.type === 'buy'))}
 	<div class="space-y-8 mt-6 px-8">
+		{#if chartData.length > 0}
+			<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+				<div class="space-y-4">
+					<h2 class="font-semibold text-lg">Price Trend (Last 14 Days)</h2>
+					<div class="bg-surface border p-4 rounded-lg h-64">
+						<LineChart
+							data={chartData}
+							x="date"
+							y="median"
+							grid
+							padding={{ left: 40, bottom: 20, right: 10, top: 10 }}
+							props={{
+								xAxis: {
+									format: (d: Date) =>
+										d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+								},
+								yAxis: {
+									format: (v: number) => `${v} Pt`,
+								},
+								line: { class: 'stroke-blue-500 stroke-2' },
+							}}
+						/>
+					</div>
+				</div>
+				<div class="space-y-4">
+					<h2 class="font-semibold text-lg">Trade Volume (Last 14 Days)</h2>
+					<div class="bg-surface border p-4 rounded-lg h-64">
+						<BarChart
+							data={chartData}
+							x="date"
+							y="volume"
+							grid
+							padding={{ left: 40, bottom: 20, right: 10, top: 10 }}
+							props={{
+								xAxis: {
+									format: (d: Date) =>
+										d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+								},
+								bars: { class: 'fill-orange-500' },
+							}}
+						/>
+					</div>
+				</div>
+			</div>
+		{/if}
+
 		{#if hasRankSlider}
 			<div class="flex flex-col gap-3 max-w-md">
 				<div class="flex justify-between items-center gap-3">
@@ -224,8 +300,7 @@
 						min={0}
 						max={maxRank}
 						step={1}
-						thumbPositioning="equal"
-						trackPadding={1.5}
+						type="multiple"
 						class="relative flex items-center bg-surface border w-full h-1.5 has-data-active:h-2.5 group-hover:h-2.5 transition-[height] touch-none select-none"
 					>
 						<Slider.Range class="absolute bg-foreground h-full" />
@@ -243,6 +318,7 @@
 				</div>
 			</div>
 		{/if}
+
 		<div>
 			<h2 class="mb-4 font-semibold text-lg">Sell Orders (Top 10 Cheapest)</h2>
 			{#if sellOrders.length > 0}
