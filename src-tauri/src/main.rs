@@ -80,13 +80,19 @@ fn main() {
             // Load persisted settings
             if let Ok(store) = app.handle().store("settings.json") {
                 let state = app.state::<AppState>();
-                
-                if let Some(enabled) = store.get("relic_reward_detection").and_then(|v| v.as_bool()) {
+
+                if let Some(enabled) = store
+                    .get("relic_reward_detection")
+                    .and_then(|v| v.as_bool())
+                {
                     let mut relic_reward_detection = state.relic_reward_detection.lock().unwrap();
                     *relic_reward_detection = enabled;
                 }
-                
-                if let Some(path) = store.get("warframe_log_path").and_then(|v| v.as_str().map(|s| s.to_string())) {
+
+                if let Some(path) = store
+                    .get("warframe_log_path")
+                    .and_then(|v| v.as_str().map(|s| s.to_string()))
+                {
                     let mut warframe_log_path = state.warframe_log_path.lock().unwrap();
                     *warframe_log_path = path;
                 }

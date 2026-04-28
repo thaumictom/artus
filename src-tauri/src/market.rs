@@ -6,7 +6,7 @@ use tauri::{AppHandle, Emitter, Runtime, State};
 
 use crate::state::AppState;
 
-const MARKET_API_URL: &str = "https://api.warframe.market/v2/orders/item/{slug}/top";
+const MARKET_API_URL: &str = "https://api.warframe.market/v2/orders/item/{slug}";
 const MARKET_HTTP_TIMEOUT_SECS: u64 = 10;
 
 #[derive(Debug, Clone, Serialize)]
