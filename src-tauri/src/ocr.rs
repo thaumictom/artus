@@ -77,6 +77,8 @@ pub struct OcrWord {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ducats: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub vaulted: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub trades_24h: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub moving_avg: Option<f64>,
@@ -141,6 +143,8 @@ struct DictionaryApiItem {
     tags: Vec<String>,
     #[serde(default)]
     ducats: Option<u64>,
+    #[serde(default)]
+    vaulted: Option<bool>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -535,6 +539,7 @@ pub fn load_ocr_dictionary<R: Runtime>(app: &AppHandle<R>) -> Result<usize, Stri
                 tags: item.tags,
                 normalized_name,
                 ducats: item.ducats,
+                vaulted: item.vaulted,
             })
         })
         .collect::<Vec<_>>();
@@ -790,6 +795,7 @@ pub fn capture_active_window_with_mode<R: Runtime>(
                     market_median: None,
                     market_median_from_current_offers: None,
                     ducats: None,
+                    vaulted: None,
                     trades_24h: None,
                     moving_avg: None,
                 });
@@ -1197,6 +1203,7 @@ fn map_word_to_dictionary(
             mapped.slug = Some(candidate.slug.clone());
             mapped.mapping_confidence = Some(score);
             mapped.ducats = candidate.ducats;
+            mapped.vaulted = candidate.vaulted;
 
             if let Some(prices_lookup) = prices_by_slug {
                 if let Some(price_entry) = prices_lookup.get(&candidate.slug) {
@@ -1514,6 +1521,7 @@ fn group_words_into_blocks(words: &[OcrWord]) -> Vec<OcrWord> {
             market_median: None,
             market_median_from_current_offers: None,
             ducats: None,
+            vaulted: None,
             trades_24h: None,
             moving_avg: None,
         });

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Icon from '@iconify/svelte';
 	import { listen } from '@tauri-apps/api/event';
 	import { onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
@@ -12,6 +13,7 @@
 		market_median?: number;
 		market_median_from_current_offers?: boolean;
 		ducats?: number;
+		vaulted?: boolean;
 		trades_24h?: number;
 		moving_avg?: number;
 	};
@@ -45,43 +47,49 @@
 	function normalizeOverlayNumber(value: unknown): number | undefined {
 		return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 	}
-
-	function formatOverlayLabel(word: OcrWord): string {
-		const lines = [word.text];
-
-		const marketMedian = normalizeOverlayNumber(word.market_median);
-		if (marketMedian !== undefined) {
-			const suffix = word.market_median_from_current_offers ? '*' : '';
-			lines.push(`${medianFormatter.format(marketMedian)}${suffix}`);
-		}
-
-		const trades24h = normalizeOverlayNumber(word.trades_24h);
-		const movingAvg = normalizeOverlayNumber(word.moving_avg);
-		if (movingAvg !== undefined) {
-			lines.push(`Avg ${medianFormatter.format(movingAvg)}`);
-		}
-
-		if (trades24h !== undefined) {
-			lines.push(`24h ${countFormatter.format(trades24h)}`);
-		}
-
-		const ducats = normalizeOverlayNumber(word.ducats);
-		if (ducats !== undefined) {
-			lines.push(`Ducats ${countFormatter.format(ducats)}`);
-		}
-
-		return lines.join('\n');
-	}
 </script>
 
 <main class="relative w-screen h-screen pointer-events-none">
 	{#each words as word (`${word.text}-${word.x}-${word.y}-${word.width}-${word.height}`)}
+		{@const marketMedian = normalizeOverlayNumber(word.market_median)}
+		{@const inaccurateMarker = word.market_median_from_current_offers ? '~' : ''}
+		{@const movingAvg = normalizeOverlayNumber(word.moving_avg)}
+		{@const trades24h = normalizeOverlayNumber(word.trades_24h)}
+		{@const ducats = normalizeOverlayNumber(word.ducats)}
+		{@const vaulted = word.vaulted}
 		<div
 			in:fade={{ duration: 200 }}
-			class="absolute bg-black/70 p-1 border rounded-sm font-semibold text-teal-400 text-sm whitespace-pre-line"
-			style={`left:${word.x}px;top:${word.y}px;`}
+			class="absolute flex flex-col bg-black/75 px-2 py-1 border text-foreground text-sm -translate-x-1/2"
+			style={`left:${word.x + word.width / 2}px;top:${word.y + word.height + 16}px;`}
 		>
-			{formatOverlayLabel(word)}
+			<div
+				class={{
+					'font-bold text-center': true,
+					'text-muted-foreground': vaulted,
+				}}
+			>
+				{word.text}
+			</div>
+			{#if movingAvg !== undefined || ducats !== undefined}
+				<div class="flex justify-around gap-1">
+					{#if movingAvg !== undefined}
+						<div class="flex gap-1">
+							{inaccurateMarker}{medianFormatter.format(movingAvg)}p
+						</div>
+					{/if}
+					{#if ducats !== undefined}
+						<div class="flex gap-1">
+							<Icon icon="simple-icons:ducati" class="size-5"></Icon>
+							{countFormatter.format(ducats)}
+						</div>
+					{/if}
+				</div>
+			{/if}
+			{#if trades24h !== undefined}
+				<div class="text-xs text-center">
+					{countFormatter.format(trades24h)} in 24h
+				</div>
+			{/if}
 		</div>
 	{/each}
 </main>

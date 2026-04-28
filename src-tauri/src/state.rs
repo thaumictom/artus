@@ -27,6 +27,7 @@ pub struct OcrDictionaryEntry {
     pub tags: Vec<String>,
     pub normalized_name: String,
     pub ducats: Option<u64>,
+    pub vaulted: Option<bool>,
 }
 
 #[derive(Debug, Clone)]
