@@ -28,6 +28,7 @@ pub struct OcrDictionaryEntry {
     pub normalized_name: String,
     pub ducats: Option<u64>,
     pub vaulted: Option<bool>,
+    pub is_custom: bool,
 }
 
 #[derive(Debug, Clone)]

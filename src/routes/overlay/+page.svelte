@@ -14,6 +14,7 @@
 		market_median_from_current_offers?: boolean;
 		ducats?: number;
 		vaulted?: boolean;
+		is_custom?: boolean;
 		trades_24h?: number;
 		moving_avg?: number;
 	};
@@ -56,16 +57,20 @@
 		{@const movingAvg = normalizeOverlayNumber(word.moving_avg)}
 		{@const trades24h = normalizeOverlayNumber(word.trades_24h)}
 		{@const ducats = normalizeOverlayNumber(word.ducats)}
+
 		{@const vaulted = word.vaulted}
+		{@const isCustom = word.is_custom === true}
 		<div
 			in:fade={{ duration: 200 }}
-			class="absolute flex flex-col bg-black/75 px-2 py-1 border text-foreground text-sm -translate-x-1/2"
+			class="absolute flex flex-col bg-background/75 px-2 py-1 border text-foreground text-sm -translate-x-1/2"
 			style={`left:${word.x + word.width / 2}px;top:${word.y + word.height + 16}px;`}
 		>
 			<div
 				class={{
-					'font-bold text-center': true,
-					'text-muted-foreground': vaulted,
+					'font-semibold text-center mb-0.5': true,
+					'font-stretch-condensed': word.text.length > 30,
+					'font-stretch-semi-condensed': word.text.length > 20,
+					'text-muted-foreground': isCustom || vaulted,
 				}}
 			>
 				{word.text}
@@ -73,21 +78,22 @@
 			{#if movingAvg !== undefined || ducats !== undefined}
 				<div class="flex justify-around gap-1">
 					{#if movingAvg !== undefined}
-						<div class="flex gap-1">
-							{inaccurateMarker}{medianFormatter.format(movingAvg)}p
+						<div class="flex items-center gap-1">
+							<div>{inaccurateMarker}{medianFormatter.format(movingAvg)}</div>
+							<img src="/icons/platinum.png" alt="" class="size-3" />
 						</div>
 					{/if}
 					{#if ducats !== undefined}
-						<div class="flex gap-1">
-							<Icon icon="simple-icons:ducati" class="size-5"></Icon>
-							{countFormatter.format(ducats)}
+						<div class="flex items-center gap-1">
+							<div>{countFormatter.format(ducats)}</div>
+							<img src="/icons/ducats.png" alt="" class="size-3" />
 						</div>
 					{/if}
 				</div>
 			{/if}
 			{#if trades24h !== undefined}
 				<div class="text-xs text-center">
-					{countFormatter.format(trades24h)} in 24h
+					volume: {countFormatter.format(trades24h)}
 				</div>
 			{/if}
 		</div>

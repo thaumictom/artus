@@ -40,6 +40,15 @@ const DEFAULT_OCR_DICTIONARY_MAPPING_ENABLED: bool = true;
 const DEFAULT_OCR_DICTIONARY_MATCH_THRESHOLD: f64 = 0.62;
 const MIN_OCR_DICTIONARY_MATCH_THRESHOLD: f64 = 0.0;
 const MAX_OCR_DICTIONARY_MATCH_THRESHOLD: f64 = 1.0;
+const CUSTOM_OCR_DICTIONARY_ITEMS: [&str; 7] = [
+    "Forma Blueprint",
+    "2 X Forma Blueprint",
+    "3 X Forma Blueprint",
+    "Riven Sliver",
+    "1,200 X Kuva",
+    "Ayatan Amber Star",
+    "Exilus Weapon Adapter Blueprint",
+];
 #[cfg(target_os = "windows")]
 const EMBEDDED_TRAINEDDATA_BYTES: &[u8] = include_bytes!(env!("OCR_EMBEDDED_TRAINEDDATA_PATH"));
 #[cfg(target_os = "windows")]
@@ -78,6 +87,8 @@ pub struct OcrWord {
     pub ducats: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub vaulted: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub is_custom: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub trades_24h: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -540,9 +551,16 @@ pub fn load_ocr_dictionary<R: Runtime>(app: &AppHandle<R>) -> Result<usize, Stri
                 normalized_name,
                 ducats: item.ducats,
                 vaulted: item.vaulted,
+                is_custom: false,
             })
         })
         .collect::<Vec<_>>();
+
+    for name in CUSTOM_OCR_DICTIONARY_ITEMS {
+        if let Some(entry) = build_custom_dictionary_entry(name) {
+            dictionary_entries.push(entry);
+        }
+    }
 
     dictionary_entries.sort_by(|left, right| left.normalized_name.cmp(&right.normalized_name));
     dictionary_entries.dedup_by(|left, right| left.normalized_name == right.normalized_name);
@@ -796,6 +814,7 @@ pub fn capture_active_window_with_mode<R: Runtime>(
                     market_median_from_current_offers: None,
                     ducats: None,
                     vaulted: None,
+                    is_custom: None,
                     trades_24h: None,
                     moving_avg: None,
                 });
@@ -1204,6 +1223,7 @@ fn map_word_to_dictionary(
             mapped.mapping_confidence = Some(score);
             mapped.ducats = candidate.ducats;
             mapped.vaulted = candidate.vaulted;
+            mapped.is_custom = Some(candidate.is_custom);
 
             if let Some(prices_lookup) = prices_by_slug {
                 if let Some(price_entry) = prices_lookup.get(&candidate.slug) {
@@ -1268,6 +1288,28 @@ fn normalize_dictionary_text(value: &str) -> String {
         .split_whitespace()
         .collect::<Vec<_>>()
         .join(" ")
+}
+
+fn build_custom_dictionary_entry(name: &str) -> Option<OcrDictionaryEntry> {
+    let trimmed = name.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+
+    let normalized_name = normalize_dictionary_text(trimmed);
+    if normalized_name.is_empty() {
+        return None;
+    }
+
+    Some(OcrDictionaryEntry {
+        name: trimmed.to_string(),
+        slug: normalized_name.replace(' ', "_"),
+        tags: Vec::new(),
+        normalized_name,
+        ducats: None,
+        vaulted: None,
+        is_custom: true,
+    })
 }
 
 fn levenshtein_distance(left: &[u8], right: &[u8]) -> usize {
@@ -1522,6 +1564,7 @@ fn group_words_into_blocks(words: &[OcrWord]) -> Vec<OcrWord> {
             market_median_from_current_offers: None,
             ducats: None,
             vaulted: None,
+            is_custom: None,
             trades_24h: None,
             moving_avg: None,
         });
