@@ -11,6 +11,9 @@
 		height: number;
 		market_median?: number;
 		market_median_from_current_offers?: boolean;
+		ducats?: number;
+		trades_24h?: number;
+		moving_avg?: number;
 	};
 
 	let words: OcrWord[] = $state([]);
@@ -34,13 +37,40 @@
 		maximumFractionDigits: 2,
 	});
 
+	const countFormatter = new Intl.NumberFormat(undefined, {
+		minimumFractionDigits: 0,
+		maximumFractionDigits: 0,
+	});
+
+	function normalizeOverlayNumber(value: unknown): number | undefined {
+		return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+	}
+
 	function formatOverlayLabel(word: OcrWord): string {
-		if (typeof word.market_median !== 'number' || !Number.isFinite(word.market_median)) {
-			return word.text;
+		const lines = [word.text];
+
+		const marketMedian = normalizeOverlayNumber(word.market_median);
+		if (marketMedian !== undefined) {
+			const suffix = word.market_median_from_current_offers ? '*' : '';
+			lines.push(`${medianFormatter.format(marketMedian)}${suffix}`);
 		}
 
-		const suffix = word.market_median_from_current_offers ? '*' : '';
-		return `${word.text}\n${medianFormatter.format(word.market_median)}${suffix}`;
+		const trades24h = normalizeOverlayNumber(word.trades_24h);
+		const movingAvg = normalizeOverlayNumber(word.moving_avg);
+		if (movingAvg !== undefined) {
+			lines.push(`Avg ${medianFormatter.format(movingAvg)}`);
+		}
+
+		if (trades24h !== undefined) {
+			lines.push(`24h ${countFormatter.format(trades24h)}`);
+		}
+
+		const ducats = normalizeOverlayNumber(word.ducats);
+		if (ducats !== undefined) {
+			lines.push(`Ducats ${countFormatter.format(ducats)}`);
+		}
+
+		return lines.join('\n');
 	}
 </script>
 

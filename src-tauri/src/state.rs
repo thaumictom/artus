@@ -26,12 +26,16 @@ pub struct OcrDictionaryEntry {
     pub slug: String,
     pub tags: Vec<String>,
     pub normalized_name: String,
+    pub ducats: Option<u64>,
 }
 
 #[derive(Debug, Clone)]
 pub struct TradeablePriceEntry {
     pub median: f64,
     pub used_current_offer_fallback: bool,
+    pub trades_24h: Option<f64>,
+    pub moving_avg: Option<f64>,
+    pub ducats: Option<u64>,
 }
 
 pub struct AppState {

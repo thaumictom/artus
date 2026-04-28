@@ -74,6 +74,12 @@ pub struct OcrWord {
     pub market_median: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub market_median_from_current_offers: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ducats: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub trades_24h: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub moving_avg: Option<f64>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -133,6 +139,8 @@ struct DictionaryApiItem {
     slug: String,
     #[serde(default)]
     tags: Vec<String>,
+    #[serde(default)]
+    ducats: Option<u64>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -148,11 +156,15 @@ struct TradeableItemApiItem {
     statistics_today: Vec<TradeableItemStats>,
     #[serde(default)]
     current_offers: Vec<TradeableItemStats>,
+    #[serde(default)]
+    ducats: Option<u64>,
 }
 
 #[derive(Debug, Deserialize)]
 struct TradeableItemStats {
     median: Option<f64>,
+    volume: Option<f64>,
+    moving_avg: Option<f64>,
 }
 
 #[derive(Debug, Clone)]
@@ -522,6 +534,7 @@ pub fn load_ocr_dictionary<R: Runtime>(app: &AppHandle<R>) -> Result<usize, Stri
                 slug: slug.to_string(),
                 tags: item.tags,
                 normalized_name,
+                ducats: item.ducats,
             })
         })
         .collect::<Vec<_>>();
@@ -577,6 +590,18 @@ pub fn load_tradeable_item_prices<R: Runtime>(app: &AppHandle<R>) -> Result<usiz
             .and_then(|entry| entry.median)
             .filter(|median| median.is_finite());
 
+        let trades_24h = item
+            .statistics_today
+            .first()
+            .and_then(|entry| entry.volume)
+            .filter(|value| value.is_finite());
+        let moving_avg = item
+            .statistics_today
+            .first()
+            .and_then(|entry| entry.moving_avg)
+            .filter(|value| value.is_finite());
+        let ducats = item.ducats;
+
         let Some((median, used_fallback)) = statistics_today_median
             .map(|value| (value, false))
             .or_else(|| current_offers_median.map(|value| (value, true)))
@@ -589,6 +614,9 @@ pub fn load_tradeable_item_prices<R: Runtime>(app: &AppHandle<R>) -> Result<usiz
             TradeablePriceEntry {
                 median,
                 used_current_offer_fallback: used_fallback,
+                trades_24h,
+                moving_avg,
+                ducats,
             },
         );
     }
@@ -761,6 +789,9 @@ pub fn capture_active_window_with_mode<R: Runtime>(
                     mapping_confidence: None,
                     market_median: None,
                     market_median_from_current_offers: None,
+                    ducats: None,
+                    trades_24h: None,
+                    moving_avg: None,
                 });
             }
         }
@@ -1165,12 +1196,18 @@ fn map_word_to_dictionary(
             mapped.text = candidate.name.clone();
             mapped.slug = Some(candidate.slug.clone());
             mapped.mapping_confidence = Some(score);
+            mapped.ducats = candidate.ducats;
 
             if let Some(prices_lookup) = prices_by_slug {
                 if let Some(price_entry) = prices_lookup.get(&candidate.slug) {
                     mapped.market_median = Some(price_entry.median);
                     mapped.market_median_from_current_offers =
                         Some(price_entry.used_current_offer_fallback);
+                    if mapped.ducats.is_none() {
+                        mapped.ducats = price_entry.ducats;
+                    }
+                    mapped.trades_24h = price_entry.trades_24h;
+                    mapped.moving_avg = price_entry.moving_avg;
                 }
             }
 
@@ -1476,6 +1513,9 @@ fn group_words_into_blocks(words: &[OcrWord]) -> Vec<OcrWord> {
             mapping_confidence: None,
             market_median: None,
             market_median_from_current_offers: None,
+            ducats: None,
+            trades_24h: None,
+            moving_avg: None,
         });
     }
 
