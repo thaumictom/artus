@@ -35,6 +35,7 @@ export type MarketStatEntry = {
 	donch_bot?: number;
 	id: string;
 	moving_avg?: number;
+	mod_rank?: number;
 };
 
 export type SettingsPayload = {

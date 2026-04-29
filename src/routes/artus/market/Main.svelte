@@ -3,8 +3,19 @@
 	import { Slider } from 'bits-ui';
 	import { invoke } from '@tauri-apps/api/core';
 	import { onMount } from 'svelte';
-	import { LineChart, BarChart } from 'layerchart';
+	import {
+		BarChart,
+		Spline,
+		Tooltip,
+		defaultChartPadding,
+		Axis,
+		Layer,
+		Highlight,
+		Chart,
+		Area,
+	} from 'layerchart';
 	import type { MarketStatEntry } from '$lib/types';
+	import Select from '$lib/components/Select.svelte';
 
 	type MarketDictionaryItem = {
 		label: string;
@@ -53,21 +64,39 @@
 	let marketStats = $state<MarketStatEntry[]>([]);
 	let rankRange = $state<[number, number]>([0, 0]);
 
-	const last14DaysStats = $derived.by(() => {
+	// Track the currently selected group (defaults to 0)
+	let selectedModRank = $state<number>(0);
+
+	// Extract unique mod_ranks to populate the <select> dropdown
+	const availableGroups = $derived(
+		Array.from(new Set(marketStats.map((s) => s.mod_rank ?? 0))).sort(),
+	);
+
+	const last28DaysStats = $derived.by(() => {
 		if (marketStats.length === 0) return [];
-		const sorted = [...marketStats].sort(
+
+		// 1. Filter out the duplicates by targeting only the selected group
+		const filtered = marketStats.filter((s) => (s.mod_rank ?? 0) === selectedModRank);
+
+		// 2. Sort the filtered array
+		const sorted = [...filtered].sort(
 			(a, b) => new Date(a.datetime).getTime() - new Date(b.datetime).getTime(),
 		);
-		return sorted.slice(-14);
+
+		// 3. Grab the last 28 days
+		return sorted.slice(-28);
 	});
 
 	const chartData = $derived(
-		last14DaysStats.map((s) => ({
+		last28DaysStats.map((s) => ({
 			date: new Date(s.datetime),
 			median: s.median,
+			average: s.moving_avg,
 			volume: s.volume,
 		})),
 	);
+
+	$inspect(chartData, availableGroups);
 
 	async function loadDictionaryItems() {
 		isLoadingDictionary = true;
@@ -208,7 +237,7 @@
 	});
 </script>
 
-<div class="flex mx-auto p-8 w-full max-w-2xl">
+<div class="flex flex-col gap-8 mx-auto p-8 w-full max-w-2xl">
 	<div class="flex flex-col gap-1 w-full">
 		<h1>View prices of any item on warframe.market</h1>
 		<Combobox
@@ -219,226 +248,244 @@
 			inputProps={{ placeholder: 'Search for an item...' }}
 		></Combobox>
 	</div>
-</div>
 
-{#if statusMessage}
-	<p class="mt-2 text-muted-foreground text-sm text-center">{statusMessage}</p>
-{/if}
+	{#if statusMessage}
+		<p class="mt-2 text-muted-foreground text-sm text-center">{statusMessage}</p>
+	{/if}
 
-{#if marketData}
-	{@const maxRank = getMaxRank(marketData.data)}
-	{@const hasRankData = maxRank !== undefined}
-	{@const hasRankSlider = maxRank !== undefined && maxRank > 0}
-	{@const rankMin = hasRankSlider ? Math.min(rankRange[0], rankRange[1]) : 0}
-	{@const rankMax = hasRankSlider ? Math.max(rankRange[0], rankRange[1]) : (maxRank ?? 0)}
-	{@const filteredOrders = filterOrdersForDisplay(marketData.data, hasRankSlider, rankMin, rankMax)}
-	{@const sellOrders = getTopSellOrders(filteredOrders.filter((order) => order.type === 'sell'))}
-	{@const buyOrders = getTopBuyOrders(filteredOrders.filter((order) => order.type === 'buy'))}
-	<div class="space-y-8 mt-6 px-8">
-		{#if chartData.length > 0}
-			<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-				<div class="space-y-4">
-					<h2 class="font-semibold text-lg">Price Trend (Last 14 Days)</h2>
-					<div class="bg-surface border p-4 rounded-lg h-64">
-						<LineChart
-							data={chartData}
-							x="date"
-							y="median"
-							grid
-							padding={{ left: 40, bottom: 20, right: 10, top: 10 }}
-							props={{
-								xAxis: {
-									format: (d: Date) =>
-										d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
-								},
-								yAxis: {
-									format: (v: number) => `${v} Pt`,
-								},
-								line: { class: 'stroke-blue-500 stroke-2' },
-							}}
-						/>
-					</div>
-				</div>
-				<div class="space-y-4">
-					<h2 class="font-semibold text-lg">Trade Volume (Last 14 Days)</h2>
-					<div class="bg-surface border p-4 rounded-lg h-64">
+	{#if marketData}
+		{@const maxRank = getMaxRank(marketData.data)}
+		{@const hasRankData = maxRank !== undefined}
+		{@const hasRankSlider = maxRank !== undefined && maxRank > 0}
+		{@const rankMin = hasRankSlider ? Math.min(rankRange[0], rankRange[1]) : 0}
+		{@const rankMax = hasRankSlider ? Math.max(rankRange[0], rankRange[1]) : (maxRank ?? 0)}
+		{@const filteredOrders = filterOrdersForDisplay(
+			marketData.data,
+			hasRankSlider,
+			rankMin,
+			rankMax,
+		)}
+		{@const sellOrders = getTopSellOrders(filteredOrders.filter((order) => order.type === 'sell'))}
+		{@const buyOrders = getTopBuyOrders(filteredOrders.filter((order) => order.type === 'buy'))}
+		<div class="border">
+			<div>Name: {marketData?.data[0]?.itemId}</div>
+			<div>Image:</div>
+			<div>Ducats:</div>
+		</div>
+		<div class="space-y-8 mt-6">
+			{#if chartData.length > 0}
+				<select bind:value={selectedModRank}>
+					{#each availableGroups as group}
+						<option value={group}>Mod Rank: {group}</option>
+					{/each}
+				</select>
+				<div class="grid p-4 border">
+					<div class="col-start-1 row-start-1">
 						<BarChart
 							data={chartData}
 							x="date"
 							y="volume"
-							grid
-							padding={{ left: 40, bottom: 20, right: 10, top: 10 }}
+							yNice
+							axis={false}
+							grid={false}
 							props={{
-								xAxis: {
-									format: (d: Date) =>
-										d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
-								},
-								bars: { class: 'fill-orange-500' },
+								bars: { radius: 1, class: 'stroke-none fill-surface' },
 							}}
-						/>
+							padding={defaultChartPadding({ left: 25 })}
+							height={300}
+						></BarChart>
 					</div>
-				</div>
-			</div>
-		{/if}
+					<div class="col-start-1 row-start-1">
+						<BarChart
+							data={chartData}
+							x="date"
+							y={['median', 'average']}
+							yNice
+							yDomain={null}
+							height={300}
+							props={{
+								xAxis: { ticks: 10, rule: true },
+								tooltip: { context: { mode: 'band' } },
+							}}
+							padding={defaultChartPadding({ left: 25 })}
+						>
+							{#snippet marks()}
+								<Spline y="median" class="stroke-blue-500" />
+								<Spline y="average" class="stroke-red-500" />
+							{/snippet}
 
-		{#if hasRankSlider}
-			<div class="flex flex-col gap-3 max-w-md">
-				<div class="flex justify-between items-center gap-3">
-					<div>
-						<p class="font-medium">Rank range</p>
-						<p class="text-muted-foreground text-xs">
-							Filter between rank {rankMin} and {rankMax} (max {maxRank}).
-						</p>
+							{#snippet tooltip({ context })}
+								<Tooltip.Root {context}>
+									{#snippet children({ data })}
+										<Tooltip.Header value={data.date} format="daytime" />
+										<Tooltip.List>
+											<Tooltip.Item label="median" value={data.median} format="integer" />
+											<Tooltip.Item label="moving average" value={data.average} format="decimal" />
+											<Tooltip.Item label="volume" value={data.volume} format="integer" />
+										</Tooltip.List>
+									{/snippet}
+								</Tooltip.Root>
+							{/snippet}
+						</BarChart>
 					</div>
-					<div class="tabular-nums text-sm">
-						{rankMin} - {rankMax}
-					</div>
 				</div>
-				<div class="group flex items-center h-6">
-					<Slider.Root
-						bind:value={rankRange}
-						min={0}
-						max={maxRank}
-						step={1}
-						type="multiple"
-						class="relative flex items-center bg-surface border w-full h-1.5 has-data-active:h-2.5 group-hover:h-2.5 transition-[height] touch-none select-none"
-					>
-						<Slider.Range class="absolute bg-foreground h-full" />
-						<Slider.Thumb index={0} class="group">
-							<div
-								class="bg-foreground border size-4.5 group-data-active:size-5.5 transition-all cursor-e-resize"
-							></div>
-						</Slider.Thumb>
-						<Slider.Thumb index={1} class="group">
-							<div
-								class="bg-foreground border size-4.5 group-data-active:size-5.5 transition-all cursor-e-resize"
-							></div>
-						</Slider.Thumb>
-					</Slider.Root>
-				</div>
-			</div>
-		{/if}
-
-		<div>
-			<h2 class="mb-4 font-semibold text-lg">Sell Orders (Top 10 Cheapest)</h2>
-			{#if sellOrders.length > 0}
-				<div class="border rounded-lg overflow-x-auto">
-					<table class="w-full text-sm">
-						<thead class="bg-muted border-b">
-							<tr>
-								<th class="px-4 py-3 font-medium text-left">Price</th>
-								<th class="px-4 py-3 font-medium text-left">Qty</th>
-								<th class="px-4 py-3 font-medium text-left">Per Trade</th>
-								{#if hasRankData}
-									<th class="px-4 py-3 font-medium text-left">Rank</th>
-								{/if}
-								<th class="px-4 py-3 font-medium text-left">Seller</th>
-								<th class="px-4 py-3 font-medium text-left">Rep</th>
-								<th class="px-4 py-3 font-medium text-left">Platform</th>
-								<th class="px-4 py-3 font-medium text-left">Updated</th>
-								<th class="px-4 py-3 font-medium text-left">Status</th>
-							</tr>
-						</thead>
-						<tbody>
-							{#each sellOrders as order (order.id)}
-								{@const rankValue = getOrderRank(order) ?? 0}
-								<tr class="hover:bg-muted/50 border-b">
-									<td class="px-4 py-3 font-semibold text-green-600">
-										{order.platinum} Pt
-									</td>
-									<td class="px-4 py-3">{order.quantity}</td>
-									<td class="px-4 py-3">{order.perTrade}</td>
-									{#if hasRankData}
-										<td class="px-4 py-3">{rankValue} of {maxRank ?? 0}</td>
-									{/if}
-									<td class="px-4 py-3 text-blue-500">{order.user.ingameName}</td>
-									<td class="px-4 py-3">{order.user.reputation}</td>
-									<td class="px-4 py-3 capitalize">{order.user.platform}</td>
-									<td class="px-4 py-3 text-muted-foreground text-xs">
-										{formatOrderTimestamp(order.updatedAt)}
-									</td>
-									<td class="px-4 py-3">
-										<span
-											class="px-2 py-1 rounded font-medium text-xs"
-											class:bg-green-100={order.user.status === 'online'}
-											class:text-green-800={order.user.status === 'online'}
-											class:bg-gray-100={order.user.status !== 'online'}
-											class:text-gray-800={order.user.status !== 'online'}
-										>
-											{order.user.status}
-										</span>
-									</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
-				</div>
-			{:else}
-				<p class="text-muted-foreground">No sell orders available.</p>
 			{/if}
-		</div>
 
-		<div>
-			<h2 class="mb-4 font-semibold text-lg">Buy Orders (Top 10 Highest)</h2>
-			{#if buyOrders.length > 0}
-				<div class="border rounded-lg overflow-x-auto">
-					<table class="w-full text-sm">
-						<thead class="bg-muted border-b">
-							<tr>
-								<th class="px-4 py-3 font-medium text-left">Price</th>
-								<th class="px-4 py-3 font-medium text-left">Qty</th>
-								<th class="px-4 py-3 font-medium text-left">Per Trade</th>
-								{#if hasRankData}
-									<th class="px-4 py-3 font-medium text-left">Rank</th>
-								{/if}
-								<th class="px-4 py-3 font-medium text-left">Buyer</th>
-								<th class="px-4 py-3 font-medium text-left">Rep</th>
-								<th class="px-4 py-3 font-medium text-left">Platform</th>
-								<th class="px-4 py-3 font-medium text-left">Updated</th>
-								<th class="px-4 py-3 font-medium text-left">Status</th>
-							</tr>
-						</thead>
-						<tbody>
-							{#each buyOrders as order (order.id)}
-								{@const rankValue = getOrderRank(order) ?? 0}
-								<tr class="hover:bg-muted/50 border-b">
-									<td class="px-4 py-3 font-semibold text-orange-600">
-										{order.platinum} Pt
-									</td>
-									<td class="px-4 py-3">{order.quantity}</td>
-									<td class="px-4 py-3">{order.perTrade}</td>
-									{#if hasRankData}
-										<td class="px-4 py-3">{rankValue} of {maxRank ?? 0}</td>
-									{/if}
-									<td class="px-4 py-3 text-blue-500">{order.user.ingameName}</td>
-									<td class="px-4 py-3">{order.user.reputation}</td>
-									<td class="px-4 py-3 capitalize">{order.user.platform}</td>
-									<td class="px-4 py-3 text-muted-foreground text-xs">
-										{formatOrderTimestamp(order.updatedAt)}
-									</td>
-									<td class="px-4 py-3">
-										<span
-											class="px-2 py-1 rounded font-medium text-xs"
-											class:bg-green-100={order.user.status === 'online'}
-											class:text-green-800={order.user.status === 'online'}
-											class:bg-gray-100={order.user.status !== 'online'}
-											class:text-gray-800={order.user.status !== 'online'}
-										>
-											{order.user.status}
-										</span>
-									</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
+			{#if hasRankSlider}
+				<div class="flex flex-col gap-3 max-w-md">
+					<div class="flex justify-between items-center gap-3">
+						<div>
+							<p class="font-medium">Rank range</p>
+							<p class="text-muted-foreground text-xs">
+								Filter between rank {rankMin} and {rankMax} (max {maxRank}).
+							</p>
+						</div>
+						<div class="tabular-nums text-sm">
+							{rankMin} - {rankMax}
+						</div>
+					</div>
+					<div class="group flex items-center h-6">
+						<Slider.Root
+							bind:value={rankRange}
+							min={0}
+							max={maxRank}
+							step={1}
+							type="multiple"
+							class="relative flex items-center bg-surface border w-full h-1.5 has-data-active:h-2.5 group-hover:h-2.5 transition-[height] touch-none select-none"
+						>
+							<Slider.Range class="absolute bg-foreground h-full" />
+							<Slider.Thumb index={0} class="group">
+								<div
+									class="bg-foreground border size-4.5 group-data-active:size-5.5 transition-all cursor-e-resize"
+								></div>
+							</Slider.Thumb>
+							<Slider.Thumb index={1} class="group">
+								<div
+									class="bg-foreground border size-4.5 group-data-active:size-5.5 transition-all cursor-e-resize"
+								></div>
+							</Slider.Thumb>
+						</Slider.Root>
+					</div>
 				</div>
-			{:else}
-				<p class="text-muted-foreground">No buy orders available.</p>
 			{/if}
+
+			<div>
+				<h2 class="mb-4 font-semibold text-lg">Sell Orders (Top 10 Cheapest)</h2>
+				{#if sellOrders.length > 0}
+					<div class="border rounded-lg overflow-x-auto">
+						<table class="w-full text-sm">
+							<thead class="bg-muted border-b">
+								<tr>
+									<th class="px-4 py-3 font-medium text-left">Price</th>
+									<th class="px-4 py-3 font-medium text-left">Qty</th>
+									<th class="px-4 py-3 font-medium text-left">Per Trade</th>
+									{#if hasRankData}
+										<th class="px-4 py-3 font-medium text-left">Rank</th>
+									{/if}
+									<th class="px-4 py-3 font-medium text-left">Seller</th>
+									<th class="px-4 py-3 font-medium text-left">Rep</th>
+									<th class="px-4 py-3 font-medium text-left">Platform</th>
+									<th class="px-4 py-3 font-medium text-left">Updated</th>
+									<th class="px-4 py-3 font-medium text-left">Status</th>
+								</tr>
+							</thead>
+							<tbody>
+								{#each sellOrders as order (order.id)}
+									{@const rankValue = getOrderRank(order) ?? 0}
+									<tr class="hover:bg-muted/50 border-b">
+										<td class="px-4 py-3 font-semibold text-green-600">
+											{order.platinum} Pt
+										</td>
+										<td class="px-4 py-3">{order.quantity}</td>
+										<td class="px-4 py-3">{order.perTrade}</td>
+										{#if hasRankData}
+											<td class="px-4 py-3">{rankValue} of {maxRank ?? 0}</td>
+										{/if}
+										<td class="px-4 py-3 text-blue-500">{order.user.ingameName}</td>
+										<td class="px-4 py-3">{order.user.reputation}</td>
+										<td class="px-4 py-3 capitalize">{order.user.platform}</td>
+										<td class="px-4 py-3 text-muted-foreground text-xs">
+											{formatOrderTimestamp(order.updatedAt)}
+										</td>
+										<td class="px-4 py-3">
+											<span
+												class="px-2 py-1 rounded font-medium text-xs"
+												class:bg-green-100={order.user.status === 'online'}
+												class:text-green-800={order.user.status === 'online'}
+												class:bg-gray-100={order.user.status !== 'online'}
+												class:text-gray-800={order.user.status !== 'online'}
+											>
+												{order.user.status}
+											</span>
+										</td>
+									</tr>
+								{/each}
+							</tbody>
+						</table>
+					</div>
+				{:else}
+					<p class="text-muted-foreground">No sell orders available.</p>
+				{/if}
+			</div>
+
+			<div>
+				<h2 class="mb-4 font-semibold text-lg">Buy Orders (Top 10 Highest)</h2>
+				{#if buyOrders.length > 0}
+					<div class="border rounded-lg overflow-x-auto">
+						<table class="w-full text-sm">
+							<thead class="bg-muted border-b">
+								<tr>
+									<th class="px-4 py-3 font-medium text-left">Price</th>
+									<th class="px-4 py-3 font-medium text-left">Qty</th>
+									<th class="px-4 py-3 font-medium text-left">Per Trade</th>
+									{#if hasRankData}
+										<th class="px-4 py-3 font-medium text-left">Rank</th>
+									{/if}
+									<th class="px-4 py-3 font-medium text-left">Buyer</th>
+									<th class="px-4 py-3 font-medium text-left">Rep</th>
+									<th class="px-4 py-3 font-medium text-left">Platform</th>
+									<th class="px-4 py-3 font-medium text-left">Updated</th>
+									<th class="px-4 py-3 font-medium text-left">Status</th>
+								</tr>
+							</thead>
+							<tbody>
+								{#each buyOrders as order (order.id)}
+									{@const rankValue = getOrderRank(order) ?? 0}
+									<tr class="hover:bg-muted/50 border-b">
+										<td class="px-4 py-3 font-semibold text-orange-600">
+											{order.platinum} Pt
+										</td>
+										<td class="px-4 py-3">{order.quantity}</td>
+										<td class="px-4 py-3">{order.perTrade}</td>
+										{#if hasRankData}
+											<td class="px-4 py-3">{rankValue} of {maxRank ?? 0}</td>
+										{/if}
+										<td class="px-4 py-3 text-blue-500">{order.user.ingameName}</td>
+										<td class="px-4 py-3">{order.user.reputation}</td>
+										<td class="px-4 py-3 capitalize">{order.user.platform}</td>
+										<td class="px-4 py-3 text-muted-foreground text-xs">
+											{formatOrderTimestamp(order.updatedAt)}
+										</td>
+										<td class="px-4 py-3">
+											<span
+												class="px-2 py-1 rounded font-medium text-xs"
+												class:bg-green-100={order.user.status === 'online'}
+												class:text-green-800={order.user.status === 'online'}
+												class:bg-gray-100={order.user.status !== 'online'}
+												class:text-gray-800={order.user.status !== 'online'}
+											>
+												{order.user.status}
+											</span>
+										</td>
+									</tr>
+								{/each}
+							</tbody>
+						</table>
+					</div>
+				{:else}
+					<p class="text-muted-foreground">No buy orders available.</p>
+				{/if}
+			</div>
 		</div>
-	</div>
-{:else}
-	<div class="mx-8 mt-4 p-3 border rounded text-muted-foreground text-sm">
-		Select an item to fetch its prices from warframe.market.
-	</div>
-{/if}
+	{/if}
+</div>
