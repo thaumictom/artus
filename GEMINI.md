@@ -40,31 +40,7 @@ Artus is a desktop app built with Tauri v2 + SvelteKit + TypeScript (Vite) and a
 
 ## Notes
 
+- Try working with powershell (pwsh) first. If not available, work with bash to run commands.
 - Tauri dev server URL: http://localhost:1420
 - Optional Wayland layer-shell build (for Linux only):
 	pnpm tauri dev --features wayland-layer-shell
-
-#
-
-✦ I have implemented the "Automatic relic reward detection" feature, which monitors the Warframe EE.log file and
-  automatically triggers the overlay when rewards are detected, and hides it when the screen is closed.
-
-  Key Changes:
-   - Backend State & Persistence: 
-       - Added relic_reward_detection to AppState and ensured it is persisted in settings.json.
-       - Fixed warframe_log_path to also be persisted in settings.json.
-       - Integrated the new relic_rewards module and loaded these settings on application startup.
-   - Log Tailing (relic_rewards.rs): 
-       - Implemented a performant log tailer that uses BufReader and remembers the last file position to avoid re-reading
-         the entire file.
-       - Monitors for "ProjectionRewardChoice.lua: Got rewards" to trigger OCR in "Toggle mode" (staying visible).
-       - Monitors for "ProjectionRewardChoice.lua: Relic reward screen shut down" to automatically hide the overlay.
-   - Frontend Settings: 
-       - Created a new RelicRewardDetection.svelte component with a switch to toggle the feature.
-       - Added logic to only enable the switch if a valid EE.log path has been configured.
-       - Integrated the new setting into the Warframe settings category.
-   - OCR Integration: 
-       - Exported capture_active_window_with_mode from the OCR module to allow the background tailer to trigger the
-         screenshot tool directly.
-
-  Both the log path and the automatic detection toggle will now be carried over when the app restarts.
