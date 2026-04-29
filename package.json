@@ -36,7 +36,8 @@
 		"overlayscrollbars": "^2.15.1",
 		"overlayscrollbars-svelte": "^0.5.5",
 		"svelteplot": "^0.14.2",
-		"tailwindcss": "^4.2.4"
+		"tailwindcss": "^4.2.4",
+		"zod": "^4.3.6"
 	},
 	"devDependencies": {
 		"@fontsource-variable/geist": "^5.2.8",
