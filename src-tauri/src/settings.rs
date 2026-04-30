@@ -119,7 +119,7 @@ pub fn patch_settings<R: Runtime>(
 fn validate_warframe_log_path(input: &str) -> Result<String, String> {
     let trimmed = input.trim();
     if trimmed.is_empty() {
-        return Err("warframe log path cannot be empty".to_string());
+        return Ok(String::new());
     }
 
     let path = Path::new(trimmed);
