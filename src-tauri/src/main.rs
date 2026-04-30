@@ -67,6 +67,10 @@ fn main() {
                 eprintln!("[ocr] failed to load persisted OCR dictionary mapping settings: {err}");
             }
 
+            if let Err(err) = ocr::load_persisted_ocr_theme(&app.handle()) {
+                eprintln!("[ocr] failed to load persisted OCR theme: {err}");
+            }
+
             match ocr::load_ocr_dictionary(&app.handle()) {
                 Ok(count) => println!("[ocr] loaded dictionary entries: {count}"),
                 Err(err) => eprintln!("[ocr] failed to load OCR dictionary: {err}"),

@@ -28,6 +28,7 @@ const DEFAULT_OVERLAY_TOGGLE_MODE: bool = false;
 const SETTINGS_STORE_PATH: &str = "settings.json";
 const OVERLAY_DURATION_STORE_KEY: &str = "overlay_duration_secs";
 const OVERLAY_TOGGLE_MODE_STORE_KEY: &str = "overlay_toggle_mode";
+const OCR_THEME_STORE_KEY: &str = "ocr_theme";
 const OCR_DICTIONARY_MAPPING_ENABLED_STORE_KEY: &str = "ocr_dictionary_mapping_enabled";
 const OCR_DICTIONARY_MATCH_THRESHOLD_STORE_KEY: &str = "ocr_dictionary_match_threshold";
 const THEME_COLORS_TOML: &str = include_str!("theme_colors.toml");
@@ -244,13 +245,35 @@ pub fn set_ocr_theme<R: Runtime>(
         return Err("theme must not be empty".to_string());
     }
 
-    let themes = load_primary_theme_options(&app)?;
+    apply_ocr_theme(&app, requested_theme)?;
+
+    let store = app
+        .store(SETTINGS_STORE_PATH)
+        .map_err(|err| format!("failed to open settings store: {err}"))?;
+
+    let current_theme = state
+        .ocr_theme
+        .lock()
+        .map_err(|_| "failed to read applied OCR theme".to_string())?
+        .clone();
+
+    store.set(OCR_THEME_STORE_KEY, current_theme);
+    store
+        .save()
+        .map_err(|err| format!("failed to save OCR theme: {err}"))?;
+
+    Ok(())
+}
+
+fn apply_ocr_theme<R: Runtime>(app: &AppHandle<R>, theme_name: &str) -> Result<(), String> {
+    let themes = load_primary_theme_options(app)?;
     let selected = themes
         .iter()
-        .find(|candidate| candidate.name.eq_ignore_ascii_case(requested_theme))
+        .find(|candidate| candidate.name.eq_ignore_ascii_case(theme_name))
         .cloned()
-        .ok_or_else(|| format!("unknown OCR theme: {requested_theme}"))?;
+        .ok_or_else(|| format!("unknown OCR theme: {theme_name}"))?;
 
+    let state = app.state::<AppState>();
     let mut selected_theme = state
         .ocr_theme
         .lock()
@@ -508,6 +531,20 @@ pub fn load_persisted_ocr_dictionary_mapping_settings<R: Runtime>(
         .lock()
         .map_err(|_| "failed to apply OCR dictionary threshold".to_string())?;
     *match_threshold = saved_threshold;
+
+    Ok(())
+}
+
+pub fn load_persisted_ocr_theme<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
+    let store = app
+        .store(SETTINGS_STORE_PATH)
+        .map_err(|err| format!("failed to load settings store: {err}"))?;
+
+    if let Some(saved_value) = store.get(OCR_THEME_STORE_KEY) {
+        if let Some(saved_theme) = saved_value.as_str() {
+            apply_ocr_theme(app, saved_theme)?;
+        }
+    }
 
     Ok(())
 }
