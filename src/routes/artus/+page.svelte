@@ -93,7 +93,7 @@
 </script>
 
 <div class="flex flex-col bg-surface h-full">
-	<!-- <Header title={sections[activeSection].label}></Header> -->
+	<Header title={sections[activeSection].label}></Header>
 	{#if showUpdatePrompt}
 		<div
 			class="flex sm:flex-row flex-col sm:justify-between sm:items-center gap-3 bg-elevated mx-3 mt-2 p-3 border border-accent/40 rounded-md text-sm"
