@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount } from "svelte";
 
-	import Select from '$lib/components/Select.svelte';
-	import type { OcrThemeOption } from '$lib/types';
-	import { getOcrThemeSettings, setOcrTheme } from '../settings-api';
+	import Select from "$lib/components/Select.svelte";
+	import type { OcrThemeOption } from "$lib/types";
+	import { getOcrThemeSettings, setOcrTheme } from "../settings-api";
 
 	type SelectItem = {
 		value: string;
@@ -12,7 +12,7 @@
 	};
 
 	let items = $state<SelectItem[]>([]);
-	let selectedTheme = $state('');
+	let selectedTheme = $state("");
 	let lastAppliedTheme = $state<string | null>(null);
 	let isLoading = $state(true);
 	let isSaving = $state(false);
@@ -21,9 +21,9 @@
 	function formatThemeName(theme: string): string {
 		return theme
 			.toLowerCase()
-			.split('_')
+			.split("_")
 			.map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-			.join(' ');
+			.join(" ");
 	}
 
 	function mapThemeItems(themes: OcrThemeOption[]): SelectItem[] {
@@ -60,7 +60,7 @@
 		try {
 			await setOcrTheme(theme);
 			lastAppliedTheme = theme;
-			status = 'Saved';
+			status = "Saved";
 		} catch (error) {
 			status = String(error);
 		} finally {
@@ -85,7 +85,9 @@
 <div class="flex flex-col gap-1">
 	<div class="mb-1">
 		<p>In-Game Theme</p>
-		<p class="text-muted-foreground text-xs">Select the theme that reflects the in-game theme</p>
+		<p class="text-muted-foreground text-xs">
+			Select the theme that reflects the in-game theme
+		</p>
 	</div>
 	<Select
 		type="single"
@@ -93,5 +95,6 @@
 		value={selectedTheme}
 		onValueChange={onThemeChange}
 		disabled={isLoading || isSaving}
+		placeholder="Select a theme"
 	/>
 </div>

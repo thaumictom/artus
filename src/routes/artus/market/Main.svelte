@@ -1,7 +1,5 @@
 <script lang="ts">
 	import Combobox from "$lib/components/Combobox.svelte";
-	import { Axis, Spline, Bars, Chart, Layer, Tooltip } from "layerchart";
-	import { scaleBand, scaleLinear } from "d3-scale";
 	import { onMount } from "svelte";
 	import { z } from "zod";
 	import {
@@ -9,7 +7,13 @@
 		DictionarySchema,
 		StatisticsSchema,
 		ClosedStatisticItem,
+		GetOrdersResponseSchema,
+		GetItemResponseSchema,
 	} from "$lib/schemas";
+	import Select from "$lib/components/Select.svelte";
+	import Chart from "./Chart.svelte";
+	import Orders from "./Orders.svelte";
+	import { Slider, Tabs } from "bits-ui";
 
 	let isLoadingDictionary = $state(false);
 	let isSearching = $state(false);
@@ -34,7 +38,7 @@
 			});
 	});
 
-	let itemData: z.infer<typeof ItemSchema>["data"] | null = $state(null);
+	let itemData: z.infer<typeof ItemSchema> | null = $state(null);
 
 	const handleValueChange = (slug: string) => {
 		if (!slug) return;
@@ -42,7 +46,7 @@
 
 		fetch(`/api/v1/${slug}/get-item`)
 			.then((res) => res.json())
-			.then(({ data }: z.infer<typeof ItemSchema>) => {
+			.then(({ data }: z.infer<typeof GetItemResponseSchema>) => {
 				itemData = data;
 			})
 			.catch((err) => {
@@ -73,6 +77,8 @@
 		return Object.groupBy(data, (item) => String(item[dynamicKey]));
 	};
 
+	let selectedGroup = $state("0");
+
 	const loadStatisticsData = async (slug: string) => {
 		if (!slug) return;
 
@@ -92,7 +98,18 @@
 			});
 	};
 
-	let selectedGroup = $state<string>();
+	const loadOrdersData = async (slug: string) => {
+		if (!slug) return;
+
+		return fetch(`/api/v1/${slug}/get-orders`)
+			.then((res) => res.json())
+			.then(({ data }: z.infer<typeof GetOrdersResponseSchema>) => {
+				return data;
+			})
+			.catch((err) => {
+				console.error("Failed to load offers:", err);
+			});
+	};
 </script>
 
 <div class="flex flex-col gap-8 mx-auto p-8 w-full max-w-2xl">
@@ -111,7 +128,7 @@
 		{#if isSearching}
 			<div>Loading...</div>
 		{:else if itemData}
-			{@const { icon, name } = itemData.i18n.en}
+			{@const { icon, name } = itemData.i18n!.en}
 			<div class="border p-4 flex gap-4 items-center">
 				<img
 					src={`https://warframe.market/static/assets/${icon}`}
@@ -133,62 +150,48 @@
 					{@const chartData = Array.isArray(statisticsData)
 						? statisticsData
 						: (statisticsData[selectedGroup ?? groups[0]] ?? [])}
-					{#if isGrouped && groups.length > 0}
-						<select bind:value={selectedGroup}>
-							{#each groups as group}
-								<option value={group}>Group: {group}</option>
-							{/each}
-						</select>
-					{/if}
-					<Chart
-						data={chartData}
-						x="datetime"
-						xScale={scaleBand().padding(0.4)}
-						y="volume"
-						yDomain={[0, null]}
-						yNice
-						y1="median"
-						y1Range={({ yScale }) => yScale.domain()}
-						height={300}
-					>
-						{#snippet children({ context })}
-							<Layer>
-								<Axis placement="left" rule />
-								<Axis
-									placement="right"
-									scale={scaleLinear(
-										context.y1Scale?.domain() ?? [],
-										[context.height, 0],
-									)}
-									ticks={context.y1Scale?.ticks?.()}
-									rule
-								/>
-								<Spline
-									y={(d) => context.y1Scale?.(d.median)}
-								/>
-								<Spline
-									y={(d) => context.y1Scale?.(d.moving_avg)}
-								/>
-								<Bars y="volume" class="fill-surface" />
-							</Layer>
-							<Tooltip.Root {context}>
-								{#snippet children({ data })}
-									<Tooltip.Header>{data.year}</Tooltip.Header>
-									<Tooltip.List>
-										<Tooltip.Item
-											label="sales"
-											value={data.sales}
-											format="currencyRound"
-										/>
-										<Tooltip.Item
-											label="efficiency"
-											value={data.efficiency}
-										/>
-									</Tooltip.List>
-								{/snippet}
-							</Tooltip.Root>
-						{/snippet}
-					</Chart>
+					<div class="flex items-center gap-4 mb-4">
+						{#if isGrouped && groups.length > 0}
+							<Select
+								type="single"
+								bind:value={selectedGroup}
+								items={groups.map((group) => ({
+									label: group,
+									value: group,
+								}))}
+							></Select>
+						{/if}
+						<Tabs.Root value="30days">
+							<Tabs.List class="flex border-b">
+								<Tabs.Trigger
+									value="90days"
+									class="px-4 py-2 data-[state=active]:border-b-2 data-[state=active]:border-primary"
+								>
+									90 days
+								</Tabs.Trigger>
+								<Tabs.Trigger
+									value="30days"
+									class="px-4 py-2 data-[state=active]:border-b-2 data-[state=active]:border-primary"
+								>
+									30 days
+								</Tabs.Trigger>
+								<Tabs.Trigger
+									value="48hours"
+									class="px-4 py-2 data-[state=active]:border-b-2 data-[state=active]:border-primary"
+								>
+									48 hours
+								</Tabs.Trigger>
+							</Tabs.List>
+						</Tabs.Root>
+					</div>
+					<Chart data={chartData} />
+				{/if}
+			{/await}
+			{#await loadOrdersData(itemData.slug)}
+				<div>Loading orders...</div>
+			{:then orderData}
+				{#if orderData}
+					<Orders {orderData} />
 				{/if}
 			{/await}
 		{/if}

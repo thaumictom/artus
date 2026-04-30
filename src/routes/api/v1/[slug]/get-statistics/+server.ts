@@ -1,6 +1,4 @@
-// src/routes/api/get-data/+server.js
 import { json } from '@sveltejs/kit';
-import { z } from 'zod';
 import { StatisticsSchema } from '$lib/schemas';
 
 export async function GET({ params }): Promise<Response> {

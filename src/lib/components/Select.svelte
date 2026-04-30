@@ -1,15 +1,24 @@
 <script lang="ts">
-	import Icon from '@iconify/svelte';
-	import { Select, type WithoutChildren } from 'bits-ui';
+	import Icon from "@iconify/svelte";
+	import { Select, type WithoutChildren } from "bits-ui";
+	import cn from "clsx";
 
 	type Props = WithoutChildren<Select.RootProps> & {
 		placeholder?: string;
 		items: { value: string; label: string; disabled?: boolean }[];
+		triggerProps?: WithoutChildren<Select.TriggerProps>;
 		contentProps?: WithoutChildren<Select.ContentProps>;
 		// any other specific component props if needed
 	};
 
-	let { value = $bindable(), items, contentProps, placeholder, ...restProps }: Props = $props();
+	let {
+		value = $bindable(),
+		items,
+		contentProps,
+		triggerProps,
+		placeholder,
+		...restProps
+	}: Props = $props();
 </script>
 
 <!--
@@ -19,16 +28,23 @@ from the perspective of the consumer of this component, it will be typed appropr
 -->
 <Select.Root bind:value={value as never} {...restProps}>
 	<Select.Trigger
-		class="flex justify-between p-2 border w-full max-w-80 cursor-pointer"
-		aria-label="Select a theme"
+		{...triggerProps}
+		class={cn(
+			"flex justify-between p-2 border w-full max-w-80 cursor-pointer",
+			triggerProps?.class,
+		)}
+		aria-label={placeholder}
 	>
-		<Select.Value placeholder="Select a theme" />
+		<Select.Value {placeholder} />
 		<Icon icon="material-symbols:unfold-more-rounded" class="size-5" />
 	</Select.Trigger>
 	<Select.Portal>
 		<Select.Content
 			{...contentProps}
-			class="border min-w-(--bits-select-anchor-width) backdrop-blur bg-surface/50 max-h-56"
+			class={cn(
+				"border min-w-(--bits-select-anchor-width) backdrop-blur bg-surface/50 max-h-56",
+				contentProps?.class,
+			)}
 			sideOffset={4}
 		>
 			<!-- <Select.ScrollUpButton>up</Select.ScrollUpButton> -->
@@ -43,7 +59,10 @@ from the perspective of the consumer of this component, it will be typed appropr
 						{#snippet children({ selected })}
 							<span>{label}</span>
 							{#if selected}
-								<Icon icon="material-symbols:check" class="size-5" />
+								<Icon
+									icon="material-symbols:check"
+									class="size-5"
+								/>
 							{/if}
 						{/snippet}
 					</Select.Item>

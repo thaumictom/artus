@@ -30,6 +30,7 @@
 		"@wfcd/items": "^1.1272.167",
 		"class-variance-authority": "^0.7.1",
 		"d3-scale": "^4.0.2",
+		"echarts": "^6.0.0",
 		"fuzzball": "^2.2.3",
 		"layerchart": "2.0.0-next.59",
 		"mode-watcher": "^1.1.0",
