@@ -1,7 +1,7 @@
 <script lang="ts">
-	import Icon from "@iconify/svelte";
-	import { Select, type WithoutChildren } from "bits-ui";
-	import cn from "clsx";
+	import Icon from '@iconify/svelte';
+	import { Select, type WithoutChildren } from 'bits-ui';
+	import cn from 'clsx';
 
 	type Props = WithoutChildren<Select.RootProps> & {
 		placeholder?: string;
@@ -26,11 +26,11 @@ TypeScript Discriminated Unions + destructing (required for "bindable") do not
 get along, so we shut typescript up by casting `value` to `never`, however,
 from the perspective of the consumer of this component, it will be typed appropriately.
 -->
-<Select.Root bind:value={value as never} {...restProps}>
+<Select.Root bind:value={value as never} {items} {...restProps}>
 	<Select.Trigger
 		{...triggerProps}
 		class={cn(
-			"flex justify-between p-2 border w-full max-w-80 cursor-pointer",
+			'flex justify-between p-2 border w-full max-w-80 cursor-pointer',
 			triggerProps?.class,
 		)}
 		aria-label={placeholder}
@@ -42,7 +42,7 @@ from the perspective of the consumer of this component, it will be typed appropr
 		<Select.Content
 			{...contentProps}
 			class={cn(
-				"border min-w-(--bits-select-anchor-width) backdrop-blur bg-surface/50 max-h-56",
+				'border min-w-(--bits-select-anchor-width) backdrop-blur bg-surface/50 max-h-56',
 				contentProps?.class,
 			)}
 			sideOffset={4}
@@ -59,10 +59,7 @@ from the perspective of the consumer of this component, it will be typed appropr
 						{#snippet children({ selected })}
 							<span>{label}</span>
 							{#if selected}
-								<Icon
-									icon="material-symbols:check"
-									class="size-5"
-								/>
+								<Icon icon="material-symbols:check" class="size-5" />
 							{/if}
 						{/snippet}
 					</Select.Item>
