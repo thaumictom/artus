@@ -36,6 +36,7 @@
 		"mode-watcher": "^1.1.0",
 		"overlayscrollbars": "^2.15.1",
 		"overlayscrollbars-svelte": "^0.5.5",
+		"svelte-sonner": "^1.1.1",
 		"svelteplot": "^0.14.2",
 		"tailwindcss": "^4.2.4",
 		"zod": "^4.3.6"
