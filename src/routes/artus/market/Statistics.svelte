@@ -1,9 +1,10 @@
 <script lang="ts">
-	import { ClosedStatisticItem, type StatisticsSchema } from '$lib/schemas';
+	import { ClosedStatisticItem, StatisticsSchema } from '$lib/schemas';
 	import { RadioGroup } from 'bits-ui';
 	import Select from '$lib/components/Select.svelte';
 	import Chart from './Chart.svelte';
 	import type z from 'zod';
+	import { invoke } from '@tauri-apps/api/core';
 
 	let { slug }: { slug: string } = $props();
 
@@ -11,8 +12,8 @@
 		if (!slug) return null;
 
 		try {
-			const res = await fetch(`/api/v1/${slug}/get-statistics`);
-			const { payload }: z.infer<typeof StatisticsSchema> = await res.json();
+			const response = await invoke('get_market_statistics', { slug });
+			const { payload }: z.infer<typeof StatisticsSchema> = StatisticsSchema.parse(response);
 
 			const closed90Days = payload.statistics_closed['90days'];
 			const closed48Hours = payload.statistics_closed['48hours'];

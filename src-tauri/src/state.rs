@@ -54,6 +54,7 @@ pub struct AppState {
     pub ocr_dictionary_mapping_enabled: Mutex<bool>,
     pub ocr_dictionary_match_threshold: Mutex<f64>,
     pub relic_reward_detection: Mutex<bool>,
+    pub http_client: reqwest::Client,
 }
 
 impl Default for AppState {
@@ -72,6 +73,7 @@ impl Default for AppState {
             ocr_dictionary_mapping_enabled: Mutex::new(true),
             ocr_dictionary_match_threshold: Mutex::new(0.62),
             relic_reward_detection: Mutex::new(false),
+            http_client: reqwest::Client::new(),
         }
     }
 }

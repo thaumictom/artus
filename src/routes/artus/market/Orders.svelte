@@ -3,6 +3,7 @@
 	import { GetOrdersResponseSchema, type OrderWithUserSchema } from '$lib/schemas';
 	import { RadioGroup } from 'bits-ui';
 	import type z from 'zod';
+	import { invoke } from '@tauri-apps/api/core';
 
 	let { slug, itemName }: { slug: string; itemName?: string } = $props();
 
@@ -19,9 +20,8 @@
 
 	const loadOrdersData = async (targetSlug: string) => {
 		try {
-			const res = await fetch(`/api/v1/${targetSlug}/get-orders`);
-			const json = await res.json();
-			const { data } = GetOrdersResponseSchema.parse(json);
+			const response = await invoke('get_market_orders', { slug: targetSlug });
+			const { data } = GetOrdersResponseSchema.parse(response);
 
 			fetchTimestamp = Date.now();
 

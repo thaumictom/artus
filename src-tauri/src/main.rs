@@ -123,7 +123,10 @@ fn main() {
             ocr::set_ocr_dictionary_mapping_enabled,
             ocr::set_ocr_dictionary_match_threshold,
             updater::check_for_update,
-            updater::download_and_relaunch_update
+            updater::download_and_relaunch_update,
+            market::get_market_item,
+            market::get_market_orders,
+            market::get_market_statistics
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

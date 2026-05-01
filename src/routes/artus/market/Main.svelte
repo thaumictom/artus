@@ -16,6 +16,7 @@
 	import { Label, RadioGroup } from 'bits-ui';
 	import Statistics from './Statistics.svelte';
 	import InfoCard from './InfoCard.svelte';
+	import { invoke } from '@tauri-apps/api/core';
 
 	let isLoadingDictionary = $state(false);
 	let isSearching = $state(false);
@@ -46,9 +47,9 @@
 		if (!slug) return;
 		isSearching = true;
 
-		fetch(`/api/v1/${slug}/get-item`)
-			.then((res) => res.json())
-			.then(({ data }: z.infer<typeof GetItemResponseSchema>) => {
+		invoke('get_market_item', { slug })
+			.then((response: any) => {
+				const { data } = GetItemResponseSchema.parse(response);
 				itemData = data;
 			})
 			.catch((err) => {
@@ -56,29 +57,6 @@
 			})
 			.finally(() => {
 				isSearching = false;
-			});
-	};
-
-	// Helper to normalize either an array or a keyed record into a record so we can safely index by string keys.
-	const asRecord = <T,>(v: T[] | Partial<Record<string, T[]>>): Record<string, T[]> => {
-		if (Array.isArray(v)) return { '0': v as T[] };
-		return v as Record<string, T[]>;
-	};
-
-	let selectedGroup = $state('');
-
-	let dataRange = $state('chart-30days');
-
-	const loadOrdersData = async (slug: string | undefined) => {
-		if (!slug) return;
-
-		return fetch(`/api/v1/${slug}/get-orders`)
-			.then((res) => res.json())
-			.then(({ data }: z.infer<typeof GetOrdersResponseSchema>) => {
-				return data;
-			})
-			.catch((err) => {
-				console.error('Failed to load offers:', err);
 			});
 	};
 </script>
