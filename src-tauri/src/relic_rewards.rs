@@ -1,5 +1,5 @@
 use std::fs::File;
-use std::io::{BufRead, BufReader, Seek, SeekFrom};
+use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;
 
 use tauri::{AppHandle, Manager, Runtime};
@@ -9,16 +9,15 @@ use crate::state::AppState;
 
 const GOT_REWARDS_MARKER: &str = "ProjectionRewardChoice.lua: Got rewards";
 const SCREEN_SHUTDOWN_MARKER: &str = "ProjectionRewardChoice.lua: Relic reward screen shut down";
-const READER_CAPACITY: usize = 64 * 1024;
-const DISABLED_SLEEP: Duration = Duration::from_millis(500);
-const ERROR_SLEEP: Duration = Duration::from_millis(250);
-const IDLE_SLEEP: Duration = Duration::from_millis(75);
+const DISABLED_SLEEP: Duration = Duration::from_millis(1000);
+const IDLE_SLEEP: Duration = Duration::from_millis(100);
+const ERROR_SLEEP: Duration = Duration::from_millis(500);
 
 pub fn spawn_log_tailer<R: Runtime>(app: AppHandle<R>) {
     std::thread::spawn(move || {
         let mut last_path = String::new();
-        let mut reader: Option<BufReader<File>> = None;
-        let mut line = String::new();
+        let mut last_pos = 0;
+        let mut file: Option<File> = None;
 
         loop {
             let (enabled, path) = {
@@ -37,66 +36,75 @@ pub fn spawn_log_tailer<R: Runtime>(app: AppHandle<R>) {
             };
 
             if !enabled || path.is_empty() {
-                last_path.clear();
-                reader = None;
+                if file.is_some() {
+                    file = None;
+                    last_path.clear();
+                    last_pos = 0;
+                }
                 std::thread::sleep(DISABLED_SLEEP);
                 continue;
             }
 
             if path != last_path {
                 last_path = path.clone();
-                reader = open_reader(&last_path, true);
+                file = File::open(&last_path).ok();
+                last_pos = file
+                    .as_mut()
+                    .and_then(|f| f.seek(SeekFrom::End(0)).ok())
+                    .unwrap_or(0);
+
+                if file.is_some() {
+                    println!(
+                        "[relic_rewards] tailing log: {}, starting at {} bytes",
+                        last_path, last_pos
+                    );
+                }
             }
 
-            let Some(active_reader) = reader.as_mut() else {
-                std::thread::sleep(ERROR_SLEEP);
-                continue;
-            };
-
-            line.clear();
-            match active_reader.read_line(&mut line) {
-                Ok(0) => {
-                    std::thread::sleep(IDLE_SLEEP);
-                }
-                Ok(_) => {
-                    if line.contains(GOT_REWARDS_MARKER) {
-                        println!("[relic_rewards] detected rewards, triggering OCR");
-                        let app_handle = app.clone();
-                        std::thread::spawn(move || {
-                            if let Err(err) =
-                                ocr::capture_active_window_with_mode(&app_handle, false)
-                            {
-                                eprintln!("[relic_rewards] OCR failed: {err}");
+            let mut data_to_process = Vec::new();
+            if let Some(f) = file.as_mut() {
+                if let Ok(current_len) = f.seek(SeekFrom::End(0)) {
+                    if current_len > last_pos {
+                        if f.seek(SeekFrom::Start(last_pos)).is_ok() {
+                            let mut buf = Vec::new();
+                            if f.read_to_end(&mut buf).is_ok() {
+                                data_to_process = buf;
+                                last_pos = current_len;
                             }
-                        });
-                    } else if line.contains(SCREEN_SHUTDOWN_MARKER) {
-                        println!("[relic_rewards] detected screen shut down, hiding overlay");
-                        if let Some(overlay) = app.get_webview_window("overlay") {
-                            let _ = overlay.hide();
                         }
+                    } else if current_len < last_pos {
+                        last_pos = current_len; // Truncated/rotated
                     }
                 }
-                Err(_) => {
-                    reader = open_reader(&last_path, true);
-                    std::thread::sleep(ERROR_SLEEP);
+            } else if !last_path.is_empty() {
+                std::thread::sleep(ERROR_SLEEP);
+                file = File::open(&last_path).ok();
+                last_pos = file
+                    .as_mut()
+                    .and_then(|f| f.seek(SeekFrom::End(0)).ok())
+                    .unwrap_or(0);
+            }
+
+            if !data_to_process.is_empty() {
+                let content = String::from_utf8_lossy(&data_to_process);
+
+                if content.contains(SCREEN_SHUTDOWN_MARKER) {
+                    println!("[relic_rewards] detected screen shut down, hiding overlay");
+                    if let Some(overlay) = app.get_webview_window("overlay") {
+                        let _ = overlay.hide();
+                    }
+                } else if content.contains(GOT_REWARDS_MARKER) {
+                    println!("[relic_rewards] detected rewards, triggering OCR");
+                    let app_handle = app.clone();
+                    std::thread::spawn(move || {
+                        if let Err(err) = ocr::capture_active_window_with_mode(&app_handle, false) {
+                            eprintln!("[relic_rewards] OCR failed: {err}");
+                        }
+                    });
                 }
             }
+
+            std::thread::sleep(IDLE_SLEEP);
         }
     });
-}
-
-fn open_reader(path: &str, start_at_end: bool) -> Option<BufReader<File>> {
-    let file = File::open(path).ok()?;
-    let mut reader = BufReader::with_capacity(READER_CAPACITY, file);
-
-    if start_at_end {
-        let len = reader
-            .get_ref()
-            .metadata()
-            .map(|meta| meta.len())
-            .unwrap_or(0);
-        let _ = reader.seek(SeekFrom::Start(len));
-    }
-
-    Some(reader)
 }
