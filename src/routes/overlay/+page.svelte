@@ -3,6 +3,7 @@
 	import { listen } from '@tauri-apps/api/event';
 	import { onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
+	import { invoke } from '@tauri-apps/api/core';
 
 	type OcrWord = {
 		text: string;
@@ -20,12 +21,14 @@
 	};
 
 	let words: OcrWord[] = $state([]);
+	let showBoundingBoxes = $state(false);
 
 	onMount(() => {
 		let unlisten: (() => void) | undefined;
 
-		listen<{ words: OcrWord[] }>('ocr_result', (event) => {
+		listen<{ words: OcrWord[], show_ocr_bounding_boxes: boolean }>('ocr_result', (event) => {
 			words = event.payload?.words ?? [];
+			showBoundingBoxes = event.payload?.show_ocr_bounding_boxes ?? false;
 		}).then((cleanup) => {
 			unlisten = cleanup;
 		});
@@ -60,10 +63,17 @@
 
 		{@const vaulted = word.vaulted}
 		{@const isCustom = word.is_custom === true}
+		<!-- Bounding box for debugging -->
+		{#if showBoundingBoxes}
+			<div
+				class="absolute border border-red-500 text-red-500/25 striped-gradient"
+				style={`left:${word.x}px;top:${word.y}px;width:${word.width}px;height:${word.height}px;`}
+			></div>
+		{/if}
 		<div
 			in:fade={{ duration: 200 }}
-			class="absolute flex flex-col bg-background/75 px-2 py-1 border text-foreground text-sm -translate-x-1/2"
-			style={`left:${word.x + word.width / 2}px;top:${word.y + word.height + 16}px;`}
+			class="absolute flex flex-col bg-background/75 px-2 py-1 border text-foreground text-sm -translate-x-1/2 -translate-y-full"
+			style={`left:${word.x + word.width / 2}px;top:${word.y - 16}px;`}
 		>
 			<div
 				class={{

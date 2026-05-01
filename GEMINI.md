@@ -44,3 +44,4 @@ Artus is a desktop app built with Tauri v2 + SvelteKit + TypeScript (Vite) and a
 - Tauri dev server URL: http://localhost:1420
 - Optional Wayland layer-shell build (for Linux only):
 	pnpm tauri dev --features wayland-layer-shell
+- If creating a setting, it needs to be stored locally in settings.json.

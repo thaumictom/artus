@@ -129,16 +129,18 @@
 					id="chart-90days"
 					value="chart-90days"
 					class={{
-						'striped-gradient cursor-not-allowed! text-muted-foreground! opacity-25':
+						'striped-gradient cursor-not-allowed! text-muted-foreground! opacity-50':
 							Array.isArray(data90Days) && data90Days.length <= 30,
 					}}
 					disabled={Array.isArray(data90Days) && data90Days.length <= 30}
 				>
-					90 days
+					<span>90 days</span>
 				</RadioGroup.Item>
-				<RadioGroup.Item id="chart-30days" value="chart-30days">30 days</RadioGroup.Item>
+				<RadioGroup.Item id="chart-30days" value="chart-30days">
+					<span>30 days</span>
+				</RadioGroup.Item>
 				<RadioGroup.Item id="chart-48hours" value="chart-48hours" class="disabled:striped-gradient">
-					48 hours
+					<span>48 hours</span>
 				</RadioGroup.Item>
 			</div>
 		</div>

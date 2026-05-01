@@ -18,6 +18,7 @@ pub struct SettingsPayload {
     pub ocr_dictionary_mapping: ocr::OcrDictionaryMappingSettingsPayload,
     pub warframe_log_path: String,
     pub relic_reward_detection: bool,
+    pub show_ocr_bounding_boxes: bool,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -30,6 +31,7 @@ pub struct SettingsPatchPayload {
     pub ocr_dictionary_match_threshold: Option<f64>,
     pub warframe_log_path: Option<String>,
     pub relic_reward_detection: Option<bool>,
+    pub show_ocr_bounding_boxes: Option<bool>,
 }
 
 #[tauri::command]
@@ -45,6 +47,11 @@ pub fn get_settings<R: Runtime>(app: AppHandle<R>) -> Result<SettingsPayload, St
         .lock()
         .map(|v| *v)
         .map_err(|_| "failed to read relic reward detection".to_string())?;
+    let show_ocr_bounding_boxes = app_state
+        .show_ocr_bounding_boxes
+        .lock()
+        .map(|v| *v)
+        .map_err(|_| "failed to read show_ocr_bounding_boxes".to_string())?;
 
     Ok(SettingsPayload {
         ocr_theme: ocr::get_ocr_theme_settings(app.clone(), app.state::<AppState>())?,
@@ -53,6 +60,7 @@ pub fn get_settings<R: Runtime>(app: AppHandle<R>) -> Result<SettingsPayload, St
         ocr_dictionary_mapping: ocr::get_ocr_dictionary_mapping_settings(app.state::<AppState>())?,
         warframe_log_path,
         relic_reward_detection,
+        show_ocr_bounding_boxes,
     })
 }
 
@@ -110,6 +118,21 @@ pub fn patch_settings<R: Runtime>(
             .store(SETTINGS_STORE_PATH)
             .map_err(|err| format!("failed to open settings store: {err}"))?;
         store.set("relic_reward_detection", enabled);
+        let _ = store.save();
+    }
+
+    if let Some(enabled) = patch.show_ocr_bounding_boxes {
+        let app_state = app.state::<AppState>();
+        let mut show_ocr_bounding_boxes = app_state
+            .show_ocr_bounding_boxes
+            .lock()
+            .map_err(|_| "failed to update show_ocr_bounding_boxes".to_string())?;
+        *show_ocr_bounding_boxes = enabled;
+
+        let store = app
+            .store(SETTINGS_STORE_PATH)
+            .map_err(|err| format!("failed to open settings store: {err}"))?;
+        store.set("show_ocr_bounding_boxes", enabled);
         let _ = store.save();
     }
 

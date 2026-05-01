@@ -81,13 +81,15 @@ body {
 
 @layer components {
 	.striped-gradient {
+		--stripe-color: currentColor;
+
 		background-image: linear-gradient(
 			-45deg,
-			var(--color-elevated) 20%,
+			var(--stripe-color) 20%,
 			transparent 25%,
 			transparent 50%,
-			var(--color-elevated) 50%,
-			var(--color-elevated) 75%,
+			var(--stripe-color) 50%,
+			var(--stripe-color) 75%,
 			transparent 75%,
 			transparent
 		);

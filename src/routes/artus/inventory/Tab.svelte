@@ -13,6 +13,7 @@
 
 	type OcrResultPayload = {
 		words?: OcrWord[];
+		show_ocr_bounding_boxes?: boolean;
 	};
 
 	type InventoryItem = ComponentProps<typeof InventoryMain>['items'][number];

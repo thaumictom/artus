@@ -38,16 +38,17 @@ export type MarketStatEntry = {
 	mod_rank?: number;
 };
 
-export type SettingsPayload = {
+export interface SettingsPayload {
 	ocr_theme: OcrThemeSettingsPayload;
 	overlay_duration_secs: number;
 	overlay_toggle_mode: boolean;
 	ocr_dictionary_mapping: OcrDictionaryMappingSettingsPayload;
 	warframe_log_path: string;
 	relic_reward_detection: boolean;
-};
+	show_ocr_bounding_boxes: boolean;
+}
 
-export type SettingsPatchPayload = {
+export interface SettingsPatchPayload {
 	ocr_theme?: string;
 	overlay_duration_secs?: number;
 	overlay_toggle_mode?: boolean;
@@ -55,4 +56,5 @@ export type SettingsPatchPayload = {
 	ocr_dictionary_match_threshold?: number;
 	warframe_log_path?: string;
 	relic_reward_detection?: boolean;
-};
+	show_ocr_bounding_boxes?: boolean;
+}

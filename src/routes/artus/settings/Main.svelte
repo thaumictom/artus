@@ -5,11 +5,13 @@
 	import Hotkeys from './categories/Hotkeys.svelte';
 	import MetaInformation from './categories/MetaInformation.svelte';
 	import OverlaySettings from './categories/OverlaySettings.svelte';
+	import DebugSettings from './categories/DebugSettings.svelte';
 
 	let components = [
 		{ name: 'Hotkeys', component: Hotkeys },
 		{ name: 'Warframe Settings', component: WarframeSettings },
 		{ name: 'Overlay Settings', component: OverlaySettings },
+		{ name: 'Debug', component: DebugSettings },
 	];
 </script>
 

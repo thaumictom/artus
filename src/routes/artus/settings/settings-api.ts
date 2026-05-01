@@ -98,3 +98,13 @@ export function setRelicRewardDetection(enabled: boolean) {
 		(settings) => settings.relic_reward_detection,
 	);
 }
+
+export function getShowOcrBoundingBoxes() {
+	return getSettings().then((settings) => settings.show_ocr_bounding_boxes);
+}
+
+export function setShowOcrBoundingBoxes(enabled: boolean) {
+	return patchSettings({ show_ocr_bounding_boxes: enabled }).then(
+		(settings) => settings.show_ocr_bounding_boxes,
+	);
+}
