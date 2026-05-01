@@ -38,19 +38,11 @@ fn main() {
         .manage(AppState::default())
         .setup(move |app| setup::init(app, is_wayland))
         .invoke_handler(tauri::generate_handler![
-            settings::get_settings,
-            settings::patch_settings,
+            settings::get_warframe_log_path,
+            settings::set_warframe_log_path,
             hotkeys::get_hotkey,
             hotkeys::set_hotkey,
-            ocr::get_ocr_theme_settings,
-            ocr::set_ocr_theme,
-            ocr::get_overlay_duration_secs,
-            ocr::set_overlay_duration_secs,
-            ocr::get_overlay_toggle_mode,
-            ocr::set_overlay_toggle_mode,
-            ocr::get_ocr_dictionary_mapping_settings,
-            ocr::set_ocr_dictionary_mapping_enabled,
-            ocr::set_ocr_dictionary_match_threshold,
+            ocr::get_ocr_themes,
             updater::check_for_update,
             updater::download_and_relaunch_update,
             market::get_market_item,

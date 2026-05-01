@@ -224,10 +224,10 @@ fn persist_hotkeys<R: Runtime>(
 
 fn trigger_screenshot<R: Runtime>(app: &AppHandle<R>) {
     let app_state = app.state::<AppState>();
-    let toggle_mode_enabled = app_state
-        .overlay_toggle_mode
-        .lock()
-        .map(|value| *value)
+    let toggle_mode_enabled = app.store("settings.json")
+        .ok()
+        .and_then(|s| s.get("overlay_toggle_mode"))
+        .and_then(|v| v.as_bool())
         .unwrap_or(false);
 
     if toggle_mode_enabled {

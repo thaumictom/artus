@@ -2,6 +2,7 @@ use std::time::{Duration, Instant};
 
 use kreuzberg_tesseract::{TessPageIteratorLevel, TessPageSegMode, TesseractAPI};
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, Position, Runtime, Size};
+use tauri_plugin_store::StoreExt;
 use xcap::Window;
 
 use crate::layer_shell;
@@ -84,12 +85,20 @@ pub fn capture_active_window_with_mode<R: Runtime>(
     );
 
     let preprocess_started = Instant::now();
-    let target_rgb = app
-        .state::<AppState>()
-        .ocr_target_rgb
-        .lock()
-        .map(|value| *value)
-        .unwrap_or(DEFAULT_OCR_TARGET_RGB);
+    let target_rgb = {
+        let theme_name = app.store("settings.json")
+            .ok()
+            .and_then(|s| s.get("ocr_theme"))
+            .and_then(|v| v.as_str().map(|s| s.to_string()))
+            .unwrap_or_else(|| "EQUINOX".to_string());
+            
+        app.state::<AppState>()
+            .ocr_theme_colors
+            .lock()
+            .ok()
+            .and_then(|map| map.get(&theme_name).copied())
+            .unwrap_or(DEFAULT_OCR_TARGET_RGB)
+    };
 
     let mut filtered = binary_target_filter(&image, target_rgb);
     apply_morphology(&mut filtered);
@@ -190,21 +199,24 @@ pub fn capture_active_window_with_mode<R: Runtime>(
         }
     }
 
-    let app_state = app.state::<AppState>();
-    let mapping_enabled = app_state
-        .ocr_dictionary_mapping_enabled
-        .lock()
-        .map(|value| *value)
-        .unwrap_or(DEFAULT_OCR_DICTIONARY_MAPPING_ENABLED);
-    let mapping_threshold = app_state
-        .ocr_dictionary_match_threshold
-        .lock()
-        .map(|value| *value)
-        .unwrap_or(DEFAULT_OCR_DICTIONARY_MATCH_THRESHOLD)
-        .clamp(
-            MIN_OCR_DICTIONARY_MATCH_THRESHOLD,
-            MAX_OCR_DICTIONARY_MATCH_THRESHOLD,
-        );
+    let (mapping_enabled, mapping_threshold) = {
+        let store = app.store("settings.json").ok();
+        let enabled = store.as_ref()
+            .and_then(|s| s.get("ocr_dictionary_mapping_enabled"))
+            .and_then(|v| v.as_bool())
+            .unwrap_or(DEFAULT_OCR_DICTIONARY_MAPPING_ENABLED);
+            
+        let threshold = store.as_ref()
+            .and_then(|s| s.get("ocr_dictionary_match_threshold"))
+            .and_then(|v| v.as_f64())
+            .unwrap_or(DEFAULT_OCR_DICTIONARY_MATCH_THRESHOLD)
+            .clamp(
+                MIN_OCR_DICTIONARY_MATCH_THRESHOLD,
+                MAX_OCR_DICTIONARY_MATCH_THRESHOLD,
+            );
+            
+        (enabled, threshold)
+    };
 
     let grouped_words = group_words_into_blocks(&words);
     let finalized_words = if ENABLE_OCR_DICTIONARY_MAPPING && mapping_enabled {
@@ -290,11 +302,10 @@ pub fn capture_active_window_with_mode<R: Runtime>(
         });
     }
 
-    let show_ocr_bounding_boxes = app
-        .state::<AppState>()
-        .show_ocr_bounding_boxes
-        .lock()
-        .map(|value| *value)
+    let show_ocr_bounding_boxes = app.store("settings.json")
+        .ok()
+        .and_then(|s| s.get("show_ocr_bounding_boxes"))
+        .and_then(|v| v.as_bool())
         .unwrap_or(false);
 
     app.emit(
@@ -311,11 +322,10 @@ pub fn capture_active_window_with_mode<R: Runtime>(
 
     if should_auto_hide {
         let app_handle = app.clone();
-        let overlay_duration_secs = app
-            .state::<AppState>()
-            .overlay_duration_secs
-            .lock()
-            .map(|value| *value)
+        let overlay_duration_secs = app_handle.store("settings.json")
+            .ok()
+            .and_then(|s| s.get("overlay_duration_secs"))
+            .and_then(|v| v.as_u64())
             .unwrap_or(DEFAULT_OVERLAY_DURATION_SECS);
         std::thread::spawn(move || {
             std::thread::sleep(Duration::from_secs(overlay_duration_secs));

@@ -43,18 +43,11 @@ pub struct TradeablePriceEntry {
 pub struct AppState {
     pub hotkeys: Mutex<HashMap<String, String>>,
     pub overlay_sequence: Mutex<u64>,
-    pub overlay_duration_secs: Mutex<u64>,
-    pub overlay_toggle_mode: Mutex<bool>,
     pub overlay_toggle_in_flight: AtomicBool,
     pub warframe_log_path: Mutex<String>,
-    pub ocr_theme: Mutex<String>,
-    pub ocr_target_rgb: Mutex<[u8; 3]>,
+    pub ocr_theme_colors: Mutex<HashMap<String, [u8; 3]>>,
     pub ocr_dictionary: Mutex<Vec<OcrDictionaryEntry>>,
     pub ocr_tradeable_prices: Mutex<HashMap<String, TradeablePriceEntry>>,
-    pub ocr_dictionary_mapping_enabled: Mutex<bool>,
-    pub ocr_dictionary_match_threshold: Mutex<f64>,
-    pub relic_reward_detection: Mutex<bool>,
-    pub show_ocr_bounding_boxes: Mutex<bool>,
     pub http_client: reqwest::Client,
 }
 
@@ -63,18 +56,11 @@ impl Default for AppState {
         Self {
             hotkeys: Mutex::new(default_hotkeys()),
             overlay_sequence: Mutex::new(0),
-            overlay_duration_secs: Mutex::new(10),
-            overlay_toggle_mode: Mutex::new(false),
             overlay_toggle_in_flight: AtomicBool::new(false),
             warframe_log_path: Mutex::new(String::new()),
-            ocr_theme: Mutex::new("EQUINOX".to_string()),
-            ocr_target_rgb: Mutex::new([158, 159, 167]),
+            ocr_theme_colors: Mutex::new(HashMap::new()),
             ocr_dictionary: Mutex::new(Vec::new()),
             ocr_tradeable_prices: Mutex::new(HashMap::new()),
-            ocr_dictionary_mapping_enabled: Mutex::new(true),
-            ocr_dictionary_match_threshold: Mutex::new(0.62),
-            relic_reward_detection: Mutex::new(false),
-            show_ocr_bounding_boxes: Mutex::new(false),
             http_client: reqwest::Client::new(),
         }
     }

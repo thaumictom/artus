@@ -1,110 +1,114 @@
 import { invoke } from '@tauri-apps/api/core';
+import { load } from '@tauri-apps/plugin-store';
 
 import type {
 	OcrDictionaryMappingSettingsPayload,
 	OcrThemeSettingsPayload,
-	SettingsPatchPayload,
-	SettingsPayload,
+	OcrThemeOption,
 } from '$lib/types';
 
-let cachedSettings: SettingsPayload | null = null;
-let inFlightSettingsRequest: Promise<SettingsPayload> | null = null;
-
-export async function getSettings(force = false): Promise<SettingsPayload> {
-	if (!force && cachedSettings) {
-		return cachedSettings;
-	}
-
-	if (!force && inFlightSettingsRequest) {
-		return inFlightSettingsRequest;
-	}
-
-	inFlightSettingsRequest = invoke<SettingsPayload>('get_settings')
-		.then((settings) => {
-			cachedSettings = settings;
-			return settings;
-		})
-		.finally(() => {
-			inFlightSettingsRequest = null;
-		});
-
-	return inFlightSettingsRequest;
+// Utility to get the store
+async function getStore() {
+	return await load('settings.json', { autoSave: false } as any);
 }
 
-export async function patchSettings(patch: SettingsPatchPayload): Promise<SettingsPayload> {
-	const settings = await invoke<SettingsPayload>('patch_settings', { patch });
-	cachedSettings = settings;
-	return settings;
+export async function getOcrThemeSettings(): Promise<OcrThemeSettingsPayload> {
+	const themes = await invoke<OcrThemeOption[]>('get_ocr_themes');
+	const store = await getStore();
+	let selected_theme = await store.get<string>('ocr_theme');
+	if (!selected_theme) selected_theme = 'EQUINOX';
+	return { themes, selected_theme };
 }
 
-export function getOcrThemeSettings() {
-	return getSettings().then((settings) => settings.ocr_theme);
+export async function setOcrTheme(theme: string): Promise<void> {
+	const store = await getStore();
+	await store.set('ocr_theme', theme);
+	await store.save();
 }
 
-export function setOcrTheme(theme: string) {
-	return patchSettings({ ocr_theme: theme }).then(() => undefined);
+export async function getOverlayDurationSecs(): Promise<number> {
+	const store = await getStore();
+	const val = await store.get<number>('overlay_duration_secs');
+	return val ?? 10;
 }
 
-export function getOverlayDurationSecs() {
-	return getSettings().then((settings) => settings.overlay_duration_secs);
+export async function setOverlayDurationSecs(seconds: number): Promise<number> {
+	const store = await getStore();
+	await store.set('overlay_duration_secs', seconds);
+	await store.save();
+	return seconds;
 }
 
-export function setOverlayDurationSecs(seconds: number) {
-	return patchSettings({ overlay_duration_secs: seconds }).then(
-		(settings) => settings.overlay_duration_secs,
-	);
+export async function getOverlayToggleMode(): Promise<boolean> {
+	const store = await getStore();
+	const val = await store.get<boolean>('overlay_toggle_mode');
+	return val ?? false;
 }
 
-export function getOverlayToggleMode() {
-	return getSettings().then((settings) => settings.overlay_toggle_mode);
+export async function setOverlayToggleMode(enabled: boolean): Promise<boolean> {
+	const store = await getStore();
+	await store.set('overlay_toggle_mode', enabled);
+	await store.save();
+	return enabled;
 }
 
-export function setOverlayToggleMode(enabled: boolean) {
-	return patchSettings({ overlay_toggle_mode: enabled }).then(
-		(settings) => settings.overlay_toggle_mode,
-	);
+export async function getOcrDictionaryMappingSettings(): Promise<OcrDictionaryMappingSettingsPayload> {
+	const store = await getStore();
+	const enabled = await store.get<boolean>('ocr_dictionary_mapping_enabled') ?? true;
+	const threshold = await store.get<number>('ocr_dictionary_match_threshold') ?? 0.62;
+	return {
+		enabled,
+		threshold,
+		hard_disabled: false,
+		min_threshold: 0.0,
+		max_threshold: 1.0,
+	};
 }
 
-export function getOcrDictionaryMappingSettings() {
-	return getSettings().then((settings) => settings.ocr_dictionary_mapping);
+export async function setOcrDictionaryMappingEnabled(enabled: boolean): Promise<boolean> {
+	const store = await getStore();
+	await store.set('ocr_dictionary_mapping_enabled', enabled);
+	await store.save();
+	return enabled;
 }
 
-export function setOcrDictionaryMappingEnabled(enabled: boolean) {
-	return patchSettings({ ocr_dictionary_mapping_enabled: enabled }).then(
-		(settings) => settings.ocr_dictionary_mapping.enabled,
-	);
+export async function setOcrDictionaryMatchThreshold(threshold: number): Promise<number> {
+	const store = await getStore();
+	await store.set('ocr_dictionary_match_threshold', threshold);
+	await store.save();
+	return threshold;
 }
 
-export function setOcrDictionaryMatchThreshold(threshold: number) {
-	return patchSettings({ ocr_dictionary_match_threshold: threshold }).then(
-		(settings) => settings.ocr_dictionary_mapping.threshold,
-	);
+export async function getWarframeLogPath(): Promise<string> {
+	return invoke<string>('get_warframe_log_path');
 }
 
-export function getWarframeLogPath() {
-	return getSettings().then((settings) => settings.warframe_log_path);
+export async function setWarframeLogPath(path: string): Promise<string> {
+	return invoke<string>('set_warframe_log_path', { path });
 }
 
-export function setWarframeLogPath(path: string) {
-	return patchSettings({ warframe_log_path: path }).then((settings) => settings.warframe_log_path);
+export async function getRelicRewardDetection(): Promise<boolean> {
+	const store = await getStore();
+	const val = await store.get<boolean>('relic_reward_detection');
+	return val ?? false;
 }
 
-export function getRelicRewardDetection() {
-	return getSettings().then((settings) => settings.relic_reward_detection);
+export async function setRelicRewardDetection(enabled: boolean): Promise<boolean> {
+	const store = await getStore();
+	await store.set('relic_reward_detection', enabled);
+	await store.save();
+	return enabled;
 }
 
-export function setRelicRewardDetection(enabled: boolean) {
-	return patchSettings({ relic_reward_detection: enabled }).then(
-		(settings) => settings.relic_reward_detection,
-	);
+export async function getShowOcrBoundingBoxes(): Promise<boolean> {
+	const store = await getStore();
+	const val = await store.get<boolean>('show_ocr_bounding_boxes');
+	return val ?? false;
 }
 
-export function getShowOcrBoundingBoxes() {
-	return getSettings().then((settings) => settings.show_ocr_bounding_boxes);
-}
-
-export function setShowOcrBoundingBoxes(enabled: boolean) {
-	return patchSettings({ show_ocr_bounding_boxes: enabled }).then(
-		(settings) => settings.show_ocr_bounding_boxes,
-	);
+export async function setShowOcrBoundingBoxes(enabled: boolean): Promise<boolean> {
+	const store = await getStore();
+	await store.set('show_ocr_bounding_boxes', enabled);
+	await store.save();
+	return enabled;
 }

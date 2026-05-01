@@ -3,6 +3,7 @@ use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;
 
 use tauri::{AppHandle, Manager, Runtime};
+use tauri_plugin_store::StoreExt;
 
 use crate::ocr;
 use crate::state::AppState;
@@ -44,17 +45,20 @@ pub fn spawn_log_tailer<R: Runtime>(app: AppHandle<R>) {
 }
 
 fn get_tailer_config<R: Runtime>(app: &AppHandle<R>) -> (bool, String) {
-    let state = app.state::<AppState>();
-    let enabled = state
-        .relic_reward_detection
-        .lock()
-        .map(|value| *value)
+    let Ok(store) = app.store("settings.json") else {
+        return (false, String::new());
+    };
+    
+    let enabled = store
+        .get("relic_reward_detection")
+        .and_then(|v| v.as_bool())
         .unwrap_or(false);
-    let path = state
-        .warframe_log_path
-        .lock()
-        .map(|value| value.clone())
+        
+    let path = store
+        .get("warframe_log_path")
+        .and_then(|v| v.as_str().map(|s| s.to_string()))
         .unwrap_or_default();
+        
     (enabled, path)
 }
 
