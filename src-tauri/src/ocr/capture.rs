@@ -38,7 +38,7 @@ struct CapturedWindow {
 
 /// Captures the focused window, runs OCR, and shows the overlay with auto-hide.
 pub fn capture_active_window<R: Runtime>(app: &AppHandle<R>) -> AppResult<()> {
-    capture_active_window_with_mode(app, true)
+    capture_active_window_with_mode(app, true, true)
 }
 
 /// Toggles the overlay: if visible, hides it; otherwise captures and shows it.
@@ -64,26 +64,37 @@ pub fn toggle_overlay_hotkey<R: Runtime>(app: &AppHandle<R>) -> AppResult<()> {
     }
 
     // Not visible → capture and show without auto-hide (toggle mode)
-    capture_active_window_with_mode(app, false)
+    capture_active_window_with_mode(app, false, true)
 }
 
 /// Full OCR pipeline, decomposed into discrete steps for readability.
 pub fn capture_active_window_with_mode<R: Runtime>(
     app: &AppHandle<R>,
     should_auto_hide: bool,
+    is_manual: bool,
 ) -> AppResult<()> {
     let total = Instant::now();
 
-    let capture = capture_focused_window()?;
+    let capture = capture_warframe_window()?;
 
     // Immediately show the overlay in "processing" state so the user
     // gets feedback before the slow OCR pipeline runs.
     show_overlay_processing(app, &capture)?;
 
-    let filtered = preprocess_capture(app, &capture);
+    let filtered = preprocess_capture(app, &capture, is_manual);
     emit_debug_image(app, &filtered);
     let words = run_tesseract(app, &filtered)?;
-    let blocks = postprocess_words(app, &words);
+    let blocks = postprocess_words(app, &words, &capture, is_manual);
+
+    if is_manual && !app.state::<AppState>().warframe_focused.load(std::sync::atomic::Ordering::Acquire) {
+        info!("Warframe lost focus during manual OCR pipeline, aborting show");
+        let _ = app.emit("ocr_clear", ());
+        if let Some(overlay) = app.get_webview_window("overlay") {
+            let _ = overlay.hide();
+        }
+        return Ok(());
+    }
+
     show_overlay(app, &capture, &blocks)?;
 
     if should_auto_hide {
@@ -96,15 +107,20 @@ pub fn capture_active_window_with_mode<R: Runtime>(
 
 // ── Step 1: Screen capture ────────────────────────────────────────────────────
 
-/// Finds the focused, non-minimized window and captures its contents.
-fn capture_focused_window() -> AppResult<CapturedWindow> {
+/// Finds the Warframe window (regardless of focus, as long as it's not minimized) and captures its contents.
+fn capture_warframe_window() -> AppResult<CapturedWindow> {
     let t = Instant::now();
 
     let window = Window::all()
         .map_err(|err| AppError::msg(format!("failed to list windows: {err}")))?
         .into_iter()
-        .find(|w| w.is_focused().unwrap_or(false) && !w.is_minimized().unwrap_or(false))
-        .ok_or_else(|| AppError::msg("no focused window found"))?;
+        .find(|w| {
+            let name = w.app_name().unwrap_or_default().to_lowercase();
+            let title = w.title().unwrap_or_default().to_lowercase();
+            (name.contains("warframe") || title.contains("warframe"))
+                && !w.is_minimized().unwrap_or(false)
+        })
+        .ok_or_else(|| AppError::msg("no non-minimized Warframe window found"))?;
 
     let x = window
         .x()
@@ -138,6 +154,7 @@ fn capture_focused_window() -> AppResult<CapturedWindow> {
 fn preprocess_capture<R: Runtime>(
     app: &AppHandle<R>,
     capture: &CapturedWindow,
+    is_manual: bool,
 ) -> image::GrayImage {
     let t = Instant::now();
 
@@ -150,7 +167,18 @@ fn preprocess_capture<R: Runtime>(
         .and_then(|map| map.get(&theme_name).copied())
         .unwrap_or(DEFAULT_OCR_TARGET_RGB);
 
-    let mut filtered = binary_target_filter(&capture.image, target_rgb);
+    let capture_mods = app.get_setting_bool("capture_mods", false);
+
+    let mut targets = vec![target_rgb];
+    if is_manual && capture_mods {
+        targets.push(crate::ocr::preprocessing::MOD_COLOR_GOLD);
+        targets.push(crate::ocr::preprocessing::MOD_COLOR_SILVER);
+        targets.push(crate::ocr::preprocessing::MOD_COLOR_BRONZE);
+        targets.push(crate::ocr::preprocessing::MOD_COLOR_ARCHON);
+        targets.push(crate::ocr::preprocessing::MOD_COLOR_SPECIAL);
+    }
+
+    let mut filtered = binary_target_filter(&capture.image, &targets);
     apply_morphology(&mut filtered);
 
     info!("preprocess (binary filter + morphology): {:?}", t.elapsed());
@@ -258,8 +286,12 @@ fn run_tesseract<R: Runtime>(
 
 // ── Step 5: Post-processing ───────────────────────────────────────────────────
 
-/// Groups words into logical blocks and optionally maps them to dictionary entries.
-fn postprocess_words<R: Runtime>(app: &AppHandle<R>, words: &[OcrWord]) -> Vec<OcrWord> {
+fn postprocess_words<R: Runtime>(
+    app: &AppHandle<R>,
+    words: &[OcrWord],
+    capture: &CapturedWindow,
+    is_manual: bool,
+) -> Vec<OcrWord> {
     let t = Instant::now();
 
     let mapping_enabled = app.get_setting_bool(
@@ -278,11 +310,18 @@ fn postprocess_words<R: Runtime>(app: &AppHandle<R>, words: &[OcrWord]) -> Vec<O
 
     let grouped = group_words_into_blocks(words);
 
-    let finalized = if ENABLE_OCR_DICTIONARY_MAPPING && mapping_enabled {
+    let mut finalized = if ENABLE_OCR_DICTIONARY_MAPPING && mapping_enabled {
         map_words_to_dictionary(app, &grouped, mapping_threshold)
     } else {
         grouped.clone()
     };
+
+    let capture_mods = app.get_setting_bool("capture_mods", false);
+    if is_manual && capture_mods {
+        for word in &mut finalized {
+            word.mod_type = crate::ocr::preprocessing::identify_mod_type(&capture.image, word);
+        }
+    }
 
     let mapped = finalized.iter().filter(|w| w.slug.is_some()).count();
     let dropped = grouped.len().saturating_sub(finalized.len());

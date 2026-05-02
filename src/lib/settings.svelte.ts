@@ -18,6 +18,7 @@ type Config = {
 	show_ocr_bounding_boxes: boolean;
 	ocr_dictionary_mapping_enabled: boolean;
 	ocr_dictionary_match_threshold: number;
+	capture_mods: boolean;
 };
 
 // 1. Define the reactive state globally
@@ -34,6 +35,7 @@ export const config = $state({
 	relic_reward_detection: true,
 	warframe_log_path: '',
 	overlay_toggle_mode: true,
+	capture_mods: false,
 }) satisfies Config;
 
 // 2. Export the initialization logic

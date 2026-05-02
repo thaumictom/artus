@@ -21,6 +21,9 @@ pub struct AppState {
     /// Prevents overlapping toggle-overlay hotkey invocations.
     pub overlay_toggle_in_flight: AtomicBool,
 
+    /// True if the current or pending overlay capture was triggered by relic rewards.
+    pub overlay_is_relic_mode: AtomicBool,
+
     /// Parsed theme name → RGB color from `theme_colors.toml`.
     pub ocr_theme_colors: Mutex<HashMap<String, [u8; 3]>>,
 
@@ -46,6 +49,7 @@ impl Default for AppState {
             hotkeys: Mutex::new(HashMap::new()),
             overlay_sequence: Mutex::new(0),
             overlay_toggle_in_flight: AtomicBool::new(false),
+            overlay_is_relic_mode: AtomicBool::new(false),
             ocr_theme_colors: Mutex::new(HashMap::new()),
             ocr_dictionary: Mutex::new(Vec::new()),
             ocr_tradeable_prices: Mutex::new(HashMap::new()),

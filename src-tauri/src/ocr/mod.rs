@@ -92,6 +92,16 @@ pub const CUSTOM_OCR_DICTIONARY_ITEMS: [&str; 7] = [
 
 // ── Data types ────────────────────────────────────────────────────────────────
 
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum ModType {
+    Gold,
+    Silver,
+    Bronze,
+    Archon,
+    Special,
+}
+
 /// A single recognized word/block with optional dictionary match metadata.
 #[derive(Debug, Clone, Serialize, Default)]
 pub struct OcrWord {
@@ -122,6 +132,8 @@ pub struct OcrWord {
     pub trades_24h: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub moving_avg: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mod_type: Option<ModType>,
 }
 
 impl OcrWord {

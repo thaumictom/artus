@@ -5,10 +5,11 @@
 
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
+use std::sync::atomic::Ordering;
 use std::time::Duration;
 
 use log::{error, info};
-use tauri::{AppHandle, Manager, Runtime};
+use tauri::{AppHandle, Emitter, Manager, Runtime};
 
 use crate::ocr;
 use crate::store_ext::SettingsExt;
@@ -128,14 +129,52 @@ fn process_log_chunk<R: Runtime>(app: &AppHandle<R>, data: &[u8]) {
 
     if content.contains(SCREEN_SHUTDOWN_MARKER) {
         info!("detected relic reward screen shutdown, hiding overlay");
+        app.state::<crate::state::AppState>().overlay_is_relic_mode.store(false, Ordering::Release);
         if let Some(overlay) = app.get_webview_window("overlay") {
-            let _ = overlay.hide();
+            let _ = app.emit("ocr_clear", ());
+            tauri::async_runtime::spawn(async move {
+                tokio::time::sleep(Duration::from_millis(100)).await;
+                let _ = overlay.hide();
+            });
         }
     } else if content.contains(GOT_REWARDS_MARKER) {
         info!("detected relic rewards, triggering OCR");
+        app.state::<crate::state::AppState>().overlay_is_relic_mode.store(true, Ordering::Release);
+        
         let handle = app.clone();
+        let sequence = {
+            if let Ok(mut guard) = handle.state::<crate::state::AppState>().overlay_sequence.lock() {
+                *guard += 1;
+                *guard
+            } else {
+                0
+            }
+        };
+
+        let failsafe_handle = handle.clone();
+        tauri::async_runtime::spawn(async move {
+            tokio::time::sleep(Duration::from_secs(15)).await;
+            
+            let current = failsafe_handle
+                .state::<crate::state::AppState>()
+                .overlay_sequence
+                .lock()
+                .map(|v| *v)
+                .unwrap_or(0);
+
+            if current == sequence {
+                if let Some(overlay) = failsafe_handle.get_webview_window("overlay") {
+                    info!("relic reward 15s failsafe triggered, hiding overlay");
+                    let _ = failsafe_handle.emit("ocr_clear", ());
+                    tokio::time::sleep(Duration::from_millis(100)).await;
+                    let _ = overlay.hide();
+                }
+                failsafe_handle.state::<crate::state::AppState>().overlay_is_relic_mode.store(false, Ordering::Release);
+            }
+        });
+
         tauri::async_runtime::spawn_blocking(move || {
-            if let Err(err) = ocr::capture_active_window_with_mode(&handle, false) {
+            if let Err(err) = ocr::capture_active_window_with_mode(&handle, false, false) {
                 error!("relic reward OCR failed: {err}");
             }
         });

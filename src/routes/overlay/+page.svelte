@@ -18,6 +18,7 @@
 		is_custom?: boolean;
 		trades_24h?: number;
 		moving_avg?: number;
+		mod_type?: 'gold' | 'silver' | 'bronze' | 'archon' | 'special';
 	};
 
 	let words: OcrWord[] = $state([]);
@@ -78,7 +79,7 @@
 	{/if}
 	{#each words as word (`${word.text}-${word.x}-${word.y}-${word.width}-${word.height}`)}
 		{@const marketMedian = normalizeOverlayNumber(word.market_median)}
-		{@const inaccurateMarker = word.market_median_from_current_offers ? '~' : ''}
+		{@const inaccurateMarker = word.market_median_from_current_offers ? '~' : undefined}
 		{@const movingAvg = normalizeOverlayNumber(word.moving_avg)}
 		{@const trades24h = normalizeOverlayNumber(word.trades_24h)}
 		{@const ducats = normalizeOverlayNumber(word.ducats)}
@@ -96,7 +97,14 @@
 		<div
 			in:flyAndScale={{ y: 24 }}
 			out:fade={{ duration: 100 }}
-			class="absolute flex flex-col bg-background/75 px-2 py-1 border text-foreground text-sm -translate-x-1/2 -translate-y-full"
+			class={{
+				'absolute flex flex-col bg-background/75 px-2 py-1 border text-foreground text-sm -translate-x-1/2 -translate-y-full': true,
+				'border-[rgb(253,235,189)] text-[rgb(253,235,189)]': word.mod_type === 'gold',
+				'border-[rgb(228,228,228)] text-[rgb(228,228,228)]': word.mod_type === 'silver',
+				'border-[rgb(221,160,133)] text-[rgb(221,160,133)]': word.mod_type === 'bronze',
+				'border-[rgb(190,169,102)] text-[rgb(190,169,102)]': word.mod_type === 'archon',
+				'border-[rgb(255,255,255)] text-[rgb(255,255,255)]': word.mod_type === 'special',
+			}}
 			style={`left:${word.x + word.width / 2}px;top:${word.y - 16}px;`}
 		>
 			<div
@@ -109,8 +117,14 @@
 			>
 				{word.text}
 			</div>
-			{#if movingAvg !== undefined || ducats !== undefined}
+			{#if movingAvg !== undefined || ducats !== undefined || inaccurateMarker !== undefined}
 				<div class="flex justify-around gap-1">
+					{#if inaccurateMarker !== undefined && marketMedian !== undefined}
+						<div class="flex items-center gap-1">
+							<div>{inaccurateMarker}{medianFormatter.format(marketMedian)}</div>
+							<img src="/icons/platinum.png" alt="" class="size-3" />
+						</div>
+					{/if}
 					{#if movingAvg !== undefined}
 						<div class="flex items-center gap-1">
 							<div>{inaccurateMarker}{medianFormatter.format(movingAvg)}</div>

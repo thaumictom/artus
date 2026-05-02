@@ -10,7 +10,7 @@ use std::time::Duration;
 use active_win_pos_rs::get_active_window;
 use log::info;
 use sysinfo::System;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 
 use crate::hotkeys;
 use crate::state::AppState;
@@ -70,10 +70,18 @@ pub fn spawn_window_watcher(app_handle: AppHandle) {
                 info!("Warframe gained focus — registering hotkeys");
                 hotkeys::register_all(&app_handle);
             } else {
-                info!("Warframe lost focus — unregistering hotkeys, hiding overlay");
+                info!("Warframe lost focus — unregistering hotkeys");
                 hotkeys::unregister_all(&app_handle);
-                if let Some(overlay) = app_handle.get_webview_window("overlay") {
-                    let _ = overlay.hide();
+                
+                let is_relic_mode = app_handle.state::<AppState>().overlay_is_relic_mode.load(Ordering::Acquire);
+                if !is_relic_mode {
+                    info!("Hiding overlay due to focus loss (manual mode)");
+                    if let Some(overlay) = app_handle.get_webview_window("overlay") {
+                        let _ = app_handle.emit("ocr_clear", ());
+                        let _ = overlay.hide();
+                    }
+                } else {
+                    info!("Keeping overlay visible due to focus loss (relic rewards mode)");
                 }
             }
         }
