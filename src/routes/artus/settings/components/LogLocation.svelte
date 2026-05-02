@@ -1,17 +1,17 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { invoke } from '@tauri-apps/api/core';
+	import { config, updateSetting } from '$lib/settings.svelte';
 
-	import { getWarframeLogPath, setWarframeLogPath } from '../settings-api';
+	let isSaving = $state(false);
+	let status = $state<string | null>(null);
+	let inputValue = $state(config.warframe_log_path);
 
-	let warframeLogPathInput = $state('');
-	let isLoadingWarframeLogPath = $state(true);
-	let isSavingWarframeLogPath = $state(false);
-	let warframeLogPathStatus = $state<string | null>(null);
+	$effect(() => {
+		inputValue = config.warframe_log_path;
+	});
 
-	function sanitizeWarframeLogPathInput(input: string): string {
+	function sanitizeInput(input: string): string {
 		let sanitized = input.trim();
-
-		// Windows copy-path often wraps the full path in quotes.
 		while (
 			sanitized.length >= 2 &&
 			((sanitized.startsWith('"') && sanitized.endsWith('"')) ||
@@ -19,48 +19,30 @@
 		) {
 			sanitized = sanitized.slice(1, -1).trim();
 		}
-
 		return sanitized;
 	}
 
-	async function loadWarframeLogPath() {
-		isLoadingWarframeLogPath = true;
-		warframeLogPathStatus = null;
+	async function save() {
+		if (isSaving) return;
+
+		const sanitizedPath = sanitizeInput(inputValue);
+		inputValue = sanitizedPath;
+
+		isSaving = true;
+		status = null;
 
 		try {
-			warframeLogPathInput = await getWarframeLogPath();
+			const validPath = await invoke<string>('validate_warframe_log_path', { path: sanitizedPath });
+			config.warframe_log_path = validPath;
+			await updateSetting('warframe_log_path');
+			inputValue = validPath;
+			status = 'Saved';
 		} catch (error) {
-			warframeLogPathStatus = String(error);
+			status = String(error);
 		} finally {
-			isLoadingWarframeLogPath = false;
+			isSaving = false;
 		}
 	}
-
-	async function saveWarframeLogPath() {
-		if (isLoadingWarframeLogPath || isSavingWarframeLogPath) {
-			return;
-		}
-
-		const sanitizedPath = sanitizeWarframeLogPathInput(warframeLogPathInput);
-		warframeLogPathInput = sanitizedPath;
-
-		isSavingWarframeLogPath = true;
-		warframeLogPathStatus = null;
-
-		try {
-			const savedPath = await setWarframeLogPath(sanitizedPath);
-			warframeLogPathInput = savedPath;
-			warframeLogPathStatus = 'Saved';
-		} catch (error) {
-			warframeLogPathStatus = String(error);
-		} finally {
-			isSavingWarframeLogPath = false;
-		}
-	}
-
-	onMount(() => {
-		void loadWarframeLogPath();
-	});
 </script>
 
 <div class="flex flex-col gap-2">
@@ -72,22 +54,22 @@
 	<div class="flex sm:flex-row flex-col gap-2">
 		<input
 			type="text"
-			bind:value={warframeLogPathInput}
+			bind:value={inputValue}
 			class="px-2 py-1 border rounded w-full text-sm"
 			placeholder="C:\\Users\\You\\AppData\\Local\\Warframe\\EE.log"
-			disabled={isLoadingWarframeLogPath || isSavingWarframeLogPath}
+			disabled={isSaving}
 		/>
 		<button
 			type="button"
 			class="hover:bg-muted px-3 py-1 border rounded text-sm"
-			onclick={() => void saveWarframeLogPath()}
-			disabled={isLoadingWarframeLogPath || isSavingWarframeLogPath}
+			onclick={save}
+			disabled={isSaving}
 		>
-			{isSavingWarframeLogPath ? 'Saving...' : 'Save'}
+			{isSaving ? 'Saving...' : 'Save'}
 		</button>
 	</div>
 
-	{#if warframeLogPathStatus}
-		<p class="text-muted-foreground text-xs">{warframeLogPathStatus}</p>
+	{#if status}
+		<p class="text-muted-foreground text-xs">{status}</p>
 	{/if}
 </div>

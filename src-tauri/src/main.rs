@@ -12,6 +12,7 @@ mod settings;
 mod setup;
 mod state;
 mod updater;
+mod window_watcher;
 
 #[cfg(target_os = "linux")]
 use std::env;
@@ -38,8 +39,7 @@ fn main() {
         .manage(AppState::default())
         .setup(move |app| setup::init(app, is_wayland))
         .invoke_handler(tauri::generate_handler![
-            settings::get_warframe_log_path,
-            settings::set_warframe_log_path,
+            settings::validate_warframe_log_path,
             hotkeys::get_hotkey,
             hotkeys::set_hotkey,
             ocr::get_ocr_themes,

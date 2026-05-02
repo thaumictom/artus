@@ -48,6 +48,8 @@ pub struct AppState {
     pub ocr_theme_colors: Mutex<HashMap<String, [u8; 3]>>,
     pub ocr_dictionary: Mutex<Vec<OcrDictionaryEntry>>,
     pub ocr_tradeable_prices: Mutex<HashMap<String, TradeablePriceEntry>>,
+    pub warframe_focused: AtomicBool,
+    pub warframe_running: AtomicBool,
     pub http_client: reqwest::Client,
 }
 
@@ -61,6 +63,8 @@ impl Default for AppState {
             ocr_theme_colors: Mutex::new(HashMap::new()),
             ocr_dictionary: Mutex::new(Vec::new()),
             ocr_tradeable_prices: Mutex::new(HashMap::new()),
+            warframe_focused: AtomicBool::new(false),
+            warframe_running: AtomicBool::new(false),
             http_client: reqwest::Client::new(),
         }
     }

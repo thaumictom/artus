@@ -1,81 +1,25 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { Label } from 'bits-ui';
+	import { config, updateSetting } from '$lib/settings.svelte';
 
 	import Slider from '$lib/components/Slider.svelte';
 	import Switch from '$lib/components/Switch.svelte';
-	import {
-		getOverlayDurationSecs,
-		getOverlayToggleMode,
-		setOverlayDurationSecs,
-		setOverlayToggleMode,
-	} from '../settings-api';
 
-	let isModeLoading = $state(true);
-	let isDurationLoading = $state(true);
-	let overlayToggleMode = $state(false);
-	let overlayDurationInput = $state(10);
 	let status = $state<string | null>(null);
 
-	async function loadMode() {
-		isModeLoading = true;
-
-		try {
-			overlayToggleMode = await getOverlayToggleMode();
-		} catch (error) {
-			status = String(error);
-		} finally {
-			isModeLoading = false;
-		}
-	}
-
-	async function loadDuration() {
-		isDurationLoading = true;
-
-		try {
-			overlayDurationInput = await getOverlayDurationSecs();
-		} catch (error) {
-			status = String(error);
-		} finally {
-			isDurationLoading = false;
-		}
-	}
-
-	async function saveMode(enabled: boolean = overlayToggleMode) {
+	function saveDuration() {
 		status = null;
-
-		try {
-			const savedMode = await setOverlayToggleMode(enabled);
-			overlayToggleMode = savedMode;
-		} catch (error) {
-			status = String(error);
-		}
-	}
-
-	async function saveDuration() {
-		status = null;
-
-		const parsed = Number(overlayDurationInput);
+		const parsed = Number(config.overlay_duration_secs);
 		const normalized = Number.isFinite(parsed) ? Math.trunc(parsed) : Number.NaN;
 
 		if (!Number.isFinite(normalized) || normalized <= 0) {
 			status = 'Duration must be a positive number of seconds.';
 			return;
 		}
-
-		try {
-			const savedSeconds = await setOverlayDurationSecs(normalized);
-			overlayDurationInput = savedSeconds;
-			status = `Overlay duration set to ${savedSeconds}s`;
-		} catch (error) {
-			status = String(error);
-		}
+		
+		config.overlay_duration_secs = normalized;
+		updateSetting('overlay_duration_secs');
 	}
-
-	onMount(() => {
-		void loadMode();
-		void loadDuration();
-	});
 </script>
 
 <div class="flex flex-col gap-8">
@@ -88,16 +32,15 @@
 		</Label.Root>
 		<Switch
 			id="overlay-mode-toggle"
-			disabled={isModeLoading}
-			onCheckedChange={(mode) => void saveMode(mode)}
-			checked={overlayToggleMode}
+			onCheckedChange={() => updateSetting('overlay_toggle_mode')}
+			bind:checked={config.overlay_toggle_mode}
 		/>
 	</div>
 
-	<div class="data-[disabled=true]:cursor-not-allowed" data-disabled={overlayToggleMode}>
+	<div class="data-[disabled=true]:cursor-not-allowed" data-disabled={config.overlay_toggle_mode}>
 		<div
 			class="flex flex-col gap-3 data-[disabled=true]:opacity-50 transition-opacity data-[disabled=true]:pointer-events-none"
-			data-disabled={overlayToggleMode}
+			data-disabled={config.overlay_toggle_mode}
 		>
 			<div>
 				<p>Overlay duration</p>
@@ -110,9 +53,9 @@
 				max={120}
 				step={5}
 				type="single"
-				disabled={isDurationLoading || isModeLoading || overlayToggleMode}
+				disabled={config.overlay_toggle_mode}
 				onValueCommit={saveDuration}
-				bind:value={overlayDurationInput}
+				bind:value={config.overlay_duration_secs}
 			>
 				{#snippet thumbLabel({ value })}
 					{value}s

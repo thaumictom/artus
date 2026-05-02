@@ -1,7 +1,7 @@
 use tauri::{App, Manager};
 use tauri_plugin_store::StoreExt;
 
-use crate::{layer_shell, ocr, relic_rewards, hotkeys};
+use crate::{layer_shell, ocr, relic_rewards, hotkeys, window_watcher};
 use crate::state::AppState;
 
 pub fn init(app: &mut App, is_wayland: bool) -> Result<(), Box<dyn std::error::Error>> {
@@ -48,6 +48,8 @@ pub fn init(app: &mut App, is_wayland: bool) -> Result<(), Box<dyn std::error::E
     relic_rewards::spawn_log_tailer(app.handle().clone());
 
     hotkeys::register_initial(app.handle())?;
+
+    window_watcher::spawn_window_watcher(app.handle().clone());
 
     Ok(())
 }

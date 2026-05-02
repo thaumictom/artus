@@ -1,78 +1,12 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { Label } from 'bits-ui';
-
+	import { config, updateSetting } from '$lib/settings.svelte';
 	import Slider from '$lib/components/Slider.svelte';
 	import Switch from '$lib/components/Switch.svelte';
-	import {
-		getOcrDictionaryMappingSettings,
-		setOcrDictionaryMappingEnabled,
-		setOcrDictionaryMatchThreshold,
-	} from '../settings-api';
 
-	let isLoading = $state(true);
-	let dictionaryMappingEnabled = $state(true);
-	let dictionaryMappingThreshold = $state(0.62);
 	let dictionaryMappingHardDisabled = $state(false);
 	let dictionaryMappingMinThreshold = $state(0);
 	let dictionaryMappingMaxThreshold = $state(1);
-	let status = $state<string | null>(null);
-
-	async function loadSettings() {
-		isLoading = true;
-		status = null;
-
-		try {
-			const settings = await getOcrDictionaryMappingSettings();
-			dictionaryMappingEnabled = settings.enabled;
-			dictionaryMappingThreshold = settings.threshold;
-			dictionaryMappingHardDisabled = settings.hard_disabled;
-			dictionaryMappingMinThreshold = settings.min_threshold;
-			dictionaryMappingMaxThreshold = settings.max_threshold;
-		} catch (error) {
-			status = String(error);
-		} finally {
-			isLoading = false;
-		}
-	}
-
-	async function saveEnabled(enabled: boolean = dictionaryMappingEnabled) {
-		status = null;
-
-		try {
-			const savedEnabled = await setOcrDictionaryMappingEnabled(enabled);
-			dictionaryMappingEnabled = savedEnabled;
-			status = savedEnabled ? 'Dictionary mapping enabled.' : 'Dictionary mapping disabled.';
-		} catch (error) {
-			status = String(error);
-		}
-	}
-
-	async function saveThreshold(threshold: number = dictionaryMappingThreshold) {
-		status = null;
-
-		const parsed = Number(threshold);
-		if (
-			!Number.isFinite(parsed) ||
-			parsed < dictionaryMappingMinThreshold ||
-			parsed > dictionaryMappingMaxThreshold
-		) {
-			status = `Threshold must be between ${dictionaryMappingMinThreshold} and ${dictionaryMappingMaxThreshold}.`;
-			return;
-		}
-
-		try {
-			const savedThreshold = await setOcrDictionaryMatchThreshold(parsed);
-			dictionaryMappingThreshold = savedThreshold;
-			status = `Dictionary threshold set to ${savedThreshold.toFixed(2)}.`;
-		} catch (error) {
-			status = String(error);
-		}
-	}
-
-	onMount(() => {
-		void loadSettings();
-	});
 </script>
 
 <div class="flex flex-col gap-8">
@@ -86,9 +20,9 @@
 			</Label.Root>
 			<Switch
 				id="dictionary-mapping-toggle"
-				disabled={isLoading || dictionaryMappingHardDisabled}
-				onCheckedChange={(nextEnabled) => void saveEnabled(nextEnabled)}
-				checked={dictionaryMappingEnabled}
+				disabled={dictionaryMappingHardDisabled}
+				onCheckedChange={() => updateSetting('ocr_dictionary_mapping_enabled')}
+				bind:checked={config.ocr_dictionary_mapping_enabled}
 			/>
 		</div>
 
@@ -99,10 +33,10 @@
 		{/if}
 	</div>
 
-	<div class="data-[disabled=true]:cursor-not-allowed" data-disabled={!dictionaryMappingEnabled}>
+	<div class="data-[disabled=true]:cursor-not-allowed" data-disabled={!config.ocr_dictionary_mapping_enabled}>
 		<div
 			class="flex flex-col gap-3 data-[disabled=true]:opacity-50 transition-opacity data-[disabled=true]:pointer-events-none"
-			data-disabled={!dictionaryMappingEnabled}
+			data-disabled={!config.ocr_dictionary_mapping_enabled}
 		>
 			<div>
 				<p>Dictionary match threshold</p>
@@ -115,12 +49,12 @@
 				max={dictionaryMappingMaxThreshold}
 				step={0.01}
 				type="single"
-				disabled={!dictionaryMappingEnabled || dictionaryMappingHardDisabled || isLoading}
-				onValueCommit={() => void saveThreshold(dictionaryMappingThreshold)}
-				bind:value={dictionaryMappingThreshold}
+				disabled={!config.ocr_dictionary_mapping_enabled || dictionaryMappingHardDisabled}
+				onValueCommit={() => updateSetting('ocr_dictionary_match_threshold')}
+				bind:value={config.ocr_dictionary_match_threshold}
 			>
 				{#snippet thumbLabel({ value })}
-					{(typeof value === 'number' ? value : dictionaryMappingThreshold).toFixed(2)}
+					{(typeof value === 'number' ? value : config.ocr_dictionary_match_threshold).toFixed(2)}
 				{/snippet}
 			</Slider>
 		</div>

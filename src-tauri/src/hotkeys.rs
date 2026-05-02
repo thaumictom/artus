@@ -82,23 +82,26 @@ pub fn set_hotkey<R: Runtime>(
         (current_shortcut, cloned)
     };
 
-    app.global_shortcut()
-        .register(normalized.as_str())
-        .map_err(|err| format!("failed to register shortcut: {err}"))?;
+    let is_focused = state.warframe_focused.load(Ordering::Acquire);
 
-    if app
-        .global_shortcut()
-        .is_registered(current_shortcut.as_str())
-    {
-        if let Err(err) = app.global_shortcut().unregister(current_shortcut.as_str()) {
-            let _ = app.global_shortcut().unregister(normalized.as_str());
-            return Err(format!("failed to unregister old shortcut: {err}"));
+    if is_focused {
+        app.global_shortcut()
+            .register(normalized.as_str())
+            .map_err(|err| format!("failed to register shortcut: {err}"))?;
+
+        if app.global_shortcut().is_registered(current_shortcut.as_str()) {
+            if let Err(err) = app.global_shortcut().unregister(current_shortcut.as_str()) {
+                let _ = app.global_shortcut().unregister(normalized.as_str());
+                return Err(format!("failed to unregister old shortcut: {err}"));
+            }
         }
     }
 
     if let Err(err) = persist_hotkeys(&app, &next_hotkeys) {
-        let _ = app.global_shortcut().unregister(normalized.as_str());
-        let _ = app.global_shortcut().register(current_shortcut.as_str());
+        if is_focused {
+            let _ = app.global_shortcut().unregister(normalized.as_str());
+            let _ = app.global_shortcut().register(current_shortcut.as_str());
+        }
         return Err(err);
     }
 
@@ -114,23 +117,47 @@ pub fn set_hotkey<R: Runtime>(
 pub fn register_initial<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
     load_persisted_hotkeys(app)?;
 
-    let hotkeys = app
-        .state::<AppState>()
-        .hotkeys
-        .lock()
-        .map_err(|_| "failed to read startup hotkeys".to_string())?
-        .clone();
+    let is_focused = app.state::<AppState>().warframe_focused.load(Ordering::Acquire);
+    if is_focused {
+        register_all(app);
+    }
+
+    Ok(())
+}
+
+pub fn register_all<R: Runtime>(app: &AppHandle<R>) {
+    let state = app.state::<AppState>();
+    
+    let hotkeys = match state.hotkeys.lock() {
+        Ok(guard) => guard.clone(),
+        Err(_) => return,
+    };
 
     for (action, shortcut) in hotkeys {
         if let Err(err) = app.global_shortcut().register(shortcut.as_str()) {
             eprintln!(
-                "[hotkeys] startup shortcut '{}' for action '{}' unavailable: {}",
+                "[hotkeys] register shortcut '{}' for action '{}' failed: {}",
                 shortcut, action, err
             );
         }
     }
+}
 
-    Ok(())
+pub fn unregister_all<R: Runtime>(app: &AppHandle<R>) {
+    let state = app.state::<AppState>();
+    let hotkeys = match state.hotkeys.lock() {
+        Ok(guard) => guard.clone(),
+        Err(_) => return,
+    };
+
+    for (action, shortcut) in hotkeys {
+        if let Err(err) = app.global_shortcut().unregister(shortcut.as_str()) {
+            eprintln!(
+                "[hotkeys] unregister shortcut '{}' for action '{}' failed: {}",
+                shortcut, action, err
+            );
+        }
+    }
 }
 
 pub fn on_pressed<R: Runtime>(app: &AppHandle<R>, shortcut: &Shortcut) {
