@@ -1,6 +1,6 @@
 {
 	"name": "artus",
-	"version": "0.1.6",
+	"version": "0.1.7",
 	"description": "",
 	"type": "module",
 	"scripts": {
@@ -10,11 +10,12 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"check:version-sync": "node ./scripts/check-version-sync.mjs",
+		"update-version": "node ./scripts/update-version.mjs",
 		"generate:mastery-items": "node ./scripts/generate-mastery-items.mjs",
 		"prepare": "simple-git-hooks",
 		"tauri": "tauri"
 	},
-	"license": "MIT",
+	"license": "UNLICENSED",
 	"dependencies": {
 		"@fontsource-variable/archivo": "^5.2.8",
 		"@rose-pine/palette": "^4.0.1",
