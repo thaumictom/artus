@@ -36,7 +36,8 @@ pub const ENABLE_OCR_DICTIONARY_MAPPING: bool = true;
 // ── OCR engine configuration ──────────────────────────────────────────────────
 
 /// Characters Tesseract is allowed to output.
-pub const OCR_WHITELIST: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789[]- ";
+pub const OCR_WHITELIST: &str =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789&[]- ";
 
 // ── Preprocessing thresholds ──────────────────────────────────────────────────
 
