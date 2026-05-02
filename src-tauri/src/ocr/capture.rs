@@ -10,20 +10,18 @@ use log::{error, info};
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, Position, Runtime, Size};
 use xcap::Window;
 
+use super::{
+    apply_morphology, binary_target_filter, gray_to_png_bytes, group_words_into_blocks,
+    map_words_to_dictionary, resolve_tessdata, OcrDebugImagePayload, OcrPayload, OcrTextPayload,
+    OcrWord, DEFAULT_OCR_DICTIONARY_MAPPING_ENABLED, DEFAULT_OCR_DICTIONARY_MATCH_THRESHOLD,
+    DEFAULT_OCR_TARGET_RGB, DEFAULT_OVERLAY_DURATION_SECS, ENABLE_OCR_DICTIONARY_MAPPING,
+    MAX_OCR_DICTIONARY_MATCH_THRESHOLD, MIN_OCR_DICTIONARY_MATCH_THRESHOLD, OCR_WHITELIST,
+    PASS_IMAGE_TO_FRONTEND, PASS_TEXT_TO_FRONTEND,
+};
 use crate::error::{AppError, AppResult};
 use crate::layer_shell;
 use crate::state::AppState;
 use crate::store_ext::SettingsExt;
-use super::{
-    binary_target_filter, apply_morphology, gray_to_png_bytes, resolve_tessdata,
-    group_words_into_blocks, map_words_to_dictionary,
-    OcrWord, OcrPayload, OcrDebugImagePayload, OcrTextPayload,
-    DEFAULT_OCR_TARGET_RGB, DEFAULT_OVERLAY_DURATION_SECS,
-    DEFAULT_OCR_DICTIONARY_MAPPING_ENABLED, DEFAULT_OCR_DICTIONARY_MATCH_THRESHOLD,
-    ENABLE_OCR_DICTIONARY_MAPPING, MAX_OCR_DICTIONARY_MATCH_THRESHOLD,
-    MIN_OCR_DICTIONARY_MATCH_THRESHOLD, OCR_WHITELIST,
-    PASS_IMAGE_TO_FRONTEND, PASS_TEXT_TO_FRONTEND,
-};
 
 // ── Captured window metadata ──────────────────────────────────────────────────
 
@@ -55,9 +53,13 @@ pub fn toggle_overlay_hotkey<R: Runtime>(app: &AppHandle<R>) -> AppResult<()> {
 
     if is_visible {
         bump_overlay_sequence(app)?;
-        overlay
-            .hide()
-            .map_err(|err| AppError::msg(format!("failed to hide overlay: {err}")))?;
+        app.emit("ocr_clear", ())
+            .map_err(|err| AppError::msg(format!("failed to emit ocr_clear: {err}")))?;
+        tauri::async_runtime::spawn(async move {
+            // Let frontend fade-out take some time
+            tokio::time::sleep(Duration::from_millis(200)).await;
+            let _ = overlay.hide();
+        });
         return Ok(());
     }
 
@@ -104,16 +106,30 @@ fn capture_focused_window() -> AppResult<CapturedWindow> {
         .find(|w| w.is_focused().unwrap_or(false) && !w.is_minimized().unwrap_or(false))
         .ok_or_else(|| AppError::msg("no focused window found"))?;
 
-    let x = window.x().map_err(|e| AppError::msg(format!("failed to get x: {e}")))?;
-    let y = window.y().map_err(|e| AppError::msg(format!("failed to get y: {e}")))?;
-    let width = window.width().map_err(|e| AppError::msg(format!("failed to get width: {e}")))?;
-    let height = window.height().map_err(|e| AppError::msg(format!("failed to get height: {e}")))?;
+    let x = window
+        .x()
+        .map_err(|e| AppError::msg(format!("failed to get x: {e}")))?;
+    let y = window
+        .y()
+        .map_err(|e| AppError::msg(format!("failed to get y: {e}")))?;
+    let width = window
+        .width()
+        .map_err(|e| AppError::msg(format!("failed to get width: {e}")))?;
+    let height = window
+        .height()
+        .map_err(|e| AppError::msg(format!("failed to get height: {e}")))?;
     let image = window
         .capture_image()
         .map_err(|err| AppError::msg(format!("failed to capture active window: {err}")))?;
 
     info!("window discovery + capture: {:?}", t.elapsed());
-    Ok(CapturedWindow { x, y, width, height, image })
+    Ok(CapturedWindow {
+        x,
+        y,
+        width,
+        height,
+        image,
+    })
 }
 
 // ── Step 2: Preprocessing ─────────────────────────────────────────────────────
@@ -232,7 +248,11 @@ fn run_tesseract<R: Runtime>(
         }
     }
 
-    info!("tesseract setup + recognize: {:?} ({} words)", t.elapsed(), words.len());
+    info!(
+        "tesseract setup + recognize: {:?} ({} words)",
+        t.elapsed(),
+        words.len()
+    );
     Ok(words)
 }
 
@@ -242,11 +262,19 @@ fn run_tesseract<R: Runtime>(
 fn postprocess_words<R: Runtime>(app: &AppHandle<R>, words: &[OcrWord]) -> Vec<OcrWord> {
     let t = Instant::now();
 
-    let mapping_enabled =
-        app.get_setting_bool("ocr_dictionary_mapping_enabled", DEFAULT_OCR_DICTIONARY_MAPPING_ENABLED);
+    let mapping_enabled = app.get_setting_bool(
+        "ocr_dictionary_mapping_enabled",
+        DEFAULT_OCR_DICTIONARY_MAPPING_ENABLED,
+    );
     let mapping_threshold = app
-        .get_setting_f64("ocr_dictionary_match_threshold", DEFAULT_OCR_DICTIONARY_MATCH_THRESHOLD)
-        .clamp(MIN_OCR_DICTIONARY_MATCH_THRESHOLD, MAX_OCR_DICTIONARY_MATCH_THRESHOLD);
+        .get_setting_f64(
+            "ocr_dictionary_match_threshold",
+            DEFAULT_OCR_DICTIONARY_MATCH_THRESHOLD,
+        )
+        .clamp(
+            MIN_OCR_DICTIONARY_MATCH_THRESHOLD,
+            MAX_OCR_DICTIONARY_MATCH_THRESHOLD,
+        );
 
     let grouped = group_words_into_blocks(words);
 
@@ -299,12 +327,17 @@ fn position_and_show_overlay<R: Runtime>(
 
     if !used_layer_shell {
         overlay
-            .set_position(Position::Physical(PhysicalPosition::new(capture.x, capture.y)))
+            .set_position(Position::Physical(PhysicalPosition::new(
+                capture.x, capture.y,
+            )))
             .map_err(|err| AppError::msg(format!("failed to position overlay: {err}")))?;
     }
 
     overlay
-        .set_size(Size::Physical(PhysicalSize::new(capture.width, capture.height)))
+        .set_size(Size::Physical(PhysicalSize::new(
+            capture.width,
+            capture.height,
+        )))
         .map_err(|err| AppError::msg(format!("failed to resize overlay: {err}")))?;
     overlay
         .show()
@@ -406,6 +439,8 @@ fn schedule_auto_hide<R: Runtime>(app: &AppHandle<R>) -> AppResult<()> {
 
         if current == sequence {
             if let Some(overlay) = app_clone.get_webview_window("overlay") {
+                let _ = app_clone.emit("ocr_clear", ());
+                tokio::time::sleep(Duration::from_millis(100)).await;
                 let _ = overlay.hide();
             }
         }

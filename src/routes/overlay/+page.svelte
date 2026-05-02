@@ -38,6 +38,11 @@
 			showBoundingBoxes = event.payload?.show_ocr_bounding_boxes ?? false;
 		}).then((cleanup) => cleanups.push(cleanup));
 
+		listen('ocr_clear', () => {
+			words = [];
+			processing = false;
+		}).then((cleanup) => cleanups.push(cleanup));
+
 		return () => {
 			for (const cleanup of cleanups) cleanup();
 		};
@@ -62,7 +67,7 @@
 	{#if processing}
 		<div
 			in:flyAndScale={{ y: 24 }}
-			out:fade={{ duration: 200 }}
+			out:fade={{ duration: 100 }}
 			class="absolute inset-0 flex items-center justify-center"
 		>
 			<div class="flex items-center gap-4 bg-background/75 p-4 border">
@@ -83,14 +88,14 @@
 		<!-- Bounding box for debugging -->
 		{#if showBoundingBoxes}
 			<div
-				transition:fade={{ duration: 200 }}
+				in:fade={{ duration: 200 }}
 				class="absolute border border-red-500 text-red-500/25 striped-gradient"
 				style={`left:${word.x}px;top:${word.y}px;width:${word.width}px;height:${word.height}px;`}
 			></div>
 		{/if}
 		<div
 			in:flyAndScale={{ y: 24 }}
-			out:fade={{ duration: 200 }}
+			out:fade={{ duration: 100 }}
 			class="absolute flex flex-col bg-background/75 px-2 py-1 border text-foreground text-sm -translate-x-1/2 -translate-y-full"
 			style={`left:${word.x + word.width / 2}px;top:${word.y - 16}px;`}
 		>
