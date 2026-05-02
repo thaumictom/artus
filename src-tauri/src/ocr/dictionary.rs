@@ -147,6 +147,11 @@ pub fn load_ocr_dictionary<R: Runtime>(app: &AppHandle<R>) -> AppResult<usize> {
                 return vec![];
             }
 
+            // Remove sets from dictionary, not a valid item to trade
+            if item.tags.contains(&"set".to_string()) {
+                return vec![];
+            }
+
             let mut mapped_entries = vec![];
 
             if (name.ends_with("Relic") || item.tags.contains(&"relic".to_string()))
@@ -280,7 +285,11 @@ pub fn load_tradeable_item_prices<R: Runtime>(app: &AppHandle<R>) -> AppResult<u
                 });
 
             if let Some((median, used_offer, used_subtype)) = intact_median_data {
-                let source_stat = if !used_subtype { intact_stats } else { radiant_stats };
+                let source_stat = if !used_subtype {
+                    intact_stats
+                } else {
+                    radiant_stats
+                };
                 prices.insert(
                     format!("{}_intact", slug),
                     TradeablePriceEntry {
@@ -321,7 +330,11 @@ pub fn load_tradeable_item_prices<R: Runtime>(app: &AppHandle<R>) -> AppResult<u
                 });
 
             if let Some((median, used_offer, used_subtype)) = radiant_median_data {
-                let source_stat = if !used_subtype { radiant_stats } else { intact_stats };
+                let source_stat = if !used_subtype {
+                    radiant_stats
+                } else {
+                    intact_stats
+                };
                 prices.insert(
                     format!("{}_radiant", slug),
                     TradeablePriceEntry {
