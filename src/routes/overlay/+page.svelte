@@ -13,9 +13,12 @@
 		height: number;
 		market_median?: number;
 		market_median_from_current_offers?: boolean;
+		relic_price_is_fallback?: boolean;
 		ducats?: number;
 		vaulted?: boolean;
 		is_custom?: boolean;
+		is_relic?: boolean;
+		subtype?: string;
 		trades_24h?: number;
 		moving_avg?: number;
 		mod_type?: 'gold' | 'silver' | 'bronze' | 'archon' | 'special';
@@ -79,10 +82,25 @@
 	{/if}
 	{#each words as word (`${word.text}-${word.x}-${word.y}-${word.width}-${word.height}`)}
 		{@const marketMedian = normalizeOverlayNumber(word.market_median)}
-		{@const inaccurateMarker = word.market_median_from_current_offers ? '~' : undefined}
 		{@const movingAvg = normalizeOverlayNumber(word.moving_avg)}
+		{@const displayPrice = word.market_median_from_current_offers
+			? marketMedian
+			: (movingAvg ?? marketMedian)}
+		{@const pricePrefix = word.market_median_from_current_offers ? '~' : ''}
 		{@const trades24h = normalizeOverlayNumber(word.trades_24h)}
 		{@const ducats = normalizeOverlayNumber(word.ducats)}
+
+		<!-- Determine the actual displayed name of the relic based on which price we fell back to. -->
+		{@const isOriginallyRadiant = word.subtype === 'Radiant'}
+		{@const baseText = word.is_relic
+			? word.text.replace(/ \[Exceptional\]| \[Flawless\]| \[Radiant\]/, '')
+			: word.text}
+		{@const showRadiant = word.relic_price_is_fallback ? !isOriginallyRadiant : isOriginallyRadiant}
+		{@const displayText = word.is_relic
+			? showRadiant
+				? `${baseText} [Radiant]`
+				: baseText
+			: word.text}
 
 		{@const vaulted = word.vaulted}
 		{@const isCustom = word.is_custom === true}
@@ -110,24 +128,18 @@
 			<div
 				class={{
 					'font-semibold text-center mb-0.5': true,
-					'font-stretch-condensed': word.text.length > 30,
-					'font-stretch-semi-condensed': word.text.length > 20,
+					'font-stretch-condensed': displayText.length > 30,
+					'font-stretch-semi-condensed': displayText.length > 20,
 					'text-muted-foreground': isCustom || vaulted,
 				}}
 			>
-				{word.text}
+				{displayText}
 			</div>
-			{#if movingAvg !== undefined || ducats !== undefined || inaccurateMarker !== undefined}
+			{#if displayPrice !== undefined || ducats !== undefined}
 				<div class="flex justify-around gap-1">
-					{#if inaccurateMarker !== undefined && marketMedian !== undefined}
+					{#if displayPrice !== undefined}
 						<div class="flex items-center gap-1">
-							<div>{inaccurateMarker}{medianFormatter.format(marketMedian)}</div>
-							<img src="/icons/platinum.png" alt="" class="size-3" />
-						</div>
-					{/if}
-					{#if movingAvg !== undefined}
-						<div class="flex items-center gap-1">
-							<div>{inaccurateMarker}{medianFormatter.format(movingAvg)}</div>
+							<div>{pricePrefix}{medianFormatter.format(displayPrice)}</div>
 							<img src="/icons/platinum.png" alt="" class="size-3" />
 						</div>
 					{/if}

@@ -113,7 +113,10 @@ pub fn set_hotkey<R: Runtime>(
             .register(normalized.as_str())
             .map_err(|err| AppError::msg(format!("failed to register shortcut: {err}")))?;
 
-        if app.global_shortcut().is_registered(current_shortcut.as_str()) {
+        if app
+            .global_shortcut()
+            .is_registered(current_shortcut.as_str())
+        {
             if let Err(err) = app.global_shortcut().unregister(current_shortcut.as_str()) {
                 // Rollback: undo the new registration
                 let _ = app.global_shortcut().unregister(normalized.as_str());
@@ -146,7 +149,11 @@ pub fn set_hotkey<R: Runtime>(
 pub fn register_initial<R: Runtime>(app: &AppHandle<R>) -> AppResult<()> {
     load_persisted_hotkeys(app)?;
 
-    if app.state::<AppState>().warframe_focused.load(Ordering::Acquire) {
+    if app
+        .state::<AppState>()
+        .warframe_focused
+        .load(Ordering::Acquire)
+    {
         register_all(app);
     }
 
@@ -175,16 +182,11 @@ pub fn unregister_all<R: Runtime>(app: &AppHandle<R>) {
 pub fn on_pressed<R: Runtime>(app: &AppHandle<R>, shortcut: &Shortcut) {
     let pressed = shortcut.into_string();
 
-    let action = app
-        .state::<AppState>()
-        .hotkeys
-        .lock()
-        .ok()
-        .and_then(|hk| {
-            hk.iter()
-                .find(|(_, s)| *s == &pressed)
-                .map(|(a, _)| a.clone())
-        });
+    let action = app.state::<AppState>().hotkeys.lock().ok().and_then(|hk| {
+        hk.iter()
+            .find(|(_, s)| *s == &pressed)
+            .map(|(a, _)| a.clone())
+    });
 
     match action.as_deref() {
         Some(HOTKEY_ACTION_SCREENSHOT) => trigger_screenshot(app),
@@ -226,10 +228,8 @@ fn trigger_screenshot<R: Runtime>(app: &AppHandle<R>) {
 }
 
 /// Spawns a blocking OCR task on the tokio threadpool.
-fn spawn_ocr_task<R: Runtime>(
-    app: &AppHandle<R>,
-    task: fn(&AppHandle<R>) -> AppResult<()>,
-) where
+fn spawn_ocr_task<R: Runtime>(app: &AppHandle<R>, task: fn(&AppHandle<R>) -> AppResult<()>)
+where
     AppHandle<R>: Send + 'static,
 {
     let handle = app.clone();
@@ -296,10 +296,7 @@ fn persist_hotkeys<R: Runtime>(
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 /// Iterates over all configured hotkeys while holding the lock briefly.
-fn with_hotkey_entries<R: Runtime>(
-    app: &AppHandle<R>,
-    mut f: impl FnMut(&str, &str),
-) {
+fn with_hotkey_entries<R: Runtime>(app: &AppHandle<R>, mut f: impl FnMut(&str, &str)) {
     let state = app.state::<AppState>();
     let hotkeys = match state.hotkeys.lock() {
         Ok(guard) => guard.clone(),

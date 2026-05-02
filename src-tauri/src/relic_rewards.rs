@@ -129,7 +129,9 @@ fn process_log_chunk<R: Runtime>(app: &AppHandle<R>, data: &[u8]) {
 
     if content.contains(SCREEN_SHUTDOWN_MARKER) {
         info!("detected relic reward screen shutdown, hiding overlay");
-        app.state::<crate::state::AppState>().overlay_is_relic_mode.store(false, Ordering::Release);
+        app.state::<crate::state::AppState>()
+            .overlay_is_relic_mode
+            .store(false, Ordering::Release);
         if let Some(overlay) = app.get_webview_window("overlay") {
             let _ = app.emit("ocr_clear", ());
             tauri::async_runtime::spawn(async move {
@@ -139,11 +141,17 @@ fn process_log_chunk<R: Runtime>(app: &AppHandle<R>, data: &[u8]) {
         }
     } else if content.contains(GOT_REWARDS_MARKER) {
         info!("detected relic rewards, triggering OCR");
-        app.state::<crate::state::AppState>().overlay_is_relic_mode.store(true, Ordering::Release);
-        
+        app.state::<crate::state::AppState>()
+            .overlay_is_relic_mode
+            .store(true, Ordering::Release);
+
         let handle = app.clone();
         let sequence = {
-            if let Ok(mut guard) = handle.state::<crate::state::AppState>().overlay_sequence.lock() {
+            if let Ok(mut guard) = handle
+                .state::<crate::state::AppState>()
+                .overlay_sequence
+                .lock()
+            {
                 *guard += 1;
                 *guard
             } else {
@@ -154,7 +162,7 @@ fn process_log_chunk<R: Runtime>(app: &AppHandle<R>, data: &[u8]) {
         let failsafe_handle = handle.clone();
         tauri::async_runtime::spawn(async move {
             tokio::time::sleep(Duration::from_secs(15)).await;
-            
+
             let current = failsafe_handle
                 .state::<crate::state::AppState>()
                 .overlay_sequence
@@ -169,7 +177,10 @@ fn process_log_chunk<R: Runtime>(app: &AppHandle<R>, data: &[u8]) {
                     tokio::time::sleep(Duration::from_millis(100)).await;
                     let _ = overlay.hide();
                 }
-                failsafe_handle.state::<crate::state::AppState>().overlay_is_relic_mode.store(false, Ordering::Release);
+                failsafe_handle
+                    .state::<crate::state::AppState>()
+                    .overlay_is_relic_mode
+                    .store(false, Ordering::Release);
             }
         });
 

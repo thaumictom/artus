@@ -7,13 +7,12 @@ use log::{info, warn};
 use serde::Deserialize;
 use tauri::{AppHandle, Manager, Runtime};
 
+use super::{
+    OcrThemeOption, OcrWord, CUSTOM_OCR_DICTIONARY_ITEMS, OCR_DICTIONARY_API_URL,
+    OCR_DICTIONARY_HTTP_TIMEOUT_SECS, THEME_COLORS_TOML, TRADEABLE_ITEMS_API_URL,
+};
 use crate::error::{AppError, AppResult};
 use crate::state::AppState;
-use super::{
-    OcrWord, OcrThemeOption,
-    OCR_DICTIONARY_HTTP_TIMEOUT_SECS, OCR_DICTIONARY_API_URL, TRADEABLE_ITEMS_API_URL,
-    CUSTOM_OCR_DICTIONARY_ITEMS, THEME_COLORS_TOML,
-};
 
 // ── Types owned by this module (moved from state.rs) ──────────────────────────
 
@@ -27,13 +26,14 @@ pub struct OcrDictionaryEntry {
     pub ducats: Option<u64>,
     pub vaulted: Option<bool>,
     pub is_custom: bool,
+    pub is_relic: bool,
+    pub subtype: Option<String>,
 }
 
-/// Median price data for a tradeable item, keyed by slug.
-#[derive(Debug, Clone)]
 pub struct TradeablePriceEntry {
     pub median: f64,
     pub used_current_offer_fallback: bool,
+    pub relic_price_is_fallback: bool,
     pub trades_24h: Option<f64>,
     pub moving_avg: Option<f64>,
     pub ducats: Option<u64>,
@@ -87,6 +87,8 @@ struct TradeableItemStats {
     median: Option<f64>,
     volume: Option<f64>,
     moving_avg: Option<f64>,
+    #[serde(default)]
+    subtype: Option<String>,
 }
 
 // ── HTTP helper ───────────────────────────────────────────────────────────────
@@ -138,25 +140,64 @@ pub fn load_ocr_dictionary<R: Runtime>(app: &AppHandle<R>) -> AppResult<usize> {
     let mut entries: Vec<OcrDictionaryEntry> = payload
         .tradeable_items
         .into_iter()
-        .filter_map(|item| {
+        .flat_map(|item| {
             let name = item.name.trim();
             let slug = item.slug.trim();
             if name.is_empty() || slug.is_empty() {
-                return None;
+                return vec![];
             }
-            let normalized_name = normalize_dictionary_text(name);
-            if normalized_name.is_empty() {
-                return None;
+
+            let mut mapped_entries = vec![];
+
+            if (name.ends_with("Relic") || item.tags.contains(&"relic".to_string()))
+                && !item.tags.contains(&"requiem".to_string())
+            {
+                // Helper to create the 4 different relic subtype entries
+                let mut add_relic = |suffix: &str, slug_suffix: &str, subtype: &str| {
+                    let entry_name = if suffix.is_empty() {
+                        name.to_string()
+                    } else {
+                        format!("{} {}", name, suffix)
+                    };
+
+                    let normalized = normalize_dictionary_text(&entry_name);
+                    if !normalized.is_empty() {
+                        mapped_entries.push(OcrDictionaryEntry {
+                            name: entry_name,
+                            slug: format!("{}_{}", slug, slug_suffix),
+                            tags: item.tags.clone(),
+                            normalized_name: normalized,
+                            ducats: item.ducats,
+                            vaulted: item.vaulted,
+                            is_custom: false,
+                            is_relic: true,
+                            subtype: Some(subtype.to_string()),
+                        });
+                    }
+                };
+
+                add_relic("", "intact", "Intact");
+                add_relic("[Exceptional]", "intact", "Exceptional");
+                add_relic("[Flawless]", "intact", "Flawless");
+                add_relic("[Radiant]", "radiant", "Radiant");
+            } else {
+                let normalized_name = normalize_dictionary_text(name);
+                if !normalized_name.is_empty() {
+                    mapped_entries.push(OcrDictionaryEntry {
+                        name: name.to_string(),
+                        slug: slug.to_string(),
+                        tags: item.tags,
+                        normalized_name,
+                        ducats: item.ducats,
+                        vaulted: item.vaulted,
+                        is_custom: false,
+                        is_relic: false,
+                        subtype: None,
+                    });
+                }
             }
-            Some(OcrDictionaryEntry {
-                name: name.to_string(),
-                slug: slug.to_string(),
-                tags: item.tags,
-                normalized_name,
-                ducats: item.ducats,
-                vaulted: item.vaulted,
-                is_custom: false,
-            })
+
+            mapped_entries
         })
         .collect();
 
@@ -196,34 +237,134 @@ pub fn load_tradeable_item_prices<R: Runtime>(app: &AppHandle<R>) -> AppResult<u
             continue;
         }
 
-        let stats_today = item.statistics_today.first();
-        let offers = item.current_offers.first();
+        if slug.ends_with("_relic") && !slug.contains("requiem") {
+            let get_stat = |subtype_target: &str| -> Option<&TradeableItemStats> {
+                item.statistics_today
+                    .iter()
+                    .find(|s| s.subtype.as_deref() == Some(subtype_target))
+            };
 
-        let stats_median = stats_today
-            .and_then(|s| s.median)
-            .filter(|m| m.is_finite());
-        let offers_median = offers
-            .and_then(|s| s.median)
-            .filter(|m| m.is_finite());
+            let get_offer = |subtype_target: &str| -> Option<&TradeableItemStats> {
+                item.current_offers
+                    .iter()
+                    .find(|s| s.subtype.as_deref() == Some(subtype_target))
+            };
 
-        // Prefer today's stats; fall back to current offers
-        let Some((median, used_fallback)) = stats_median
-            .map(|v| (v, false))
-            .or_else(|| offers_median.map(|v| (v, true)))
-        else {
-            continue;
-        };
+            let intact_stats = get_stat("intact");
+            let intact_offers = get_offer("intact");
+            let radiant_stats = get_stat("radiant");
+            let radiant_offers = get_offer("radiant");
 
-        prices.insert(
-            slug.to_string(),
-            TradeablePriceEntry {
-                median,
-                used_current_offer_fallback: used_fallback,
-                trades_24h: stats_today.and_then(|s| s.volume).filter(|v| v.is_finite()),
-                moving_avg: stats_today.and_then(|s| s.moving_avg).filter(|v| v.is_finite()),
-                ducats: item.ducats,
-            },
-        );
+            // Resolve Intact prices
+            let intact_median_data = intact_stats
+                .and_then(|s| s.median)
+                .filter(|m| m.is_finite())
+                .map(|m| (m, false, false)) // (median, used_current_offer_fallback, used_subtype_fallback)
+                .or_else(|| {
+                    intact_offers
+                        .and_then(|s| s.median)
+                        .filter(|m| m.is_finite())
+                        .map(|m| (m, true, false))
+                })
+                .or_else(|| {
+                    radiant_stats
+                        .and_then(|s| s.median)
+                        .filter(|m| m.is_finite())
+                        .map(|m| (m, false, true))
+                })
+                .or_else(|| {
+                    radiant_offers
+                        .and_then(|s| s.median)
+                        .filter(|m| m.is_finite())
+                        .map(|m| (m, true, true))
+                });
+
+            if let Some((median, used_offer, used_subtype)) = intact_median_data {
+                let source_stat = if !used_subtype { intact_stats } else { radiant_stats };
+                prices.insert(
+                    format!("{}_intact", slug),
+                    TradeablePriceEntry {
+                        median,
+                        used_current_offer_fallback: used_offer,
+                        relic_price_is_fallback: used_subtype,
+                        trades_24h: source_stat.and_then(|s| s.volume).filter(|v| v.is_finite()),
+                        moving_avg: source_stat
+                            .and_then(|s| s.moving_avg)
+                            .filter(|v| v.is_finite()),
+                        ducats: item.ducats,
+                    },
+                );
+            }
+
+            // Resolve Radiant prices
+            let radiant_median_data = radiant_stats
+                .and_then(|s| s.median)
+                .filter(|m| m.is_finite())
+                .map(|m| (m, false, false))
+                .or_else(|| {
+                    radiant_offers
+                        .and_then(|s| s.median)
+                        .filter(|m| m.is_finite())
+                        .map(|m| (m, true, false))
+                })
+                .or_else(|| {
+                    intact_stats
+                        .and_then(|s| s.median)
+                        .filter(|m| m.is_finite())
+                        .map(|m| (m, false, true))
+                })
+                .or_else(|| {
+                    intact_offers
+                        .and_then(|s| s.median)
+                        .filter(|m| m.is_finite())
+                        .map(|m| (m, true, true))
+                });
+
+            if let Some((median, used_offer, used_subtype)) = radiant_median_data {
+                let source_stat = if !used_subtype { radiant_stats } else { intact_stats };
+                prices.insert(
+                    format!("{}_radiant", slug),
+                    TradeablePriceEntry {
+                        median,
+                        used_current_offer_fallback: used_offer,
+                        relic_price_is_fallback: used_subtype,
+                        trades_24h: source_stat.and_then(|s| s.volume).filter(|v| v.is_finite()),
+                        moving_avg: source_stat
+                            .and_then(|s| s.moving_avg)
+                            .filter(|v| v.is_finite()),
+                        ducats: item.ducats,
+                    },
+                );
+            }
+        } else {
+            let stats_today = item.statistics_today.first();
+            let offers = item.current_offers.first();
+
+            let stats_median = stats_today.and_then(|s| s.median).filter(|m| m.is_finite());
+            let offers_median = offers.and_then(|s| s.median).filter(|m| m.is_finite());
+
+            // Prefer today's stats; fall back to current offers
+            let Some((median, used_fallback)) = stats_median
+                .map(|v| (v, false))
+                .or_else(|| offers_median.map(|v| (v, true)))
+            else {
+                continue;
+            };
+
+            prices.insert(
+                slug.to_string(),
+                TradeablePriceEntry {
+                    median,
+                    used_current_offer_fallback: used_fallback,
+                    relic_price_is_fallback: false,
+                    trades_24h: stats_today.and_then(|s| s.volume).filter(|v| v.is_finite()),
+                    moving_avg: stats_today
+                        .and_then(|s| s.moving_avg)
+                        .filter(|v| v.is_finite()),
+                    ducats: item.ducats,
+                },
+            );
+        }
     }
 
     let count = prices.len();
@@ -293,21 +434,25 @@ fn match_single_word(
     let tokens: Vec<&str> = normalized.split_whitespace().collect();
 
     // Find the highest-scoring candidate
-    let best = dictionary.iter().map(|candidate| {
-        // Bonus for tag overlap with OCR tokens
-        let tag_bonus = candidate
-            .tags
-            .iter()
-            .filter(|tag| {
-                let nt = normalize_dictionary_text(tag);
-                !nt.is_empty() && tokens.iter().any(|t| *t == nt.as_str())
-            })
-            .count() as f64
-            * 0.02;
+    let best = dictionary
+        .iter()
+        .map(|candidate| {
+            // Bonus for tag overlap with OCR tokens
+            let tag_bonus = candidate
+                .tags
+                .iter()
+                .filter(|tag| {
+                    let nt = normalize_dictionary_text(tag);
+                    !nt.is_empty() && tokens.iter().any(|t| *t == nt.as_str())
+                })
+                .count() as f64
+                * 0.02;
 
-        let score = (similarity_score(&normalized, &candidate.normalized_name) + tag_bonus).min(1.0);
-        (candidate, score)
-    }).max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))?;
+            let score =
+                (similarity_score(&normalized, &candidate.normalized_name) + tag_bonus).min(1.0);
+            (candidate, score)
+        })
+        .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))?;
 
     let (candidate, score) = best;
     if score < threshold {
@@ -321,12 +466,15 @@ fn match_single_word(
     mapped.ducats = candidate.ducats;
     mapped.vaulted = candidate.vaulted;
     mapped.is_custom = Some(candidate.is_custom);
+    mapped.is_relic = Some(candidate.is_relic);
+    mapped.subtype = candidate.subtype.clone();
 
     // Enrich with price data
     if let Some(prices_map) = prices {
         if let Some(price) = prices_map.get(&candidate.slug) {
             mapped.market_median = Some(price.median);
             mapped.market_median_from_current_offers = Some(price.used_current_offer_fallback);
+            mapped.relic_price_is_fallback = Some(price.relic_price_is_fallback);
             if mapped.ducats.is_none() {
                 mapped.ducats = price.ducats;
             }
@@ -406,6 +554,8 @@ fn build_custom_dictionary_entry(name: &str) -> Option<OcrDictionaryEntry> {
         ducats: None,
         vaulted: None,
         is_custom: true,
+        is_relic: false,
+        subtype: None,
     })
 }
 
@@ -425,9 +575,7 @@ fn levenshtein_distance(left: &[u8], right: &[u8]) -> usize {
         curr[0] = li + 1;
         for (ri, rb) in right.iter().enumerate() {
             let cost = if lb == rb { 0 } else { 1 };
-            curr[ri + 1] = (prev[ri + 1] + 1)
-                .min(curr[ri] + 1)
-                .min(prev[ri] + cost);
+            curr[ri + 1] = (prev[ri + 1] + 1).min(curr[ri] + 1).min(prev[ri] + cost);
         }
         std::mem::swap(&mut prev, &mut curr);
     }

@@ -86,12 +86,14 @@
 >
 	<div class="p-1.5">
 		{#if config.hotkeys[tauriHotkey]}
-			<span class="font-condensed font-medium">{formatKeybindForDisplay(config.hotkeys[tauriHotkey])}</span>
+			<span class="font-condensed font-medium">
+				{formatKeybindForDisplay(config.hotkeys[tauriHotkey])}
+			</span>
 		{:else}
 			<span class="text-muted-foreground">No keybind set</span>
 		{/if}
 	</div>
-	<div class="bg-surface group-hover:bg-muted p-1.5 transition">
+	<div class="bg-surface group-hover:bg-muted px-3 py-1.5 transition">
 		{#if isSaving}
 			Saving...
 		{:else if !isRecording && !config.hotkeys[tauriHotkey]}

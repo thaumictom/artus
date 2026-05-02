@@ -33,7 +33,10 @@
 		{/if}
 	</div>
 
-	<div class="data-[disabled=true]:cursor-not-allowed" data-disabled={!config.ocr_dictionary_mapping_enabled}>
+	<div
+		class="data-[disabled=true]:cursor-not-allowed"
+		data-disabled={!config.ocr_dictionary_mapping_enabled}
+	>
 		<div
 			class="flex flex-col gap-3 data-[disabled=true]:opacity-50 transition-opacity data-[disabled=true]:pointer-events-none"
 			data-disabled={!config.ocr_dictionary_mapping_enabled}

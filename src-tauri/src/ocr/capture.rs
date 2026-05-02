@@ -86,7 +86,12 @@ pub fn capture_active_window_with_mode<R: Runtime>(
     let words = run_tesseract(app, &filtered)?;
     let blocks = postprocess_words(app, &words, &capture, is_manual);
 
-    if is_manual && !app.state::<AppState>().warframe_focused.load(std::sync::atomic::Ordering::Acquire) {
+    if is_manual
+        && !app
+            .state::<AppState>()
+            .warframe_focused
+            .load(std::sync::atomic::Ordering::Acquire)
+    {
         info!("Warframe lost focus during manual OCR pipeline, aborting show");
         let _ = app.emit("ocr_clear", ());
         if let Some(overlay) = app.get_webview_window("overlay") {

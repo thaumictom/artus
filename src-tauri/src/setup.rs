@@ -4,8 +4,8 @@ use log::{error, info};
 use tauri::{App, Manager};
 
 use crate::error::AppResult;
-use crate::{hotkeys, layer_shell, ocr, relic_rewards, window_watcher};
 use crate::state::AppState;
+use crate::{hotkeys, layer_shell, ocr, relic_rewards, window_watcher};
 
 /// Called by Tauri during startup to configure windows, load data, and spawn
 /// background tasks.
@@ -38,7 +38,10 @@ pub fn init(app: &mut App, is_wayland: bool) -> Result<(), Box<dyn std::error::E
     }
 
     // Fetch remote dictionary and price data
-    log_result("dictionary entries", ocr::load_ocr_dictionary(&app.handle()));
+    log_result(
+        "dictionary entries",
+        ocr::load_ocr_dictionary(&app.handle()),
+    );
     log_result(
         "tradeable item prices",
         ocr::load_tradeable_item_prices(&app.handle()),

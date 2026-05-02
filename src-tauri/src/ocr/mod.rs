@@ -123,11 +123,17 @@ pub struct OcrWord {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub market_median_from_current_offers: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub relic_price_is_fallback: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub ducats: Option<u64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub vaulted: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub is_custom: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub is_relic: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub subtype: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub trades_24h: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]

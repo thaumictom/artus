@@ -23,14 +23,11 @@ pub fn validate_warframe_log_path(path: String) -> AppResult<String> {
         ));
     }
 
-    let file_name = p
-        .file_name()
-        .and_then(|n| n.to_str())
-        .ok_or_else(|| {
-            AppError::msg(format!(
-                "warframe log path must point to a file named {WARFRAME_LOG_FILENAME}"
-            ))
-        })?;
+    let file_name = p.file_name().and_then(|n| n.to_str()).ok_or_else(|| {
+        AppError::msg(format!(
+            "warframe log path must point to a file named {WARFRAME_LOG_FILENAME}"
+        ))
+    })?;
 
     if file_name != WARFRAME_LOG_FILENAME {
         return Err(AppError::msg(format!(

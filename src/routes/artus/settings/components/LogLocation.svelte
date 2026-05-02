@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { invoke } from '@tauri-apps/api/core';
 	import { config, updateSetting } from '$lib/settings.svelte';
+	import { open } from '@tauri-apps/plugin-dialog';
 
 	let isSaving = $state(false);
 	let status = $state<string | null>(null);
@@ -43,6 +44,14 @@
 			isSaving = false;
 		}
 	}
+
+	const openFileBrowser = async () => {
+		const file = await open({
+			multiple: false,
+			directory: false,
+			defaultPath: config.warframe_log_path,
+		});
+	};
 </script>
 
 <div class="flex flex-col gap-2">
@@ -51,21 +60,21 @@
 		<p class="text-muted-foreground text-xs">Set this to your Warframe EE.log file path</p>
 	</div>
 
-	<div class="flex sm:flex-row flex-col gap-2">
+	<div class="border p-0.5 flex">
 		<input
 			type="text"
 			bind:value={inputValue}
-			class="px-2 py-1 border rounded w-full text-sm"
-			placeholder="C:\\Users\\You\\AppData\\Local\\Warframe\\EE.log"
+			class="p-1.5 flex-1"
+			onchange={save}
+			placeholder="%LocalAppData%\Warframe\EE.log"
 			disabled={isSaving}
 		/>
 		<button
-			type="button"
-			class="hover:bg-muted px-3 py-1 border rounded text-sm"
-			onclick={save}
+			class="bg-surface group-hover:bg-muted px-3 transition"
+			onclick={openFileBrowser}
 			disabled={isSaving}
 		>
-			{isSaving ? 'Saving...' : 'Save'}
+			Browse
 		</button>
 	</div>
 

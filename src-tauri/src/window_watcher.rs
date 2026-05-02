@@ -72,8 +72,11 @@ pub fn spawn_window_watcher(app_handle: AppHandle) {
             } else {
                 info!("Warframe lost focus — unregistering hotkeys");
                 hotkeys::unregister_all(&app_handle);
-                
-                let is_relic_mode = app_handle.state::<AppState>().overlay_is_relic_mode.load(Ordering::Acquire);
+
+                let is_relic_mode = app_handle
+                    .state::<AppState>()
+                    .overlay_is_relic_mode
+                    .load(Ordering::Acquire);
                 if !is_relic_mode {
                     info!("Hiding overlay due to focus loss (manual mode)");
                     if let Some(overlay) = app_handle.get_webview_window("overlay") {
