@@ -54,7 +54,7 @@
 
 	const medianFormatter = new Intl.NumberFormat(undefined, {
 		minimumFractionDigits: 0,
-		maximumFractionDigits: 2,
+		maximumFractionDigits: 1,
 	});
 
 	const countFormatter = new Intl.NumberFormat(undefined, {
@@ -64,6 +64,38 @@
 
 	function normalizeOverlayNumber(value: unknown): number | undefined {
 		return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+	}
+
+	const ItemColor = {
+		SALVAGE: 'text-amber-400',
+		SELL: 'text-blue-400',
+		HOLD: 'text-muted-foreground',
+	} as const;
+
+	function getItemActionColor(
+		ducats: number,
+		plat: number,
+		minTradeValue = 5,
+	): (typeof ItemColor)[keyof typeof ItemColor] {
+		if (plat < minTradeValue) return ItemColor.SALVAGE;
+
+		const thresholds = {
+			100: { salvage: 10, sell: 15 },
+			65: { salvage: 8, sell: 12 },
+			45: { salvage: 6, sell: 12 },
+			25: { salvage: 5, sell: 10 },
+			15: { salvage: 5, sell: 8 },
+		};
+
+		const tier = thresholds[ducats as keyof typeof thresholds];
+
+		// if plat is below salvage threshold -> salvage
+		// if plat is above sell threshold -> sell
+		// else -> hold
+		if (plat <= tier.salvage) return ItemColor.SALVAGE;
+		if (plat >= tier.sell) return ItemColor.SELL;
+
+		return ItemColor.HOLD;
 	}
 </script>
 
@@ -128,15 +160,19 @@
 			<div
 				class={{
 					'font-semibold text-center mb-0.5': true,
-					'font-stretch-condensed': displayText.length > 30,
-					'font-stretch-semi-condensed': displayText.length > 20,
-					'text-muted-foreground': isCustom || vaulted,
+					'font-stretch-extra-condensed': displayText.length > 30,
+					'font-stretch-condensed': displayText.length > 20,
+					'font-stretch-semi-condensed': displayText.length > 15,
+					'text-muted-foreground': isCustom,
 				}}
 			>
-				{displayText}
+				{#if vaulted}
+					<Icon icon="streamline-flex:safe-vault-solid" class="text-amber-500 inline mr-0.5" />
+				{/if}
+				<span>{displayText}</span>
 			</div>
 			{#if displayPrice !== undefined || ducats !== undefined}
-				<div class="flex justify-around gap-1">
+				<div class="flex justify-around gap-1.5">
 					{#if displayPrice !== undefined}
 						<div class="flex items-center gap-1">
 							<div>{pricePrefix}{medianFormatter.format(displayPrice)}</div>
@@ -147,6 +183,14 @@
 						<div class="flex items-center gap-1">
 							<div>{countFormatter.format(ducats)}</div>
 							<img src="/icons/ducats.png" alt="" class="size-3" />
+						</div>
+					{/if}
+					{#if displayPrice !== undefined && ducats !== undefined && ducats > 0}
+						{@const platPer100Ducats = (displayPrice / ducats) * 100}
+						<div>
+							<span class={getItemActionColor(ducats, displayPrice)}>
+								{medianFormatter.format(platPer100Ducats)}
+							</span>
 						</div>
 					{/if}
 				</div>
