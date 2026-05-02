@@ -73,6 +73,11 @@ pub fn capture_active_window_with_mode<R: Runtime>(
     let total = Instant::now();
 
     let capture = capture_focused_window()?;
+
+    // Immediately show the overlay in "processing" state so the user
+    // gets feedback before the slow OCR pipeline runs.
+    show_overlay_processing(app, &capture)?;
+
     let filtered = preprocess_capture(app, &capture);
     emit_debug_image(app, &filtered);
     let words = run_tesseract(app, &filtered)?;
@@ -279,19 +284,16 @@ fn postprocess_words<R: Runtime>(app: &AppHandle<R>, words: &[OcrWord]) -> Vec<O
 
 // ── Step 6: Overlay display ───────────────────────────────────────────────────
 
-/// Positions, resizes, and shows the overlay window with the OCR results.
-fn show_overlay<R: Runtime>(
+/// Positions, resizes, shows the overlay, and makes it click-through.
+/// Returns whether the Wayland layer-shell path was used.
+fn position_and_show_overlay<R: Runtime>(
     app: &AppHandle<R>,
     capture: &CapturedWindow,
-    words: &[OcrWord],
-) -> AppResult<()> {
-    let t = Instant::now();
-
+) -> AppResult<bool> {
     let overlay = app
         .get_webview_window("overlay")
         .ok_or_else(|| AppError::WindowNotFound("overlay".into()))?;
 
-    // Position overlay to match the captured window
     let used_layer_shell =
         layer_shell::set_overlay_geometry(&overlay, capture.x, capture.y).unwrap_or(false);
 
@@ -308,13 +310,44 @@ fn show_overlay<R: Runtime>(
         .show()
         .map_err(|err| AppError::msg(format!("failed to show overlay: {err}")))?;
 
-    // Make overlay click-through
     if !layer_shell::is_wayland_session() || used_layer_shell {
         let _ = overlay.set_ignore_cursor_events(true);
         let _ = overlay.set_focusable(false);
     }
 
-    let force_click = layer_shell::force_click_through(&overlay).unwrap_or(false);
+    Ok(used_layer_shell)
+}
+
+/// Shows the overlay immediately (before OCR) and emits `ocr_processing` so
+/// the frontend can render a "Processing…" spinner.
+fn show_overlay_processing<R: Runtime>(
+    app: &AppHandle<R>,
+    capture: &CapturedWindow,
+) -> AppResult<()> {
+    position_and_show_overlay(app, capture)?;
+
+    app.emit("ocr_processing", ())
+        .map_err(|err| AppError::msg(format!("failed to emit ocr_processing: {err}")))?;
+
+    Ok(())
+}
+
+/// Repositions the overlay with OCR results and emits them to the frontend.
+/// Also applies the Wayland delayed click-through retry.
+fn show_overlay<R: Runtime>(
+    app: &AppHandle<R>,
+    capture: &CapturedWindow,
+    words: &[OcrWord],
+) -> AppResult<()> {
+    let t = Instant::now();
+
+    position_and_show_overlay(app, capture)?;
+
+    let force_click = app
+        .get_webview_window("overlay")
+        .and_then(|w| layer_shell::force_click_through(&w).ok())
+        .unwrap_or(false);
+
     if layer_shell::is_wayland_session() && !force_click {
         error!("click-through not applied on initial show");
     }

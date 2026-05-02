@@ -3,7 +3,7 @@
 	import { listen } from '@tauri-apps/api/event';
 	import { onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
-	import { invoke } from '@tauri-apps/api/core';
+	import { flyAndScale } from '$lib/transition';
 
 	type OcrWord = {
 		text: string;
@@ -22,19 +22,24 @@
 
 	let words: OcrWord[] = $state([]);
 	let showBoundingBoxes = $state(false);
+	let processing = $state(false);
 
 	onMount(() => {
-		let unlisten: (() => void) | undefined;
+		const cleanups: Array<() => void> = [];
 
-		listen<{ words: OcrWord[], show_ocr_bounding_boxes: boolean }>('ocr_result', (event) => {
+		listen('ocr_processing', () => {
+			words = [];
+			processing = true;
+		}).then((cleanup) => cleanups.push(cleanup));
+
+		listen<{ words: OcrWord[]; show_ocr_bounding_boxes: boolean }>('ocr_result', (event) => {
+			processing = false;
 			words = event.payload?.words ?? [];
 			showBoundingBoxes = event.payload?.show_ocr_bounding_boxes ?? false;
-		}).then((cleanup) => {
-			unlisten = cleanup;
-		});
+		}).then((cleanup) => cleanups.push(cleanup));
 
 		return () => {
-			unlisten?.();
+			for (const cleanup of cleanups) cleanup();
 		};
 	});
 
@@ -54,6 +59,18 @@
 </script>
 
 <main class="relative w-screen h-screen pointer-events-none">
+	{#if processing}
+		<div
+			in:flyAndScale={{ y: 24 }}
+			out:fade={{ duration: 200 }}
+			class="absolute inset-0 flex items-center justify-center"
+		>
+			<div class="flex items-center gap-4 bg-background/75 p-4 border">
+				<Icon icon="material-symbols:progress-activity" class="animate-spin size-5" />
+				<span class="text-foreground text-sm">Processing…</span>
+			</div>
+		</div>
+	{/if}
 	{#each words as word (`${word.text}-${word.x}-${word.y}-${word.width}-${word.height}`)}
 		{@const marketMedian = normalizeOverlayNumber(word.market_median)}
 		{@const inaccurateMarker = word.market_median_from_current_offers ? '~' : ''}
@@ -66,12 +83,14 @@
 		<!-- Bounding box for debugging -->
 		{#if showBoundingBoxes}
 			<div
+				transition:fade={{ duration: 200 }}
 				class="absolute border border-red-500 text-red-500/25 striped-gradient"
 				style={`left:${word.x}px;top:${word.y}px;width:${word.width}px;height:${word.height}px;`}
 			></div>
 		{/if}
 		<div
-			in:fade={{ duration: 200 }}
+			in:flyAndScale={{ y: 24 }}
+			out:fade={{ duration: 200 }}
 			class="absolute flex flex-col bg-background/75 px-2 py-1 border text-foreground text-sm -translate-x-1/2 -translate-y-full"
 			style={`left:${word.x + word.width / 2}px;top:${word.y - 16}px;`}
 		>
