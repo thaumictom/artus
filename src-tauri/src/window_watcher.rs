@@ -10,7 +10,7 @@ use std::time::Duration;
 use active_win_pos_rs::get_active_window;
 use log::info;
 use sysinfo::System;
-use tauri::{AppHandle, Emitter, Manager};
+use tauri::{AppHandle, Manager};
 
 use crate::hotkeys;
 use crate::state::AppState;
@@ -79,10 +79,7 @@ pub fn spawn_window_watcher(app_handle: AppHandle) {
                     .load(Ordering::Acquire);
                 if !is_relic_mode {
                     info!("Hiding overlay due to focus loss (manual mode)");
-                    if let Some(overlay) = app_handle.get_webview_window("overlay") {
-                        let _ = app_handle.emit("ocr_clear", ());
-                        let _ = overlay.hide();
-                    }
+                    let _ = crate::ocr::hide_overlay(&app_handle);
                 } else {
                     info!("Keeping overlay visible due to focus loss (relic rewards mode)");
                 }

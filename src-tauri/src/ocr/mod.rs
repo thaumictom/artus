@@ -13,7 +13,7 @@ pub mod preprocessing;
 
 // ── Public API (explicit re-exports) ──────────────────────────────────────────
 
-pub use capture::{capture_active_window, capture_active_window_with_mode, toggle_overlay_hotkey};
+pub use capture::{capture_active_window, capture_active_window_with_mode, toggle_overlay_hotkey, hide_overlay, bump_overlay_sequence};
 pub use dictionary::{
     load_ocr_dictionary, load_primary_theme_options, load_tradeable_item_prices,
     map_words_to_dictionary,

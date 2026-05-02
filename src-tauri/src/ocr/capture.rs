@@ -36,9 +36,8 @@ struct CapturedWindow {
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
-/// Captures the focused window, runs OCR, and shows the overlay with auto-hide.
 pub fn capture_active_window<R: Runtime>(app: &AppHandle<R>) -> AppResult<()> {
-    capture_active_window_with_mode(app, true, true)
+    capture_active_window_with_mode(app, true, true, None)
 }
 
 /// Toggles the overlay: if visible, hides it; otherwise captures and shows it.
@@ -52,28 +51,22 @@ pub fn toggle_overlay_hotkey<R: Runtime>(app: &AppHandle<R>) -> AppResult<()> {
         .map_err(|err| AppError::msg(format!("failed to read overlay visibility: {err}")))?;
 
     if is_visible {
-        bump_overlay_sequence(app)?;
-        app.emit("ocr_clear", ())
-            .map_err(|err| AppError::msg(format!("failed to emit ocr_clear: {err}")))?;
-        tauri::async_runtime::spawn(async move {
-            // Let frontend fade-out take some time
-            tokio::time::sleep(Duration::from_millis(200)).await;
-            let _ = overlay.hide();
-        });
+        let _ = hide_overlay(app);
         return Ok(());
     }
 
     // Not visible → capture and show without auto-hide (toggle mode)
-    capture_active_window_with_mode(app, false, true)
+    capture_active_window_with_mode(app, false, true, None)
 }
 
-/// Full OCR pipeline, decomposed into discrete steps for readability.
 pub fn capture_active_window_with_mode<R: Runtime>(
     app: &AppHandle<R>,
     should_auto_hide: bool,
     is_manual: bool,
+    provided_sequence: Option<u64>,
 ) -> AppResult<()> {
     let total = Instant::now();
+    let run_sequence = provided_sequence.unwrap_or_else(|| bump_overlay_sequence(app).unwrap_or(0));
 
     let capture = capture_warframe_window()?;
 
@@ -86,6 +79,18 @@ pub fn capture_active_window_with_mode<R: Runtime>(
     let words = run_tesseract(app, &filtered)?;
     let blocks = postprocess_words(app, &words, &capture, is_manual);
 
+    let current_sequence = app
+        .state::<AppState>()
+        .overlay_sequence
+        .lock()
+        .map(|v| *v)
+        .unwrap_or(0);
+
+    if current_sequence != run_sequence {
+        info!("OCR pipeline sequence changed (aborted or replaced). Aborting show");
+        return Ok(());
+    }
+
     if is_manual
         && !app
             .state::<AppState>()
@@ -93,17 +98,14 @@ pub fn capture_active_window_with_mode<R: Runtime>(
             .load(std::sync::atomic::Ordering::Acquire)
     {
         info!("Warframe lost focus during manual OCR pipeline, aborting show");
-        let _ = app.emit("ocr_clear", ());
-        if let Some(overlay) = app.get_webview_window("overlay") {
-            let _ = overlay.hide();
-        }
+        let _ = hide_overlay(app);
         return Ok(());
     }
 
     show_overlay(app, &capture, &blocks)?;
 
     if should_auto_hide {
-        schedule_auto_hide(app)?;
+        schedule_auto_hide(app, run_sequence)?;
     }
 
     info!("total OCR pipeline: {:?}", total.elapsed());
@@ -392,6 +394,8 @@ fn position_and_show_overlay<R: Runtime>(
         let _ = overlay.set_focusable(false);
     }
 
+    crate::hotkeys::register_escape_hotkey(app);
+
     Ok(used_layer_shell)
 }
 
@@ -465,8 +469,7 @@ fn show_overlay<R: Runtime>(
 /// Bumps the overlay sequence counter and schedules hiding after the configured
 /// duration. If another capture occurs before the timer fires, the stale
 /// sequence number prevents the hide.
-fn schedule_auto_hide<R: Runtime>(app: &AppHandle<R>) -> AppResult<()> {
-    let sequence = bump_overlay_sequence(app)?;
+fn schedule_auto_hide<R: Runtime>(app: &AppHandle<R>, sequence: u64) -> AppResult<()> {
     let duration_secs = app.get_setting_u64("overlay_duration_secs", DEFAULT_OVERLAY_DURATION_SECS);
     let app_clone = app.clone();
 
@@ -482,11 +485,7 @@ fn schedule_auto_hide<R: Runtime>(app: &AppHandle<R>) -> AppResult<()> {
             .unwrap_or(0);
 
         if current == sequence {
-            if let Some(overlay) = app_clone.get_webview_window("overlay") {
-                let _ = app_clone.emit("ocr_clear", ());
-                tokio::time::sleep(Duration::from_millis(100)).await;
-                let _ = overlay.hide();
-            }
+            let _ = hide_overlay(&app_clone);
         }
     });
 
@@ -494,9 +493,31 @@ fn schedule_auto_hide<R: Runtime>(app: &AppHandle<R>) -> AppResult<()> {
 }
 
 /// Increments and returns the overlay sequence counter.
-fn bump_overlay_sequence<R: Runtime>(app: &AppHandle<R>) -> AppResult<u64> {
+pub fn bump_overlay_sequence<R: Runtime>(app: &AppHandle<R>) -> AppResult<u64> {
     let state = app.state::<AppState>();
     let mut guard = state.overlay_sequence.lock()?;
     *guard += 1;
     Ok(*guard)
+}
+
+/// Programmatically hides the overlay, resets state, and unregisters dynamic hotkeys.
+pub fn hide_overlay<R: Runtime>(app: &AppHandle<R>) -> AppResult<()> {
+    // Bump sequence to cancel any pending auto-hide/failsafes
+    let _ = bump_overlay_sequence(app);
+    
+    app.state::<AppState>()
+        .overlay_is_relic_mode
+        .store(false, std::sync::atomic::Ordering::Release);
+
+    if let Some(overlay) = app.get_webview_window("overlay") {
+        let _ = app.emit("ocr_clear", ());
+        crate::hotkeys::unregister_escape_hotkey(app);
+        
+        tauri::async_runtime::spawn(async move {
+            tokio::time::sleep(Duration::from_millis(100)).await;
+            let _ = overlay.hide();
+        });
+    }
+
+    Ok(())
 }

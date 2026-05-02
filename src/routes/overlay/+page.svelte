@@ -74,7 +74,7 @@
 			out:fade={{ duration: 100 }}
 			class="absolute inset-0 flex items-center justify-center"
 		>
-			<div class="flex items-center gap-4 bg-background/75 p-4 border">
+			<div class="flex items-center gap-4 bg-background/90 p-4 border">
 				<Icon icon="material-symbols:progress-activity" class="animate-spin size-5" />
 				<span class="text-foreground text-sm">Processing…</span>
 			</div>
@@ -116,7 +116,7 @@
 			in:flyAndScale={{ y: 24 }}
 			out:fade={{ duration: 100 }}
 			class={{
-				'absolute flex flex-col bg-background/75 px-2 py-1 border text-foreground text-sm -translate-x-1/2 -translate-y-full': true,
+				'absolute flex flex-col bg-background/90 px-2 py-1 border text-foreground text-sm -translate-x-1/2 -translate-y-full': true,
 				'border-[rgb(253,235,189)] text-[rgb(253,235,189)]': word.mod_type === 'gold',
 				'border-[rgb(228,228,228)] text-[rgb(228,228,228)]': word.mod_type === 'silver',
 				'border-[rgb(221,160,133)] text-[rgb(221,160,133)]': word.mod_type === 'bronze',

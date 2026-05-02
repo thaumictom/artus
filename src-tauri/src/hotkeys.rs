@@ -182,6 +182,15 @@ pub fn unregister_all<R: Runtime>(app: &AppHandle<R>) {
 pub fn on_pressed<R: Runtime>(app: &AppHandle<R>, shortcut: &Shortcut) {
     let pressed = shortcut.into_string();
 
+    if pressed == "Escape" {
+        let handle = app.clone();
+        tauri::async_runtime::spawn_blocking(move || {
+            let _ = ocr::hide_overlay(&handle);
+        });
+        return;
+    }
+
+
     let action = app.state::<AppState>().hotkeys.lock().ok().and_then(|hk| {
         hk.iter()
             .find(|(_, s)| *s == &pressed)
@@ -199,6 +208,22 @@ pub fn on_pressed<R: Runtime>(app: &AppHandle<R>, shortcut: &Shortcut) {
 }
 
 // ── Hotkey action triggers ────────────────────────────────────────────────────
+
+pub fn register_escape_hotkey<R: Runtime>(app: &AppHandle<R>) {
+    if !app.global_shortcut().is_registered("Escape") {
+        if let Err(err) = app.global_shortcut().register("Escape") {
+            error!("failed to register Escape hotkey: {}", err);
+        }
+    }
+}
+
+pub fn unregister_escape_hotkey<R: Runtime>(app: &AppHandle<R>) {
+    if app.global_shortcut().is_registered("Escape") {
+        if let Err(err) = app.global_shortcut().unregister("Escape") {
+            error!("failed to unregister Escape hotkey: {}", err);
+        }
+    }
+}
 
 /// Triggers an OCR screenshot, respecting the overlay toggle mode setting.
 fn trigger_screenshot<R: Runtime>(app: &AppHandle<R>) {
