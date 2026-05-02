@@ -1,6 +1,6 @@
 [package]
 name = "artus"
-version = "0.1.8"
+version = "0.1.9"
 description = "A Tauri App"
 authors = ["thaumictom"]
 edition = "2021"
