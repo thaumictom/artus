@@ -1,143 +1,186 @@
+//! Screen capture, Tesseract OCR, and overlay display pipeline.
+//!
+//! The main entry point is [`capture_active_window_with_mode`], which runs the
+//! full pipeline: capture → preprocess → OCR → group → match → display.
+
 use std::time::{Duration, Instant};
 
 use kreuzberg_tesseract::{TessPageIteratorLevel, TessPageSegMode, TesseractAPI};
+use log::{error, info};
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, Position, Runtime, Size};
-use tauri_plugin_store::StoreExt;
 use xcap::Window;
 
+use crate::error::{AppError, AppResult};
 use crate::layer_shell;
 use crate::state::AppState;
+use crate::store_ext::SettingsExt;
 use super::{
-    binary_target_filter, apply_morphology, gray_to_png_bytes, resolve_tessdata, group_words_into_blocks,
-    map_words_to_dictionary,
+    binary_target_filter, apply_morphology, gray_to_png_bytes, resolve_tessdata,
+    group_words_into_blocks, map_words_to_dictionary,
     OcrWord, OcrPayload, OcrDebugImagePayload, OcrTextPayload,
     DEFAULT_OCR_TARGET_RGB, DEFAULT_OVERLAY_DURATION_SECS,
     DEFAULT_OCR_DICTIONARY_MAPPING_ENABLED, DEFAULT_OCR_DICTIONARY_MATCH_THRESHOLD,
-    ENABLE_OCR_DICTIONARY_MAPPING, MAX_OCR_DICTIONARY_MATCH_THRESHOLD, MIN_OCR_DICTIONARY_MATCH_THRESHOLD,
-    OCR_WHITELIST, PASS_IMAGE_TO_FRONTEND, PASS_TEXT_TO_FRONTEND,
+    ENABLE_OCR_DICTIONARY_MAPPING, MAX_OCR_DICTIONARY_MATCH_THRESHOLD,
+    MIN_OCR_DICTIONARY_MATCH_THRESHOLD, OCR_WHITELIST,
+    PASS_IMAGE_TO_FRONTEND, PASS_TEXT_TO_FRONTEND,
 };
 
-pub fn capture_active_window<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
+// ── Captured window metadata ──────────────────────────────────────────────────
+
+/// Geometry and pixel data from a screen capture.
+struct CapturedWindow {
+    x: i32,
+    y: i32,
+    width: u32,
+    height: u32,
+    image: image::RgbaImage,
+}
+
+// ── Public API ────────────────────────────────────────────────────────────────
+
+/// Captures the focused window, runs OCR, and shows the overlay with auto-hide.
+pub fn capture_active_window<R: Runtime>(app: &AppHandle<R>) -> AppResult<()> {
     capture_active_window_with_mode(app, true)
 }
 
-pub fn toggle_overlay_hotkey<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
+/// Toggles the overlay: if visible, hides it; otherwise captures and shows it.
+pub fn toggle_overlay_hotkey<R: Runtime>(app: &AppHandle<R>) -> AppResult<()> {
     let overlay = app
         .get_webview_window("overlay")
-        .ok_or("overlay window not found")?;
+        .ok_or_else(|| AppError::WindowNotFound("overlay".into()))?;
+
     let is_visible = overlay
         .is_visible()
-        .map_err(|err| format!("failed to read overlay visibility: {err}"))?;
+        .map_err(|err| AppError::msg(format!("failed to read overlay visibility: {err}")))?;
 
     if is_visible {
-        let _ = bump_overlay_sequence(app)?;
+        bump_overlay_sequence(app)?;
         overlay
             .hide()
-            .map_err(|err| format!("failed to hide overlay: {err}"))?;
+            .map_err(|err| AppError::msg(format!("failed to hide overlay: {err}")))?;
         return Ok(());
     }
 
+    // Not visible → capture and show without auto-hide (toggle mode)
     capture_active_window_with_mode(app, false)
 }
 
-pub fn bump_overlay_sequence<R: Runtime>(app: &AppHandle<R>) -> Result<u64, String> {
-    let app_state = app.state::<AppState>();
-    let mut guard = app_state
-        .overlay_sequence
-        .lock()
-        .map_err(|_| "failed to update overlay sequence".to_string())?;
-    *guard += 1;
-    Ok(*guard)
-}
-
+/// Full OCR pipeline, decomposed into discrete steps for readability.
 pub fn capture_active_window_with_mode<R: Runtime>(
     app: &AppHandle<R>,
     should_auto_hide: bool,
-) -> Result<(), String> {
-    let total_started = Instant::now();
+) -> AppResult<()> {
+    let total = Instant::now();
 
-    let discovery_started = Instant::now();
-    let window = Window::all()
-        .map_err(|err| format!("failed to list windows: {err}"))?
-        .into_iter()
-        .find(|entry| entry.is_focused().unwrap_or(false) && !entry.is_minimized().unwrap_or(false))
-        .ok_or("no focused window found")?;
+    let capture = capture_focused_window()?;
+    let filtered = preprocess_capture(app, &capture);
+    emit_debug_image(app, &filtered);
+    let words = run_tesseract(app, &filtered)?;
+    let blocks = postprocess_words(app, &words);
+    show_overlay(app, &capture, &blocks)?;
 
-    let x = window
-        .x()
-        .map_err(|err| format!("failed to get x: {err}"))?;
-    let y = window
-        .y()
-        .map_err(|err| format!("failed to get y: {err}"))?;
-    let width = window
-        .width()
-        .map_err(|err| format!("failed to get width: {err}"))?;
-    let height = window
-        .height()
-        .map_err(|err| format!("failed to get height: {err}"))?;
-
-    let image = window
-        .capture_image()
-        .map_err(|err| format!("failed to capture active window: {err}"))?;
-    println!(
-        "[ocr] window discovery + capture: {:?}",
-        discovery_started.elapsed()
-    );
-
-    let preprocess_started = Instant::now();
-    let target_rgb = {
-        let theme_name = app.store("settings.json")
-            .ok()
-            .and_then(|s| s.get("ocr_theme"))
-            .and_then(|v| v.as_str().map(|s| s.to_string()))
-            .unwrap_or_else(|| "EQUINOX".to_string());
-            
-        app.state::<AppState>()
-            .ocr_theme_colors
-            .lock()
-            .ok()
-            .and_then(|map| map.get(&theme_name).copied())
-            .unwrap_or(DEFAULT_OCR_TARGET_RGB)
-    };
-
-    let mut filtered = binary_target_filter(&image, target_rgb);
-    apply_morphology(&mut filtered);
-
-    println!(
-        "[ocr] preprocess (binary filter + erosion): {:?}",
-        preprocess_started.elapsed()
-    );
-
-    if PASS_IMAGE_TO_FRONTEND {
-        let debug_started = Instant::now();
-        let png_bytes = gray_to_png_bytes(&filtered)?;
-        if let Some(dashboard) = app.get_webview_window("artus") {
-            let _ = dashboard.emit(
-                "ocr_debug_image",
-                OcrDebugImagePayload {
-                    png_bytes,
-                    width: filtered.width(),
-                    height: filtered.height(),
-                    upscale_amount: 1,
-                },
-            );
-        }
-        println!(
-            "[ocr] debug image encode + emit: {:?}",
-            debug_started.elapsed()
-        );
+    if should_auto_hide {
+        schedule_auto_hide(app)?;
     }
 
-    let ocr_started = Instant::now();
+    info!("total OCR pipeline: {:?}", total.elapsed());
+    Ok(())
+}
+
+// ── Step 1: Screen capture ────────────────────────────────────────────────────
+
+/// Finds the focused, non-minimized window and captures its contents.
+fn capture_focused_window() -> AppResult<CapturedWindow> {
+    let t = Instant::now();
+
+    let window = Window::all()
+        .map_err(|err| AppError::msg(format!("failed to list windows: {err}")))?
+        .into_iter()
+        .find(|w| w.is_focused().unwrap_or(false) && !w.is_minimized().unwrap_or(false))
+        .ok_or_else(|| AppError::msg("no focused window found"))?;
+
+    let x = window.x().map_err(|e| AppError::msg(format!("failed to get x: {e}")))?;
+    let y = window.y().map_err(|e| AppError::msg(format!("failed to get y: {e}")))?;
+    let width = window.width().map_err(|e| AppError::msg(format!("failed to get width: {e}")))?;
+    let height = window.height().map_err(|e| AppError::msg(format!("failed to get height: {e}")))?;
+    let image = window
+        .capture_image()
+        .map_err(|err| AppError::msg(format!("failed to capture active window: {err}")))?;
+
+    info!("window discovery + capture: {:?}", t.elapsed());
+    Ok(CapturedWindow { x, y, width, height, image })
+}
+
+// ── Step 2: Preprocessing ─────────────────────────────────────────────────────
+
+/// Applies binary color filtering using the user's selected theme color.
+fn preprocess_capture<R: Runtime>(
+    app: &AppHandle<R>,
+    capture: &CapturedWindow,
+) -> image::GrayImage {
+    let t = Instant::now();
+
+    let theme_name = app.get_setting_string("ocr_theme", "EQUINOX");
+    let target_rgb = app
+        .state::<AppState>()
+        .ocr_theme_colors
+        .lock()
+        .ok()
+        .and_then(|map| map.get(&theme_name).copied())
+        .unwrap_or(DEFAULT_OCR_TARGET_RGB);
+
+    let mut filtered = binary_target_filter(&capture.image, target_rgb);
+    apply_morphology(&mut filtered);
+
+    info!("preprocess (binary filter + morphology): {:?}", t.elapsed());
+    filtered
+}
+
+// ── Step 3: Debug image ───────────────────────────────────────────────────────
+
+/// Optionally encodes and emits the filtered image to the dashboard for debugging.
+fn emit_debug_image<R: Runtime>(app: &AppHandle<R>, filtered: &image::GrayImage) {
+    if !PASS_IMAGE_TO_FRONTEND {
+        return;
+    }
+
+    let t = Instant::now();
+    match gray_to_png_bytes(filtered) {
+        Ok(png_bytes) => {
+            if let Some(dashboard) = app.get_webview_window("artus") {
+                let _ = dashboard.emit(
+                    "ocr_debug_image",
+                    OcrDebugImagePayload {
+                        png_bytes,
+                        width: filtered.width(),
+                        height: filtered.height(),
+                        upscale_amount: 1,
+                    },
+                );
+            }
+            info!("debug image encode + emit: {:?}", t.elapsed());
+        }
+        Err(err) => error!("failed to encode debug image: {err}"),
+    }
+}
+
+// ── Step 4: Tesseract OCR ─────────────────────────────────────────────────────
+
+/// Initializes Tesseract, feeds it the preprocessed image, and extracts words.
+fn run_tesseract<R: Runtime>(
+    app: &AppHandle<R>,
+    filtered: &image::GrayImage,
+) -> AppResult<Vec<OcrWord>> {
+    let t = Instant::now();
+
     let tessdata = resolve_tessdata(app)?;
     let api = TesseractAPI::new();
     api.init(&tessdata, "eng")
-        .map_err(|err| format!("failed to init tesseract: {err}"))?;
-
+        .map_err(|err| AppError::msg(format!("failed to init tesseract: {err}")))?;
     api.set_page_seg_mode(TessPageSegMode::PSM_SPARSE_TEXT)
-        .map_err(|err| format!("failed to set page segmentation: {err}"))?;
+        .map_err(|err| AppError::msg(format!("failed to set page segmentation: {err}")))?;
     api.set_variable("tessedit_char_whitelist", OCR_WHITELIST)
-        .map_err(|err| format!("failed to set whitelist: {err}"))?;
+        .map_err(|err| AppError::msg(format!("failed to set whitelist: {err}")))?;
     api.set_image(
         filtered.as_raw(),
         filtered.width() as i32,
@@ -145,207 +188,203 @@ pub fn capture_active_window_with_mode<R: Runtime>(
         1,
         filtered.width() as i32,
     )
-    .map_err(|err| format!("failed to set image: {err}"))?;
+    .map_err(|err| AppError::msg(format!("failed to set image: {err}")))?;
 
     api.recognize()
-        .map_err(|err| format!("recognition failed: {err}"))?;
+        .map_err(|err| AppError::msg(format!("recognition failed: {err}")))?;
     let iter = api
         .get_iterator()
-        .map_err(|err| format!("failed to get OCR iterator: {err}"))?;
-    println!(
-        "[ocr] tesseract setup + recognize: {:?}",
-        ocr_started.elapsed()
-    );
+        .map_err(|err| AppError::msg(format!("failed to get OCR iterator: {err}")))?;
 
-    let parse_started = Instant::now();
+    // Extract words and their bounding boxes
     let mut words = Vec::new();
     loop {
-        let text = iter
+        let text: String = iter
             .get_utf8_text(TessPageIteratorLevel::RIL_WORD)
             .unwrap_or_default()
             .trim()
             .chars()
             .filter(|ch| OCR_WHITELIST.contains(*ch))
-            .collect::<String>();
+            .collect();
 
         if !text.is_empty() {
             if let Ok((left, top, right, bottom)) =
                 iter.get_bounding_box(TessPageIteratorLevel::RIL_WORD)
             {
-                words.push(OcrWord {
+                words.push(OcrWord::new(
                     text,
-                    x: left as f64,
-                    y: top as f64,
-                    width: (right - left) as f64,
-                    height: (bottom - top) as f64,
-                    slug: None,
-                    mapping_confidence: None,
-                    market_median: None,
-                    market_median_from_current_offers: None,
-                    ducats: None,
-                    vaulted: None,
-                    is_custom: None,
-                    trades_24h: None,
-                    moving_avg: None,
-                });
+                    left as f64,
+                    top as f64,
+                    (right - left) as f64,
+                    (bottom - top) as f64,
+                ));
             }
         }
 
-        let has_next = iter
-            .next(TessPageIteratorLevel::RIL_WORD)
-            .map_err(|err| format!("iterator error: {err}"))?;
-        if !has_next {
-            break;
+        match iter.next(TessPageIteratorLevel::RIL_WORD) {
+            Ok(true) => continue,
+            _ => break,
         }
     }
 
-    let (mapping_enabled, mapping_threshold) = {
-        let store = app.store("settings.json").ok();
-        let enabled = store.as_ref()
-            .and_then(|s| s.get("ocr_dictionary_mapping_enabled"))
-            .and_then(|v| v.as_bool())
-            .unwrap_or(DEFAULT_OCR_DICTIONARY_MAPPING_ENABLED);
-            
-        let threshold = store.as_ref()
-            .and_then(|s| s.get("ocr_dictionary_match_threshold"))
-            .and_then(|v| v.as_f64())
-            .unwrap_or(DEFAULT_OCR_DICTIONARY_MATCH_THRESHOLD)
-            .clamp(
-                MIN_OCR_DICTIONARY_MATCH_THRESHOLD,
-                MAX_OCR_DICTIONARY_MATCH_THRESHOLD,
-            );
-            
-        (enabled, threshold)
+    info!("tesseract setup + recognize: {:?} ({} words)", t.elapsed(), words.len());
+    Ok(words)
+}
+
+// ── Step 5: Post-processing ───────────────────────────────────────────────────
+
+/// Groups words into logical blocks and optionally maps them to dictionary entries.
+fn postprocess_words<R: Runtime>(app: &AppHandle<R>, words: &[OcrWord]) -> Vec<OcrWord> {
+    let t = Instant::now();
+
+    let mapping_enabled =
+        app.get_setting_bool("ocr_dictionary_mapping_enabled", DEFAULT_OCR_DICTIONARY_MAPPING_ENABLED);
+    let mapping_threshold = app
+        .get_setting_f64("ocr_dictionary_match_threshold", DEFAULT_OCR_DICTIONARY_MATCH_THRESHOLD)
+        .clamp(MIN_OCR_DICTIONARY_MATCH_THRESHOLD, MAX_OCR_DICTIONARY_MATCH_THRESHOLD);
+
+    let grouped = group_words_into_blocks(words);
+
+    let finalized = if ENABLE_OCR_DICTIONARY_MAPPING && mapping_enabled {
+        map_words_to_dictionary(app, &grouped, mapping_threshold)
+    } else {
+        grouped.clone()
     };
 
-    let grouped_words = group_words_into_blocks(&words);
-    let finalized_words = if ENABLE_OCR_DICTIONARY_MAPPING && mapping_enabled {
-        map_words_to_dictionary(app, &grouped_words, mapping_threshold)
-    } else {
-        grouped_words.clone()
-    };
-    let mapped_count = finalized_words
-        .iter()
-        .filter(|word| word.slug.is_some())
-        .count();
-    let dropped_count = grouped_words.len().saturating_sub(finalized_words.len());
-    println!(
-        "[ocr] parse OCR words: {:?} ({} words -> {} blocks, {} mapped, {} dropped, mapping {}, threshold {:.2})",
-        parse_started.elapsed(),
-        words.len(),
-        grouped_words.len(),
-        mapped_count,
-        dropped_count,
-        ENABLE_OCR_DICTIONARY_MAPPING && mapping_enabled,
-        mapping_threshold,
+    let mapped = finalized.iter().filter(|w| w.slug.is_some()).count();
+    let dropped = grouped.len().saturating_sub(finalized.len());
+
+    info!(
+        "postprocess: {:?} ({} words → {} blocks, {} mapped, {} dropped, mapping={}, threshold={:.2})",
+        t.elapsed(), words.len(), grouped.len(), mapped, dropped,
+        ENABLE_OCR_DICTIONARY_MAPPING && mapping_enabled, mapping_threshold,
     );
 
+    // Optionally emit plain text to the dashboard
     if PASS_TEXT_TO_FRONTEND {
-        let text_started = Instant::now();
-        let text = finalized_words
+        let text = finalized
             .iter()
-            .map(|word| word.text.trim())
-            .filter(|text| !text.is_empty())
+            .map(|w| w.text.trim())
+            .filter(|t| !t.is_empty())
             .collect::<Vec<_>>()
             .join("\n\n");
 
         if let Some(dashboard) = app.get_webview_window("artus") {
             let _ = dashboard.emit("ocr_text_result", OcrTextPayload { text });
         }
-        println!("[ocr] text emit: {:?}", text_started.elapsed());
     }
 
-    let overlay_started = Instant::now();
+    finalized
+}
+
+// ── Step 6: Overlay display ───────────────────────────────────────────────────
+
+/// Positions, resizes, and shows the overlay window with the OCR results.
+fn show_overlay<R: Runtime>(
+    app: &AppHandle<R>,
+    capture: &CapturedWindow,
+    words: &[OcrWord],
+) -> AppResult<()> {
+    let t = Instant::now();
+
     let overlay = app
         .get_webview_window("overlay")
-        .ok_or("overlay window not found")?;
+        .ok_or_else(|| AppError::WindowNotFound("overlay".into()))?;
 
-    let used_layer_shell_positioning =
-        layer_shell::set_overlay_geometry(&overlay, x, y).unwrap_or(false);
+    // Position overlay to match the captured window
+    let used_layer_shell =
+        layer_shell::set_overlay_geometry(&overlay, capture.x, capture.y).unwrap_or(false);
 
-    if !used_layer_shell_positioning {
+    if !used_layer_shell {
         overlay
-            .set_position(Position::Physical(PhysicalPosition::new(x, y)))
-            .map_err(|err| format!("failed to position overlay: {err}"))?;
+            .set_position(Position::Physical(PhysicalPosition::new(capture.x, capture.y)))
+            .map_err(|err| AppError::msg(format!("failed to position overlay: {err}")))?;
     }
 
     overlay
-        .set_size(Size::Physical(PhysicalSize::new(width, height)))
-        .map_err(|err| format!("failed to resize overlay: {err}"))?;
+        .set_size(Size::Physical(PhysicalSize::new(capture.width, capture.height)))
+        .map_err(|err| AppError::msg(format!("failed to resize overlay: {err}")))?;
     overlay
         .show()
-        .map_err(|err| format!("failed to show overlay: {err}"))?;
+        .map_err(|err| AppError::msg(format!("failed to show overlay: {err}")))?;
 
-    if !layer_shell::is_wayland_session() || used_layer_shell_positioning {
+    // Make overlay click-through
+    if !layer_shell::is_wayland_session() || used_layer_shell {
         let _ = overlay.set_ignore_cursor_events(true);
         let _ = overlay.set_focusable(false);
     }
 
-    let force_click_applied = layer_shell::force_click_through(&overlay).unwrap_or(false);
-    if layer_shell::is_wayland_session() && !force_click_applied {
-        eprintln!("[overlay] click-through not applied on initial show");
+    let force_click = layer_shell::force_click_through(&overlay).unwrap_or(false);
+    if layer_shell::is_wayland_session() && !force_click {
+        error!("click-through not applied on initial show");
     }
 
+    // Wayland: retry click-through after a short delay (compositor race)
     if layer_shell::is_wayland_session() {
-        let app_handle_retry = app.clone();
-        std::thread::spawn(move || {
-            std::thread::sleep(Duration::from_millis(60));
-            if let Some(overlay_retry) = app_handle_retry.get_webview_window("overlay") {
-                let _ = overlay_retry.set_ignore_cursor_events(true);
-                let _ = overlay_retry.set_focusable(false);
-                let retry_applied =
-                    layer_shell::force_click_through(&overlay_retry).unwrap_or(false);
-                if !retry_applied {
-                    eprintln!("[overlay] click-through not applied on delayed retry");
+        let app_clone = app.clone();
+        tauri::async_runtime::spawn(async move {
+            tokio::time::sleep(Duration::from_millis(60)).await;
+            if let Some(retry_overlay) = app_clone.get_webview_window("overlay") {
+                let _ = retry_overlay.set_ignore_cursor_events(true);
+                let _ = retry_overlay.set_focusable(false);
+                if !layer_shell::force_click_through(&retry_overlay).unwrap_or(false) {
+                    error!("click-through not applied on delayed retry");
                 }
             }
         });
     }
 
-    let show_ocr_bounding_boxes = app.store("settings.json")
-        .ok()
-        .and_then(|s| s.get("show_ocr_bounding_boxes"))
-        .and_then(|v| v.as_bool())
-        .unwrap_or(false);
+    // Emit OCR results to the frontend
+    let show_bounding_boxes = app.get_setting_bool("show_ocr_bounding_boxes", false);
 
     app.emit(
         "ocr_result",
         OcrPayload {
-            words: finalized_words,
-            show_ocr_bounding_boxes,
+            words: words.to_vec(),
+            show_ocr_bounding_boxes: show_bounding_boxes,
         },
     )
-    .map_err(|err| format!("failed to emit OCR result: {err}"))?;
-    println!("[ocr] overlay show + emit: {:?}", overlay_started.elapsed());
+    .map_err(|err| AppError::msg(format!("failed to emit OCR result: {err}")))?;
 
+    info!("overlay show + emit: {:?}", t.elapsed());
+    Ok(())
+}
+
+// ── Step 7: Auto-hide timer ───────────────────────────────────────────────────
+
+/// Bumps the overlay sequence counter and schedules hiding after the configured
+/// duration. If another capture occurs before the timer fires, the stale
+/// sequence number prevents the hide.
+fn schedule_auto_hide<R: Runtime>(app: &AppHandle<R>) -> AppResult<()> {
     let sequence = bump_overlay_sequence(app)?;
+    let duration_secs = app.get_setting_u64("overlay_duration_secs", DEFAULT_OVERLAY_DURATION_SECS);
+    let app_clone = app.clone();
 
-    if should_auto_hide {
-        let app_handle = app.clone();
-        let overlay_duration_secs = app_handle.store("settings.json")
-            .ok()
-            .and_then(|s| s.get("overlay_duration_secs"))
-            .and_then(|v| v.as_u64())
-            .unwrap_or(DEFAULT_OVERLAY_DURATION_SECS);
-        std::thread::spawn(move || {
-            std::thread::sleep(Duration::from_secs(overlay_duration_secs));
-            let current_sequence = app_handle
-                .state::<AppState>()
-                .overlay_sequence
-                .lock()
-                .map(|value| *value)
-                .unwrap_or(0);
-            if current_sequence != sequence {
-                return;
-            }
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(Duration::from_secs(duration_secs)).await;
 
-            if let Some(overlay) = app_handle.get_webview_window("overlay") {
+        // Only hide if no newer capture has occurred
+        let current = app_clone
+            .state::<AppState>()
+            .overlay_sequence
+            .lock()
+            .map(|v| *v)
+            .unwrap_or(0);
+
+        if current == sequence {
+            if let Some(overlay) = app_clone.get_webview_window("overlay") {
                 let _ = overlay.hide();
             }
-        });
-    }
-
-    println!("[ocr] total: {:?}", total_started.elapsed());
+        }
+    });
 
     Ok(())
+}
+
+/// Increments and returns the overlay sequence counter.
+fn bump_overlay_sequence<R: Runtime>(app: &AppHandle<R>) -> AppResult<u64> {
+    let state = app.state::<AppState>();
+    let mut guard = state.overlay_sequence.lock()?;
+    *guard += 1;
+    Ok(*guard)
 }

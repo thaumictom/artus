@@ -1,108 +1,141 @@
+//! Remote dictionary fetching, fuzzy matching, and tradeable-item price lookups.
+
 use std::collections::{BTreeMap, HashMap};
 use std::time::Duration;
 
+use log::{info, warn};
 use serde::Deserialize;
 use tauri::{AppHandle, Manager, Runtime};
-use tauri_plugin_store::StoreExt;
 
-use crate::state::{AppState, OcrDictionaryEntry, TradeablePriceEntry};
-
+use crate::error::{AppError, AppResult};
+use crate::state::AppState;
 use super::{
-    OcrWord, OcrThemeOption, SETTINGS_STORE_PATH, OVERLAY_DURATION_STORE_KEY,
-    OVERLAY_TOGGLE_MODE_STORE_KEY, OCR_DICTIONARY_MAPPING_ENABLED_STORE_KEY,
-    OCR_DICTIONARY_MATCH_THRESHOLD_STORE_KEY, OCR_THEME_STORE_KEY,
-    DEFAULT_OVERLAY_TOGGLE_MODE, DEFAULT_OCR_DICTIONARY_MAPPING_ENABLED,
-    DEFAULT_OCR_DICTIONARY_MATCH_THRESHOLD, MIN_OCR_DICTIONARY_MATCH_THRESHOLD,
-    MAX_OCR_DICTIONARY_MATCH_THRESHOLD, OCR_DICTIONARY_HTTP_TIMEOUT_SECS,
-    OCR_DICTIONARY_API_URL, TRADEABLE_ITEMS_API_URL, CUSTOM_OCR_DICTIONARY_ITEMS,
-    THEME_COLORS_TOML,
+    OcrWord, OcrThemeOption,
+    OCR_DICTIONARY_HTTP_TIMEOUT_SECS, OCR_DICTIONARY_API_URL, TRADEABLE_ITEMS_API_URL,
+    CUSTOM_OCR_DICTIONARY_ITEMS, THEME_COLORS_TOML,
 };
 
-#[derive(Debug, Deserialize)]
-pub struct ThemeColorsToml {
-    #[serde(default)]
-    pub primary: BTreeMap<String, [u8; 3]>,
-}
+// ── Types owned by this module (moved from state.rs) ──────────────────────────
 
-#[derive(Debug, Deserialize)]
-pub struct DictionaryApiResponse {
-    #[serde(default)]
-    pub tradeable_items: Vec<DictionaryApiItem>,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct DictionaryApiItem {
+/// A single entry in the OCR dictionary used for fuzzy matching.
+#[derive(Debug, Clone)]
+pub struct OcrDictionaryEntry {
     pub name: String,
     pub slug: String,
-    #[serde(default)]
     pub tags: Vec<String>,
-    #[serde(default)]
+    pub normalized_name: String,
     pub ducats: Option<u64>,
-    #[serde(default)]
     pub vaulted: Option<bool>,
+    pub is_custom: bool,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct TradeableItemsApiResponse {
-    #[serde(default)]
-    pub tradeable_items: Vec<TradeableItemApiItem>,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct TradeableItemApiItem {
-    pub slug: String,
-    #[serde(default)]
-    pub statistics_today: Vec<TradeableItemStats>,
-    #[serde(default)]
-    pub current_offers: Vec<TradeableItemStats>,
-    #[serde(default)]
+/// Median price data for a tradeable item, keyed by slug.
+#[derive(Debug, Clone)]
+pub struct TradeablePriceEntry {
+    pub median: f64,
+    pub used_current_offer_fallback: bool,
+    pub trades_24h: Option<f64>,
+    pub moving_avg: Option<f64>,
     pub ducats: Option<u64>,
 }
 
+// ── API response types ────────────────────────────────────────────────────────
+
 #[derive(Debug, Deserialize)]
-pub struct TradeableItemStats {
-    pub median: Option<f64>,
-    pub volume: Option<f64>,
-    pub moving_avg: Option<f64>,
+struct ThemeColorsToml {
+    #[serde(default)]
+    primary: BTreeMap<String, [u8; 3]>,
 }
 
+#[derive(Debug, Deserialize)]
+struct DictionaryApiResponse {
+    #[serde(default)]
+    tradeable_items: Vec<DictionaryApiItem>,
+}
+
+#[derive(Debug, Deserialize)]
+struct DictionaryApiItem {
+    name: String,
+    slug: String,
+    #[serde(default)]
+    tags: Vec<String>,
+    #[serde(default)]
+    ducats: Option<u64>,
+    #[serde(default)]
+    vaulted: Option<bool>,
+}
+
+#[derive(Debug, Deserialize)]
+struct TradeableItemsApiResponse {
+    #[serde(default)]
+    tradeable_items: Vec<TradeableItemApiItem>,
+}
+
+#[derive(Debug, Deserialize)]
+struct TradeableItemApiItem {
+    slug: String,
+    #[serde(default)]
+    statistics_today: Vec<TradeableItemStats>,
+    #[serde(default)]
+    current_offers: Vec<TradeableItemStats>,
+    #[serde(default)]
+    ducats: Option<u64>,
+}
+
+#[derive(Debug, Deserialize)]
+struct TradeableItemStats {
+    median: Option<f64>,
+    volume: Option<f64>,
+    moving_avg: Option<f64>,
+}
+
+// ── HTTP helper ───────────────────────────────────────────────────────────────
+
+/// Builds a blocking HTTP client with the configured timeout.
+fn blocking_http_client() -> AppResult<reqwest::blocking::Client> {
+    reqwest::blocking::Client::builder()
+        .timeout(Duration::from_secs(OCR_DICTIONARY_HTTP_TIMEOUT_SECS))
+        .build()
+        .map_err(|err| AppError::msg(format!("failed to build HTTP client: {err}")))
+}
+
+// ── Theme loading ─────────────────────────────────────────────────────────────
+
+/// Parses the embedded `theme_colors.toml` and returns the available themes.
 pub fn load_primary_theme_options<R: Runtime>(
     _app: &AppHandle<R>,
-) -> Result<Vec<OcrThemeOption>, String> {
-    let parsed: ThemeColorsToml = toml::from_str(THEME_COLORS_TOML)
-        .map_err(|err| format!("failed to parse embedded theme colors: {err}"))?;
+) -> AppResult<Vec<OcrThemeOption>> {
+    let parsed: ThemeColorsToml = toml::from_str(THEME_COLORS_TOML)?;
 
-    let themes = parsed
+    let themes: Vec<OcrThemeOption> = parsed
         .primary
         .into_iter()
         .map(|(name, rgb)| OcrThemeOption { name, rgb })
-        .collect::<Vec<_>>();
+        .collect();
 
     if themes.is_empty() {
-        return Err("primary section in theme_colors.toml is empty".to_string());
+        return Err(AppError::msg(
+            "primary section in theme_colors.toml is empty",
+        ));
     }
 
     Ok(themes)
 }
 
-pub fn load_ocr_dictionary<R: Runtime>(app: &AppHandle<R>) -> Result<usize, String> {
-    let client = reqwest::blocking::Client::builder()
-        .timeout(Duration::from_secs(OCR_DICTIONARY_HTTP_TIMEOUT_SECS))
-        .build()
-        .map_err(|err| format!("failed to build dictionary client: {err}"))?;
+// ── Dictionary loading ────────────────────────────────────────────────────────
 
-    let response = client
+/// Fetches the OCR dictionary from the remote API and stores it in [`AppState`].
+/// Returns the number of entries loaded.
+pub fn load_ocr_dictionary<R: Runtime>(app: &AppHandle<R>) -> AppResult<usize> {
+    let client = blocking_http_client()?;
+
+    let payload: DictionaryApiResponse = client
         .get(OCR_DICTIONARY_API_URL)
-        .send()
-        .map_err(|err| format!("failed to fetch dictionary: {err}"))?
-        .error_for_status()
-        .map_err(|err| format!("dictionary request failed: {err}"))?;
+        .send()?
+        .error_for_status()?
+        .json()?;
 
-    let payload: DictionaryApiResponse = response
-        .json()
-        .map_err(|err| format!("failed to parse dictionary response: {err}"))?;
-
-    let mut dictionary_entries = payload
+    let mut entries: Vec<OcrDictionaryEntry> = payload
         .tradeable_items
         .into_iter()
         .filter_map(|item| {
@@ -111,12 +144,10 @@ pub fn load_ocr_dictionary<R: Runtime>(app: &AppHandle<R>) -> Result<usize, Stri
             if name.is_empty() || slug.is_empty() {
                 return None;
             }
-
             let normalized_name = normalize_dictionary_text(name);
             if normalized_name.is_empty() {
                 return None;
             }
-
             Some(OcrDictionaryEntry {
                 name: name.to_string(),
                 slug: slug.to_string(),
@@ -127,46 +158,37 @@ pub fn load_ocr_dictionary<R: Runtime>(app: &AppHandle<R>) -> Result<usize, Stri
                 is_custom: false,
             })
         })
-        .collect::<Vec<_>>();
+        .collect();
 
+    // Append hard-coded custom items that aren't in the remote API
     for name in CUSTOM_OCR_DICTIONARY_ITEMS {
         if let Some(entry) = build_custom_dictionary_entry(name) {
-            dictionary_entries.push(entry);
+            entries.push(entry);
         }
     }
 
-    dictionary_entries.sort_by(|left, right| left.normalized_name.cmp(&right.normalized_name));
-    dictionary_entries.dedup_by(|left, right| left.normalized_name == right.normalized_name);
+    entries.sort_by(|a, b| a.normalized_name.cmp(&b.normalized_name));
+    entries.dedup_by(|a, b| a.normalized_name == b.normalized_name);
 
-    let dictionary_len = dictionary_entries.len();
-    let app_state = app.state::<AppState>();
-    let mut dictionary = app_state
-        .ocr_dictionary
-        .lock()
-        .map_err(|_| "failed to store OCR dictionary".to_string())?;
-    *dictionary = dictionary_entries;
-
-    Ok(dictionary_len)
+    let count = entries.len();
+    *app.state::<AppState>().ocr_dictionary.lock()? = entries;
+    Ok(count)
 }
 
-pub fn load_tradeable_item_prices<R: Runtime>(app: &AppHandle<R>) -> Result<usize, String> {
-    let client = reqwest::blocking::Client::builder()
-        .timeout(Duration::from_secs(OCR_DICTIONARY_HTTP_TIMEOUT_SECS))
-        .build()
-        .map_err(|err| format!("failed to build tradeable item client: {err}"))?;
+// ── Tradeable item prices ─────────────────────────────────────────────────────
 
-    let response = client
+/// Fetches tradeable item price statistics and stores them in [`AppState`].
+/// Returns the number of items with valid median prices.
+pub fn load_tradeable_item_prices<R: Runtime>(app: &AppHandle<R>) -> AppResult<usize> {
+    let client = blocking_http_client()?;
+
+    let payload: TradeableItemsApiResponse = client
         .get(TRADEABLE_ITEMS_API_URL)
-        .send()
-        .map_err(|err| format!("failed to fetch tradeable items: {err}"))?
-        .error_for_status()
-        .map_err(|err| format!("tradeable items request failed: {err}"))?;
+        .send()?
+        .error_for_status()?
+        .json()?;
 
-    let payload: TradeableItemsApiResponse = response
-        .json()
-        .map_err(|err| format!("failed to parse tradeable items response: {err}"))?;
-
-    let mut prices_by_slug = HashMap::new();
+    let mut prices = HashMap::new();
 
     for item in payload.tradeable_items {
         let slug = item.slug.trim();
@@ -174,176 +196,152 @@ pub fn load_tradeable_item_prices<R: Runtime>(app: &AppHandle<R>) -> Result<usiz
             continue;
         }
 
-        let statistics_today_median = item
-            .statistics_today
-            .first()
-            .and_then(|entry| entry.median)
-            .filter(|median| median.is_finite());
+        let stats_today = item.statistics_today.first();
+        let offers = item.current_offers.first();
 
-        let current_offers_median = item
-            .current_offers
-            .first()
-            .and_then(|entry| entry.median)
-            .filter(|median| median.is_finite());
+        let stats_median = stats_today
+            .and_then(|s| s.median)
+            .filter(|m| m.is_finite());
+        let offers_median = offers
+            .and_then(|s| s.median)
+            .filter(|m| m.is_finite());
 
-        let trades_24h = item
-            .statistics_today
-            .first()
-            .and_then(|entry| entry.volume)
-            .filter(|value| value.is_finite());
-        let moving_avg = item
-            .statistics_today
-            .first()
-            .and_then(|entry| entry.moving_avg)
-            .filter(|value| value.is_finite());
-        let ducats = item.ducats;
-
-        let Some((median, used_fallback)) = statistics_today_median
-            .map(|value| (value, false))
-            .or_else(|| current_offers_median.map(|value| (value, true)))
+        // Prefer today's stats; fall back to current offers
+        let Some((median, used_fallback)) = stats_median
+            .map(|v| (v, false))
+            .or_else(|| offers_median.map(|v| (v, true)))
         else {
             continue;
         };
 
-        prices_by_slug.insert(
+        prices.insert(
             slug.to_string(),
             TradeablePriceEntry {
                 median,
                 used_current_offer_fallback: used_fallback,
-                trades_24h,
-                moving_avg,
-                ducats,
+                trades_24h: stats_today.and_then(|s| s.volume).filter(|v| v.is_finite()),
+                moving_avg: stats_today.and_then(|s| s.moving_avg).filter(|v| v.is_finite()),
+                ducats: item.ducats,
             },
         );
     }
 
-    let count = prices_by_slug.len();
-    let app_state = app.state::<AppState>();
-    let mut prices_guard = app_state
-        .ocr_tradeable_prices
-        .lock()
-        .map_err(|_| "failed to store tradeable prices".to_string())?;
-    *prices_guard = prices_by_slug;
-
+    let count = prices.len();
+    *app.state::<AppState>().ocr_tradeable_prices.lock()? = prices;
     Ok(count)
 }
 
+// ── Dictionary matching ───────────────────────────────────────────────────────
+
+/// Maps grouped OCR words to the closest dictionary entries, enriching each
+/// word with slug, price, ducat, and vaulted metadata.
+///
+/// Words that don't meet the similarity `threshold` are dropped entirely.
 pub fn map_words_to_dictionary<R: Runtime>(
     app: &AppHandle<R>,
     words: &[OcrWord],
     threshold: f64,
 ) -> Vec<OcrWord> {
     if words.is_empty() {
-        return vec![];
+        return Vec::new();
     }
 
-    let app_state = app.state::<AppState>();
-    let dictionary_guard = match app_state.ocr_dictionary.lock() {
+    let state = app.state::<AppState>();
+    let dict = match state.ocr_dictionary.lock() {
         Ok(guard) => guard,
         Err(_) => return words.to_vec(),
     };
 
-    if dictionary_guard.is_empty() {
+    if dict.is_empty() {
         return words.to_vec();
     }
 
-    let needs_price_reload = app_state
+    // Lazy-load prices if they haven't been fetched yet
+    let needs_prices = state
         .ocr_tradeable_prices
         .lock()
-        .map(|prices| prices.is_empty())
+        .map(|p| p.is_empty())
         .unwrap_or(false);
 
-    if needs_price_reload {
+    if needs_prices {
         match load_tradeable_item_prices(app) {
-            Ok(count) => println!("[ocr] lazy-loaded tradeable item prices: {count}"),
-            Err(err) => eprintln!("[ocr] failed to lazy-load tradeable item prices: {err}"),
+            Ok(count) => info!("lazy-loaded tradeable item prices: {count}"),
+            Err(err) => warn!("failed to lazy-load tradeable item prices: {err}"),
         }
     }
 
-    let prices_guard = app_state.ocr_tradeable_prices.lock().ok();
-    let prices_by_slug = prices_guard.as_deref();
+    let prices = state.ocr_tradeable_prices.lock().ok();
+    let prices_ref = prices.as_deref();
 
     words
         .iter()
-        .filter_map(|word| {
-            map_word_to_dictionary(word, &dictionary_guard, prices_by_slug, threshold)
-        })
+        .filter_map(|word| match_single_word(word, &dict, prices_ref, threshold))
         .collect()
 }
 
-pub fn map_word_to_dictionary(
+/// Finds the best dictionary match for a single word/block.
+fn match_single_word(
     word: &OcrWord,
     dictionary: &[OcrDictionaryEntry],
-    prices_by_slug: Option<&HashMap<String, TradeablePriceEntry>>,
+    prices: Option<&HashMap<String, TradeablePriceEntry>>,
     threshold: f64,
 ) -> Option<OcrWord> {
-    let normalized_word = normalize_dictionary_text(&word.text);
-    if normalized_word.is_empty() {
+    let normalized = normalize_dictionary_text(&word.text);
+    if normalized.is_empty() {
         return None;
     }
-    let normalized_tokens = normalized_word.split_whitespace().collect::<Vec<_>>();
+    let tokens: Vec<&str> = normalized.split_whitespace().collect();
 
-    let mut best_match: Option<(&OcrDictionaryEntry, f64)> = None;
-
-    for candidate in dictionary {
+    // Find the highest-scoring candidate
+    let best = dictionary.iter().map(|candidate| {
+        // Bonus for tag overlap with OCR tokens
         let tag_bonus = candidate
             .tags
             .iter()
-            .filter_map(|tag| {
-                let normalized_tag = normalize_dictionary_text(tag);
-                if normalized_tag.is_empty() {
-                    None
-                } else {
-                    Some(normalized_tag)
-                }
-            })
-            .filter(|normalized_tag| {
-                normalized_tokens
-                    .iter()
-                    .any(|token| *token == normalized_tag.as_str())
+            .filter(|tag| {
+                let nt = normalize_dictionary_text(tag);
+                !nt.is_empty() && tokens.iter().any(|t| *t == nt.as_str())
             })
             .count() as f64
             * 0.02;
 
-        let score = (dictionary_similarity_score(&normalized_word, &candidate.normalized_name)
-            + tag_bonus)
-            .min(1.0);
-        match best_match {
-            Some((_, best_score)) if score <= best_score => {}
-            _ => best_match = Some((candidate, score)),
-        }
+        let score = (similarity_score(&normalized, &candidate.normalized_name) + tag_bonus).min(1.0);
+        (candidate, score)
+    }).max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))?;
+
+    let (candidate, score) = best;
+    if score < threshold {
+        return None;
     }
 
-    match best_match {
-        Some((candidate, score)) if score >= threshold => {
-            let mut mapped = word.clone();
-            mapped.text = candidate.name.clone();
-            mapped.slug = Some(candidate.slug.clone());
-            mapped.mapping_confidence = Some(score);
-            mapped.ducats = candidate.ducats;
-            mapped.vaulted = candidate.vaulted;
-            mapped.is_custom = Some(candidate.is_custom);
+    let mut mapped = word.clone();
+    mapped.text = candidate.name.clone();
+    mapped.slug = Some(candidate.slug.clone());
+    mapped.mapping_confidence = Some(score);
+    mapped.ducats = candidate.ducats;
+    mapped.vaulted = candidate.vaulted;
+    mapped.is_custom = Some(candidate.is_custom);
 
-            if let Some(prices_lookup) = prices_by_slug {
-                if let Some(price_entry) = prices_lookup.get(&candidate.slug) {
-                    mapped.market_median = Some(price_entry.median);
-                    mapped.market_median_from_current_offers =
-                        Some(price_entry.used_current_offer_fallback);
-                    if mapped.ducats.is_none() {
-                        mapped.ducats = price_entry.ducats;
-                    }
-                    mapped.trades_24h = price_entry.trades_24h;
-                    mapped.moving_avg = price_entry.moving_avg;
-                }
+    // Enrich with price data
+    if let Some(prices_map) = prices {
+        if let Some(price) = prices_map.get(&candidate.slug) {
+            mapped.market_median = Some(price.median);
+            mapped.market_median_from_current_offers = Some(price.used_current_offer_fallback);
+            if mapped.ducats.is_none() {
+                mapped.ducats = price.ducats;
             }
-
-            Some(mapped)
+            mapped.trades_24h = price.trades_24h;
+            mapped.moving_avg = price.moving_avg;
         }
-        _ => None,
     }
+
+    Some(mapped)
 }
 
-pub fn dictionary_similarity_score(left: &str, right: &str) -> f64 {
+// ── String similarity ─────────────────────────────────────────────────────────
+
+/// Combined similarity score: 85% Levenshtein distance + 15% token overlap.
+fn similarity_score(left: &str, right: &str) -> f64 {
     if left == right {
         return 1.0;
     }
@@ -354,25 +352,24 @@ pub fn dictionary_similarity_score(left: &str, right: &str) -> f64 {
     }
 
     let distance = levenshtein_distance(left.as_bytes(), right.as_bytes());
-    let levenshtein_score = 1.0 - distance as f64 / max_len as f64;
-    let overlap_score = token_overlap_score(left, right);
-    (levenshtein_score * 0.85 + overlap_score * 0.15).clamp(0.0, 1.0)
+    let lev_score = 1.0 - distance as f64 / max_len as f64;
+    let overlap = token_overlap_score(left, right);
+    (lev_score * 0.85 + overlap * 0.15).clamp(0.0, 1.0)
 }
 
-pub fn token_overlap_score(left: &str, right: &str) -> f64 {
-    let left_tokens = left.split_whitespace().collect::<Vec<_>>();
-    let right_tokens = right.split_whitespace().collect::<Vec<_>>();
-    if left_tokens.is_empty() || right_tokens.is_empty() {
+/// Fraction of tokens shared between two strings.
+fn token_overlap_score(left: &str, right: &str) -> f64 {
+    let lt: Vec<&str> = left.split_whitespace().collect();
+    let rt: Vec<&str> = right.split_whitespace().collect();
+    if lt.is_empty() || rt.is_empty() {
         return 0.0;
     }
-
-    let shared_count = left_tokens
-        .iter()
-        .filter(|token| right_tokens.contains(token))
-        .count();
-    shared_count as f64 / left_tokens.len().max(right_tokens.len()) as f64
+    let shared = lt.iter().filter(|t| rt.contains(t)).count();
+    shared as f64 / lt.len().max(rt.len()) as f64
 }
 
+/// Normalizes text for dictionary comparison: lowercase alphanumeric with
+/// single spaces.
 pub fn normalize_dictionary_text(value: &str) -> String {
     value
         .chars()
@@ -389,29 +386,31 @@ pub fn normalize_dictionary_text(value: &str) -> String {
         .join(" ")
 }
 
-pub fn build_custom_dictionary_entry(name: &str) -> Option<OcrDictionaryEntry> {
+/// Creates a dictionary entry for a hard-coded custom item.
+fn build_custom_dictionary_entry(name: &str) -> Option<OcrDictionaryEntry> {
     let trimmed = name.trim();
     if trimmed.is_empty() {
         return None;
     }
 
-    let normalized_name = normalize_dictionary_text(trimmed);
-    if normalized_name.is_empty() {
+    let normalized = normalize_dictionary_text(trimmed);
+    if normalized.is_empty() {
         return None;
     }
 
     Some(OcrDictionaryEntry {
         name: trimmed.to_string(),
-        slug: normalized_name.replace(' ', "_"),
+        slug: normalized.replace(' ', "_"),
         tags: Vec::new(),
-        normalized_name,
+        normalized_name: normalized,
         ducats: None,
         vaulted: None,
         is_custom: true,
     })
 }
 
-pub fn levenshtein_distance(left: &[u8], right: &[u8]) -> usize {
+/// Classic two-row dynamic-programming Levenshtein distance.
+fn levenshtein_distance(left: &[u8], right: &[u8]) -> usize {
     if left.is_empty() {
         return right.len();
     }
@@ -419,23 +418,19 @@ pub fn levenshtein_distance(left: &[u8], right: &[u8]) -> usize {
         return left.len();
     }
 
-    let mut previous_row: Vec<usize> = (0..=right.len()).collect();
-    let mut current_row = vec![0usize; right.len() + 1];
+    let mut prev: Vec<usize> = (0..=right.len()).collect();
+    let mut curr = vec![0usize; right.len() + 1];
 
-    for (left_index, left_byte) in left.iter().enumerate() {
-        current_row[0] = left_index + 1;
-
-        for (right_index, right_byte) in right.iter().enumerate() {
-            let substitution_cost = if left_byte == right_byte { 0 } else { 1 };
-            let delete_cost = previous_row[right_index + 1] + 1;
-            let insert_cost = current_row[right_index] + 1;
-            let substitute_cost = previous_row[right_index] + substitution_cost;
-
-            current_row[right_index + 1] = delete_cost.min(insert_cost).min(substitute_cost);
+    for (li, lb) in left.iter().enumerate() {
+        curr[0] = li + 1;
+        for (ri, rb) in right.iter().enumerate() {
+            let cost = if lb == rb { 0 } else { 1 };
+            curr[ri + 1] = (prev[ri + 1] + 1)
+                .min(curr[ri] + 1)
+                .min(prev[ri] + cost);
         }
-
-        std::mem::swap(&mut previous_row, &mut current_row);
+        std::mem::swap(&mut prev, &mut curr);
     }
 
-    previous_row[right.len()]
+    prev[right.len()]
 }

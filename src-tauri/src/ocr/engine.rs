@@ -1,7 +1,13 @@
+//! Tessdata resolution and word-grouping geometry.
+//!
+//! After Tesseract produces individual word bounding boxes, this module groups
+//! them into logical lines and multi-line blocks using spatial heuristics.
+
 use std::env;
 use std::path::{Path, PathBuf};
 use tauri::{AppHandle, Manager, Runtime};
 
+use crate::error::{AppError, AppResult};
 use super::{
     OcrWord, SAME_LINE_VERTICAL_FACTOR, HORIZONTAL_WORD_GAP_FACTOR,
     MERGE_LINE_VERTICAL_FACTOR, MAX_MERGED_LINES, CENTER_ALIGNED_MERGE_FACTOR,
@@ -11,16 +17,14 @@ use super::{
 #[cfg(target_os = "windows")]
 use super::{EMBEDDED_TRAINEDDATA_BYTES, EMBEDDED_TRAINEDDATA_FILENAME};
 
-#[derive(Debug, Clone)]
-pub struct RawWord {
-    pub text: String,
-    pub x: f64,
-    pub y: f64,
-    pub width: f64,
-    pub height: f64,
-}
+// ── Tessdata resolution ───────────────────────────────────────────────────────
 
-pub fn resolve_tessdata<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf, String> {
+/// Locates the `tessdata` directory, checking (in order):
+/// 1. Embedded traineddata extracted to app-data (Windows only)
+/// 2. Tauri resource directory
+/// 3. Executable directory
+/// 4. Current working directory
+pub fn resolve_tessdata<R: Runtime>(app: &AppHandle<R>) -> AppResult<PathBuf> {
     let mut checked_paths = Vec::new();
 
     #[cfg(target_os = "windows")]
@@ -32,20 +36,18 @@ pub fn resolve_tessdata<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf, Strin
         }
     }
 
-    let mut candidates = vec![];
+    let mut candidates = Vec::new();
 
     if let Ok(resource_dir) = app.path().resource_dir() {
         candidates.push(resource_dir.join("tessdata"));
         candidates.push(resource_dir);
     }
-
     if let Ok(current_exe) = env::current_exe() {
         if let Some(exe_dir) = current_exe.parent() {
             candidates.push(exe_dir.join("tessdata"));
             candidates.push(exe_dir.to_path_buf());
         }
     }
-
     if let Ok(cwd) = env::current_dir() {
         candidates.push(cwd.join("src-tauri").join("tessdata"));
         candidates.push(cwd.join("tessdata"));
@@ -58,22 +60,23 @@ pub fn resolve_tessdata<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf, Strin
         checked_paths.push(candidate.display().to_string());
     }
 
-    Err(format!(
+    Err(AppError::msg(format!(
         "could not find tessdata directory (checked: {})",
         checked_paths.join(", ")
-    ))
+    )))
 }
 
+/// On Windows, extract the compiled-in traineddata to the app-data directory
+/// so Tesseract can find it at a stable filesystem path.
 #[cfg(target_os = "windows")]
-pub fn resolve_embedded_tessdata<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf, String> {
+fn resolve_embedded_tessdata<R: Runtime>(app: &AppHandle<R>) -> AppResult<PathBuf> {
     let app_data_dir = app
         .path()
         .app_data_dir()
-        .map_err(|err| format!("failed to resolve app data dir: {err}"))?;
+        .map_err(|err| AppError::msg(format!("failed to resolve app data dir: {err}")))?;
     let tessdata_dir = app_data_dir.join("tessdata");
 
-    std::fs::create_dir_all(&tessdata_dir)
-        .map_err(|err| format!("failed to create embedded tessdata dir: {err}"))?;
+    std::fs::create_dir_all(&tessdata_dir)?;
 
     let traineddata_path = tessdata_dir.join(EMBEDDED_TRAINEDDATA_FILENAME);
     let should_write = std::fs::metadata(&traineddata_path)
@@ -81,18 +84,17 @@ pub fn resolve_embedded_tessdata<R: Runtime>(app: &AppHandle<R>) -> Result<PathB
         .unwrap_or(true);
 
     if should_write {
-        std::fs::write(&traineddata_path, EMBEDDED_TRAINEDDATA_BYTES)
-            .map_err(|err| format!("failed to write embedded traineddata: {err}"))?;
+        std::fs::write(&traineddata_path, EMBEDDED_TRAINEDDATA_BYTES)?;
     }
 
     Ok(tessdata_dir)
 }
 
-pub fn has_traineddata_files(path: &Path) -> bool {
+/// Returns `true` if the directory contains at least one `.traineddata` file.
+fn has_traineddata_files(path: &Path) -> bool {
     if !path.is_dir() {
         return false;
     }
-
     std::fs::read_dir(path)
         .ok()
         .map(|entries| {
@@ -107,21 +109,41 @@ pub fn has_traineddata_files(path: &Path) -> bool {
         .unwrap_or(false)
 }
 
-pub fn ranges_overlap(left_start: f64, left_end: f64, right_start: f64, right_end: f64) -> bool {
-    left_start.max(right_start) <= left_end.min(right_end)
+// ── Geometric helpers ─────────────────────────────────────────────────────────
+
+/// Intermediate representation for word geometry during grouping.
+#[derive(Debug, Clone)]
+struct RawWord {
+    text: String,
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
 }
 
-pub fn horizontal_gap(left_start: f64, left_end: f64, right_start: f64, right_end: f64) -> f64 {
-    if left_end < right_start {
-        right_start - left_end
-    } else if right_end < left_start {
-        left_start - right_end
+/// Returns `true` if the two ranges `[a_start, a_end]` and `[b_start, b_end]` overlap.
+fn ranges_overlap(a_start: f64, a_end: f64, b_start: f64, b_end: f64) -> bool {
+    a_start.max(b_start) <= a_end.min(b_end)
+}
+
+/// Returns the horizontal gap between two non-overlapping ranges, or 0 if they overlap.
+fn horizontal_gap(a_start: f64, a_end: f64, b_start: f64, b_end: f64) -> f64 {
+    if a_end < b_start {
+        b_start - a_end
+    } else if b_end < a_start {
+        a_start - b_end
     } else {
         0.0
     }
 }
 
-pub fn can_merge_multiline_segment(
+/// Compare float values for sorting, treating NaN as equal.
+fn f64_cmp(a: f64, b: f64) -> std::cmp::Ordering {
+    a.partial_cmp(&b).unwrap_or(std::cmp::Ordering::Equal)
+}
+
+/// Decides whether a lower line segment can be merged into an upper multi-line block.
+fn can_merge_multiline_segment(
     upper_left: f64,
     upper_right: f64,
     upper_height: f64,
@@ -130,16 +152,18 @@ pub fn can_merge_multiline_segment(
     let lower_left = lower.x;
     let lower_right = lower.x + lower.width;
 
+    // Direct horizontal overlap → always merge
     if ranges_overlap(upper_left, upper_right, lower_left, lower_right) {
         return true;
     }
 
+    // Center-aligned tolerance check
     let max_height = upper_height.max(lower.height);
     let upper_center = (upper_left + upper_right) * 0.5;
     let lower_center = (lower_left + lower_right) * 0.5;
     let center_delta = (upper_center - lower_center).abs();
-    let center_tolerance = max_height * CENTER_ALIGNED_MERGE_FACTOR;
-    if center_delta > center_tolerance {
+
+    if center_delta > max_height * CENTER_ALIGNED_MERGE_FACTOR {
         return false;
     }
 
@@ -147,54 +171,50 @@ pub fn can_merge_multiline_segment(
     gap <= max_height * CENTER_ALIGNED_HORIZONTAL_GAP_FACTOR
 }
 
+// ── Word grouping pipeline ────────────────────────────────────────────────────
+
+/// Groups individual OCR words into logical blocks by:
+/// 1. Assigning words to horizontal lines based on vertical proximity.
+/// 2. Merging adjacent words on the same line into segments.
+/// 3. Merging vertically adjacent segments into multi-line blocks.
 pub fn group_words_into_blocks(words: &[OcrWord]) -> Vec<OcrWord> {
     if words.is_empty() {
-        return vec![];
+        return Vec::new();
     }
 
-    let mut raw_words = words
+    // Convert to mutable intermediate representation, sorted top-to-bottom
+    let mut raw_words: Vec<RawWord> = words
         .iter()
-        .map(|word| RawWord {
-            text: word.text.clone(),
-            x: word.x,
-            y: word.y,
-            width: word.width,
-            height: word.height,
+        .map(|w| RawWord {
+            text: w.text.clone(),
+            x: w.x,
+            y: w.y,
+            width: w.width,
+            height: w.height,
         })
-        .collect::<Vec<_>>();
+        .collect();
 
-    raw_words.sort_by(|left, right| {
-        left.y
-            .partial_cmp(&right.y)
-            .unwrap_or(std::cmp::Ordering::Equal)
-            .then(
-                left.x
-                    .partial_cmp(&right.x)
-                    .unwrap_or(std::cmp::Ordering::Equal),
-            )
-    });
+    raw_words.sort_by(|a, b| f64_cmp(a.y, b.y).then(f64_cmp(a.x, b.x)));
 
+    // ── Step 1: Cluster words into horizontal lines ──
     let mut lines: Vec<Vec<RawWord>> = Vec::new();
     let mut line_centers: Vec<f64> = Vec::new();
     let mut line_heights: Vec<f64> = Vec::new();
 
     for word in raw_words {
         let center_y = word.y + word.height * 0.5;
-        let mut found_line = None;
-        for (index, line_center) in line_centers.iter().enumerate() {
-            let line_height = line_heights[index].max(word.height);
-            if (center_y - *line_center).abs() <= line_height * SAME_LINE_VERTICAL_FACTOR {
-                found_line = Some(index);
-                break;
-            }
-        }
 
-        if let Some(index) = found_line {
-            let line = &mut lines[index];
-            let prev_len = line.len() as f64;
-            line.push(word.clone());
-            line_centers[index] = (line_centers[index] * prev_len + center_y) / (prev_len + 1.0);
-            line_heights[index] = line_heights[index].max(word.height);
+        let existing_line = line_centers.iter().enumerate().find(|(i, &lc)| {
+            let lh = line_heights[*i].max(word.height);
+            (center_y - lc).abs() <= lh * SAME_LINE_VERTICAL_FACTOR
+        });
+
+        if let Some((idx, _)) = existing_line {
+            let prev_count = lines[idx].len() as f64;
+            lines[idx].push(word.clone());
+            // Running average of vertical centers
+            line_centers[idx] = (line_centers[idx] * prev_count + center_y) / (prev_count + 1.0);
+            line_heights[idx] = line_heights[idx].max(word.height);
         } else {
             lines.push(vec![word.clone()]);
             line_centers.push(center_y);
@@ -202,138 +222,100 @@ pub fn group_words_into_blocks(words: &[OcrWord]) -> Vec<OcrWord> {
         }
     }
 
+    // Sort words within each line left-to-right
     for line in &mut lines {
-        line.sort_by(|left, right| {
-            left.x
-                .partial_cmp(&right.x)
-                .unwrap_or(std::cmp::Ordering::Equal)
-        });
+        line.sort_by(|a, b| f64_cmp(a.x, b.x));
     }
 
+    // ── Step 2: Merge adjacent words into line segments ──
     let mut line_segments = Vec::new();
-    for line in lines {
+    for line in &lines {
         if line.is_empty() {
             continue;
         }
 
-        let avg_height = line.iter().map(|word| word.height).sum::<f64>() / line.len() as f64;
+        let avg_height = line.iter().map(|w| w.height).sum::<f64>() / line.len() as f64;
         let max_gap = avg_height * HORIZONTAL_WORD_GAP_FACTOR;
 
         let mut current: Option<RawWord> = None;
         for word in line {
             match current.as_mut() {
-                Some(segment) => {
-                    let segment_right = segment.x + segment.width;
-                    let gap = word.x - segment_right;
-                    if gap <= max_gap {
-                        segment.text.push(' ');
-                        segment.text.push_str(&word.text);
-                        let right = (segment.x + segment.width).max(word.x + word.width);
-                        let bottom = (segment.y + segment.height).max(word.y + word.height);
-                        segment.x = segment.x.min(word.x);
-                        segment.y = segment.y.min(word.y);
-                        segment.width = right - segment.x;
-                        segment.height = bottom - segment.y;
+                Some(seg) => {
+                    let seg_right = seg.x + seg.width;
+                    if word.x - seg_right <= max_gap {
+                        // Merge: extend the segment
+                        seg.text.push(' ');
+                        seg.text.push_str(&word.text);
+                        let right = (seg.x + seg.width).max(word.x + word.width);
+                        let bottom = (seg.y + seg.height).max(word.y + word.height);
+                        seg.x = seg.x.min(word.x);
+                        seg.y = seg.y.min(word.y);
+                        seg.width = right - seg.x;
+                        seg.height = bottom - seg.y;
                     } else {
-                        line_segments.push(segment.clone());
+                        line_segments.push(seg.clone());
                         current = Some(word.clone());
                     }
                 }
-                None => {
-                    current = Some(word.clone());
-                }
+                None => current = Some(word.clone()),
             }
         }
-        if let Some(segment) = current {
-            line_segments.push(segment);
+        if let Some(seg) = current {
+            line_segments.push(seg);
         }
     }
 
-    line_segments.sort_by(|left, right| {
-        left.y
-            .partial_cmp(&right.y)
-            .unwrap_or(std::cmp::Ordering::Equal)
-            .then(
-                left.x
-                    .partial_cmp(&right.x)
-                    .unwrap_or(std::cmp::Ordering::Equal),
-            )
-    });
+    line_segments.sort_by(|a, b| f64_cmp(a.y, b.y).then(f64_cmp(a.x, b.x)));
 
+    // ── Step 3: Merge vertically adjacent segments into multi-line blocks ──
     let mut consumed = vec![false; line_segments.len()];
     let mut merged_blocks = Vec::new();
 
-    for index in 0..line_segments.len() {
-        if consumed[index] {
+    for i in 0..line_segments.len() {
+        if consumed[i] {
             continue;
         }
+        consumed[i] = true;
 
-        let first = &line_segments[index];
-        consumed[index] = true;
+        let first = &line_segments[i];
+        let mut text = first.text.clone();
+        let mut left = first.x;
+        let mut top = first.y;
+        let mut right = first.x + first.width;
+        let mut bottom = first.y + first.height;
+        let mut line_count = 1usize;
 
-        let mut merged_text = first.text.clone();
-        let mut merged_x = first.x;
-        let mut merged_y = first.y;
-        let mut merged_right = first.x + first.width;
-        let mut merged_bottom = first.y + first.height;
+        while line_count < MAX_MERGED_LINES {
+            let height = bottom - top;
 
-        let mut merged_line_count = 1usize;
-        while merged_line_count < MAX_MERGED_LINES {
-            let merged_height = merged_bottom - merged_y;
-            let mut next_line_index = None;
-
-            for next_index in (index + 1)..line_segments.len() {
-                if consumed[next_index] {
-                    continue;
+            let next_idx = ((i + 1)..line_segments.len()).find(|&j| {
+                if consumed[j] {
+                    return false;
                 }
-
-                let next = &line_segments[next_index];
+                let next = &line_segments[j];
                 let next_bottom = next.y + next.height;
-                let vertical_gap = horizontal_gap(merged_y, merged_bottom, next.y, next_bottom);
-                if vertical_gap > merged_height.max(next.height) * MERGE_LINE_VERTICAL_FACTOR {
-                    if next.y >= merged_bottom {
-                        break;
-                    }
-                    continue;
+                let vgap = horizontal_gap(top, bottom, next.y, next_bottom);
+
+                if vgap > height.max(next.height) * MERGE_LINE_VERTICAL_FACTOR {
+                    return false;
                 }
+                can_merge_multiline_segment(left, right, height, next)
+            });
 
-                if can_merge_multiline_segment(merged_x, merged_right, merged_height, next) {
-                    next_line_index = Some(next_index);
-                    break;
-                }
-            }
+            let Some(j) = next_idx else { break };
 
-            let Some(next_index) = next_line_index else {
-                break;
-            };
-
-            let next = &line_segments[next_index];
-            consumed[next_index] = true;
-            merged_text.push(' ');
-            merged_text.push_str(&next.text);
-            merged_x = merged_x.min(next.x);
-            merged_y = merged_y.min(next.y);
-            merged_right = merged_right.max(next.x + next.width);
-            merged_bottom = merged_bottom.max(next.y + next.height);
-            merged_line_count += 1;
+            let next = &line_segments[j];
+            consumed[j] = true;
+            text.push(' ');
+            text.push_str(&next.text);
+            left = left.min(next.x);
+            top = top.min(next.y);
+            right = right.max(next.x + next.width);
+            bottom = bottom.max(next.y + next.height);
+            line_count += 1;
         }
 
-        merged_blocks.push(OcrWord {
-            text: merged_text,
-            x: merged_x,
-            y: merged_y,
-            width: merged_right - merged_x,
-            height: merged_bottom - merged_y,
-            slug: None,
-            mapping_confidence: None,
-            market_median: None,
-            market_median_from_current_offers: None,
-            ducats: None,
-            vaulted: None,
-            is_custom: None,
-            trades_24h: None,
-            moving_avg: None,
-        });
+        merged_blocks.push(OcrWord::new(text, left, top, right - left, bottom - top));
     }
 
     merged_blocks

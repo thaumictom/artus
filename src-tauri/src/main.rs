@@ -3,6 +3,7 @@
     windows_subsystem = "windows"
 )]
 
+mod error;
 mod hotkeys;
 mod layer_shell;
 mod market;
@@ -11,6 +12,7 @@ mod relic_rewards;
 mod settings;
 mod setup;
 mod state;
+mod store_ext;
 mod updater;
 mod window_watcher;
 
@@ -21,6 +23,11 @@ use state::AppState;
 use tauri_plugin_global_shortcut::{Builder as GlobalShortcutBuilder, ShortcutState};
 
 fn main() {
+    // Initialize logging before anything else
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
+        .format_timestamp_millis()
+        .init();
+
     let is_wayland = apply_wayland_workarounds();
 
     tauri::Builder::default()
@@ -58,7 +65,7 @@ fn apply_wayland_workarounds() -> bool {
     let is_wayland = layer_shell::is_wayland_session();
 
     if is_wayland && env::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").is_none() {
-        // Safety: this runs before the Tauri runtime starts and before any worker threads are spawned.
+        // Safety: runs before Tauri starts and before any worker threads are spawned.
         unsafe {
             env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
         }

@@ -1,112 +1,116 @@
+//! Warframe EE.log tailer for automatic relic reward detection.
+//!
+//! Spawns an async task that polls the log file for reward markers
+//! and triggers OCR or overlay hide accordingly.
+
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 use std::time::Duration;
 
+use log::{error, info};
 use tauri::{AppHandle, Manager, Runtime};
-use tauri_plugin_store::StoreExt;
 
 use crate::ocr;
-use crate::state::AppState;
+use crate::store_ext::SettingsExt;
+
+// ── Log markers ───────────────────────────────────────────────────────────────
 
 const GOT_REWARDS_MARKER: &str = "ProjectionRewardChoice.lua: Got rewards";
 const SCREEN_SHUTDOWN_MARKER: &str = "ProjectionRewardChoice.lua: Relic reward screen shut down";
+
+// ── Polling intervals ─────────────────────────────────────────────────────────
+
 const DISABLED_SLEEP: Duration = Duration::from_millis(1000);
 const IDLE_SLEEP: Duration = Duration::from_millis(100);
 const ERROR_SLEEP: Duration = Duration::from_millis(500);
 
-pub fn spawn_log_tailer<R: Runtime>(app: AppHandle<R>) {
-    std::thread::spawn(move || {
+// ── Public API ────────────────────────────────────────────────────────────────
+
+/// Spawns an async task that continuously tails the Warframe log file.
+///
+/// Uses `tokio::time::sleep` for non-blocking delays. File I/O is brief
+/// (small incremental reads) so it runs on the async runtime directly.
+pub fn spawn_log_tailer<R: Runtime + 'static>(app: AppHandle<R>) {
+    tauri::async_runtime::spawn(async move {
         let mut last_path = String::new();
-        let mut last_pos = 0;
+        let mut last_pos: u64 = 0;
         let mut file: Option<File> = None;
 
         loop {
-            let (enabled, path) = get_tailer_config(&app);
+            let (enabled, path) = read_tailer_config(&app);
 
             if !enabled || path.is_empty() {
-                reset_tailer_state(&mut file, &mut last_path, &mut last_pos);
-                std::thread::sleep(DISABLED_SLEEP);
+                reset_state(&mut file, &mut last_path, &mut last_pos);
+                tokio::time::sleep(DISABLED_SLEEP).await;
                 continue;
             }
 
+            // Re-open on path change
             if path != last_path {
-                open_new_log_file(&path, &mut file, &mut last_path, &mut last_pos);
+                open_log_file(&path, &mut file, &mut last_path, &mut last_pos);
             }
 
-            let data_to_process = read_new_data(&mut file, &last_path, &mut last_pos);
+            // Read any new bytes appended since the last poll
+            let data = read_new_data(&mut file, &last_path, &mut last_pos);
 
-            if !data_to_process.is_empty() {
-                process_log_data(&app, &data_to_process);
+            if !data.is_empty() {
+                process_log_chunk(&app, &data);
             }
 
-            std::thread::sleep(IDLE_SLEEP);
+            tokio::time::sleep(IDLE_SLEEP).await;
         }
     });
 }
 
-fn get_tailer_config<R: Runtime>(app: &AppHandle<R>) -> (bool, String) {
-    let Ok(store) = app.store("settings.json") else {
-        return (false, String::new());
-    };
-    
-    let enabled = store
-        .get("relic_reward_detection")
-        .and_then(|v| v.as_bool())
-        .unwrap_or(false);
-        
-    let path = store
-        .get("warframe_log_path")
-        .and_then(|v| v.as_str().map(|s| s.to_string()))
-        .unwrap_or_default();
-        
+// ── Internals ─────────────────────────────────────────────────────────────────
+
+/// Reads the current relic-reward settings from the store.
+fn read_tailer_config<R: Runtime>(app: &AppHandle<R>) -> (bool, String) {
+    let enabled = app.get_setting_bool("relic_reward_detection", false);
+    let path = app.get_setting_string("warframe_log_path", "");
     (enabled, path)
 }
 
-fn reset_tailer_state(file: &mut Option<File>, last_path: &mut String, last_pos: &mut u64) {
+/// Resets all tailer state when the feature is disabled.
+fn reset_state(file: &mut Option<File>, path: &mut String, pos: &mut u64) {
     if file.is_some() {
         *file = None;
-        last_path.clear();
-        *last_pos = 0;
+        path.clear();
+        *pos = 0;
     }
 }
 
-fn open_new_log_file(
-    path: &str,
-    file: &mut Option<File>,
-    last_path: &mut String,
-    last_pos: &mut u64,
-) {
+/// Opens a new log file and seeks to the end (only processes new data).
+fn open_log_file(path: &str, file: &mut Option<File>, last_path: &mut String, last_pos: &mut u64) {
     *last_path = path.to_string();
-    *file = File::open(&*last_path).ok();
+    *file = File::open(last_path.as_str()).ok();
     *last_pos = file
         .as_mut()
         .and_then(|f| f.seek(SeekFrom::End(0)).ok())
         .unwrap_or(0);
 
     if file.is_some() {
-        println!(
-            "[relic_rewards] tailing log: {}, starting at {} bytes",
-            last_path, last_pos
-        );
+        info!("tailing log: {last_path}, starting at {last_pos} bytes");
     }
 }
 
+/// Reads bytes appended since `last_pos`. Handles file truncation/rotation.
 fn read_new_data(file: &mut Option<File>, last_path: &str, last_pos: &mut u64) -> Vec<u8> {
-    let mut data = Vec::new();
+    let mut buf = Vec::new();
 
     if let Some(f) = file.as_mut() {
         if let Ok(current_len) = f.seek(SeekFrom::End(0)) {
             if current_len > *last_pos {
-                if f.seek(SeekFrom::Start(*last_pos)).is_ok() {
-                    if f.read_to_end(&mut data).is_ok() {
-                        *last_pos = current_len;
-                    }
+                if f.seek(SeekFrom::Start(*last_pos)).is_ok() && f.read_to_end(&mut buf).is_ok() {
+                    *last_pos = current_len;
                 }
             } else if current_len < *last_pos {
-                *last_pos = current_len; // Truncated/rotated
+                // File was truncated or rotated
+                *last_pos = current_len;
             }
         }
     } else if !last_path.is_empty() {
+        // Try to re-open after a brief delay (file may have been temporarily unavailable)
         std::thread::sleep(ERROR_SLEEP);
         *file = File::open(last_path).ok();
         *last_pos = file
@@ -115,23 +119,24 @@ fn read_new_data(file: &mut Option<File>, last_path: &str, last_pos: &mut u64) -
             .unwrap_or(0);
     }
 
-    data
+    buf
 }
 
-fn process_log_data<R: Runtime>(app: &AppHandle<R>, data: &[u8]) {
+/// Inspects a chunk of log data for relic reward markers and acts accordingly.
+fn process_log_chunk<R: Runtime>(app: &AppHandle<R>, data: &[u8]) {
     let content = String::from_utf8_lossy(data);
 
     if content.contains(SCREEN_SHUTDOWN_MARKER) {
-        println!("[relic_rewards] detected screen shut down, hiding overlay");
+        info!("detected relic reward screen shutdown, hiding overlay");
         if let Some(overlay) = app.get_webview_window("overlay") {
             let _ = overlay.hide();
         }
     } else if content.contains(GOT_REWARDS_MARKER) {
-        println!("[relic_rewards] detected rewards, triggering OCR");
-        let app_handle = app.clone();
-        std::thread::spawn(move || {
-            if let Err(err) = ocr::capture_active_window_with_mode(&app_handle, false) {
-                eprintln!("[relic_rewards] OCR failed: {err}");
+        info!("detected relic rewards, triggering OCR");
+        let handle = app.clone();
+        tauri::async_runtime::spawn_blocking(move || {
+            if let Err(err) = ocr::capture_active_window_with_mode(&handle, false) {
+                error!("relic reward OCR failed: {err}");
             }
         });
     }

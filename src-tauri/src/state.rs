@@ -1,65 +1,51 @@
+//! Global application state shared across all modules via `tauri::Manager::state()`.
+
 use std::collections::HashMap;
 use std::sync::atomic::AtomicBool;
 use std::sync::Mutex;
 
-pub const HOTKEY_ACTION_SCREENSHOT: &str = "screenshot";
-pub const DEFAULT_SCREENSHOT_HOTKEY: &str = "Ctrl+Home";
-pub const HOTKEY_ACTION_SCREENSHOT_ADD_TO_INVENTORY: &str = "screenshot_add_inventory";
-pub const DEFAULT_SCREENSHOT_ADD_TO_INVENTORY_HOTKEY: &str = "Ctrl+Shift+Home";
+use crate::ocr::dictionary::{OcrDictionaryEntry, TradeablePriceEntry};
 
-fn default_hotkeys() -> HashMap<String, String> {
-    HashMap::from([
-        (
-            HOTKEY_ACTION_SCREENSHOT.to_string(),
-            DEFAULT_SCREENSHOT_HOTKEY.to_string(),
-        ),
-        (
-            HOTKEY_ACTION_SCREENSHOT_ADD_TO_INVENTORY.to_string(),
-            DEFAULT_SCREENSHOT_ADD_TO_INVENTORY_HOTKEY.to_string(),
-        ),
-    ])
-}
-
-#[derive(Debug, Clone)]
-pub struct OcrDictionaryEntry {
-    pub name: String,
-    pub slug: String,
-    pub tags: Vec<String>,
-    pub normalized_name: String,
-    pub ducats: Option<u64>,
-    pub vaulted: Option<bool>,
-    pub is_custom: bool,
-}
-
-#[derive(Debug, Clone)]
-pub struct TradeablePriceEntry {
-    pub median: f64,
-    pub used_current_offer_fallback: bool,
-    pub trades_24h: Option<f64>,
-    pub moving_avg: Option<f64>,
-    pub ducats: Option<u64>,
-}
-
+/// Shared mutable state for the Tauri application.
+///
+/// Every field is wrapped in a synchronization primitive so that
+/// concurrent Tauri command handlers and background tasks can access
+/// it safely.
 pub struct AppState {
+    /// Mapping of action name → shortcut string (e.g. "screenshot" → "Ctrl+Home").
     pub hotkeys: Mutex<HashMap<String, String>>,
+
+    /// Monotonic counter used to cancel stale overlay auto-hide timers.
     pub overlay_sequence: Mutex<u64>,
+
+    /// Prevents overlapping toggle-overlay hotkey invocations.
     pub overlay_toggle_in_flight: AtomicBool,
-    pub warframe_log_path: Mutex<String>,
+
+    /// Parsed theme name → RGB color from `theme_colors.toml`.
     pub ocr_theme_colors: Mutex<HashMap<String, [u8; 3]>>,
+
+    /// OCR dictionary entries fetched from the remote API on startup.
     pub ocr_dictionary: Mutex<Vec<OcrDictionaryEntry>>,
+
+    /// Median prices keyed by item slug, fetched from the remote API.
     pub ocr_tradeable_prices: Mutex<HashMap<String, TradeablePriceEntry>>,
+
+    /// `true` while the Warframe window is the active foreground window.
     pub warframe_focused: AtomicBool,
+
+    /// `true` while a Warframe process is detected in the system process list.
     pub warframe_running: AtomicBool,
+
+    /// Shared HTTP client for all outgoing requests.
     pub http_client: reqwest::Client,
 }
 
 impl Default for AppState {
     fn default() -> Self {
         Self {
-            hotkeys: Mutex::new(default_hotkeys()),
+            hotkeys: Mutex::new(HashMap::new()),
             overlay_sequence: Mutex::new(0),
             overlay_toggle_in_flight: AtomicBool::new(false),
-            warframe_log_path: Mutex::new(String::new()),
             ocr_theme_colors: Mutex::new(HashMap::new()),
             ocr_dictionary: Mutex::new(Vec::new()),
             ocr_tradeable_prices: Mutex::new(HashMap::new()),

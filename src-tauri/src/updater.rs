@@ -1,65 +1,72 @@
+//! Automatic update checking and installation via tauri-plugin-updater.
+
+use log::info;
 use serde::Serialize;
 use tauri::{AppHandle, Runtime};
 use tauri_plugin_updater::UpdaterExt;
 
+use crate::error::{AppError, AppResult};
+
+/// Payload sent to the frontend when an update is available.
 #[derive(Debug, Clone, Serialize)]
 pub struct UpdateAvailablePayload {
     pub version: String,
 }
 
+/// Checks for a new version. Returns `None` if already up to date.
 #[tauri::command]
 pub async fn check_for_update<R: Runtime>(
     app: AppHandle<R>,
-) -> Result<Option<UpdateAvailablePayload>, String> {
+) -> AppResult<Option<UpdateAvailablePayload>> {
     let updater = app
         .updater()
-        .map_err(|err| format!("failed to create updater instance: {err}"))?;
+        .map_err(|err| AppError::msg(format!("failed to create updater: {err}")))?;
 
     let Some(update) = updater
         .check()
         .await
-        .map_err(|err| format!("failed to check for updates: {err}"))?
+        .map_err(|err| AppError::msg(format!("failed to check for updates: {err}")))?
     else {
-        println!("[updater] no update available");
+        info!("no update available");
         return Ok(None);
     };
 
     let version = update.version.to_string();
-    println!("[updater] found update {version}");
-
+    info!("found update: {version}");
     Ok(Some(UpdateAvailablePayload { version }))
 }
 
+/// Downloads the pending update, installs it, and relaunches the application.
 #[tauri::command]
-pub async fn download_and_relaunch_update<R: Runtime>(app: AppHandle<R>) -> Result<(), String> {
+pub async fn download_and_relaunch_update<R: Runtime>(app: AppHandle<R>) -> AppResult<()> {
     let updater = app
         .updater()
-        .map_err(|err| format!("failed to create updater instance: {err}"))?;
+        .map_err(|err| AppError::msg(format!("failed to create updater: {err}")))?;
 
     let Some(update) = updater
         .check()
         .await
-        .map_err(|err| format!("failed to check for updates: {err}"))?
+        .map_err(|err| AppError::msg(format!("failed to check for updates: {err}")))?
     else {
-        return Err("no update available".to_string());
+        return Err(AppError::msg("no update available"));
     };
 
-    println!("[updater] installing update {}", update.version);
+    info!("installing update {}", update.version);
 
     let mut downloaded = 0;
     update
         .download_and_install(
             |chunk_length, content_length| {
                 downloaded += chunk_length;
-                println!("[updater] downloaded {downloaded} from {content_length:?}");
+                info!("downloaded {downloaded} from {content_length:?}");
             },
             || {
-                println!("[updater] download finished");
+                info!("download finished");
             },
         )
         .await
-        .map_err(|err| format!("failed to download/install update: {err}"))?;
+        .map_err(|err| AppError::msg(format!("failed to download/install update: {err}")))?;
 
-    println!("[updater] update installed, restarting app");
+    info!("update installed, restarting app");
     app.restart();
 }
