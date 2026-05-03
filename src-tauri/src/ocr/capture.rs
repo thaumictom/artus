@@ -422,7 +422,7 @@ fn position_and_show_overlay<R: Runtime>(
     #[cfg(target_os = "windows")]
     if let Ok(hwnd) = overlay.hwnd() {
         unsafe {
-            windows::Win32::UI::WindowsAndMessaging::SetWindowPos(
+            let _ = windows::Win32::UI::WindowsAndMessaging::SetWindowPos(
                 windows::Win32::Foundation::HWND(hwnd.0 as *mut core::ffi::c_void),
                 Some(windows::Win32::Foundation::HWND(std::ptr::null_mut())), // HWND_TOP
                 0, 0, 0, 0,
@@ -438,7 +438,9 @@ fn position_and_show_overlay<R: Runtime>(
         let _ = overlay.set_focusable(false);
     }
 
-    crate::hotkeys::register_escape_hotkey(app);
+    if app.state::<AppState>().warframe_focused.load(std::sync::atomic::Ordering::Acquire) {
+        crate::hotkeys::register_escape_hotkey(app);
+    }
 
     Ok(used_layer_shell)
 }

@@ -70,9 +70,16 @@ pub fn spawn_window_watcher(app_handle: AppHandle) {
             if focused {
                 info!("Warframe gained focus — registering hotkeys");
                 hotkeys::register_all(&app_handle);
+
+                if let Some(overlay) = app_handle.get_webview_window("overlay") {
+                    if overlay.is_visible().unwrap_or(false) {
+                        hotkeys::register_escape_hotkey(&app_handle);
+                    }
+                }
             } else {
                 info!("Warframe lost focus — unregistering hotkeys");
                 hotkeys::unregister_all(&app_handle);
+                hotkeys::unregister_escape_hotkey(&app_handle);
 
                 let is_relic_mode = app_handle
                     .state::<AppState>()
