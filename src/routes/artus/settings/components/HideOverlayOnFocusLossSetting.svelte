@@ -8,7 +8,8 @@
 	<Label.Root for="hide-overlay-focus-toggle" class="flex-1">
 		<p>Hide Overlay on Focus Loss</p>
 		<p class="text-muted-foreground text-xs">
-			Automatically hide the overlay and cancel OCR processing when Warframe loses focus. Does not affect automatic Relic Reward scans.
+			When Warframe loses focus, toggle the overlay off. Useful on Linux, where window handling is
+			limited.
 		</p>
 	</Label.Root>
 	<Switch
