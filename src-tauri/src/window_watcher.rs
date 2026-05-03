@@ -14,6 +14,7 @@ use tauri::{AppHandle, Manager};
 
 use crate::hotkeys;
 use crate::state::AppState;
+use crate::store_ext::SettingsExt;
 
 // ── Configuration ─────────────────────────────────────────────────────────────
 
@@ -77,9 +78,15 @@ pub fn spawn_window_watcher(app_handle: AppHandle) {
                     .state::<AppState>()
                     .overlay_is_relic_mode
                     .load(Ordering::Acquire);
+                let hide_on_focus_loss = app_handle.get_setting_bool("hide_overlay_on_focus_loss", true);
+                
                 if !is_relic_mode {
-                    info!("Hiding overlay due to focus loss (manual mode)");
-                    let _ = crate::ocr::hide_overlay(&app_handle);
+                    if hide_on_focus_loss {
+                        info!("Hiding overlay due to focus loss (manual mode)");
+                        let _ = crate::ocr::hide_overlay(&app_handle);
+                    } else {
+                        info!("Keeping overlay visible (hide_overlay_on_focus_loss disabled)");
+                    }
                 } else {
                     info!("Keeping overlay visible due to focus loss (relic rewards mode)");
                 }

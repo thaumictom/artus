@@ -91,7 +91,9 @@ pub fn capture_active_window_with_mode<R: Runtime>(
         return Ok(());
     }
 
+    let hide_on_focus_loss = app.get_setting_bool("hide_overlay_on_focus_loss", true);
     if is_manual
+        && hide_on_focus_loss
         && !app
             .state::<AppState>()
             .warframe_focused

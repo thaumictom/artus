@@ -19,6 +19,7 @@ type Config = {
 	ocr_dictionary_mapping_enabled: boolean;
 	ocr_dictionary_match_threshold: number;
 	capture_mods: boolean;
+	hide_overlay_on_focus_loss: boolean;
 };
 
 // 1. Define the reactive state globally
@@ -36,6 +37,7 @@ export const config = $state({
 	warframe_log_path: '%LocalAppData%\\Warframe\\EE.log',
 	overlay_toggle_mode: true,
 	capture_mods: false,
+	hide_overlay_on_focus_loss: true,
 }) satisfies Config;
 
 // 2. Export the initialization logic
