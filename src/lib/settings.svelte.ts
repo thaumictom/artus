@@ -27,7 +27,7 @@ export const config = $state({
 		screenshot: 'control+Home',
 		screenshot_add_inventory: 'shift+control+Home',
 	},
-	show_ocr_bounding_boxes: true,
+	show_ocr_bounding_boxes: false,
 	overlay_duration_secs: 25,
 	ocr_dictionary_mapping_enabled: true,
 	ocr_theme: 'EQUINOX',
