@@ -11,7 +11,7 @@ use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, Positio
 use xcap::Window;
 
 use super::{
-    apply_morphology, binary_target_filter, gray_to_png_bytes, group_words_into_blocks,
+    apply_morphology, binary_target_filter, gray_to_png_bytes,
     map_words_to_dictionary, resolve_tessdata, OcrDebugImagePayload, OcrPayload, OcrTextPayload,
     OcrWord, DEFAULT_OCR_DICTIONARY_MAPPING_ENABLED, DEFAULT_OCR_DICTIONARY_MATCH_THRESHOLD,
     DEFAULT_OCR_TARGET_RGB, DEFAULT_OVERLAY_DURATION_SECS, ENABLE_OCR_DICTIONARY_MAPPING,
@@ -240,7 +240,7 @@ fn run_tesseract<R: Runtime>(
     let api = TesseractAPI::new();
     api.init(&tessdata, "eng")
         .map_err(|err| AppError::msg(format!("failed to init tesseract: {err}")))?;
-    api.set_page_seg_mode(TessPageSegMode::PSM_SPARSE_TEXT)
+    api.set_page_seg_mode(TessPageSegMode::PSM_SINGLE_COLUMN)
         .map_err(|err| AppError::msg(format!("failed to set page segmentation: {err}")))?;
     api.set_variable("tessedit_char_whitelist", OCR_WHITELIST)
         .map_err(|err| AppError::msg(format!("failed to set whitelist: {err}")))?;
@@ -322,12 +322,10 @@ fn postprocess_words<R: Runtime>(
             MAX_OCR_DICTIONARY_MATCH_THRESHOLD,
         );
 
-    let grouped = group_words_into_blocks(words);
-
     let mut finalized = if ENABLE_OCR_DICTIONARY_MAPPING && mapping_enabled {
-        map_words_to_dictionary(app, &grouped, mapping_threshold)
+        map_words_to_dictionary(app, words, mapping_threshold)
     } else {
-        grouped.clone()
+        words.to_vec()
     };
 
     let capture_mods = app.get_setting_bool("capture_mods", false);
@@ -338,11 +336,11 @@ fn postprocess_words<R: Runtime>(
     }
 
     let mapped = finalized.iter().filter(|w| w.slug.is_some()).count();
-    let dropped = grouped.len().saturating_sub(finalized.len());
+    let dropped = words.len().saturating_sub(finalized.len());
 
     info!(
-        "postprocess: {:?} ({} words → {} blocks, {} mapped, {} dropped, mapping={}, threshold={:.2})",
-        t.elapsed(), words.len(), grouped.len(), mapped, dropped,
+        "postprocess: {:?} ({} words, {} mapped, {} dropped, mapping={}, threshold={:.2})",
+        t.elapsed(), words.len(), mapped, dropped,
         ENABLE_OCR_DICTIONARY_MAPPING && mapping_enabled, mapping_threshold,
     );
 
@@ -425,10 +423,13 @@ fn position_and_show_overlay<R: Runtime>(
             let _ = windows::Win32::UI::WindowsAndMessaging::SetWindowPos(
                 windows::Win32::Foundation::HWND(hwnd.0 as *mut core::ffi::c_void),
                 Some(windows::Win32::Foundation::HWND(std::ptr::null_mut())), // HWND_TOP
-                0, 0, 0, 0,
+                0,
+                0,
+                0,
+                0,
                 windows::Win32::UI::WindowsAndMessaging::SWP_NOMOVE
                     | windows::Win32::UI::WindowsAndMessaging::SWP_NOSIZE
-                    | windows::Win32::UI::WindowsAndMessaging::SWP_NOACTIVATE
+                    | windows::Win32::UI::WindowsAndMessaging::SWP_NOACTIVATE,
             );
         }
     }
@@ -438,7 +439,11 @@ fn position_and_show_overlay<R: Runtime>(
         let _ = overlay.set_focusable(false);
     }
 
-    if app.state::<AppState>().warframe_focused.load(std::sync::atomic::Ordering::Acquire) {
+    if app
+        .state::<AppState>()
+        .warframe_focused
+        .load(std::sync::atomic::Ordering::Acquire)
+    {
         crate::hotkeys::register_escape_hotkey(app);
     }
 
@@ -550,7 +555,7 @@ pub fn bump_overlay_sequence<R: Runtime>(app: &AppHandle<R>) -> AppResult<u64> {
 pub fn hide_overlay<R: Runtime>(app: &AppHandle<R>) -> AppResult<()> {
     // Bump sequence to cancel any pending auto-hide/failsafes
     let _ = bump_overlay_sequence(app);
-    
+
     app.state::<AppState>()
         .overlay_is_relic_mode
         .store(false, std::sync::atomic::Ordering::Release);
@@ -558,7 +563,7 @@ pub fn hide_overlay<R: Runtime>(app: &AppHandle<R>) -> AppResult<()> {
     if let Some(overlay) = app.get_webview_window("overlay") {
         let _ = app.emit("ocr_clear", ());
         crate::hotkeys::unregister_escape_hotkey(app);
-        
+
         tauri::async_runtime::spawn(async move {
             tokio::time::sleep(Duration::from_millis(100)).await;
             let _ = overlay.hide();

@@ -18,7 +18,7 @@ pub use dictionary::{
     load_ocr_dictionary, load_primary_theme_options, load_tradeable_item_prices,
     map_words_to_dictionary,
 };
-pub use engine::{group_words_into_blocks, resolve_tessdata};
+pub use engine::resolve_tessdata;
 pub use preprocessing::{apply_morphology, binary_target_filter, gray_to_png_bytes};
 
 use serde::Serialize;
@@ -44,14 +44,7 @@ pub const OCR_WHITELIST: &str =
 /// Maximum per-channel difference allowed when matching a pixel to the target color.
 pub const BINARY_FILTER_SPILL_THRESHOLD: u8 = 0;
 
-// ── Word-grouping parameters ──────────────────────────────────────────────────
 
-pub const HORIZONTAL_WORD_GAP_FACTOR: f64 = 0.75;
-pub const SAME_LINE_VERTICAL_FACTOR: f64 = 0.25;
-pub const MERGE_LINE_VERTICAL_FACTOR: f64 = 1.0;
-pub const MAX_MERGED_LINES: usize = 3;
-pub const CENTER_ALIGNED_MERGE_FACTOR: f64 = 3.0;
-pub const CENTER_ALIGNED_HORIZONTAL_GAP_FACTOR: f64 = 3.0;
 
 // ── Default values for user-configurable settings ─────────────────────────────
 
