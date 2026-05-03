@@ -27,6 +27,7 @@ use crate::store_ext::SettingsExt;
 
 /// Geometry and pixel data from a screen capture.
 struct CapturedWindow {
+    id: u64,
     x: i32,
     y: i32,
     width: u32,
@@ -131,6 +132,9 @@ fn capture_warframe_window() -> AppResult<CapturedWindow> {
         })
         .ok_or_else(|| AppError::msg("no non-minimized Warframe window found"))?;
 
+    let id = window
+        .id()
+        .map_err(|e| AppError::msg(format!("failed to get id: {e}")))? as u64;
     let x = window
         .x()
         .map_err(|e| AppError::msg(format!("failed to get x: {e}")))?;
@@ -149,6 +153,7 @@ fn capture_warframe_window() -> AppResult<CapturedWindow> {
 
     info!("window discovery + capture: {:?}", t.elapsed());
     Ok(CapturedWindow {
+        id,
         x,
         y,
         width,
@@ -360,6 +365,26 @@ fn postprocess_words<R: Runtime>(
 
 // ── Step 6: Overlay display ───────────────────────────────────────────────────
 
+#[cfg(target_os = "windows")]
+fn set_overlay_owner<R: Runtime>(app: &AppHandle<R>, capture: &CapturedWindow) {
+    if let Some(overlay) = app.get_webview_window("overlay") {
+        if let Ok(hwnd) = overlay.hwnd() {
+            let overlay_hwnd = windows::Win32::Foundation::HWND(hwnd.0 as *mut core::ffi::c_void);
+            let target_hwnd = capture.id as isize;
+            unsafe {
+                windows::Win32::UI::WindowsAndMessaging::SetWindowLongPtrW(
+                    overlay_hwnd,
+                    windows::Win32::UI::WindowsAndMessaging::GWLP_HWNDPARENT,
+                    target_hwnd,
+                );
+            }
+        }
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn set_overlay_owner<R: Runtime>(_app: &AppHandle<R>, _capture: &CapturedWindow) {}
+
 /// Positions, resizes, shows the overlay, and makes it click-through.
 /// Returns whether the Wayland layer-shell path was used.
 fn position_and_show_overlay<R: Runtime>(
@@ -387,9 +412,26 @@ fn position_and_show_overlay<R: Runtime>(
             capture.height,
         )))
         .map_err(|err| AppError::msg(format!("failed to resize overlay: {err}")))?;
+
+    set_overlay_owner(app, capture);
+
     overlay
         .show()
         .map_err(|err| AppError::msg(format!("failed to show overlay: {err}")))?;
+
+    #[cfg(target_os = "windows")]
+    if let Ok(hwnd) = overlay.hwnd() {
+        unsafe {
+            windows::Win32::UI::WindowsAndMessaging::SetWindowPos(
+                windows::Win32::Foundation::HWND(hwnd.0 as *mut core::ffi::c_void),
+                Some(windows::Win32::Foundation::HWND(std::ptr::null_mut())), // HWND_TOP
+                0, 0, 0, 0,
+                windows::Win32::UI::WindowsAndMessaging::SWP_NOMOVE
+                    | windows::Win32::UI::WindowsAndMessaging::SWP_NOSIZE
+                    | windows::Win32::UI::WindowsAndMessaging::SWP_NOACTIVATE
+            );
+        }
+    }
 
     if !layer_shell::is_wayland_session() || used_layer_shell {
         let _ = overlay.set_ignore_cursor_events(true);

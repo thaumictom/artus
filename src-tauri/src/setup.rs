@@ -22,6 +22,18 @@ pub fn init(app: &mut App, is_wayland: bool) -> Result<(), Box<dyn std::error::E
     if !is_wayland {
         let _ = overlay.set_ignore_cursor_events(true);
         let _ = overlay.set_focusable(false);
+        
+        #[cfg(target_os = "windows")]
+        if let Ok(hwnd) = overlay.hwnd() {
+            unsafe {
+                use windows::Win32::UI::WindowsAndMessaging::{
+                    GetWindowLongW, SetWindowLongW, GWL_EXSTYLE, WS_EX_NOACTIVATE,
+                };
+                let hwnd_val = windows::Win32::Foundation::HWND(hwnd.0 as *mut core::ffi::c_void);
+                let ex_style = GetWindowLongW(hwnd_val, GWL_EXSTYLE);
+                SetWindowLongW(hwnd_val, GWL_EXSTYLE, ex_style | WS_EX_NOACTIVATE.0 as i32);
+            }
+        }
     } else if layer_shell_enabled {
         let _ = overlay.set_focusable(false);
     }

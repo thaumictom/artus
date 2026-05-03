@@ -28,10 +28,11 @@
 				"visible": false,
 				"transparent": true,
 				"decorations": false,
-				"alwaysOnTop": true,
+				"alwaysOnTop": false,
 				"resizable": false,
 				"fullscreen": false,
 				"skipTaskbar": true,
+				"focus": false,
 				"backgroundColor": "#00000000"
 			}
 		],
@@ -43,9 +44,7 @@
 		"createUpdaterArtifacts": true,
 		"active": true,
 		"targets": "all",
-		"resources": [
-			"tessdata/eng.traineddata"
-		],
+		"resources": ["tessdata/eng.traineddata"],
 		"icon": [
 			"icons/32x32.png",
 			"icons/128x128.png",
@@ -57,9 +56,7 @@
 	"plugins": {
 		"updater": {
 			"pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEY5RTc2MUQ1NkM1RUVFNzAKUldSdzdsNXMxV0huK1pUMDdFMnFPWG0rOFg3TWtBRjlKZTM0VFR1VEhzLzF0dnlNTWtDVFkyYysK",
-			"endpoints": [
-				"https://github.com/thaumictom/artus/releases/latest/download/latest.json"
-			]
+			"endpoints": ["https://github.com/thaumictom/artus/releases/latest/download/latest.json"]
 		}
 	}
 }
