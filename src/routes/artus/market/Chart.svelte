@@ -179,12 +179,16 @@
 				],
 				series: [
 					{
-						name: 'Platinum',
+						name: 'Median',
 						type: 'line',
 						yAxisIndex: 0,
-						data: data.map((d: any) => [d.datetime, d.median]),
+						// Map as an object with a 'name' property to prevent index-based sliding
+						data: data.map((d: any) => ({
+							name: String(d.datetime),
+							value: [d.datetime, d.median],
+						})),
 						smooth: true,
-						animation: false,
+						animation: true,
 						showSymbol: false,
 						itemStyle: { color: colorPlatinum },
 						emphasis: { disabled: true },
@@ -195,9 +199,12 @@
 						name: 'Moving Avg',
 						type: 'line',
 						yAxisIndex: 0,
-						data: data.map((d: any) => [d.datetime, d.moving_avg]),
+						data: data.map((d: any) => ({
+							name: String(d.datetime),
+							value: [d.datetime, d.moving_avg],
+						})),
 						smooth: true,
-						animation: false,
+						animation: true,
 						showSymbol: false,
 						itemStyle: { color: colorMovingAvg },
 						emphasis: { disabled: true },
@@ -208,7 +215,12 @@
 						name: 'Volume',
 						type: 'bar',
 						yAxisIndex: 1,
-						data: data.map((d: any) => [d.datetime, d.volume]),
+						data: data.map((d: any) => ({
+							name: String(d.datetime),
+							value: [d.datetime, d.volume],
+						})),
+						animation: true,
+						animationDurationUpdate: 500,
 						itemStyle: { color: colorVolume, opacity: opacityVolume },
 						emphasis: { disabled: true },
 						silent: true,
