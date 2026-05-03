@@ -3,6 +3,7 @@
 use image::{DynamicImage, GrayImage, ImageFormat};
 use imageproc::distance_transform::Norm;
 use imageproc::morphology::{dilate_mut, erode_mut};
+use rayon::prelude::*;
 use std::io::Cursor;
 
 use super::{BINARY_FILTER_SPILL_THRESHOLD, ENABLE_MORPHOLOGY};
@@ -20,27 +21,31 @@ pub fn binary_target_filter(source: &image::RgbaImage, target_rgbs: &[[u8; 3]]) 
     let width = source.width();
     let height = source.height();
     let raw = source.as_raw();
-    let mut output = vec![255u8; (width * height) as usize];
 
-    for (i, pixel) in raw.chunks_exact(4).enumerate() {
-        let mut matched = false;
-        for target_rgb in target_rgbs {
-            if matches_target_color(
-                pixel[0],
-                pixel[1],
-                pixel[2],
-                target_rgb[0],
-                target_rgb[1],
-                target_rgb[2],
-            ) {
-                matched = true;
-                break;
+    let output: Vec<u8> = raw
+        .par_chunks_exact(4)
+        .map(|pixel| {
+            let mut matched = false;
+            for target_rgb in target_rgbs {
+                if matches_target_color(
+                    pixel[0],
+                    pixel[1],
+                    pixel[2],
+                    target_rgb[0],
+                    target_rgb[1],
+                    target_rgb[2],
+                ) {
+                    matched = true;
+                    break;
+                }
             }
-        }
-        if matched {
-            output[i] = 0;
-        }
-    }
+            if matched {
+                0
+            } else {
+                255
+            }
+        })
+        .collect();
 
     GrayImage::from_raw(width, height, output).expect("invalid binary filter output dimensions")
 }

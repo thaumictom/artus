@@ -501,32 +501,12 @@ fn match_single_word(
 
 // ── String similarity ─────────────────────────────────────────────────────────
 
-/// Combined similarity score: 85% Levenshtein distance + 15% token overlap.
+/// Dice-Sørensen similarity score via `strsim`.
 fn similarity_score(left: &str, right: &str) -> f64 {
     if left == right {
         return 1.0;
     }
-
-    let max_len = left.len().max(right.len());
-    if max_len == 0 {
-        return 0.0;
-    }
-
-    let distance = levenshtein_distance(left.as_bytes(), right.as_bytes());
-    let lev_score = 1.0 - distance as f64 / max_len as f64;
-    let overlap = token_overlap_score(left, right);
-    (lev_score * 0.85 + overlap * 0.15).clamp(0.0, 1.0)
-}
-
-/// Fraction of tokens shared between two strings.
-fn token_overlap_score(left: &str, right: &str) -> f64 {
-    let lt: Vec<&str> = left.split_whitespace().collect();
-    let rt: Vec<&str> = right.split_whitespace().collect();
-    if lt.is_empty() || rt.is_empty() {
-        return 0.0;
-    }
-    let shared = lt.iter().filter(|t| rt.contains(t)).count();
-    shared as f64 / lt.len().max(rt.len()) as f64
+    strsim::sorensen_dice(left, right)
 }
 
 /// Normalizes text for dictionary comparison: lowercase alphanumeric with
@@ -570,28 +550,4 @@ fn build_custom_dictionary_entry(name: &str) -> Option<OcrDictionaryEntry> {
         is_relic: false,
         subtype: None,
     })
-}
-
-/// Classic two-row dynamic-programming Levenshtein distance.
-fn levenshtein_distance(left: &[u8], right: &[u8]) -> usize {
-    if left.is_empty() {
-        return right.len();
-    }
-    if right.is_empty() {
-        return left.len();
-    }
-
-    let mut prev: Vec<usize> = (0..=right.len()).collect();
-    let mut curr = vec![0usize; right.len() + 1];
-
-    for (li, lb) in left.iter().enumerate() {
-        curr[0] = li + 1;
-        for (ri, rb) in right.iter().enumerate() {
-            let cost = if lb == rb { 0 } else { 1 };
-            curr[ri + 1] = (prev[ri + 1] + 1).min(curr[ri] + 1).min(prev[ri] + cost);
-        }
-        std::mem::swap(&mut prev, &mut curr);
-    }
-
-    prev[right.len()]
 }

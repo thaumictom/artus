@@ -11,9 +11,9 @@ use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, Positio
 use xcap::Window;
 
 use super::{
-    apply_morphology, binary_target_filter, gray_to_png_bytes, group_words_into_blocks,
+    apply_morphology, binary_target_filter, gray_to_png_bytes,
     map_words_to_dictionary, resolve_tessdata, OcrDebugImagePayload, OcrPayload, OcrTextPayload,
-    OcrWord, DEFAULT_OCR_DICTIONARY_MAPPING_ENABLED, DEFAULT_OCR_DICTIONARY_MATCH_THRESHOLD,
+    OcrWord, DEFAULT_OCR_DICTIONARY_MAPPING_ENABLED,
     DEFAULT_OCR_TARGET_RGB, DEFAULT_OVERLAY_DURATION_SECS, ENABLE_OCR_DICTIONARY_MAPPING,
     MAX_OCR_DICTIONARY_MATCH_THRESHOLD, MIN_OCR_DICTIONARY_MATCH_THRESHOLD, OCR_WHITELIST,
     PASS_IMAGE_TO_FRONTEND, PASS_TEXT_TO_FRONTEND,
@@ -22,6 +22,7 @@ use crate::error::{AppError, AppResult};
 use crate::layer_shell;
 use crate::state::AppState;
 use crate::store_ext::SettingsExt;
+use tauri_plugin_store::StoreExt;
 
 // ── Captured window metadata ──────────────────────────────────────────────────
 
@@ -76,9 +77,18 @@ pub fn capture_active_window_with_mode<R: Runtime>(
     show_overlay_processing(app, &capture)?;
 
     let filtered = preprocess_capture(app, &capture, is_manual);
-    emit_debug_image(app, &filtered);
-    let words = run_tesseract(app, &filtered)?;
-    let blocks = postprocess_words(app, &words, &capture, is_manual);
+    
+    let config = app
+        .store(crate::store_ext::SETTINGS_STORE_PATH)
+        .ok()
+        .and_then(|s| s.get("ocr_pipeline_config"))
+        .and_then(|v| serde_json::from_value::<crate::ocr::OcrPipelineConfig>(v).ok())
+        .unwrap_or_default();
+
+    emit_debug_image(app, &filtered, config.emit_debug_overlay);
+    let bounding_boxes = crate::ocr::engine::segment_image(&filtered);
+    let words = run_tesseract_parallel(app, &filtered, &bounding_boxes, &config)?;
+    let blocks = postprocess_words(app, &words, &capture, is_manual, &config);
 
     let current_sequence = app
         .state::<AppState>()
@@ -202,8 +212,8 @@ fn preprocess_capture<R: Runtime>(
 // ── Step 3: Debug image ───────────────────────────────────────────────────────
 
 /// Optionally encodes and emits the filtered image to the dashboard for debugging.
-fn emit_debug_image<R: Runtime>(app: &AppHandle<R>, filtered: &image::GrayImage) {
-    if !PASS_IMAGE_TO_FRONTEND {
+fn emit_debug_image<R: Runtime>(app: &AppHandle<R>, filtered: &image::GrayImage, emit_debug_overlay: bool) {
+    if !PASS_IMAGE_TO_FRONTEND || !emit_debug_overlay {
         return;
     }
 
@@ -227,73 +237,136 @@ fn emit_debug_image<R: Runtime>(app: &AppHandle<R>, filtered: &image::GrayImage)
     }
 }
 
-// ── Step 4: Tesseract OCR ─────────────────────────────────────────────────────
+// ── Step 4: Tesseract OCR (Parallel) ──────────────────────────────────────────
 
-/// Initializes Tesseract, feeds it the preprocessed image, and extracts words.
-fn run_tesseract<R: Runtime>(
+/// Feeds each crop into a thread-local Tesseract instance in parallel using Rayon.
+fn run_tesseract_parallel<R: Runtime>(
     app: &AppHandle<R>,
     filtered: &image::GrayImage,
+    bounding_boxes: &[(u32, u32, u32, u32)],
+    config: &crate::ocr::OcrPipelineConfig,
 ) -> AppResult<Vec<OcrWord>> {
     let t = Instant::now();
-
     let tessdata = resolve_tessdata(app)?;
-    let api = TesseractAPI::new();
-    api.init(&tessdata, "eng")
-        .map_err(|err| AppError::msg(format!("failed to init tesseract: {err}")))?;
-    api.set_page_seg_mode(TessPageSegMode::PSM_SINGLE_COLUMN)
-        .map_err(|err| AppError::msg(format!("failed to set page segmentation: {err}")))?;
-    api.set_variable("tessedit_char_whitelist", OCR_WHITELIST)
-        .map_err(|err| AppError::msg(format!("failed to set whitelist: {err}")))?;
-    api.set_image(
-        filtered.as_raw(),
-        filtered.width() as i32,
-        filtered.height() as i32,
-        1,
-        filtered.width() as i32,
-    )
-    .map_err(|err| AppError::msg(format!("failed to set image: {err}")))?;
-
-    api.recognize()
-        .map_err(|err| AppError::msg(format!("recognition failed: {err}")))?;
-    let iter = api
-        .get_iterator()
-        .map_err(|err| AppError::msg(format!("failed to get OCR iterator: {err}")))?;
-
-    // Extract words and their bounding boxes
-    let mut words = Vec::new();
-    loop {
-        let text: String = iter
-            .get_utf8_text(TessPageIteratorLevel::RIL_WORD)
-            .unwrap_or_default()
-            .trim()
-            .chars()
-            .filter(|ch| OCR_WHITELIST.contains(*ch))
-            .collect();
-
-        if !text.is_empty() {
-            if let Ok((left, top, right, bottom)) =
-                iter.get_bounding_box(TessPageIteratorLevel::RIL_WORD)
-            {
-                words.push(OcrWord::new(
-                    text,
-                    left as f64,
-                    top as f64,
-                    (right - left) as f64,
-                    (bottom - top) as f64,
-                ));
-            }
-        }
-
-        match iter.next(TessPageIteratorLevel::RIL_WORD) {
-            Ok(true) => continue,
-            _ => break,
-        }
+    
+    let min_density = config.min_pixel_density;
+    let upscale_factor = config.upscale_factor;
+    let page_seg_mode = config.page_seg_mode;
+    
+    use rayon::prelude::*;
+    use std::cell::RefCell;
+    
+    thread_local! {
+        static TESSERACT: RefCell<Option<TesseractAPI>> = RefCell::new(None);
     }
+    
+    let words: Vec<OcrWord> = bounding_boxes
+        .par_iter()
+        .flat_map(|&(x, y, w, h)| {
+            // Triage: check pixel density (0 is text)
+            let mut text_pixels = 0;
+            for cy in y..y+h {
+                for cx in x..x+w {
+                    if filtered.get_pixel(cx, cy)[0] == 0 {
+                        text_pixels += 1;
+                    }
+                }
+            }
+            if text_pixels < min_density {
+                return vec![];
+            }
+            
+            // Crop
+            let crop = image::imageops::crop_imm(filtered, x, y, w, h).to_image();
+            
+            // Upscale (Nearest Neighbor)
+            let upscaled = image::imageops::resize(
+                &crop,
+                w * upscale_factor,
+                h * upscale_factor,
+                image::imageops::FilterType::Nearest,
+            );
+            
+            TESSERACT.with(|api_cell| {
+                let mut api_opt = api_cell.borrow_mut();
+                if api_opt.is_none() {
+                    let api = TesseractAPI::new();
+                    let _ = api.init(tessdata.to_str().unwrap(), "eng");
+                    
+                    let psm = match page_seg_mode {
+                        6 => TessPageSegMode::PSM_SINGLE_BLOCK,
+                        7 => TessPageSegMode::PSM_SINGLE_LINE,
+                        8 => TessPageSegMode::PSM_SINGLE_WORD,
+                        13 => TessPageSegMode::PSM_RAW_LINE,
+                        _ => TessPageSegMode::PSM_SINGLE_COLUMN, // Default fallback (4)
+                    };
+                    let _ = api.set_page_seg_mode(psm);
+                    let _ = api.set_variable("tessedit_char_whitelist", OCR_WHITELIST);
+                    *api_opt = Some(api);
+                }
+                
+                let api = api_opt.as_mut().unwrap();
+                let _ = api.set_image(
+                    upscaled.as_raw(),
+                    upscaled.width() as i32,
+                    upscaled.height() as i32,
+                    1,
+                    upscaled.width() as i32,
+                );
+                let _ = api.recognize();
+                
+                let mut local_words = Vec::new();
+                if let Ok(iter) = api.get_iterator() {
+                    loop {
+                        let text: String = iter
+                            .get_utf8_text(TessPageIteratorLevel::RIL_WORD)
+                            .unwrap_or_default()
+                            .trim()
+                            .chars()
+                            .filter(|ch| OCR_WHITELIST.contains(*ch))
+                            .collect();
+
+                        if !text.is_empty() {
+                            if let Ok((left, top, right, bottom)) =
+                                iter.get_bounding_box(TessPageIteratorLevel::RIL_WORD)
+                            {
+                                let conf = iter.confidence(TessPageIteratorLevel::RIL_WORD).unwrap_or(0.0);
+                                
+                                // Map back to global coordinates
+                                let global_x = x as f64 + (left as f64 / upscale_factor as f64);
+                                let global_y = y as f64 + (top as f64 / upscale_factor as f64);
+                                let global_w = (right - left) as f64 / upscale_factor as f64;
+                                let global_h = (bottom - top) as f64 / upscale_factor as f64;
+                                
+                                let mut word = OcrWord::new(
+                                    text,
+                                    global_x,
+                                    global_y,
+                                    global_w,
+                                    global_h,
+                                );
+                                word.confidence = conf;
+                                local_words.push(word);
+                            }
+                        }
+
+                        match iter.next(TessPageIteratorLevel::RIL_WORD) {
+                            Ok(true) => continue,
+                            _ => break,
+                        }
+                    }
+                }
+                
+                local_words
+            })
+        })
+        .collect();
 
     info!(
-        "tesseract setup + recognize: {:?} ({} words)",
+        "tesseract parallel setup + recognize: {:?} ({} words from {} crops)",
         t.elapsed(),
-        words.len()
+        words.len(),
+        bounding_boxes.len()
     );
     Ok(words)
 }
@@ -305,6 +378,7 @@ fn postprocess_words<R: Runtime>(
     words: &[OcrWord],
     capture: &CapturedWindow,
     is_manual: bool,
+    config: &crate::ocr::OcrPipelineConfig,
 ) -> Vec<OcrWord> {
     let t = Instant::now();
 
@@ -312,22 +386,15 @@ fn postprocess_words<R: Runtime>(
         "ocr_dictionary_mapping_enabled",
         DEFAULT_OCR_DICTIONARY_MAPPING_ENABLED,
     );
-    let mapping_threshold = app
-        .get_setting_f64(
-            "ocr_dictionary_match_threshold",
-            DEFAULT_OCR_DICTIONARY_MATCH_THRESHOLD,
-        )
-        .clamp(
-            MIN_OCR_DICTIONARY_MATCH_THRESHOLD,
-            MAX_OCR_DICTIONARY_MATCH_THRESHOLD,
-        );
-
-    let grouped = group_words_into_blocks(app, words);
+    let mapping_threshold = config.dice_sorensen_threshold.clamp(
+        MIN_OCR_DICTIONARY_MATCH_THRESHOLD,
+        MAX_OCR_DICTIONARY_MATCH_THRESHOLD,
+    );
 
     let mut finalized = if ENABLE_OCR_DICTIONARY_MAPPING && mapping_enabled {
-        map_words_to_dictionary(app, &grouped, mapping_threshold)
+        map_words_to_dictionary(app, words, mapping_threshold)
     } else {
-        grouped.clone()
+        words.to_vec()
     };
 
     let capture_mods = app.get_setting_bool("capture_mods", false);
@@ -338,11 +405,11 @@ fn postprocess_words<R: Runtime>(
     }
 
     let mapped = finalized.iter().filter(|w| w.slug.is_some()).count();
-    let dropped = grouped.len().saturating_sub(finalized.len());
+    let dropped = words.len().saturating_sub(finalized.len());
 
     info!(
-        "postprocess: {:?} ({} words → {} blocks, {} mapped, {} dropped, mapping={}, threshold={:.2})",
-        t.elapsed(), words.len(), grouped.len(), mapped, dropped,
+        "postprocess: {:?} ({} mapped, {} dropped, mapping={}, threshold={:.2})",
+        t.elapsed(), mapped, dropped,
         ENABLE_OCR_DICTIONARY_MAPPING && mapping_enabled, mapping_threshold,
     );
 

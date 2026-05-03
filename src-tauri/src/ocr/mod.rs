@@ -21,11 +21,12 @@ pub use dictionary::{
     load_ocr_dictionary, load_primary_theme_options, load_tradeable_item_prices,
     map_words_to_dictionary,
 };
-pub use engine::{group_words_into_blocks, resolve_tessdata};
+pub use engine::resolve_tessdata;
 pub use preprocessing::{apply_morphology, binary_target_filter, gray_to_png_bytes};
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Runtime};
+use ts_rs::TS;
 
 use crate::error::AppResult;
 
@@ -46,15 +47,6 @@ pub const OCR_WHITELIST: &str =
 
 /// Maximum per-channel difference allowed when matching a pixel to the target color.
 pub const BINARY_FILTER_SPILL_THRESHOLD: u8 = 0;
-
-// ── Word-grouping parameters ──────────────────────────────────────────────────
-
-pub const DEFAULT_HORIZONTAL_WORD_GAP_FACTOR: f64 = 0.75;
-pub const DEFAULT_SAME_LINE_VERTICAL_FACTOR: f64 = 0.25;
-pub const DEFAULT_MERGE_LINE_VERTICAL_FACTOR: f64 = 1.0;
-pub const DEFAULT_MAX_MERGED_LINES: usize = 3;
-pub const DEFAULT_CENTER_ALIGNED_MERGE_FACTOR: f64 = 3.0;
-pub const DEFAULT_CENTER_ALIGNED_HORIZONTAL_GAP_FACTOR: f64 = 3.0;
 
 // ── Default values for user-configurable settings ─────────────────────────────
 
@@ -95,7 +87,8 @@ pub const CUSTOM_OCR_DICTIONARY_ITEMS: [&str; 7] = [
 
 // ── Data types ────────────────────────────────────────────────────────────────
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq, TS)]
+#[ts(export, export_to = "../src/lib/types/bindings/")]
 #[serde(rename_all = "lowercase")]
 pub enum ModType {
     Gold,
@@ -106,7 +99,8 @@ pub enum ModType {
 }
 
 /// A single recognized word/block with optional dictionary match metadata.
-#[derive(Debug, Clone, Serialize, Default)]
+#[derive(Debug, Clone, Serialize, Default, TS)]
+#[ts(export, export_to = "../src/lib/types/bindings/")]
 pub struct OcrWord {
     pub text: String,
     #[serde(default)]
@@ -117,6 +111,8 @@ pub struct OcrWord {
     pub width: f64,
     #[serde(default)]
     pub height: f64,
+    #[serde(default)]
+    pub confidence: f32,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub slug: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -160,14 +156,16 @@ impl OcrWord {
 }
 
 /// Payload emitted to the frontend with OCR results.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, TS)]
+#[ts(export, export_to = "../src/lib/types/bindings/")]
 pub struct OcrPayload {
     pub words: Vec<OcrWord>,
     pub show_ocr_bounding_boxes: bool,
 }
 
 /// Debug image sent to the dashboard for visual inspection.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, TS)]
+#[ts(export, export_to = "../src/lib/types/bindings/")]
 pub struct OcrDebugImagePayload {
     pub png_bytes: Vec<u8>,
     pub width: u32,
@@ -176,16 +174,40 @@ pub struct OcrDebugImagePayload {
 }
 
 /// Raw OCR text sent to the dashboard (when enabled).
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, TS)]
+#[ts(export, export_to = "../src/lib/types/bindings/")]
 pub struct OcrTextPayload {
     pub text: String,
 }
 
 /// A selectable theme entry shown in the settings UI.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, TS)]
+#[ts(export, export_to = "../src/lib/types/bindings/")]
 pub struct OcrThemeOption {
     pub name: String,
     pub rgb: [u8; 3],
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "../src/lib/types/bindings/")]
+pub struct OcrPipelineConfig {
+    pub upscale_factor: u32,
+    pub min_pixel_density: u32,
+    pub dice_sorensen_threshold: f64,
+    pub page_seg_mode: u32,
+    pub emit_debug_overlay: bool,
+}
+
+impl Default for OcrPipelineConfig {
+    fn default() -> Self {
+        Self {
+            upscale_factor: 2,
+            min_pixel_density: 10,
+            dice_sorensen_threshold: 0.62,
+            page_seg_mode: 4, // PSM_SINGLE_COLUMN
+            emit_debug_overlay: true,
+        }
+    }
 }
 
 // ── Tauri commands ────────────────────────────────────────────────────────────
