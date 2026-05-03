@@ -129,7 +129,7 @@
 					id="chart-90days"
 					value="chart-90days"
 					class={{
-						'striped-gradient cursor-not-allowed! *:text-muted-foreground! text-muted-foreground/50! opacity-50':
+						'striped-gradient cursor-not-allowed! *:text-muted-foreground! text-muted-foreground/25! opacity-50':
 							Array.isArray(data90Days) && data90Days.length <= 30,
 					}}
 					disabled={Array.isArray(data90Days) && data90Days.length <= 30}
