@@ -11,10 +11,13 @@
 	import MasteryMain from './mastery/Main.svelte';
 
 	import Sidebar from './Sidebar.svelte';
-	import { Button, Tabs } from 'bits-ui';
+	import { Tabs } from 'bits-ui';
 	import MainContent from './MainContent.svelte';
 	import Header from './Header.svelte';
 	import type { Sections } from '$lib/types';
+	import AlertDialog from '$lib/components/AlertDialog.svelte';
+
+	import Button from '$lib/components/Button.svelte';
 
 	type UpdateAvailablePayload = {
 		version: string;
@@ -56,7 +59,7 @@
 	let updateInstallError: string | null = $state(null);
 	let isInstallingUpdate = $state(false);
 
-	const showUpdatePrompt = $derived(Boolean(updateVersion) && !dismissedUpdatePrompt);
+	let showUpdatePrompt = $derived(Boolean(updateVersion) && !dismissedUpdatePrompt);
 
 	onMount(() => {
 		void checkForUpdate();
@@ -94,39 +97,42 @@
 
 <div class="flex flex-col bg-surface h-full">
 	<Header title={sections[activeSection].label}></Header>
-	{#if showUpdatePrompt}
-		<div
-			class="flex sm:flex-row flex-col sm:justify-between sm:items-center gap-3 bg-elevated mx-3 mt-2 p-3 border border-accent/40 rounded-md text-sm"
-		>
-			<div class="min-w-0">
-				<div class="font-medium text-accent">Update available!</div>
-				<div class="text-muted-foreground">
-					Version {updateVersion} is ready to install.
+	<AlertDialog bind:open={showUpdatePrompt}>
+		{#snippet title()}
+			<div>{updateVersion ?? 'The next version'} is ready to install</div>
+		{/snippet}
+		{#snippet description()}
+			<div class="flex flex-col gap-2">
+				<div>
+					Please update at your earliest convenience. If you cancel now, press Ctrl+R to get
+					prompted again.
 				</div>
 				{#if updateInstallError}
-					<div class="mt-1 text-danger">{updateInstallError}</div>
+					<div class="text-danger">Error: {updateInstallError}</div>
 				{/if}
 			</div>
-			<div class="flex flex-wrap gap-2">
-				<Button.Root
-					onclick={downloadAndRelaunch}
-					disabled={isInstallingUpdate}
-					class="bg-accent hover:bg-accent/90 px-3 py-1 rounded text-accent-foreground"
-					tabindex={-1}
-				>
-					{isInstallingUpdate ? 'Downloading...' : 'Download and relaunch'}
-				</Button.Root>
-				<Button.Root
-					onclick={continueWithoutUpdating}
-					disabled={isInstallingUpdate}
-					class="bg-surface hover:bg-muted px-3 py-1 rounded"
-					tabindex={-1}
-				>
-					Continue without updating
-				</Button.Root>
-			</div>
-		</div>
-	{/if}
+		{/snippet}
+		{#snippet dialogCancel()}
+			<Button
+				onclick={continueWithoutUpdating}
+				disabled={isInstallingUpdate}
+				variant="default"
+				tabindex={-1}
+			>
+				Cancel
+			</Button>
+		{/snippet}
+		{#snippet dialogAction()}
+			<Button
+				onclick={downloadAndRelaunch}
+				disabled={isInstallingUpdate}
+				variant="primary"
+				tabindex={-1}
+			>
+				{isInstallingUpdate ? 'Downloading...' : 'Download update and relaunch'}
+			</Button>
+		{/snippet}
+	</AlertDialog>
 	<Tabs.Root class="flex flex-1 overflow-hidden" orientation="vertical" bind:value={activeSection}>
 		<div>
 			<Sidebar {sections}></Sidebar>
