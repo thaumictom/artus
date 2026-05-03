@@ -322,7 +322,7 @@ fn postprocess_words<R: Runtime>(
             MAX_OCR_DICTIONARY_MATCH_THRESHOLD,
         );
 
-    let grouped = group_words_into_blocks(words);
+    let grouped = group_words_into_blocks(app, words);
 
     let mut finalized = if ENABLE_OCR_DICTIONARY_MAPPING && mapping_enabled {
         map_words_to_dictionary(app, &grouped, mapping_threshold)

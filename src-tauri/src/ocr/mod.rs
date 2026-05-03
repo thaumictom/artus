@@ -13,7 +13,10 @@ pub mod preprocessing;
 
 // ── Public API (explicit re-exports) ──────────────────────────────────────────
 
-pub use capture::{capture_active_window, capture_active_window_with_mode, toggle_overlay_hotkey, hide_overlay, bump_overlay_sequence};
+pub use capture::{
+    bump_overlay_sequence, capture_active_window, capture_active_window_with_mode, hide_overlay,
+    toggle_overlay_hotkey,
+};
 pub use dictionary::{
     load_ocr_dictionary, load_primary_theme_options, load_tradeable_item_prices,
     map_words_to_dictionary,
@@ -46,12 +49,12 @@ pub const BINARY_FILTER_SPILL_THRESHOLD: u8 = 0;
 
 // ── Word-grouping parameters ──────────────────────────────────────────────────
 
-pub const HORIZONTAL_WORD_GAP_FACTOR: f64 = 0.75;
-pub const SAME_LINE_VERTICAL_FACTOR: f64 = 0.25;
-pub const MERGE_LINE_VERTICAL_FACTOR: f64 = 1.0;
-pub const MAX_MERGED_LINES: usize = 3;
-pub const CENTER_ALIGNED_MERGE_FACTOR: f64 = 3.0;
-pub const CENTER_ALIGNED_HORIZONTAL_GAP_FACTOR: f64 = 3.0;
+pub const DEFAULT_HORIZONTAL_WORD_GAP_FACTOR: f64 = 0.75;
+pub const DEFAULT_SAME_LINE_VERTICAL_FACTOR: f64 = 0.25;
+pub const DEFAULT_MERGE_LINE_VERTICAL_FACTOR: f64 = 1.0;
+pub const DEFAULT_MAX_MERGED_LINES: usize = 3;
+pub const DEFAULT_CENTER_ALIGNED_MERGE_FACTOR: f64 = 3.0;
+pub const DEFAULT_CENTER_ALIGNED_HORIZONTAL_GAP_FACTOR: f64 = 3.0;
 
 // ── Default values for user-configurable settings ─────────────────────────────
 

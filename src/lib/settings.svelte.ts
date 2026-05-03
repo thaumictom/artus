@@ -20,6 +20,13 @@ type Config = {
 	ocr_dictionary_match_threshold: number;
 	capture_mods: boolean;
 	hide_overlay_on_focus_loss: boolean;
+
+	horizontal_word_gap_factor: number;
+	same_line_vertical_factor: number;
+	merge_line_vertical_factor: number;
+	max_merged_lines: number;
+	center_aligned_merge_factor: number;
+	center_aligned_horizontal_gap_factor: number;
 };
 
 // 1. Define the reactive state globally
@@ -38,6 +45,12 @@ export const config = $state({
 	overlay_toggle_mode: true,
 	capture_mods: false,
 	hide_overlay_on_focus_loss: true,
+	horizontal_word_gap_factor: 0.75,
+	same_line_vertical_factor: 0.25,
+	merge_line_vertical_factor: 1.0,
+	max_merged_lines: 3,
+	center_aligned_merge_factor: 3.0,
+	center_aligned_horizontal_gap_factor: 3.0,
 }) satisfies Config;
 
 // 2. Export the initialization logic

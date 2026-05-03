@@ -8,10 +8,11 @@ use std::path::{Path, PathBuf};
 use tauri::{AppHandle, Manager, Runtime};
 
 use super::{
-    OcrWord, CENTER_ALIGNED_HORIZONTAL_GAP_FACTOR, CENTER_ALIGNED_MERGE_FACTOR,
-    HORIZONTAL_WORD_GAP_FACTOR, MAX_MERGED_LINES, MERGE_LINE_VERTICAL_FACTOR,
-    SAME_LINE_VERTICAL_FACTOR,
+    OcrWord, DEFAULT_CENTER_ALIGNED_HORIZONTAL_GAP_FACTOR, DEFAULT_CENTER_ALIGNED_MERGE_FACTOR,
+    DEFAULT_HORIZONTAL_WORD_GAP_FACTOR, DEFAULT_MAX_MERGED_LINES, DEFAULT_MERGE_LINE_VERTICAL_FACTOR,
+    DEFAULT_SAME_LINE_VERTICAL_FACTOR,
 };
+use crate::store_ext::SettingsExt;
 use crate::error::{AppError, AppResult};
 
 #[cfg(target_os = "windows")]
@@ -148,6 +149,8 @@ fn can_merge_multiline_segment(
     upper_right: f64,
     upper_height: f64,
     lower: &RawWord,
+    center_aligned_merge_factor: f64,
+    center_aligned_horizontal_gap_factor: f64,
 ) -> bool {
     let lower_left = lower.x;
     let lower_right = lower.x + lower.width;
@@ -163,12 +166,12 @@ fn can_merge_multiline_segment(
     let lower_center = (lower_left + lower_right) * 0.5;
     let center_delta = (upper_center - lower_center).abs();
 
-    if center_delta > max_height * CENTER_ALIGNED_MERGE_FACTOR {
+    if center_delta > max_height * center_aligned_merge_factor {
         return false;
     }
 
     let gap = horizontal_gap(upper_left, upper_right, lower_left, lower_right);
-    gap <= max_height * CENTER_ALIGNED_HORIZONTAL_GAP_FACTOR
+    gap <= max_height * center_aligned_horizontal_gap_factor
 }
 
 // ── Word grouping pipeline ────────────────────────────────────────────────────
@@ -177,10 +180,17 @@ fn can_merge_multiline_segment(
 /// 1. Assigning words to horizontal lines based on vertical proximity.
 /// 2. Merging adjacent words on the same line into segments.
 /// 3. Merging vertically adjacent segments into multi-line blocks.
-pub fn group_words_into_blocks(words: &[OcrWord]) -> Vec<OcrWord> {
+pub fn group_words_into_blocks<R: Runtime>(app: &AppHandle<R>, words: &[OcrWord]) -> Vec<OcrWord> {
     if words.is_empty() {
         return Vec::new();
     }
+
+    let horizontal_word_gap_factor = app.get_setting_f64("horizontal_word_gap_factor", DEFAULT_HORIZONTAL_WORD_GAP_FACTOR);
+    let same_line_vertical_factor = app.get_setting_f64("same_line_vertical_factor", DEFAULT_SAME_LINE_VERTICAL_FACTOR);
+    let merge_line_vertical_factor = app.get_setting_f64("merge_line_vertical_factor", DEFAULT_MERGE_LINE_VERTICAL_FACTOR);
+    let max_merged_lines = app.get_setting_u64("max_merged_lines", DEFAULT_MAX_MERGED_LINES as u64) as usize;
+    let center_aligned_merge_factor = app.get_setting_f64("center_aligned_merge_factor", DEFAULT_CENTER_ALIGNED_MERGE_FACTOR);
+    let center_aligned_horizontal_gap_factor = app.get_setting_f64("center_aligned_horizontal_gap_factor", DEFAULT_CENTER_ALIGNED_HORIZONTAL_GAP_FACTOR);
 
     // Convert to mutable intermediate representation, sorted top-to-bottom
     let mut raw_words: Vec<RawWord> = words
@@ -206,7 +216,7 @@ pub fn group_words_into_blocks(words: &[OcrWord]) -> Vec<OcrWord> {
 
         let existing_line = line_centers.iter().enumerate().find(|(i, &lc)| {
             let lh = line_heights[*i].max(word.height);
-            (center_y - lc).abs() <= lh * SAME_LINE_VERTICAL_FACTOR
+            (center_y - lc).abs() <= lh * same_line_vertical_factor
         });
 
         if let Some((idx, _)) = existing_line {
@@ -235,7 +245,7 @@ pub fn group_words_into_blocks(words: &[OcrWord]) -> Vec<OcrWord> {
         }
 
         let avg_height = line.iter().map(|w| w.height).sum::<f64>() / line.len() as f64;
-        let max_gap = avg_height * HORIZONTAL_WORD_GAP_FACTOR;
+        let max_gap = avg_height * horizontal_word_gap_factor;
 
         let mut current: Option<RawWord> = None;
         for word in line {
@@ -285,7 +295,7 @@ pub fn group_words_into_blocks(words: &[OcrWord]) -> Vec<OcrWord> {
         let mut bottom = first.y + first.height;
         let mut line_count = 1usize;
 
-        while line_count < MAX_MERGED_LINES {
+        while line_count < max_merged_lines {
             let height = bottom - top;
 
             let next_idx = ((i + 1)..line_segments.len()).find(|&j| {
@@ -296,10 +306,10 @@ pub fn group_words_into_blocks(words: &[OcrWord]) -> Vec<OcrWord> {
                 let next_bottom = next.y + next.height;
                 let vgap = horizontal_gap(top, bottom, next.y, next_bottom);
 
-                if vgap > height.max(next.height) * MERGE_LINE_VERTICAL_FACTOR {
+                if vgap > height.max(next.height) * merge_line_vertical_factor {
                     return false;
                 }
-                can_merge_multiline_segment(left, right, height, next)
+                can_merge_multiline_segment(left, right, height, next, center_aligned_merge_factor, center_aligned_horizontal_gap_factor)
             });
 
             let Some(j) = next_idx else { break };
