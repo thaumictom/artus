@@ -240,7 +240,7 @@ fn run_tesseract<R: Runtime>(
     let api = TesseractAPI::new();
     api.init(&tessdata, "eng")
         .map_err(|err| AppError::msg(format!("failed to init tesseract: {err}")))?;
-    api.set_page_seg_mode(TessPageSegMode::PSM_SPARSE_TEXT)
+    api.set_page_seg_mode(TessPageSegMode::PSM_SINGLE_COLUMN)
         .map_err(|err| AppError::msg(format!("failed to set page segmentation: {err}")))?;
     api.set_variable("tessedit_char_whitelist", OCR_WHITELIST)
         .map_err(|err| AppError::msg(format!("failed to set whitelist: {err}")))?;
@@ -425,10 +425,13 @@ fn position_and_show_overlay<R: Runtime>(
             let _ = windows::Win32::UI::WindowsAndMessaging::SetWindowPos(
                 windows::Win32::Foundation::HWND(hwnd.0 as *mut core::ffi::c_void),
                 Some(windows::Win32::Foundation::HWND(std::ptr::null_mut())), // HWND_TOP
-                0, 0, 0, 0,
+                0,
+                0,
+                0,
+                0,
                 windows::Win32::UI::WindowsAndMessaging::SWP_NOMOVE
                     | windows::Win32::UI::WindowsAndMessaging::SWP_NOSIZE
-                    | windows::Win32::UI::WindowsAndMessaging::SWP_NOACTIVATE
+                    | windows::Win32::UI::WindowsAndMessaging::SWP_NOACTIVATE,
             );
         }
     }
@@ -438,7 +441,11 @@ fn position_and_show_overlay<R: Runtime>(
         let _ = overlay.set_focusable(false);
     }
 
-    if app.state::<AppState>().warframe_focused.load(std::sync::atomic::Ordering::Acquire) {
+    if app
+        .state::<AppState>()
+        .warframe_focused
+        .load(std::sync::atomic::Ordering::Acquire)
+    {
         crate::hotkeys::register_escape_hotkey(app);
     }
 
@@ -550,7 +557,7 @@ pub fn bump_overlay_sequence<R: Runtime>(app: &AppHandle<R>) -> AppResult<u64> {
 pub fn hide_overlay<R: Runtime>(app: &AppHandle<R>) -> AppResult<()> {
     // Bump sequence to cancel any pending auto-hide/failsafes
     let _ = bump_overlay_sequence(app);
-    
+
     app.state::<AppState>()
         .overlay_is_relic_mode
         .store(false, std::sync::atomic::Ordering::Release);
@@ -558,7 +565,7 @@ pub fn hide_overlay<R: Runtime>(app: &AppHandle<R>) -> AppResult<()> {
     if let Some(overlay) = app.get_webview_window("overlay") {
         let _ = app.emit("ocr_clear", ());
         crate::hotkeys::unregister_escape_hotkey(app);
-        
+
         tauri::async_runtime::spawn(async move {
             tokio::time::sleep(Duration::from_millis(100)).await;
             let _ = overlay.hide();
