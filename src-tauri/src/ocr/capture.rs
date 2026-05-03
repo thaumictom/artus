@@ -11,9 +11,9 @@ use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, Positio
 use xcap::Window;
 
 use super::{
-    apply_morphology, binary_target_filter, gray_to_png_bytes,
-    map_words_to_dictionary, resolve_tessdata, OcrDebugImagePayload, OcrPayload, OcrTextPayload,
-    OcrWord, DEFAULT_OCR_DICTIONARY_MAPPING_ENABLED, DEFAULT_OCR_DICTIONARY_MATCH_THRESHOLD,
+    apply_morphology, binary_target_filter, gray_to_png_bytes, map_words_to_dictionary,
+    resolve_tessdata, OcrDebugImagePayload, OcrPayload, OcrTextPayload, OcrWord,
+    DEFAULT_OCR_DICTIONARY_MAPPING_ENABLED, DEFAULT_OCR_DICTIONARY_MATCH_THRESHOLD,
     DEFAULT_OCR_TARGET_RGB, DEFAULT_OVERLAY_DURATION_SECS, ENABLE_OCR_DICTIONARY_MAPPING,
     MAX_OCR_DICTIONARY_MATCH_THRESHOLD, MIN_OCR_DICTIONARY_MATCH_THRESHOLD, OCR_WHITELIST,
     PASS_IMAGE_TO_FRONTEND, PASS_TEXT_TO_FRONTEND,
@@ -75,9 +75,9 @@ pub fn capture_active_window_with_mode<R: Runtime>(
     // gets feedback before the slow OCR pipeline runs.
     show_overlay_processing(app, &capture)?;
 
-    let filtered = preprocess_capture(app, &capture, is_manual);
-    emit_debug_image(app, &filtered);
-    let words = run_tesseract(app, &filtered)?;
+    let (filtered, upscale_factor) = preprocess_capture(app, &capture, is_manual);
+    emit_debug_image(app, &filtered, upscale_factor);
+    let words = run_tesseract(app, &filtered, upscale_factor)?;
     let blocks = postprocess_words(app, &words, &capture, is_manual);
 
     let current_sequence = app
@@ -169,7 +169,7 @@ fn preprocess_capture<R: Runtime>(
     app: &AppHandle<R>,
     capture: &CapturedWindow,
     is_manual: bool,
-) -> image::GrayImage {
+) -> (image::GrayImage, u32) {
     let t = Instant::now();
 
     let theme_name = app.get_setting_string("ocr_theme", "EQUINOX");
@@ -195,14 +195,40 @@ fn preprocess_capture<R: Runtime>(
     let mut filtered = binary_target_filter(&capture.image, &targets);
     apply_morphology(&mut filtered);
 
-    info!("preprocess (binary filter + morphology): {:?}", t.elapsed());
-    filtered
+    let upscale_factor = 2;
+    
+    let src_width = filtered.width();
+    let src_height = filtered.height();
+    let dst_width = src_width * upscale_factor;
+    let dst_height = src_height * upscale_factor;
+    let src_raw = filtered.as_raw();
+
+    let mut dst_raw = vec![0u8; (dst_width * dst_height) as usize];
+    
+    use rayon::prelude::*;
+    dst_raw.par_chunks_exact_mut(dst_width as usize)
+        .enumerate()
+        .for_each(|(y, row)| {
+            let src_y = (y as u32) / upscale_factor;
+            let src_row_start = (src_y * src_width) as usize;
+            let src_row = &src_raw[src_row_start..src_row_start + src_width as usize];
+            for x in 0..(dst_width as usize) {
+                let src_x = x / (upscale_factor as usize);
+                row[x] = src_row[src_x];
+            }
+        });
+
+    let upscaled = image::GrayImage::from_raw(dst_width, dst_height, dst_raw)
+        .expect("Failed to create upscaled image");
+
+    info!("preprocess (binary filter + morphology + upscale): {:?}", t.elapsed());
+    (upscaled, upscale_factor)
 }
 
 // ── Step 3: Debug image ───────────────────────────────────────────────────────
 
 /// Optionally encodes and emits the filtered image to the dashboard for debugging.
-fn emit_debug_image<R: Runtime>(app: &AppHandle<R>, filtered: &image::GrayImage) {
+fn emit_debug_image<R: Runtime>(app: &AppHandle<R>, filtered: &image::GrayImage, upscale_amount: u32) {
     if !PASS_IMAGE_TO_FRONTEND {
         return;
     }
@@ -217,7 +243,7 @@ fn emit_debug_image<R: Runtime>(app: &AppHandle<R>, filtered: &image::GrayImage)
                         png_bytes,
                         width: filtered.width(),
                         height: filtered.height(),
-                        upscale_amount: 1,
+                        upscale_amount,
                     },
                 );
             }
@@ -233,6 +259,7 @@ fn emit_debug_image<R: Runtime>(app: &AppHandle<R>, filtered: &image::GrayImage)
 fn run_tesseract<R: Runtime>(
     app: &AppHandle<R>,
     filtered: &image::GrayImage,
+    upscale_factor: u32,
 ) -> AppResult<Vec<OcrWord>> {
     let t = Instant::now();
 
@@ -276,10 +303,10 @@ fn run_tesseract<R: Runtime>(
             {
                 words.push(OcrWord::new(
                     text,
-                    left as f64,
-                    top as f64,
-                    (right - left) as f64,
-                    (bottom - top) as f64,
+                    (left as f64) / upscale_factor as f64,
+                    (top as f64) / upscale_factor as f64,
+                    ((right - left) as f64) / upscale_factor as f64,
+                    ((bottom - top) as f64) / upscale_factor as f64,
                 ));
             }
         }
@@ -340,8 +367,12 @@ fn postprocess_words<R: Runtime>(
 
     info!(
         "postprocess: {:?} ({} words, {} mapped, {} dropped, mapping={}, threshold={:.2})",
-        t.elapsed(), words.len(), mapped, dropped,
-        ENABLE_OCR_DICTIONARY_MAPPING && mapping_enabled, mapping_threshold,
+        t.elapsed(),
+        words.len(),
+        mapped,
+        dropped,
+        ENABLE_OCR_DICTIONARY_MAPPING && mapping_enabled,
+        mapping_threshold,
     );
 
     // Optionally emit plain text to the dashboard

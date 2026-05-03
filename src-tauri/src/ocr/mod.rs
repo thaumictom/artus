@@ -13,7 +13,10 @@ pub mod preprocessing;
 
 // ── Public API (explicit re-exports) ──────────────────────────────────────────
 
-pub use capture::{capture_active_window, capture_active_window_with_mode, toggle_overlay_hotkey, hide_overlay, bump_overlay_sequence};
+pub use capture::{
+    bump_overlay_sequence, capture_active_window, capture_active_window_with_mode, hide_overlay,
+    toggle_overlay_hotkey,
+};
 pub use dictionary::{
     load_ocr_dictionary, load_primary_theme_options, load_tradeable_item_prices,
     map_words_to_dictionary,
@@ -30,21 +33,19 @@ use crate::error::AppResult;
 
 pub const PASS_IMAGE_TO_FRONTEND: bool = true;
 pub const PASS_TEXT_TO_FRONTEND: bool = false;
-pub const ENABLE_MORPHOLOGY: bool = false;
+pub const ENABLE_MORPHOLOGY: bool = true;
 pub const ENABLE_OCR_DICTIONARY_MAPPING: bool = true;
 
 // ── OCR engine configuration ──────────────────────────────────────────────────
 
 /// Characters Tesseract is allowed to output.
 pub const OCR_WHITELIST: &str =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789&[]- ";
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789&[],- ";
 
 // ── Preprocessing thresholds ──────────────────────────────────────────────────
 
 /// Maximum per-channel difference allowed when matching a pixel to the target color.
 pub const BINARY_FILTER_SPILL_THRESHOLD: u8 = 0;
-
-
 
 // ── Default values for user-configurable settings ─────────────────────────────
 
