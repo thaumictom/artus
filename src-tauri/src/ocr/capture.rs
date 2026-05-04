@@ -11,9 +11,9 @@ use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, Positio
 use xcap::Window;
 
 use super::{
-    apply_morphology, binary_target_filter, gray_to_png_bytes, group_words_into_blocks,
-    map_words_to_dictionary, resolve_tessdata, OcrDebugImagePayload, OcrPayload, OcrTextPayload,
-    OcrWord, DEFAULT_OCR_DICTIONARY_MAPPING_ENABLED, DEFAULT_OCR_DICTIONARY_MATCH_THRESHOLD,
+    apply_morphology, binary_target_filter, gray_to_png_bytes, map_words_to_dictionary,
+    resolve_tessdata, OcrDebugImagePayload, OcrPayload, OcrTextPayload, OcrWord,
+    DEFAULT_OCR_DICTIONARY_MAPPING_ENABLED, DEFAULT_OCR_DICTIONARY_MATCH_THRESHOLD,
     DEFAULT_OCR_TARGET_RGB, DEFAULT_OVERLAY_DURATION_SECS, ENABLE_OCR_DICTIONARY_MAPPING,
     MAX_OCR_DICTIONARY_MATCH_THRESHOLD, MIN_OCR_DICTIONARY_MATCH_THRESHOLD, OCR_WHITELIST,
     PASS_IMAGE_TO_FRONTEND, PASS_TEXT_TO_FRONTEND,
@@ -322,12 +322,10 @@ fn postprocess_words<R: Runtime>(
             MAX_OCR_DICTIONARY_MATCH_THRESHOLD,
         );
 
-    let grouped = group_words_into_blocks(app, words);
-
     let mut finalized = if ENABLE_OCR_DICTIONARY_MAPPING && mapping_enabled {
-        map_words_to_dictionary(app, &grouped, mapping_threshold)
+        map_words_to_dictionary(app, words, mapping_threshold)
     } else {
-        grouped.clone()
+        words.to_vec()
     };
 
     let capture_mods = app.get_setting_bool("capture_mods", false);
@@ -338,12 +336,16 @@ fn postprocess_words<R: Runtime>(
     }
 
     let mapped = finalized.iter().filter(|w| w.slug.is_some()).count();
-    let dropped = grouped.len().saturating_sub(finalized.len());
+    let dropped = words.len().saturating_sub(finalized.len());
 
     info!(
-        "postprocess: {:?} ({} words → {} blocks, {} mapped, {} dropped, mapping={}, threshold={:.2})",
-        t.elapsed(), words.len(), grouped.len(), mapped, dropped,
-        ENABLE_OCR_DICTIONARY_MAPPING && mapping_enabled, mapping_threshold,
+        "postprocess: {:?} ({} words, {} mapped, {} dropped, mapping={}, threshold={:.2})",
+        t.elapsed(),
+        words.len(),
+        mapped,
+        dropped,
+        ENABLE_OCR_DICTIONARY_MAPPING && mapping_enabled,
+        mapping_threshold,
     );
 
     // Optionally emit plain text to the dashboard
