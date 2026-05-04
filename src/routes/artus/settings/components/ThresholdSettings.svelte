@@ -13,7 +13,7 @@
 		<div class="group">
 			<CommonSetting
 				title="Overlay price thresholds"
-				description="Set when the platinum per 100 ducats price label should turn yellow (salvage) or blue (sell) for each ducat tier"
+				description="Set at which platinum price the platinum per 100 ducats label should turn yellow (salvage) or blue (sell) for each ducat tier"
 			>
 				<div class="shrink border *:size-6 *:p-1 group-hover:bg-surface transition relative">
 					<div
