@@ -21,7 +21,7 @@ pub use dictionary::{
     load_ocr_dictionary, load_primary_theme_options, load_tradeable_item_prices,
     map_words_to_dictionary,
 };
-pub use engine::resolve_tessdata;
+pub use engine::{group_words, resolve_tessdata};
 pub use preprocessing::{apply_morphology, binary_target_filter, gray_to_png_bytes};
 
 use serde::Serialize;

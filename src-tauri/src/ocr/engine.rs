@@ -8,6 +8,7 @@ use std::path::{Path, PathBuf};
 use tauri::{AppHandle, Manager, Runtime};
 
 use crate::error::{AppError, AppResult};
+use crate::ocr::OcrWord;
 
 #[cfg(target_os = "windows")]
 use super::{EMBEDDED_TRAINEDDATA_BYTES, EMBEDDED_TRAINEDDATA_FILENAME};
@@ -102,4 +103,161 @@ fn has_traineddata_files(path: &Path) -> bool {
             })
         })
         .unwrap_or(false)
+}
+
+// ── Word grouping using connected components algorithm ────────────────────────
+
+pub fn group_words(words: Vec<OcrWord>) -> Vec<OcrWord> {
+    if words.is_empty() {
+        return Vec::new();
+    }
+
+    // =====================================================================
+    // TUNING PARAMETERS (Multipliers based on median text height)
+    // =====================================================================
+
+    // The maximum horizontal gap between two words to be grouped together.
+    // Increase if words separated by spaces (e.g., "Neo" and "N12") are splitting.
+    const MAX_X_GAP_MULTIPLIER: f64 = 1.0;
+
+    // The maximum vertical gap between two lines of text to be grouped.
+    // Increase if multi-line item names are splitting into top and bottom halves.
+    const MAX_Y_GAP_MULTIPLIER: f64 = 2.0;
+
+    // The allowed horizontal center-point drift for words stacked vertically.
+    // Because Warframe text is center-aligned, words on different lines won't
+    // share exact X coordinates. This allows them to snap together.
+    const VERTICAL_COLUMN_TOLERANCE: f64 = 2.5;
+
+    // The maximum Y-axis jitter allowed to consider words on the "same line".
+    // Used for sorting reading order. Increase slightly if words on the same
+    // visual row are grouping out of order (e.g., right-to-left instead of left-to-right).
+    const ROW_BUCKET_Y_TOLERANCE: f64 = 0.6;
+
+    // =====================================================================
+
+    // 1. Calculate median height to make thresholds scale-independent
+    let mut heights: Vec<f64> = words.iter().map(|w| w.height).collect();
+    heights.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    let median_h = heights[heights.len() / 2];
+
+    let max_x_gap = median_h * MAX_X_GAP_MULTIPLIER;
+    let max_y_gap = median_h * MAX_Y_GAP_MULTIPLIER;
+    let col_tolerance = median_h * VERTICAL_COLUMN_TOLERANCE;
+    let row_tolerance = median_h * ROW_BUCKET_Y_TOLERANCE;
+
+    let n = words.len();
+    let mut adj = vec![vec![]; n];
+
+    // 2. Build adjacency list based on bounding box proximity
+    for i in 0..n {
+        for j in (i + 1)..n {
+            let a = &words[i];
+            let b = &words[j];
+
+            // Are they side-by-side on the same visual line?
+            let horizontal_match = (a.y - b.y).abs() <= row_tolerance
+                && (a.x + a.width - b.x).abs().min((b.x + b.width - a.x).abs()) < max_x_gap;
+
+            // Are they stacked vertically within the same center-aligned column?
+            let vertical_match = (a.x + a.width / 2.0 - (b.x + b.width / 2.0)).abs()
+                < col_tolerance
+                && (a.y + a.height - b.y)
+                    .abs()
+                    .min((b.y + b.height - a.y).abs())
+                    < max_y_gap;
+
+            if horizontal_match || vertical_match {
+                adj[i].push(j);
+                adj[j].push(i);
+            }
+        }
+    }
+
+    // 3. Find connected components (DFS)
+    let mut visited = vec![false; n];
+    let mut grouped_items = Vec::new();
+
+    for i in 0..n {
+        if !visited[i] {
+            let mut component = Vec::new();
+            let mut stack = vec![i];
+
+            while let Some(node) = stack.pop() {
+                if !visited[node] {
+                    visited[node] = true;
+                    component.push(node);
+                    for &neighbor in &adj[node] {
+                        if !visited[neighbor] {
+                            stack.push(neighbor);
+                        }
+                    }
+                }
+            }
+
+            // 4. Sort component purely by Y first
+            component
+                .sort_by(|&a_idx, &b_idx| words[a_idx].y.partial_cmp(&words[b_idx].y).unwrap());
+
+            // 5. Bucket into distinct rows based on the Y-tolerance
+            let mut rows: Vec<Vec<usize>> = Vec::new();
+            let mut current_row: Vec<usize> = Vec::new();
+            let mut current_row_y = -1.0;
+
+            for &node in &component {
+                let w = &words[node];
+
+                if current_row.is_empty() || (w.y - current_row_y).abs() <= row_tolerance {
+                    current_row.push(node);
+                    if current_row_y < 0.0 {
+                        current_row_y = w.y;
+                    }
+                } else {
+                    rows.push(current_row);
+                    current_row = vec![node];
+                    current_row_y = w.y;
+                }
+            }
+            if !current_row.is_empty() {
+                rows.push(current_row);
+            }
+
+            // 6. Sort each row left-to-right, then assemble final reading order
+            let mut ordered_component = Vec::new();
+            for mut row in rows {
+                row.sort_by(|&a_idx, &b_idx| words[a_idx].x.partial_cmp(&words[b_idx].x).unwrap());
+                ordered_component.extend(row);
+            }
+
+            // 7. Merge bounding boxes and text
+            let mut merged_text = String::new();
+            let mut min_x = f64::MAX;
+            let mut min_y = f64::MAX;
+            let mut max_x = f64::MIN;
+            let mut max_y = f64::MIN;
+
+            for (idx, &node) in ordered_component.iter().enumerate() {
+                let w = &words[node];
+                if idx > 0 {
+                    merged_text.push(' ');
+                }
+                merged_text.push_str(&w.text);
+
+                min_x = min_x.min(w.x);
+                min_y = min_y.min(w.y);
+                max_x = max_x.max(w.x + w.width);
+                max_y = max_y.max(w.y + w.height);
+            }
+
+            grouped_items.push(OcrWord::new(
+                merged_text,
+                min_x,
+                min_y,
+                max_x - min_x,
+                max_y - min_y,
+            ));
+        }
+    }
+
+    grouped_items
 }

@@ -11,7 +11,7 @@ use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, Positio
 use xcap::Window;
 
 use super::{
-    apply_morphology, binary_target_filter, gray_to_png_bytes, map_words_to_dictionary,
+    apply_morphology, binary_target_filter, gray_to_png_bytes, group_words, map_words_to_dictionary,
     resolve_tessdata, OcrDebugImagePayload, OcrPayload, OcrTextPayload, OcrWord,
     DEFAULT_OCR_DICTIONARY_MAPPING_ENABLED, DEFAULT_OCR_DICTIONARY_MATCH_THRESHOLD,
     DEFAULT_OCR_TARGET_RGB, DEFAULT_OVERLAY_DURATION_SECS, ENABLE_OCR_DICTIONARY_MAPPING,
@@ -78,7 +78,8 @@ pub fn capture_active_window_with_mode<R: Runtime>(
     let (filtered, upscale_factor) = preprocess_capture(app, &capture, is_manual);
     emit_debug_image(app, &filtered, upscale_factor);
     let words = run_tesseract(app, &filtered, upscale_factor)?;
-    let blocks = postprocess_words(app, &words, &capture, is_manual);
+    let grouped = group_words(words);
+    let blocks = postprocess_words(app, &grouped, &capture, is_manual);
 
     let current_sequence = app
         .state::<AppState>()
