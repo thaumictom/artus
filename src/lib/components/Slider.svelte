@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { ComponentProps, Snippet } from 'svelte';
 	import { Slider } from 'bits-ui';
-	import cn from 'clsx';
+	import { cn } from '$lib/utils';
 
 	let {
 		value = $bindable(),

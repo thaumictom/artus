@@ -10,6 +10,7 @@
 			variant: {
 				default: 'bg-background text-foreground hover:bg-surface',
 				primary: 'bg-accent text-accent-foreground hover:bg-accent/80 border-accent',
+				surface: 'bg-surface text-foreground hover:bg-elevated border-surface',
 			},
 			size: {
 				default: 'px-3 py-1.5',

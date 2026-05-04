@@ -1,20 +1,19 @@
 <script lang="ts">
-	import { Label } from 'bits-ui';
 	import Switch from '$lib/components/Switch.svelte';
 	import { config, updateSetting } from '$lib/settings.svelte';
+	import CommonSetting from '$lib/components/ui/CommonSetting.svelte';
+
+	const setting = 'capture_mods';
 </script>
 
-<div class="flex justify-between items-center gap-4">
-	<Label.Root for="capture-mods-toggle" class="flex-1">
-		<p>Capture Mods</p>
-		<p class="text-muted-foreground text-xs">
-			Add more color targets to also capture mods. Result can be inaccurate. Relic reward screen is
-			unaffected by this setting.
-		</p>
-	</Label.Root>
+<CommonSetting
+	title="Capture mods"
+	description="Add more color targets to also capture mods. Result can become more inaccurate when enabled. Relic reward screen is unaffected by this setting."
+	labelProps={{ for: setting }}
+>
 	<Switch
-		id="capture-mods-toggle"
-		onCheckedChange={() => updateSetting('capture_mods')}
-		bind:checked={config.capture_mods}
+		id={setting}
+		onCheckedChange={() => updateSetting(setting)}
+		bind:checked={config[setting]}
 	/>
-</div>
+</CommonSetting>

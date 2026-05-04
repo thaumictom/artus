@@ -2,6 +2,10 @@
 	import { invoke } from '@tauri-apps/api/core';
 	import { config, updateSetting } from '$lib/settings.svelte';
 	import { open } from '@tauri-apps/plugin-dialog';
+	import CommonSetting from '$lib/components/ui/CommonSetting.svelte';
+	import Button from '$lib/components/Button.svelte';
+	import Switch from '$lib/components/Switch.svelte';
+	import Icon from '@iconify/svelte';
 
 	let isSaving = $state(false);
 	let status = $state<string | null>(null);
@@ -50,16 +54,23 @@
 			multiple: false,
 			directory: false,
 			defaultPath: config.warframe_log_path,
+			filters: [{ name: 'EE.log', extensions: ['log'] }],
 		});
+
+		if (file) {
+			inputValue = file;
+			save();
+		}
 	};
+
+	const relicSetting = 'relic_reward_detection';
 </script>
 
-<div class="flex flex-col gap-2">
-	<div>
-		<p>Warframe log path</p>
-		<p class="text-muted-foreground text-xs">Set this to your Warframe EE.log file path</p>
-	</div>
-
+<CommonSetting
+	title="Log location"
+	description="Path to your Warframe EE.log file"
+	align="vertical"
+>
 	<div class="border p-0.5 flex">
 		<input
 			type="text"
@@ -69,16 +80,24 @@
 			placeholder="%LocalAppData%\Warframe\EE.log"
 			disabled={isSaving}
 		/>
-		<button
-			class="bg-surface group-hover:bg-muted px-3 transition"
-			onclick={openFileBrowser}
-			disabled={isSaving}
-		>
-			Browse
-		</button>
+		<Button variant="surface" onclick={openFileBrowser} disabled={isSaving}>Browse</Button>
 	</div>
 
 	{#if status}
-		<p class="text-muted-foreground text-xs">{status}</p>
+		<div class="text-xs text-muted-foreground text-center flex items-center justify-center gap-1">
+			<Icon icon="material-symbols:info-outline-rounded" />
+			<span>{status}</span>
+		</div>
 	{/if}
-</div>
+</CommonSetting>
+<CommonSetting
+	title="Automatic relic reward detection"
+	description="Automatically shows the overlay when the relic reward screen appears. Requires EE.log path to be set."
+	disabled={!Boolean(config.warframe_log_path) || (status !== 'Saved' && status !== null)}
+>
+	<Switch
+		id="relic-reward-detection-toggle"
+		onCheckedChange={() => updateSetting(relicSetting)}
+		bind:checked={config[relicSetting]}
+	/>
+</CommonSetting>
