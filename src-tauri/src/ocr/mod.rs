@@ -33,14 +33,14 @@ use crate::error::AppResult;
 
 pub const PASS_IMAGE_TO_FRONTEND: bool = true;
 pub const PASS_TEXT_TO_FRONTEND: bool = false;
-pub const ENABLE_MORPHOLOGY: bool = false;
+pub const ENABLE_MORPHOLOGY: bool = true;
 pub const ENABLE_OCR_DICTIONARY_MAPPING: bool = true;
 
 // ── OCR engine configuration ──────────────────────────────────────────────────
 
 /// Characters Tesseract is allowed to output.
 pub const OCR_WHITELIST: &str =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789&[]- ";
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789&[],- ";
 
 // ── Preprocessing thresholds ──────────────────────────────────────────────────
 
