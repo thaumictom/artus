@@ -4,6 +4,7 @@
 
 	import Slider from '$lib/components/Slider.svelte';
 	import Switch from '$lib/components/Switch.svelte';
+	import CommonSetting from '$lib/components/ui/CommonSetting.svelte';
 
 	let status = $state<string | null>(null);
 
@@ -16,51 +17,42 @@
 			status = 'Duration must be a positive number of seconds.';
 			return;
 		}
-		
+
 		config.overlay_duration_secs = normalized;
 		updateSetting('overlay_duration_secs');
 	}
+
+	const mainSetting = 'overlay_toggle_mode';
+	const durationSetting = 'overlay_duration_secs';
 </script>
 
-<div class="flex flex-col gap-8">
-	<div class="flex justify-between items-center gap-1">
-		<Label.Root for="overlay-mode-toggle" class="flex-1">
-			<p>Toggle overlay with screenshot keybind</p>
-			<p class="text-muted-foreground text-xs">
-				If enabled, the overlay will be shown until the keybind is pressed again
-			</p>
-		</Label.Root>
-		<Switch
-			id="overlay-mode-toggle"
-			onCheckedChange={() => updateSetting('overlay_toggle_mode')}
-			bind:checked={config.overlay_toggle_mode}
-		/>
-	</div>
-
-	<div class="data-[disabled=true]:cursor-not-allowed" data-disabled={config.overlay_toggle_mode}>
-		<div
-			class="flex flex-col gap-3 data-[disabled=true]:opacity-50 transition-opacity data-[disabled=true]:pointer-events-none"
-			data-disabled={config.overlay_toggle_mode}
-		>
-			<div>
-				<p>Overlay duration</p>
-				<p class="text-muted-foreground text-xs">
-					Time in seconds that the overlay will be shown after pressing the keybind
-				</p>
-			</div>
-			<Slider
-				min={5}
-				max={120}
-				step={5}
-				type="single"
-				disabled={config.overlay_toggle_mode}
-				onValueCommit={saveDuration}
-				bind:value={config.overlay_duration_secs}
-			>
-				{#snippet thumbLabel({ value })}
-					{value}s
-				{/snippet}
-			</Slider>
-		</div>
-	</div>
-</div>
+<CommonSetting
+	title="Toggle overlay with screenshot keybind"
+	description="If enabled, the overlay will be shown until the keybind is pressed again"
+	labelProps={{ for: mainSetting }}
+>
+	<Switch
+		id={mainSetting}
+		onCheckedChange={() => updateSetting(mainSetting)}
+		bind:checked={config[mainSetting]}
+	/>
+</CommonSetting>
+<CommonSetting
+	title="Overlay duration"
+	description="Time in seconds that the overlay will be shown after pressing the keybind"
+	disabled={config[mainSetting]}
+	align="vertical"
+>
+	<Slider
+		min={5}
+		max={60}
+		step={5}
+		type="single"
+		onValueCommit={saveDuration}
+		bind:value={config[durationSetting]}
+	>
+		{#snippet thumbLabel({ value })}
+			{value}s
+		{/snippet}
+	</Slider>
+</CommonSetting>

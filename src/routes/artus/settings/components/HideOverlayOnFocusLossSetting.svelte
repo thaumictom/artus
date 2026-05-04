@@ -1,20 +1,20 @@
 <script lang="ts">
-	import { Label } from 'bits-ui';
 	import Switch from '$lib/components/Switch.svelte';
 	import { config, updateSetting } from '$lib/settings.svelte';
+	import CommonSetting from '$lib/components/ui/CommonSetting.svelte';
+
+	const setting = 'hide_overlay_on_focus_loss';
 </script>
 
-<div class="flex justify-between items-center gap-4">
-	<Label.Root for="hide-overlay-focus-toggle" class="flex-1">
-		<p>Hide Overlay on Focus Loss</p>
-		<p class="text-muted-foreground text-xs">
-			When Warframe loses focus, toggle the overlay off. Useful on Linux, where window handling is
-			limited.
-		</p>
-	</Label.Root>
+<CommonSetting
+	title="Hide overlay on focus loss"
+	description="When Warframe loses focus, toggle the overlay off. Useful on Linux, where window handling is limited."
+	align="horizontal"
+	labelProps={{ for: setting }}
+>
 	<Switch
-		id="hide-overlay-focus-toggle"
-		onCheckedChange={() => updateSetting('hide_overlay_on_focus_loss')}
-		bind:checked={config.hide_overlay_on_focus_loss}
+		id={setting}
+		onCheckedChange={() => updateSetting(setting)}
+		bind:checked={config[setting]}
 	/>
-</div>
+</CommonSetting>

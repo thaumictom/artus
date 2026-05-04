@@ -4,6 +4,7 @@
 	import { onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import { flyAndScale } from '$lib/transition';
+	import { config, loadSettings } from '$lib/settings.svelte';
 
 	type OcrWord = {
 		text: string;
@@ -29,6 +30,7 @@
 	let processing = $state(false);
 
 	onMount(() => {
+		loadSettings();
 		const cleanups: Array<() => void> = [];
 
 		listen('ocr_processing', () => {
@@ -40,6 +42,8 @@
 			processing = false;
 			words = event.payload?.words ?? [];
 			showBoundingBoxes = event.payload?.show_ocr_bounding_boxes ?? false;
+			// Reload settings to get the latest thresholds if changed
+			loadSettings();
 		}).then((cleanup) => cleanups.push(cleanup));
 
 		listen('ocr_clear', () => {
@@ -80,11 +84,11 @@
 		if (plat < minTradeValue) return ItemColor.SALVAGE;
 
 		const thresholds = {
-			100: { salvage: 10, sell: 15 },
-			65: { salvage: 8, sell: 12 },
-			45: { salvage: 6, sell: 12 },
-			25: { salvage: 5, sell: 10 },
-			15: { salvage: 5, sell: 8 },
+			100: { salvage: config.threshold_100[0], sell: config.threshold_100[1] },
+			65: { salvage: config.threshold_65[0], sell: config.threshold_65[1] },
+			45: { salvage: config.threshold_45[0], sell: config.threshold_45[1] },
+			25: { salvage: config.threshold_25[0], sell: config.threshold_25[1] },
+			15: { salvage: config.threshold_15[0], sell: config.threshold_15[1] },
 		};
 
 		const tier = thresholds[ducats as keyof typeof thresholds];

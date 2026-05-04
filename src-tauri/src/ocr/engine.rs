@@ -9,6 +9,7 @@ use tauri::{AppHandle, Manager, Runtime};
 
 use crate::error::{AppError, AppResult};
 use crate::ocr::OcrWord;
+use crate::store_ext::SettingsExt;
 
 #[cfg(target_os = "windows")]
 use super::{EMBEDDED_TRAINEDDATA_BYTES, EMBEDDED_TRAINEDDATA_FILENAME};
@@ -107,7 +108,7 @@ fn has_traineddata_files(path: &Path) -> bool {
 
 // ── Word grouping using connected components algorithm ────────────────────────
 
-pub fn group_words(words: Vec<OcrWord>) -> Vec<OcrWord> {
+pub fn group_words<R: Runtime>(app: &AppHandle<R>, words: Vec<OcrWord>) -> Vec<OcrWord> {
     if words.is_empty() {
         return Vec::new();
     }
@@ -116,23 +117,10 @@ pub fn group_words(words: Vec<OcrWord>) -> Vec<OcrWord> {
     // TUNING PARAMETERS (Multipliers based on median text height)
     // =====================================================================
 
-    // The maximum horizontal gap between two words to be grouped together.
-    // Increase if words separated by spaces (e.g., "Neo" and "N12") are splitting.
-    const MAX_X_GAP_MULTIPLIER: f64 = 1.0;
-
-    // The maximum vertical gap between two lines of text to be grouped.
-    // Increase if multi-line item names are splitting into top and bottom halves.
-    const MAX_Y_GAP_MULTIPLIER: f64 = 2.0;
-
-    // The allowed horizontal center-point drift for words stacked vertically.
-    // Because Warframe text is center-aligned, words on different lines won't
-    // share exact X coordinates. This allows them to snap together.
-    const VERTICAL_COLUMN_TOLERANCE: f64 = 2.5;
-
-    // The maximum Y-axis jitter allowed to consider words on the "same line".
-    // Used for sorting reading order. Increase slightly if words on the same
-    // visual row are grouping out of order (e.g., right-to-left instead of left-to-right).
-    const ROW_BUCKET_Y_TOLERANCE: f64 = 0.6;
+    let max_x_gap_multiplier = app.get_setting_f64("ocr_max_x_gap_multiplier", 1.0);
+    let max_y_gap_multiplier = app.get_setting_f64("ocr_max_y_gap_multiplier", 2.0);
+    let vertical_column_tolerance = app.get_setting_f64("ocr_vertical_column_tolerance", 2.5);
+    let row_bucket_y_tolerance = app.get_setting_f64("ocr_row_bucket_y_tolerance", 0.6);
 
     // =====================================================================
 
@@ -141,10 +129,10 @@ pub fn group_words(words: Vec<OcrWord>) -> Vec<OcrWord> {
     heights.sort_by(|a, b| a.partial_cmp(b).unwrap());
     let median_h = heights[heights.len() / 2];
 
-    let max_x_gap = median_h * MAX_X_GAP_MULTIPLIER;
-    let max_y_gap = median_h * MAX_Y_GAP_MULTIPLIER;
-    let col_tolerance = median_h * VERTICAL_COLUMN_TOLERANCE;
-    let row_tolerance = median_h * ROW_BUCKET_Y_TOLERANCE;
+    let max_x_gap = median_h * max_x_gap_multiplier;
+    let max_y_gap = median_h * max_y_gap_multiplier;
+    let col_tolerance = median_h * vertical_column_tolerance;
+    let row_tolerance = median_h * row_bucket_y_tolerance;
 
     let n = words.len();
     let mut adj = vec![vec![]; n];

@@ -78,7 +78,7 @@ pub fn capture_active_window_with_mode<R: Runtime>(
     let (filtered, upscale_factor) = preprocess_capture(app, &capture, is_manual);
     emit_debug_image(app, &filtered, upscale_factor);
     let words = run_tesseract(app, &filtered, upscale_factor)?;
-    let grouped = group_words(words);
+    let grouped = group_words(app, words);
     let blocks = postprocess_words(app, &grouped, &capture, is_manual);
 
     let current_sequence = app

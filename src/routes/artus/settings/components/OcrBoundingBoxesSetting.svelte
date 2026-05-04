@@ -1,21 +1,19 @@
 <script lang="ts">
-	import { Label } from 'bits-ui';
 	import Switch from '$lib/components/Switch.svelte';
 	import { config, updateSetting } from '$lib/settings.svelte';
+	import CommonSetting from '$lib/components/ui/CommonSetting.svelte';
+
+	const mainSetting = 'show_ocr_bounding_boxes';
 </script>
 
-<div class="flex justify-between items-center gap-1">
-	<div class="flex-1">
-		<Label.Root for="ocr-bounding-boxes-toggle">
-			<p>Show OCR bounding boxes</p>
-			<p class="text-muted-foreground text-xs">
-				If enabled, draws red bounding boxes around detected text on the overlay for debugging.
-			</p>
-		</Label.Root>
-	</div>
+<CommonSetting
+	title="OCR bounding boxes"
+	description="If enabled, draws red bounding boxes around detected text on the overlay for debugging"
+	labelProps={{ for: mainSetting }}
+>
 	<Switch
-		id="ocr-bounding-boxes-toggle"
-		onCheckedChange={() => updateSetting('show_ocr_bounding_boxes')}
-		bind:checked={config.show_ocr_bounding_boxes}
+		id={mainSetting}
+		onCheckedChange={() => updateSetting(mainSetting)}
+		bind:checked={config[mainSetting]}
 	/>
-</div>
+</CommonSetting>

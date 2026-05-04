@@ -5,6 +5,7 @@
 	import { onMount } from 'svelte';
 	import Select from '$lib/components/Select.svelte';
 	import type { OcrThemeOption } from '$lib/types';
+	import CommonSetting from '$lib/components/ui/CommonSetting.svelte';
 
 	let availableThemes = $state<OcrThemeOption[]>();
 
@@ -24,12 +25,11 @@
 	});
 </script>
 
-<div class="flex flex-col gap-1">
-	<div class="mb-1">
-		<h2>In-Game Theme</h2>
-		<p class="text-muted-foreground text-xs">Select the theme that reflects the in-game theme</p>
-	</div>
-
+<CommonSetting
+	title="In-Game Theme"
+	description="Select the theme that reflects the in-game theme"
+	align="vertical"
+>
 	<Select
 		type="single"
 		items={selectItems}
@@ -38,4 +38,4 @@
 		placeholder={availableThemes ? 'Select a theme' : 'Loading themes...'}
 		disabled={!availableThemes}
 	/>
-</div>
+</CommonSetting>
