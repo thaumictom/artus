@@ -8,5 +8,4 @@
 	<OcrBoundingBoxesSetting />
 	<OcrGroupingSettings />
 	<DictionarySettings />
-	<WordGroupingSettings />
 </div>
