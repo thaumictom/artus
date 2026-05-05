@@ -71,7 +71,26 @@ pub fn spawn_window_watcher(app_handle: AppHandle) {
                 info!("Warframe gained focus — registering hotkeys");
                 hotkeys::register_all(&app_handle);
 
+                let use_window_ownership = app_handle.get_setting_bool("use_window_ownership", false);
+                let hide_on_focus_loss = app_handle.get_setting_bool("hide_overlay_on_focus_loss", true);
+                let cleanup_on_focus_loss = app_handle.get_setting_bool("cleanup_on_focus_loss", false);
+
                 if let Some(overlay) = app_handle.get_webview_window("overlay") {
+                    if !use_window_ownership && hide_on_focus_loss && !cleanup_on_focus_loss {
+                        let was_visible = app_handle
+                            .state::<AppState>()
+                            .overlay_was_visible
+                            .load(Ordering::Acquire);
+                        if was_visible {
+                            info!("Restoring overlay visibility after focus gain");
+                            let _ = overlay.show();
+                            app_handle
+                                .state::<AppState>()
+                                .overlay_was_visible
+                                .store(false, Ordering::Release);
+                        }
+                    }
+
                     if overlay.is_visible().unwrap_or(false) {
                         hotkeys::register_escape_hotkey(&app_handle);
                     }
@@ -85,17 +104,33 @@ pub fn spawn_window_watcher(app_handle: AppHandle) {
                     .state::<AppState>()
                     .overlay_is_relic_mode
                     .load(Ordering::Acquire);
+                let use_window_ownership = app_handle.get_setting_bool("use_window_ownership", false);
                 let hide_on_focus_loss = app_handle.get_setting_bool("hide_overlay_on_focus_loss", true);
+                let cleanup_on_focus_loss = app_handle.get_setting_bool("cleanup_on_focus_loss", false);
                 
-                if !is_relic_mode {
+                if !is_relic_mode && !use_window_ownership {
                     if hide_on_focus_loss {
-                        info!("Hiding overlay due to focus loss (manual mode)");
-                        let _ = crate::ocr::hide_overlay(&app_handle);
+                        if cleanup_on_focus_loss {
+                            info!("Hiding & cleaning up overlay due to focus loss (manual mode)");
+                            let _ = crate::ocr::hide_overlay(&app_handle);
+                        } else {
+                            info!("Visually hiding overlay due to focus loss (manual mode)");
+                            if let Some(overlay) = app_handle.get_webview_window("overlay") {
+                                let is_visible = overlay.is_visible().unwrap_or(false);
+                                app_handle
+                                    .state::<AppState>()
+                                    .overlay_was_visible
+                                    .store(is_visible, Ordering::Release);
+                                if is_visible {
+                                    let _ = overlay.hide();
+                                }
+                            }
+                        }
                     } else {
                         info!("Keeping overlay visible (hide_overlay_on_focus_loss disabled)");
                     }
                 } else {
-                    info!("Keeping overlay visible due to focus loss (relic rewards mode)");
+                    info!("Keeping overlay as is (relic rewards mode or sandwich mode)");
                 }
             }
         }

@@ -24,6 +24,9 @@ pub struct AppState {
     /// True if the current or pending overlay capture was triggered by relic rewards.
     pub overlay_is_relic_mode: AtomicBool,
 
+    /// True if the overlay was visibly shown before focus was lost.
+    pub overlay_was_visible: AtomicBool,
+
     /// Parsed theme name → RGB color from `theme_colors.toml`.
     pub ocr_theme_colors: Mutex<HashMap<String, [u8; 3]>>,
 
@@ -50,6 +53,7 @@ impl Default for AppState {
             overlay_sequence: Mutex::new(0),
             overlay_toggle_in_flight: AtomicBool::new(false),
             overlay_is_relic_mode: AtomicBool::new(false),
+            overlay_was_visible: AtomicBool::new(false),
             ocr_theme_colors: Mutex::new(HashMap::new()),
             ocr_dictionary: Mutex::new(Vec::new()),
             ocr_tradeable_prices: Mutex::new(HashMap::new()),

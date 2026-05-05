@@ -20,6 +20,7 @@ type Config = {
 	ocr_dictionary_match_threshold: number;
 	capture_mods: boolean;
 	hide_overlay_on_focus_loss: boolean;
+	cleanup_on_focus_loss: boolean;
 	use_window_ownership: boolean;
 
 	ocr_max_x_gap_multiplier: number;
@@ -48,6 +49,7 @@ export const config = $state({
 
 	// Overlay settings
 	hide_overlay_on_focus_loss: true,
+	cleanup_on_focus_loss: false,
 	use_window_ownership: false,
 	overlay_toggle_mode: true,
 	overlay_duration_secs: 25,

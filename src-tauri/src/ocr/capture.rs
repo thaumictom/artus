@@ -614,6 +614,10 @@ pub fn hide_overlay<R: Runtime>(app: &AppHandle<R>) -> AppResult<()> {
         .overlay_is_relic_mode
         .store(false, std::sync::atomic::Ordering::Release);
 
+    app.state::<AppState>()
+        .overlay_was_visible
+        .store(false, std::sync::atomic::Ordering::Release);
+
     if let Some(overlay) = app.get_webview_window("overlay") {
         let _ = app.emit("ocr_clear", ());
         crate::hotkeys::unregister_escape_hotkey(app);
