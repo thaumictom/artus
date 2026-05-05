@@ -14,8 +14,8 @@ pub mod preprocessing;
 // ── Public API (explicit re-exports) ──────────────────────────────────────────
 
 pub use capture::{
-    bump_overlay_sequence, capture_active_window, capture_active_window_with_mode, hide_overlay,
-    toggle_overlay_hotkey,
+    bump_overlay_sequence, capture_active_window, capture_active_window_inventory,
+    capture_active_window_with_mode, hide_overlay, toggle_overlay_hotkey,
 };
 pub use dictionary::{
     load_ocr_dictionary, load_primary_theme_options, load_tradeable_item_prices,
@@ -155,6 +155,7 @@ impl OcrWord {
 pub struct OcrPayload {
     pub words: Vec<OcrWord>,
     pub show_ocr_bounding_boxes: bool,
+    pub is_inventory_add: bool,
 }
 
 /// Debug image sent to the dashboard for visual inspection.

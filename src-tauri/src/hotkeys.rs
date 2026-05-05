@@ -200,7 +200,7 @@ pub fn on_pressed<R: Runtime>(app: &AppHandle<R>, shortcut: &Shortcut) {
     match action.as_deref() {
         Some(HOTKEY_ACTION_SCREENSHOT) => trigger_screenshot(app),
         Some(HOTKEY_ACTION_SCREENSHOT_ADD_TO_INVENTORY) => {
-            spawn_ocr_task(app, ocr::capture_active_window);
+            spawn_ocr_task(app, ocr::capture_active_window_inventory);
         }
         Some(unknown) => error!("no handler for action '{unknown}'"),
         None => {}

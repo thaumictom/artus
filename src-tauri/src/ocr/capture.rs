@@ -38,7 +38,11 @@ struct CapturedWindow {
 // ── Public API ────────────────────────────────────────────────────────────────
 
 pub fn capture_active_window<R: Runtime>(app: &AppHandle<R>) -> AppResult<()> {
-    capture_active_window_with_mode(app, true, true, None)
+    capture_active_window_with_mode(app, true, true, None, false)
+}
+
+pub fn capture_active_window_inventory<R: Runtime>(app: &AppHandle<R>) -> AppResult<()> {
+    capture_active_window_with_mode(app, true, true, None, true)
 }
 
 /// Toggles the overlay: if visible, hides it; otherwise captures and shows it.
@@ -57,7 +61,7 @@ pub fn toggle_overlay_hotkey<R: Runtime>(app: &AppHandle<R>) -> AppResult<()> {
     }
 
     // Not visible → capture and show without auto-hide (toggle mode)
-    capture_active_window_with_mode(app, false, true, None)
+    capture_active_window_with_mode(app, false, true, None, false)
 }
 
 pub fn capture_active_window_with_mode<R: Runtime>(
@@ -65,6 +69,7 @@ pub fn capture_active_window_with_mode<R: Runtime>(
     should_auto_hide: bool,
     is_manual: bool,
     provided_sequence: Option<u64>,
+    is_inventory_add: bool,
 ) -> AppResult<()> {
     let total = Instant::now();
     let run_sequence = provided_sequence.unwrap_or_else(|| bump_overlay_sequence(app).unwrap_or(0));
@@ -106,7 +111,7 @@ pub fn capture_active_window_with_mode<R: Runtime>(
         return Ok(());
     }
 
-    show_overlay(app, &capture, &blocks)?;
+    show_overlay(app, &capture, &blocks, is_inventory_add)?;
 
     if should_auto_hide {
         schedule_auto_hide(app, run_sequence)?;
@@ -524,6 +529,7 @@ fn show_overlay<R: Runtime>(
     app: &AppHandle<R>,
     capture: &CapturedWindow,
     words: &[OcrWord],
+    is_inventory_add: bool,
 ) -> AppResult<()> {
     let t = Instant::now();
 
@@ -561,6 +567,7 @@ fn show_overlay<R: Runtime>(
         OcrPayload {
             words: words.to_vec(),
             show_ocr_bounding_boxes: show_bounding_boxes,
+            is_inventory_add,
         },
     )
     .map_err(|err| AppError::msg(format!("failed to emit OCR result: {err}")))?;

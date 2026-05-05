@@ -6,7 +6,7 @@
 	// import SiteHeader from './SiteHeader.svelte';
 	import SettingsMain from './settings/Main.svelte';
 	import DashboardMain from './dashboard/Main.svelte';
-	import InventoryTab from './inventory/Tab.svelte';
+	import InventoryTab from './inventory/Main.svelte';
 	import MarketMain from './market/Main.svelte';
 	import MasteryMain from './mastery/Main.svelte';
 

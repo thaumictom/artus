@@ -157,7 +157,7 @@ fn process_log_chunk<R: Runtime>(app: &AppHandle<R>, data: &[u8]) {
         });
 
         tauri::async_runtime::spawn_blocking(move || {
-            if let Err(err) = ocr::capture_active_window_with_mode(&handle, false, false, Some(sequence)) {
+            if let Err(err) = ocr::capture_active_window_with_mode(&handle, false, false, Some(sequence), false) {
                 error!("relic reward OCR failed: {err}");
             }
         });

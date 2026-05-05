@@ -1,139 +1,164 @@
 <script lang="ts">
-	type InventoryItem = {
-		name: string;
-		quantity: number;
-		marketMedian?: number;
-		marketMedianUsesOfferFallback?: boolean;
-	};
+	import { columns, type WarframeItem } from './columns';
+	import { LazyStore } from '@tauri-apps/plugin-store';
+	import { listen, type UnlistenFn } from '@tauri-apps/api/event';
+	import { onMount } from 'svelte';
+	import Icon from '@iconify/svelte';
 
-	let searchQuery = $state('');
+	const store = new LazyStore('inventory.json');
 
-	let {
-		items,
-		onIncrease,
-		onDecrease,
-		clearInventory,
-	}: {
-		items: InventoryItem[];
-		onIncrease: (name: string) => void;
-		onDecrease: (name: string) => void;
-		clearInventory: () => void;
-	} = $props();
+	let data = $state<WarframeItem[]>([]);
+	
+	onMount(() => {
+		let unlisten: UnlistenFn | undefined;
 
-	const totalQuantity = $derived.by(() => items.reduce((sum, item) => sum + item.quantity, 0));
-	const normalizedSearchQuery = $derived.by(() => searchQuery.trim().toLowerCase());
-	const filteredItems = $derived.by(() => {
-		if (!normalizedSearchQuery) {
-			return items;
-		}
+		(async () => {
+			const saved = await store.get<WarframeItem[]>('items');
+			if (saved) {
+				data = saved;
+			}
 
-		return items.filter((item) => item.name.toLowerCase().includes(normalizedSearchQuery));
+			unlisten = await listen<{ words: any[]; is_inventory_add?: boolean }>(
+				'ocr_result',
+				(event) => {
+					if (!event.payload.is_inventory_add) return;
+
+					const words = event.payload.words;
+					let addedAny = false;
+
+					for (const word of words) {
+						if (!word.slug) continue;
+						
+						const itemName = word.text;
+						const median = word.market_median;
+						const ducats = word.ducats ?? 0;
+
+						const existing = data.find((i) => i.name === itemName);
+						if (existing) {
+							existing.quantity += 1;
+						} else {
+							data.push({
+								name: itemName,
+								quantity: 1,
+								marketMedian: median,
+								ducats: ducats,
+							});
+						}
+						addedAny = true;
+					}
+
+					if (addedAny) {
+						saveInventory();
+					}
+				}
+			);
+		})();
+
+		return () => {
+			if (unlisten) unlisten();
+		};
 	});
-	const hasOfferFallbackMedian = $derived.by(() =>
-		items.some((item) => item.marketMedianUsesOfferFallback === true),
-	);
-	const marketMedianFormatter = new Intl.NumberFormat(undefined, {
-		minimumFractionDigits: 0,
-		maximumFractionDigits: 2,
-	});
 
-	function formatMarketMedian(item: InventoryItem): string {
-		if (typeof item.marketMedian !== 'number' || !Number.isFinite(item.marketMedian)) {
-			return '—';
-		}
-
-		const formatted = marketMedianFormatter.format(item.marketMedian);
-		return item.marketMedianUsesOfferFallback ? `${formatted}*` : formatted;
+	async function saveInventory() {
+		await store.set('items', $state.snapshot(data));
+		await store.save();
 	}
+
+	function updateQuantity(item: WarframeItem, delta: number) {
+		item.quantity += delta;
+		if (item.quantity <= 0) {
+			data = data.filter((i) => i !== item);
+		}
+		saveInventory();
+	}
+
+	const totalPlatinum = $derived(data.reduce((sum, item) => sum + (item.marketMedian ?? 0) * item.quantity, 0));
+	const totalDucats = $derived(data.reduce((sum, item) => sum + item.ducats * item.quantity, 0));
 </script>
 
-<section class="max-w-5xl">
-	<div class="flex flex-wrap justify-between items-center gap-2">
-		<h2 class="font-semibold text-lg">Inventory</h2>
-		<p class="text-muted-foreground text-sm">
-			{items.length} unique item{items.length === 1 ? '' : 's'} • {totalQuantity} total
-		</p>
+<div class="h-full w-full flex flex-col p-6 bg-background text-foreground overflow-y-auto">
+	<div class="mb-6 flex justify-between items-end">
+		<h1 class="text-3xl font-bold font-stretch-condensed text-foreground/90 uppercase tracking-tighter">Inventory</h1>
 	</div>
 
-	{#if items.length === 0}
-		<div class="mt-4 p-4 border rounded">
-			<p class="text-sm">
-				Press the hotkey to detect items. Each detected item is added here automatically.
-			</p>
-		</div>
-	{:else}
-		<div class="flex flex-wrap justify-between items-center gap-2 mt-4">
-			<div class="flex flex-wrap sm:flex-1 items-center gap-2 w-full sm:w-auto">
-				<input
-					type="search"
-					bind:value={searchQuery}
-					class="px-2 py-1 border rounded w-full sm:max-w-sm text-sm"
-					placeholder="Search inventory..."
-					aria-label="Search inventory"
-				/>
-				<p class="text-muted-foreground text-xs whitespace-nowrap">
-					{filteredItems.length} shown of {items.length}
-				</p>
-			</div>
-			<button
-				type="button"
-				class="hover:bg-muted px-3 py-1 border rounded text-sm"
-				onclick={clearInventory}
-			>
-				Clear inventory
-			</button>
-		</div>
-
-		<div class="mt-3 border rounded-md max-h-112 overflow-y-auto">
-			<!-- <Table.Root>
-				<Table.Header>
-					<Table.Row>
-						<Table.Head class="top-0 sticky bg-background">Item</Table.Head>
-						<Table.Head class="top-0 sticky bg-background w-24 text-right">Quantity</Table.Head>
-						<Table.Head class="top-0 sticky bg-background w-24 text-right">Median</Table.Head>
-						<Table.Head class="top-0 sticky bg-background w-28 text-right">Adjust</Table.Head>
-					</Table.Row>
-				</Table.Header>
-				<Table.Body>
-					{#each filteredItems as item (item.name)}
-						<Table.Row>
-							<Table.Cell class="font-medium">{item.name}</Table.Cell>
-							<Table.Cell class="text-right">{item.quantity}</Table.Cell>
-							<Table.Cell class="text-right">{formatMarketMedian(item)}</Table.Cell>
-							<Table.Cell>
-								<div class="flex justify-end items-center gap-1">
-									<button
-										type="button"
-										class="hover:bg-muted border rounded w-8 h-8 font-semibold text-sm leading-none"
-										onclick={() => onDecrease(item.name)}
-										aria-label={`Decrease quantity for ${item.name}`}
-									>
-										-
-									</button>
-									<button
-										type="button"
-										class="hover:bg-muted border rounded w-8 h-8 font-semibold text-sm leading-none"
-										onclick={() => onIncrease(item.name)}
-										aria-label={`Increase quantity for ${item.name}`}
-									>
-										+
-									</button>
-								</div>
-							</Table.Cell>
-						</Table.Row>
-					{:else}
-						<Table.Row>
-							<Table.Cell colspan={4} class="h-20 text-muted-foreground text-center">
-								No items match your search.
-							</Table.Cell>
-						</Table.Row>
+	<div class="border rounded-md overflow-hidden bg-card/50 shadow-sm flex-1 mb-6">
+		<table class="w-full text-sm text-left">
+			<thead class="bg-muted text-muted-foreground uppercase text-xs">
+				<tr>
+					{#each columns as col}
+						<th class="px-4 py-3 font-medium tracking-wide">
+							{col.header}
+						</th>
 					{/each}
-				</Table.Body>
-			</Table.Root> -->
-		</div>
+				</tr>
+			</thead>
+			<tbody class="divide-y border-t">
+				{#each data as item}
+					<tr class="hover:bg-muted/30 transition-colors">
+						{#each columns as col}
+							<td class="px-4 py-2.5">
+								{#if col.id === 'actions'}
+									<div class="flex gap-1">
+										<button class="bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded px-2 py-1.5 transition-colors cursor-pointer" onclick={() => updateQuantity(item, -1)}>
+											<Icon icon="lucide:minus" class="size-3" />
+										</button>
+										<button class="bg-primary text-primary-foreground hover:bg-primary/90 rounded px-2 py-1.5 transition-colors cursor-pointer" onclick={() => updateQuantity(item, 1)}>
+											<Icon icon="lucide:plus" class="size-3" />
+										</button>
+									</div>
+								{:else if col.accessorKey === 'marketMedian'}
+									<div class="flex items-center gap-1.5 text-amber-500/90 font-medium">
+										{item.marketMedian !== undefined ? Math.round(item.marketMedian) : '-'}
+										<img src="/icons/platinum.png" class="size-3.5" alt="pt" />
+									</div>
+								{:else if col.id === 'totalPrice'}
+									<div class="flex items-center gap-1.5 text-amber-500/90 font-bold">
+										{Math.round((item.marketMedian ?? 0) * item.quantity)}
+										<img src="/icons/platinum.png" class="size-3.5" alt="pt" />
+									</div>
+								{:else if col.accessorKey === 'ducats'}
+									<div class="flex items-center gap-1.5 text-cyan-500/90 font-medium">
+										{item.ducats || '-'}
+										<img src="/icons/ducats.png" class="size-3.5" alt="ducats" />
+									</div>
+								{:else if col.id === 'totalDucats'}
+									<div class="flex items-center gap-1.5 text-cyan-500/90 font-bold">
+										{item.ducats * item.quantity}
+										<img src="/icons/ducats.png" class="size-3.5" alt="ducats" />
+									</div>
+								{:else if col.accessorKey === 'name'}
+									<div class="font-medium text-foreground/90">{item.name}</div>
+								{:else if col.accessorKey === 'quantity'}
+									<div class="font-mono text-xs bg-muted/50 px-2 py-0.5 rounded-full inline-block">x{item.quantity}</div>
+								{:else}
+									{item[col.accessorKey as keyof typeof item]}
+								{/if}
+							</td>
+						{/each}
+					</tr>
+				{:else}
+					<tr>
+						<td colspan={columns.length} class="px-4 py-8 text-center text-muted-foreground">
+							Your inventory is empty. Press <span class="font-mono bg-muted px-1 py-0.5 rounded text-xs">Ctrl+Shift+Home</span> in Warframe to scan items.
+						</td>
+					</tr>
+				{/each}
+			</tbody>
+		</table>
+	</div>
 
-		{#if hasOfferFallbackMedian}
-			<p class="mt-2 text-muted-foreground text-xs">* median from current offers</p>
-		{/if}
-	{/if}
-</section>
+	<!-- Footer totals -->
+	<div class="p-5 border rounded-md bg-card shadow-sm flex justify-between items-center bg-gradient-to-r from-card to-muted/20 border-l-4 border-l-primary/50">
+		<span class="text-xl font-bold font-stretch-condensed text-foreground/80 uppercase tracking-wide">Grand Total</span>
+		<div class="flex gap-8">
+			<div class="flex items-center gap-2.5">
+				<span class="text-2xl font-bold text-amber-500/90 tracking-tighter">{Math.round(totalPlatinum)}</span>
+				<img src="/icons/platinum.png" class="size-6" alt="Platinum" />
+			</div>
+			<div class="flex items-center gap-2.5">
+				<span class="text-2xl font-bold text-cyan-500/90 tracking-tighter">{totalDucats}</span>
+				<img src="/icons/ducats.png" class="size-6" alt="Ducats" />
+			</div>
+		</div>
+	</div>
+</div>
