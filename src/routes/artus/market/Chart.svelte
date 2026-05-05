@@ -35,8 +35,8 @@
 		const splitLineColor = getStyle('--color-input'); // horizontal grid lines
 		const shadowColor = getStyle('--color-foreground');
 
-		const colorPlatinum = getStyle('--color-blue-500');
-		const colorMovingAvg = getStyle('--color-red-500');
+		const colorPlatinum = getStyle('--color-cyan-500');
+		const colorMovingAvg = getStyle('--color-amber-500');
 		const colorVolume = getStyle('--color-foreground');
 		const opacityVolume = 0.1;
 		const font = getStyle('--font-sans');

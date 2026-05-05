@@ -71,8 +71,8 @@
 	}
 
 	const ItemColor = {
-		SALVAGE: 'text-amber-400',
-		SELL: 'text-blue-400',
+		SALVAGE: 'text-amber-500',
+		SELL: 'text-cyan-500',
 		HOLD: 'text-muted-foreground',
 	} as const;
 
@@ -176,7 +176,7 @@
 				<span>{displayText}</span>
 			</div>
 			{#if displayPrice !== undefined || ducats !== undefined}
-				<div class="flex justify-around gap-1.5">
+				<div class="flex justify-around gap-1.5 font-medium">
 					{#if displayPrice !== undefined}
 						<div class="flex items-center gap-1">
 							<div>{pricePrefix}{medianFormatter.format(displayPrice)}</div>
