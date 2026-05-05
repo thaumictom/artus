@@ -92,7 +92,8 @@ If Artus is not the app for you, consider using these awesome tools:
 
 Without these contributions to Warframe, this app wouldn't be possible:
 
-- https://github.com/wfcd/warframe-items/
+- https://github.com/WFCD/WFInfo
+- https://github.com/WFCD/warframe-items/
 - https://browse.wf/
 - https://warframe.market/
 - https://tenno.tools/
