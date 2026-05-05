@@ -397,7 +397,25 @@ fn postprocess_words<R: Runtime>(
 
 #[cfg(target_os = "windows")]
 fn set_overlay_owner<R: Runtime>(app: &AppHandle<R>, capture: &CapturedWindow) {
+    let use_window_ownership = app.get_setting_bool("use_window_ownership", false);
+
     if let Some(overlay) = app.get_webview_window("overlay") {
+        if !use_window_ownership {
+            let _ = overlay.set_always_on_top(true);
+            if let Ok(hwnd) = overlay.hwnd() {
+                let overlay_hwnd = windows::Win32::Foundation::HWND(hwnd.0 as *mut core::ffi::c_void);
+                unsafe {
+                    windows::Win32::UI::WindowsAndMessaging::SetWindowLongPtrW(
+                        overlay_hwnd,
+                        windows::Win32::UI::WindowsAndMessaging::GWLP_HWNDPARENT,
+                        0,
+                    );
+                }
+            }
+            return;
+        }
+
+        let _ = overlay.set_always_on_top(false);
         if let Ok(hwnd) = overlay.hwnd() {
             let overlay_hwnd = windows::Win32::Foundation::HWND(hwnd.0 as *mut core::ffi::c_void);
             let target_hwnd = capture.id as isize;
@@ -413,7 +431,11 @@ fn set_overlay_owner<R: Runtime>(app: &AppHandle<R>, capture: &CapturedWindow) {
 }
 
 #[cfg(not(target_os = "windows"))]
-fn set_overlay_owner<R: Runtime>(_app: &AppHandle<R>, _capture: &CapturedWindow) {}
+fn set_overlay_owner<R: Runtime>(app: &AppHandle<R>, _capture: &CapturedWindow) {
+    if let Some(overlay) = app.get_webview_window("overlay") {
+        let _ = overlay.set_always_on_top(true);
+    }
+}
 
 /// Positions, resizes, shows the overlay, and makes it click-through.
 /// Returns whether the Wayland layer-shell path was used.
