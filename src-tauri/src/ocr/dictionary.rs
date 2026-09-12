@@ -89,6 +89,73 @@ struct TradeableItemStats {
     moving_avg: Option<f64>,
     #[serde(default)]
     subtype: Option<String>,
+    #[serde(default)]
+    mod_rank: Option<u64>,
+}
+
+#[derive(Deserialize)]
+struct MarketItemsResponse {
+    data: Vec<MarketItemMetadata>,
+}
+
+#[derive(Deserialize)]
+struct MarketItemMetadata {
+    slug: String,
+    #[serde(default)]
+    tags: Vec<String>,
+    #[serde(rename = "maxRank")]
+    max_rank: Option<u64>,
+}
+
+fn resolve_price(
+    stats: Option<&TradeableItemStats>,
+    offers: Option<&TradeableItemStats>,
+    ducats: Option<u64>,
+) -> Option<TradeablePriceEntry> {
+    let (median, used_current_offer_fallback) = stats
+        .and_then(|s| s.median)
+        .filter(|v| v.is_finite())
+        .map(|v| (v, false))
+        .or_else(|| {
+            offers
+                .and_then(|s| s.median)
+                .filter(|v| v.is_finite())
+                .map(|v| (v, true))
+        })?;
+    Some(TradeablePriceEntry {
+        median,
+        used_current_offer_fallback,
+        relic_price_is_fallback: false,
+        trades_24h: stats.and_then(|s| s.volume).filter(|v| v.is_finite()),
+        moving_avg: stats.and_then(|s| s.moving_avg).filter(|v| v.is_finite()),
+        ducats,
+    })
+}
+
+fn rank_price(item: &TradeableItemApiItem, rank: u64) -> Option<TradeablePriceEntry> {
+    resolve_price(
+        item.statistics_today
+            .iter()
+            .find(|s| s.mod_rank == Some(rank)),
+        item.current_offers
+            .iter()
+            .find(|s| s.mod_rank == Some(rank)),
+        item.ducats,
+    )
+}
+
+fn display_price(price: &TradeablePriceEntry) -> f64 {
+    if price.used_current_offer_fallback {
+        price.median
+    } else {
+        price.moving_avg.unwrap_or(price.median)
+    }
+}
+
+fn prime_set_slug(slug: &str) -> Option<String> {
+    let (base, component) = slug.split_once("_prime_")?;
+    (!base.is_empty() && !component.is_empty() && component != "set")
+        .then(|| format!("{base}_prime_set"))
 }
 
 // ── HTTP helper ───────────────────────────────────────────────────────────────
@@ -236,6 +303,33 @@ pub fn load_tradeable_item_prices<R: Runtime>(app: &AppHandle<R>) -> AppResult<u
 
     let mut prices = HashMap::new();
 
+    // Use exact max ranks, not the highest rank with an available offer.
+    // Metadata failure must not prevent ordinary prices from loading.
+    let metadata = (|| -> AppResult<MarketItemsResponse> {
+        Ok(client
+            .get("https://api.warframe.market/v2/items")
+            .header("Language", "en")
+            .send()?
+            .error_for_status()?
+            .json()?)
+    })();
+    let max_ranks: HashMap<String, u64> = match metadata {
+        Ok(response) => response
+            .data
+            .into_iter()
+            .filter(|item| item.tags.iter().any(|tag| tag == "arcane_enhancement"))
+            .filter_map(|item| {
+                item.max_rank
+                    .filter(|rank| *rank > 0)
+                    .map(|rank| (item.slug, rank))
+            })
+            .collect(),
+        Err(err) => {
+            warn!("maxed Arcane prices unavailable: {err}");
+            HashMap::new()
+        }
+    };
+
     for item in payload.tradeable_items {
         let slug = item.slug.trim();
         if slug.is_empty() {
@@ -350,33 +444,30 @@ pub fn load_tradeable_item_prices<R: Runtime>(app: &AppHandle<R>) -> AppResult<u
                 );
             }
         } else {
-            let stats_today = item.statistics_today.first();
-            let offers = item.current_offers.first();
+            if let Some(rank) = max_ranks.get(slug) {
+                if let Some(price) = rank_price(&item, *rank) {
+                    prices.insert(format!("{slug}#maxed"), price);
+                }
+            }
 
-            let stats_median = stats_today.and_then(|s| s.median).filter(|m| m.is_finite());
-            let offers_median = offers.and_then(|s| s.median).filter(|m| m.is_finite());
+            // Ranked entries are unordered; keep the ordinary price at rank zero.
+            let ranked = item
+                .statistics_today
+                .iter()
+                .chain(&item.current_offers)
+                .any(|s| s.mod_rank.is_some());
+            let stats_today = item
+                .statistics_today
+                .iter()
+                .find(|s| !ranked || s.mod_rank == Some(0));
+            let offers = item
+                .current_offers
+                .iter()
+                .find(|s| !ranked || s.mod_rank == Some(0));
 
-            // Prefer today's stats; fall back to current offers
-            let Some((median, used_fallback)) = stats_median
-                .map(|v| (v, false))
-                .or_else(|| offers_median.map(|v| (v, true)))
-            else {
-                continue;
-            };
-
-            prices.insert(
-                slug.to_string(),
-                TradeablePriceEntry {
-                    median,
-                    used_current_offer_fallback: used_fallback,
-                    relic_price_is_fallback: false,
-                    trades_24h: stats_today.and_then(|s| s.volume).filter(|v| v.is_finite()),
-                    moving_avg: stats_today
-                        .and_then(|s| s.moving_avg)
-                        .filter(|v| v.is_finite()),
-                    ducats: item.ducats,
-                },
-            );
+            if let Some(price) = resolve_price(stats_today, offers, item.ducats) {
+                prices.insert(slug.to_string(), price);
+            }
         }
     }
 
@@ -494,6 +585,24 @@ fn match_single_word(
             mapped.trades_24h = price.trades_24h;
             mapped.moving_avg = price.moving_avg;
         }
+        if candidate.tags.iter().any(|tag| tag == "arcane_enhancement") {
+            if let Some(price) = prices_map.get(&format!("{}#maxed", candidate.slug)) {
+                mapped.maxed_arcane_price = Some(display_price(price));
+                mapped.maxed_arcane_trades_24h = price.trades_24h;
+                mapped.maxed_arcane_price_from_current_offers =
+                    Some(price.used_current_offer_fallback);
+            }
+        }
+        if candidate.tags.iter().any(|tag| tag == "prime") {
+            if let Some(price) =
+                prime_set_slug(&candidate.slug).and_then(|slug| prices_map.get(&slug))
+            {
+                mapped.prime_set_price = Some(display_price(price));
+                mapped.prime_set_trades_24h = price.trades_24h;
+                mapped.prime_set_price_from_current_offers =
+                    Some(price.used_current_offer_fallback);
+            }
+        }
     }
 
     Some(mapped)
@@ -594,4 +703,74 @@ fn levenshtein_distance(left: &[u8], right: &[u8]) -> usize {
     }
 
     prev[right.len()]
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn arcane_prices_select_exact_ranks_independent_of_order() {
+        let item: TradeableItemApiItem = serde_json::from_str(
+            r#"{
+            "slug": "arcane_energize",
+            "statistics_today": [
+                {"mod_rank": 5, "median": 135, "moving_avg": 134.3},
+                {"mod_rank": 0, "median": 8, "moving_avg": 7.783}
+            ],
+            "current_offers": [{"mod_rank": 3, "median": 60}]
+        }"#,
+        )
+        .unwrap();
+        assert_eq!(rank_price(&item, 0).unwrap().median, 8.0);
+        assert_eq!(display_price(&rank_price(&item, 5).unwrap()), 134.3);
+        assert!(rank_price(&item, 4).is_none());
+    }
+
+    #[test]
+    fn offer_fallback_uses_same_rank_and_ignores_statistics_moving_average() {
+        let item: TradeableItemApiItem = serde_json::from_str(
+            r#"{
+            "slug": "arcane_energize",
+            "statistics_today": [{"mod_rank": 5, "median": null, "moving_avg": 120}],
+            "current_offers": [
+                {"mod_rank": 0, "median": 8},
+                {"mod_rank": 5, "median": 150}
+            ]
+        }"#,
+        )
+        .unwrap();
+        let price = rank_price(&item, 5).unwrap();
+        assert!(price.used_current_offer_fallback);
+        assert_eq!(display_price(&price), 150.0);
+        assert!(rank_price(&item, 3).is_none());
+    }
+
+    #[test]
+    fn prime_components_resolve_to_their_own_set() {
+        assert_eq!(
+            prime_set_slug("braton_prime_barrel").as_deref(),
+            Some("braton_prime_set")
+        );
+        assert_eq!(
+            prime_set_slug("silva_and_aegis_prime_blade").as_deref(),
+            Some("silva_and_aegis_prime_set")
+        );
+        assert!(prime_set_slug("braton_prime_set").is_none());
+        assert!(prime_set_slug("primed_flow").is_none());
+        assert!(prime_set_slug("forma_blueprint").is_none());
+    }
+
+    #[test]
+    fn missing_and_nonfinite_prices_are_not_zero_prices() {
+        let stats = TradeableItemStats {
+            median: Some(f64::NAN),
+            volume: None,
+            moving_avg: None,
+            subtype: None,
+            mod_rank: None,
+        };
+        assert!(resolve_price(Some(&stats), None, None).is_none());
+        assert!(resolve_price(None, None, None).is_none());
+    }
 }

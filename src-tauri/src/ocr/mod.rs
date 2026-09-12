@@ -117,6 +117,18 @@ pub struct OcrWord {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub market_median_from_current_offers: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub maxed_arcane_price: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub maxed_arcane_trades_24h: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub maxed_arcane_price_from_current_offers: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prime_set_price: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prime_set_trades_24h: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prime_set_price_from_current_offers: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub relic_price_is_fallback: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ducats: Option<u64>,

@@ -14,6 +14,12 @@
 		height: number;
 		market_median?: number;
 		market_median_from_current_offers?: boolean;
+		maxed_arcane_price?: number;
+		maxed_arcane_trades_24h?: number;
+		maxed_arcane_price_from_current_offers?: boolean;
+		prime_set_price?: number;
+		prime_set_trades_24h?: number;
+		prime_set_price_from_current_offers?: boolean;
 		relic_price_is_fallback?: boolean;
 		ducats?: number;
 		vaulted?: boolean;
@@ -108,10 +114,10 @@
 		<div
 			in:flyAndScale={{ y: 24 }}
 			out:fade={{ duration: 100 }}
-			class="absolute inset-0 flex items-center justify-center"
+			class="absolute inset-0 flex justify-center items-center"
 		>
 			<div class="flex items-center gap-4 bg-background/90 p-4 border">
-				<Icon icon="material-symbols:progress-activity" class="animate-spin size-5" />
+				<Icon icon="material-symbols:progress-activity" class="size-5 animate-spin" />
 				<span class="text-foreground text-sm">Processing…</span>
 			</div>
 		</div>
@@ -125,6 +131,11 @@
 		{@const pricePrefix = word.market_median_from_current_offers ? '~' : ''}
 		{@const trades24h = normalizeOverlayNumber(word.trades_24h)}
 		{@const ducats = normalizeOverlayNumber(word.ducats)}
+		{@const maxedArcanePrice = normalizeOverlayNumber(word.maxed_arcane_price)}
+		{@const maxedArcaneVolume = normalizeOverlayNumber(word.maxed_arcane_trades_24h)}
+		{@const primeSetPrice = normalizeOverlayNumber(word.prime_set_price)}
+		{@const primeSetVolume = normalizeOverlayNumber(word.prime_set_trades_24h)}
+		{@const relatedVolume = maxedArcanePrice !== undefined ? maxedArcaneVolume : primeSetVolume}
 
 		<!-- Determine the actual displayed name of the relic based on which price we fell back to. -->
 		{@const isOriginallyRadiant = word.subtype === 'Radiant'}
@@ -138,7 +149,6 @@
 				: baseText
 			: word.text}
 
-		{@const vaulted = word.vaulted}
 		{@const isCustom = word.is_custom === true}
 		<!-- Bounding box for debugging -->
 		{#if showBoundingBoxes}
@@ -152,7 +162,7 @@
 			in:flyAndScale={{ y: 24 }}
 			out:fade={{ duration: 100 }}
 			class={{
-				'absolute flex flex-col bg-background/90 px-2 py-1 border text-foreground text-sm -translate-x-1/2 -translate-y-full': true,
+				'absolute flex flex-col bg-background/90 border text-foreground text-sm -translate-x-1/2 -translate-y-full': true,
 				'border-[rgb(253,235,189)] text-[rgb(253,235,189)]': word.mod_type === 'gold',
 				'border-[rgb(228,228,228)] text-[rgb(228,228,228)]': word.mod_type === 'silver',
 				'border-[rgb(221,160,133)] text-[rgb(221,160,133)]': word.mod_type === 'bronze',
@@ -163,47 +173,75 @@
 		>
 			<div
 				class={{
-					'font-semibold text-center mb-0.5': true,
+					'border-b text-center font-semibold': true,
 					'font-stretch-extra-condensed': displayText.length > 30,
 					'font-stretch-condensed': displayText.length > 20,
 					'font-stretch-semi-condensed': displayText.length > 15,
 					'text-muted-foreground': isCustom,
 				}}
 			>
-				{#if vaulted}
-					<Icon icon="streamline-flex:safe-vault-solid" class="text-amber-500 inline mr-0.5" />
+				{#if word.vaulted}
+					<Icon icon="streamline-flex:safe-vault-solid" class="inline mr-0.5 text-amber-500" />
 				{/if}
 				<span>{displayText}</span>
 			</div>
-			{#if displayPrice !== undefined || ducats !== undefined}
-				<div class="flex justify-around gap-1.5 font-medium">
-					{#if displayPrice !== undefined}
-						<div class="flex items-center gap-1">
-							<div>{pricePrefix}{medianFormatter.format(displayPrice)}</div>
-							<img src="/icons/platinum.png" alt="" class="size-3" />
-						</div>
+			<div class="items-center gap-x-2 grid grid-cols-2 font-medium text-center">
+				<!-- Line 1 -->
+				{#if displayPrice !== undefined}
+					<div
+						class:col-span-2={trades24h === undefined}
+						class="flex justify-center items-center gap-1"
+					>
+						<div>{pricePrefix}{medianFormatter.format(displayPrice)}</div>
+						<img src="/icons/platinum.png" alt="" class="size-3" />
+					</div>
+				{/if}
+				{#if trades24h !== undefined}
+					<div class:col-span-2={displayPrice === undefined} class="text-xs">
+						vol: {countFormatter.format(trades24h)}
+					</div>
+				{/if}
+				{#if maxedArcanePrice !== undefined || primeSetPrice !== undefined}
+					<!-- Line 2 -->
+					<div class="col-span-2 text-[10px] text-muted-foreground text-center">
+						{maxedArcanePrice !== undefined ? 'max' : 'set'}
+					</div>
+					<!-- Line 3 -->
+					<div
+						class:col-span-2={relatedVolume === undefined}
+						class="flex justify-center items-center gap-1"
+					>
+						{#if maxedArcanePrice !== undefined}
+							{word.maxed_arcane_price_from_current_offers ? '~' : ''}{medianFormatter.format(
+								maxedArcanePrice,
+							)}
+						{:else if primeSetPrice !== undefined}
+							{word.prime_set_price_from_current_offers ? '~' : ''}{medianFormatter.format(
+								primeSetPrice,
+							)}
+						{/if}
+						<img src="/icons/platinum.png" alt="" class="size-3" />
+					</div>
+					{#if relatedVolume !== undefined}
+						<div class="text-xs">vol: {countFormatter.format(relatedVolume)}</div>
 					{/if}
-					{#if ducats !== undefined}
-						<div class="flex items-center gap-1">
-							<div>{countFormatter.format(ducats)}</div>
-							<img src="/icons/ducats.png" alt="" class="size-3" />
-						</div>
-					{/if}
-					{#if displayPrice !== undefined && ducats !== undefined && ducats > 0}
-						{@const platPer100Ducats = (displayPrice / ducats) * 100}
-						<div>
-							<span class={getItemActionColor(ducats, displayPrice)}>
-								{medianFormatter.format(platPer100Ducats)}
-							</span>
-						</div>
-					{/if}
-				</div>
-			{/if}
-			{#if trades24h !== undefined}
-				<div class="text-xs text-center">
-					volume: {countFormatter.format(trades24h)}
-				</div>
-			{/if}
+				{/if}
+				<!-- Line 4 -->
+				{#if ducats !== undefined}
+					<div class="flex justify-center items-center gap-1">
+						<div>{countFormatter.format(ducats)}</div>
+						<img src="/icons/ducats.png" alt="" class="size-3" />
+					</div>
+				{/if}
+				{#if displayPrice !== undefined && ducats !== undefined && ducats > 0}
+					{@const platPer100Ducats = (displayPrice / ducats) * 100}
+					<div>
+						<span class={getItemActionColor(ducats, displayPrice)}>
+							{medianFormatter.format(platPer100Ducats)}
+						</span>
+					</div>
+				{/if}
+			</div>
 		</div>
 	{/each}
 </main>
