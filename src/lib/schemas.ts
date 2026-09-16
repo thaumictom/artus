@@ -3,7 +3,7 @@ import { z } from 'zod';
 // Custom dictionary
 export const DictionarySchema = z.object({
 	last_fetched_at: z.string(),
-	tradeable_items: z.array(
+	items: z.array(
 		z.object({
 			slug: z.string(),
 			name: z.string(),

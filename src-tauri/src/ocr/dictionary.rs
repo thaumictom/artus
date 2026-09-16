@@ -50,7 +50,7 @@ struct ThemeColorsToml {
 #[derive(Debug, Deserialize)]
 struct DictionaryApiResponse {
     #[serde(default)]
-    tradeable_items: Vec<DictionaryApiItem>,
+    items: Vec<DictionaryApiItem>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -68,7 +68,7 @@ struct DictionaryApiItem {
 #[derive(Debug, Deserialize)]
 struct TradeableItemsApiResponse {
     #[serde(default)]
-    tradeable_items: Vec<TradeableItemApiItem>,
+    items: Vec<TradeableItemApiItem>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -77,7 +77,7 @@ struct TradeableItemApiItem {
     #[serde(default)]
     statistics_today: Vec<TradeableItemStats>,
     #[serde(default)]
-    current_offers: Vec<TradeableItemStats>,
+    statistics_live: Vec<TradeableItemStats>,
     #[serde(default)]
     ducats: Option<u64>,
 }
@@ -138,7 +138,7 @@ pub fn load_ocr_dictionary<R: Runtime>(app: &AppHandle<R>) -> AppResult<usize> {
         .json()?;
 
     let mut entries: Vec<OcrDictionaryEntry> = payload
-        .tradeable_items
+        .items
         .into_iter()
         .flat_map(|item| {
             let name = item.name.trim();
@@ -250,7 +250,7 @@ pub fn load_tradeable_item_prices<R: Runtime>(app: &AppHandle<R>) -> AppResult<u
             };
 
             let get_offer = |subtype_target: &str| -> Option<&TradeableItemStats> {
-                item.current_offers
+                item.statistics_live
                     .iter()
                     .find(|s| s.subtype.as_deref() == Some(subtype_target))
             };

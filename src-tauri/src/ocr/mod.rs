@@ -67,9 +67,8 @@ pub const EMBEDDED_TRAINEDDATA_FILENAME: &str = env!("OCR_EMBEDDED_TRAINEDDATA_F
 
 // ── API endpoints ─────────────────────────────────────────────────────────────
 
-pub const OCR_DICTIONARY_API_URL: &str = "http://api.thaumictom.de/warframe/v1/dictionary.json";
-pub const TRADEABLE_ITEMS_API_URL: &str =
-    "http://api.thaumictom.de/warframe/v1/tradeable_items.json";
+pub const OCR_DICTIONARY_API_URL: &str = "http://api.thaumictom.de/warframe/v2/wfm-items";
+pub const TRADEABLE_ITEMS_API_URL: &str = "http://api.thaumictom.de/warframe/v2/tradeable-items";
 pub const OCR_DICTIONARY_HTTP_TIMEOUT_SECS: u64 = 10;
 
 // ── Custom dictionary items (not in the remote API) ───────────────────────────
