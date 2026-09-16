@@ -28,7 +28,7 @@
 		fetch('https://api.thaumictom.de/warframe/v2/wfm-items')
 			.then((res) => res.json())
 			.then((data: z.infer<typeof DictionarySchema>) => {
-				dictionaryItems = data.tradeable_items.map((item) => ({
+				dictionaryItems = data.items.map((item) => ({
 					label: item.name,
 					value: item.slug,
 				}));

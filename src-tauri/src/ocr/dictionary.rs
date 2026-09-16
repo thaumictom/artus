@@ -50,7 +50,7 @@ struct ThemeColorsToml {
 #[derive(Debug, Deserialize)]
 struct DictionaryApiResponse {
     #[serde(default)]
-    tradeable_items: Vec<DictionaryApiItem>,
+    items: Vec<DictionaryApiItem>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -68,7 +68,7 @@ struct DictionaryApiItem {
 #[derive(Debug, Deserialize)]
 struct TradeableItemsApiResponse {
     #[serde(default)]
-    tradeable_items: Vec<TradeableItemApiItem>,
+    items: Vec<TradeableItemApiItem>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -77,7 +77,7 @@ struct TradeableItemApiItem {
     #[serde(default)]
     statistics_today: Vec<TradeableItemStats>,
     #[serde(default)]
-    current_offers: Vec<TradeableItemStats>,
+    statistics_live: Vec<TradeableItemStats>,
     #[serde(default)]
     ducats: Option<u64>,
 }
@@ -137,7 +137,7 @@ fn rank_price(item: &TradeableItemApiItem, rank: u64) -> Option<TradeablePriceEn
         item.statistics_today
             .iter()
             .find(|s| s.mod_rank == Some(rank)),
-        item.current_offers
+        item.statistics_live
             .iter()
             .find(|s| s.mod_rank == Some(rank)),
         item.ducats,
@@ -205,7 +205,7 @@ pub fn load_ocr_dictionary<R: Runtime>(app: &AppHandle<R>) -> AppResult<usize> {
         .json()?;
 
     let mut entries: Vec<OcrDictionaryEntry> = payload
-        .tradeable_items
+        .items
         .into_iter()
         .flat_map(|item| {
             let name = item.name.trim();
@@ -330,7 +330,7 @@ pub fn load_tradeable_item_prices<R: Runtime>(app: &AppHandle<R>) -> AppResult<u
         }
     };
 
-    for item in payload.tradeable_items {
+    for item in payload.items {
         let slug = item.slug.trim();
         if slug.is_empty() {
             continue;
@@ -344,7 +344,7 @@ pub fn load_tradeable_item_prices<R: Runtime>(app: &AppHandle<R>) -> AppResult<u
             };
 
             let get_offer = |subtype_target: &str| -> Option<&TradeableItemStats> {
-                item.current_offers
+                item.statistics_live
                     .iter()
                     .find(|s| s.subtype.as_deref() == Some(subtype_target))
             };
@@ -454,18 +454,18 @@ pub fn load_tradeable_item_prices<R: Runtime>(app: &AppHandle<R>) -> AppResult<u
             let ranked = item
                 .statistics_today
                 .iter()
-                .chain(&item.current_offers)
+                .chain(&item.statistics_live)
                 .any(|s| s.mod_rank.is_some());
             let stats_today = item
                 .statistics_today
                 .iter()
                 .find(|s| !ranked || s.mod_rank == Some(0));
-            let offers = item
-                .current_offers
+            let stats_live = item
+                .statistics_live
                 .iter()
                 .find(|s| !ranked || s.mod_rank == Some(0));
 
-            if let Some(price) = resolve_price(stats_today, offers, item.ducats) {
+            if let Some(price) = resolve_price(stats_today, stats_live, item.ducats) {
                 prices.insert(slug.to_string(), price);
             }
         }
