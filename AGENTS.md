@@ -10,7 +10,7 @@ Early-alpha Warframe desktop companion for Windows and Linux. Tauri 2/Rust 2021 
 - `hotkeys.rs`, `window_watcher.rs`, `relic_rewards.rs`, `layer_shell.rs`: focus-sensitive shortcuts, game process/window tracking, read-only EE.log tailing for relic reward open/close events, and optional Wayland integration. Default capture is Ctrl+Home; inventory capture is Ctrl+Shift+Home.
 - `src/routes/artus/inventory/`: OCR additions, editable quantities and platinum/ducat totals persisted in `inventory.json`. The `ocr_result` listener currently exists only while this tab is mounted.
 - `src/routes/artus/mastery/`: **work in progress**, not functional mastery tracking. `scripts/generate-mastery-items.mjs` derives `src/lib/data/masterable-items.json` from `@wfcd/items`.
-- `src-tauri/src/market.rs`: warframe.market v2 item/orders requests and v1 statistics. OCR dictionary/prices come from `api.thaumictom.de/warframe/v1/` at startup. `src/lib/schemas.ts` validates frontend API responses with Zod.
+- `src-tauri/src/market.rs`: warframe.market v2 item/orders requests and v1 statistics. OCR dictionary/prices come from `api.thaumictom.de/warframe/v2/` at startup. `src/lib/schemas.ts` validates frontend API responses with Zod.
 - `main.rs` registers commands/plugins; `setup.rs` initializes windows/data/background workers; `state.rs` holds synchronized backend state; `error.rs` provides `AppError`/`AppResult`; `updater.rs` checks releases and installs/relaunches after the UI prompt.
 
 ## Working conventions

@@ -25,7 +25,7 @@
 
 	onMount(() => {
 		isLoadingDictionary = true;
-		fetch('https://api.thaumictom.de/warframe/v1/dictionary.json')
+		fetch('https://api.thaumictom.de/warframe/v2/wfm-items')
 			.then((res) => res.json())
 			.then((data: z.infer<typeof DictionarySchema>) => {
 				dictionaryItems = data.tradeable_items.map((item) => ({
