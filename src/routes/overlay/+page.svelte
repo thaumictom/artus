@@ -20,6 +20,7 @@
 		prime_set_price?: number;
 		prime_set_trades_24h?: number;
 		prime_set_price_from_current_offers?: boolean;
+		prime_set_ducats?: number;
 		relic_price_is_fallback?: boolean;
 		ducats?: number;
 		vaulted?: boolean;
@@ -82,6 +83,14 @@
 		HOLD: 'text-muted-foreground',
 	} as const;
 
+	const ModColor: Record<NonNullable<OcrWord['mod_type']>, string> = {
+		gold: 'rgb(253, 235, 189)',
+		silver: 'rgb(228, 228, 228)',
+		bronze: 'rgb(221, 160, 133)',
+		archon: 'rgb(190, 169, 102)',
+		special: 'rgb(255, 255, 255)',
+	};
+
 	function getItemActionColor(
 		ducats: number,
 		plat: number,
@@ -135,7 +144,9 @@
 		{@const maxedArcaneVolume = normalizeOverlayNumber(word.maxed_arcane_trades_24h)}
 		{@const primeSetPrice = normalizeOverlayNumber(word.prime_set_price)}
 		{@const primeSetVolume = normalizeOverlayNumber(word.prime_set_trades_24h)}
+		{@const primeSetDucats = normalizeOverlayNumber(word.prime_set_ducats)}
 		{@const relatedVolume = maxedArcanePrice !== undefined ? maxedArcaneVolume : primeSetVolume}
+		{@const modColor = word.mod_type ? ModColor[word.mod_type] : undefined}
 
 		<!-- Determine the actual displayed name of the relic based on which price we fell back to. -->
 		{@const isOriginallyRadiant = word.subtype === 'Radiant'}
@@ -163,85 +174,91 @@
 			out:fade={{ duration: 100 }}
 			class={{
 				'absolute flex flex-col bg-background/90 border text-foreground text-sm -translate-x-1/2 -translate-y-full': true,
-				'border-[rgb(253,235,189)] text-[rgb(253,235,189)]': word.mod_type === 'gold',
-				'border-[rgb(228,228,228)] text-[rgb(228,228,228)]': word.mod_type === 'silver',
-				'border-[rgb(221,160,133)] text-[rgb(221,160,133)]': word.mod_type === 'bronze',
-				'border-[rgb(190,169,102)] text-[rgb(190,169,102)]': word.mod_type === 'archon',
-				'border-[rgb(255,255,255)] text-[rgb(255,255,255)]': word.mod_type === 'special',
 			}}
 			style={`left:${word.x + word.width / 2}px;top:${word.y - 16}px;`}
+			style:border-color={modColor}
 		>
 			<div
 				class={{
-					'border-b text-center font-semibold': true,
+					'border-b text-center font-semibold px-2 py-1': true,
 					'font-stretch-extra-condensed': displayText.length > 30,
 					'font-stretch-condensed': displayText.length > 20,
 					'font-stretch-semi-condensed': displayText.length > 15,
 					'text-muted-foreground': isCustom,
 				}}
+				style:border-bottom-color={modColor}
 			>
 				{#if word.vaulted}
 					<Icon icon="streamline-flex:safe-vault-solid" class="inline mr-0.5 text-amber-500" />
 				{/if}
 				<span>{displayText}</span>
 			</div>
-			<div class="items-center gap-x-2 grid grid-cols-2 font-medium text-center">
-				<!-- Line 1 -->
-				{#if displayPrice !== undefined}
-					<div
-						class:col-span-2={trades24h === undefined}
-						class="flex justify-center items-center gap-1"
-					>
-						<div>{pricePrefix}{medianFormatter.format(displayPrice)}</div>
-						<img src="/icons/platinum.png" alt="" class="size-3" />
-					</div>
-				{/if}
-				{#if trades24h !== undefined}
-					<div class:col-span-2={displayPrice === undefined} class="text-xs">
-						vol: {countFormatter.format(trades24h)}
-					</div>
-				{/if}
-				{#if maxedArcanePrice !== undefined || primeSetPrice !== undefined}
-					<!-- Line 2 -->
-					<div class="col-span-2 text-[10px] text-muted-foreground text-center">
-						{maxedArcanePrice !== undefined ? 'max' : 'set'}
-					</div>
-					<!-- Line 3 -->
-					<div
-						class:col-span-2={relatedVolume === undefined}
-						class="flex justify-center items-center gap-1"
-					>
-						{#if maxedArcanePrice !== undefined}
-							{word.maxed_arcane_price_from_current_offers ? '~' : ''}{medianFormatter.format(
-								maxedArcanePrice,
-							)}
-						{:else if primeSetPrice !== undefined}
-							{word.prime_set_price_from_current_offers ? '~' : ''}{medianFormatter.format(
-								primeSetPrice,
-							)}
-						{/if}
-						<img src="/icons/platinum.png" alt="" class="size-3" />
-					</div>
-					{#if relatedVolume !== undefined}
-						<div class="text-xs">vol: {countFormatter.format(relatedVolume)}</div>
+			<div class="flex flex-col items-center px-2 py-1 font-medium">
+				<div class="flex justify-around gap-1 w-full">
+					{#if displayPrice !== undefined}
+						<div
+							class:col-span-2={trades24h === undefined}
+							class="flex justify-center items-center gap-1"
+						>
+							<div>{pricePrefix}{medianFormatter.format(displayPrice)}</div>
+							<img src="/icons/platinum.png" alt="" class="size-3" />
+						</div>
 					{/if}
-				{/if}
-				<!-- Line 4 -->
-				{#if ducats !== undefined}
-					<div class="flex justify-center items-center gap-1">
-						<div>{countFormatter.format(ducats)}</div>
-						<img src="/icons/ducats.png" alt="" class="size-3" />
-					</div>
-				{/if}
-				{#if displayPrice !== undefined && ducats !== undefined && ducats > 0}
-					{@const platPer100Ducats = (displayPrice / ducats) * 100}
-					<div>
-						<span class={getItemActionColor(ducats, displayPrice)}>
-							{medianFormatter.format(platPer100Ducats)}
-						</span>
+					{#if ducats !== undefined}
+						<div class="flex justify-center items-center gap-1">
+							<div>{countFormatter.format(ducats)}</div>
+							<img src="/icons/ducats.png" alt="" class="size-3" />
+						</div>
+					{/if}
+					{#if displayPrice !== undefined && ducats !== undefined && ducats > 0}
+						{@const platPer100Ducats = (displayPrice / ducats) * 100}
+						<div>
+							<span class={getItemActionColor(ducats, displayPrice)}>
+								{medianFormatter.format(platPer100Ducats)}
+							</span>
+						</div>
+					{/if}
+				</div>
+				{#if trades24h !== undefined}
+					<div class="text-xs">
+						volume: {countFormatter.format(trades24h)}
 					</div>
 				{/if}
 			</div>
+			{#if primeSetPrice !== undefined}
+				<div class="flex flex-col items-center px-2 py-1 border-t font-medium">
+					<div class="text-[10px] text-muted-foreground">set</div>
+					<div class="flex justify-around gap-1 w-full">
+						<div class="flex justify-center items-center gap-1">
+							<div>
+								{word.prime_set_price_from_current_offers ? '~' : ''}{medianFormatter.format(
+									primeSetPrice,
+								)}
+							</div>
+							<img src="/icons/platinum.png" alt="" class="size-3" />
+						</div>
+						{#if primeSetDucats !== undefined}
+							<div class="flex justify-center items-center gap-1">
+								<div>{countFormatter.format(primeSetDucats)}</div>
+								<img src="/icons/ducats.png" alt="" class="size-3" />
+							</div>
+						{/if}
+						{#if primeSetDucats !== undefined && primeSetDucats > 0}
+							{@const setPlatPer100Ducats = (primeSetPrice / primeSetDucats) * 100}
+							<div>
+								<span class={getItemActionColor(primeSetDucats, primeSetPrice)}>
+									{medianFormatter.format(setPlatPer100Ducats)}
+								</span>
+							</div>
+						{/if}
+					</div>
+					{#if primeSetVolume !== undefined}
+						<div class="text-xs">
+							volume: {countFormatter.format(primeSetVolume)}
+						</div>
+					{/if}
+				</div>
+			{/if}
 		</div>
 	{/each}
 </main>
