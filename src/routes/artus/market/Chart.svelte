@@ -122,6 +122,7 @@
 					{
 						type: 'value',
 						name: 'Platinum',
+						min: 0,
 						nameTextStyle: { color: textMain },
 						position: 'left',
 						scale: true,
