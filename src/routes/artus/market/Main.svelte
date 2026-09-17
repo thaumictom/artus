@@ -11,6 +11,10 @@
 	import Statistics from './Statistics.svelte';
 	import InfoCard from './InfoCard.svelte';
 	import { invoke } from '@tauri-apps/api/core';
+	import { MarketCatalogSchema, type CatalogItem } from '$lib/market-catalog';
+
+	let catalog = $state.raw<Record<string, CatalogItem> | null>(null);
+	let catalogError = $state(false);
 
 	let isLoadingDictionary = $state(false);
 	let isSearching = $state(false);
@@ -37,7 +41,20 @@
 	}
 
 	onMount(() => {
+		let disposed = false;
 		void loadDictionary();
+		void invoke('get_cached_market_items').then((response) => {
+			if (!disposed) catalog = MarketCatalogSchema.parse(response);
+		}).catch((error) => {
+			if (!disposed) {
+				console.error('Failed to read local item catalog:', error);
+				catalogError = true;
+			}
+		});
+		return () => {
+			disposed = true;
+			catalog = null;
+		};
 	});
 
 	let itemData: z.infer<typeof ItemSchema> | null = $state(null);
@@ -82,7 +99,10 @@
 		{#if isSearching}
 			<div>Loading...</div>
 		{:else if itemData}
-			<InfoCard {itemData} />
+			<InfoCard {itemData} catalogItem={catalog?.[itemData.gameRef]} />
+			{#if catalogError}
+				<p class="text-sm text-muted-foreground">Extra item details are unavailable. Restart while online to refresh them.</p>
+			{/if}
 			<Statistics slug={itemData.slug} />
 			<Orders
 				slug={itemData.slug}

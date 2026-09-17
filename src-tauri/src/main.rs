@@ -55,6 +55,7 @@ fn main() {
             updater::download_and_relaunch_update,
             market::get_market_item,
             market::get_market_dictionary,
+            market::get_cached_market_items,
             market::get_market_orders,
             market::get_market_statistics
         ])

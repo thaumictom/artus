@@ -59,6 +59,9 @@ pub fn init(app: &mut App, is_wayland: bool) -> Result<(), Box<dyn std::error::E
         ocr::load_tradeable_item_prices(&app.handle()),
     );
 
+    // Refresh the disk-only catalog before the UI can request its local copy.
+    log_result("cached market items", crate::market::refresh_item_catalog(app.handle()));
+
     // Spawn background tasks
     relic_rewards::spawn_log_tailer(app.handle().clone());
     hotkeys::register_initial(app.handle())?;
