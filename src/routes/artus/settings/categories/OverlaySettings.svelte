@@ -1,5 +1,6 @@
 <script lang="ts">
 	import OverlayDurationSetting from '../components/OverlayDurationSetting.svelte';
+	import RelatedPriceSettings from '../components/RelatedPriceSettings.svelte';
 	import CaptureModsSetting from '../components/CaptureModsSetting.svelte';
 	import HideOverlayOnFocusLossSetting from '../components/HideOverlayOnFocusLossSetting.svelte';
 	import CleanupOnFocusLossSetting from '../components/CleanupOnFocusLossSetting.svelte';
@@ -12,6 +13,7 @@
 	<CleanupOnFocusLossSetting />
 	<UseWindowOwnershipSetting />
 	<OverlayDurationSetting />
+	<RelatedPriceSettings />
 	<ThresholdSettings />
 	<CaptureModsSetting />
 </div>

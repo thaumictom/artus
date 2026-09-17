@@ -4,7 +4,7 @@
 	import { onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import { flyAndScale } from '$lib/transition';
-	import { config, loadSettings } from '$lib/settings.svelte';
+	import { config, loadSettings, watchOverlayPriceSettings } from '$lib/settings.svelte';
 
 	type OcrWord = {
 		text: string;
@@ -26,6 +26,7 @@
 		vaulted?: boolean;
 		is_custom?: boolean;
 		is_relic?: boolean;
+		is_mod?: boolean;
 		subtype?: string;
 		trades_24h?: number;
 		moving_avg?: number;
@@ -39,11 +40,17 @@
 	onMount(() => {
 		loadSettings();
 		const cleanups: Array<() => void> = [];
+		let disposed = false;
+		const registerCleanup = (cleanup: () => void) => {
+			if (disposed) cleanup();
+			else cleanups.push(cleanup);
+		};
+		watchOverlayPriceSettings().then(registerCleanup);
 
 		listen('ocr_processing', () => {
 			words = [];
 			processing = true;
-		}).then((cleanup) => cleanups.push(cleanup));
+		}).then(registerCleanup);
 
 		listen<{ words: OcrWord[]; show_ocr_bounding_boxes: boolean }>('ocr_result', (event) => {
 			processing = false;
@@ -51,14 +58,15 @@
 			showBoundingBoxes = event.payload?.show_ocr_bounding_boxes ?? false;
 			// Reload settings to get the latest thresholds if changed
 			loadSettings();
-		}).then((cleanup) => cleanups.push(cleanup));
+		}).then(registerCleanup);
 
 		listen('ocr_clear', () => {
 			words = [];
 			processing = false;
-		}).then((cleanup) => cleanups.push(cleanup));
+		}).then(registerCleanup);
 
 		return () => {
+			disposed = true;
 			for (const cleanup of cleanups) cleanup();
 		};
 	});
@@ -107,6 +115,7 @@
 		};
 
 		const tier = thresholds[ducats as keyof typeof thresholds];
+		if (!tier) return ItemColor.HOLD;
 
 		// if plat is below salvage threshold -> salvage
 		// if plat is above sell threshold -> sell
@@ -145,7 +154,6 @@
 		{@const primeSetPrice = normalizeOverlayNumber(word.prime_set_price)}
 		{@const primeSetVolume = normalizeOverlayNumber(word.prime_set_trades_24h)}
 		{@const primeSetDucats = normalizeOverlayNumber(word.prime_set_ducats)}
-		{@const relatedVolume = maxedArcanePrice !== undefined ? maxedArcaneVolume : primeSetVolume}
 		{@const modColor = word.mod_type ? ModColor[word.mod_type] : undefined}
 
 		<!-- Determine the actual displayed name of the relic based on which price we fell back to. -->
@@ -225,7 +233,21 @@
 					</div>
 				{/if}
 			</div>
-			{#if primeSetPrice !== undefined}
+			{#if config.show_max_rank_prices && (!word.is_mod || config.show_max_rank_mod_prices) && maxedArcanePrice !== undefined}
+				<div class="flex flex-col items-center px-2 py-1 border-t font-medium">
+					<div class="text-[10px] text-muted-foreground">maxed</div>
+					<div class="flex justify-center items-center gap-1">
+						<div>
+							{word.maxed_arcane_price_from_current_offers ? '~' : ''}{medianFormatter.format(maxedArcanePrice)}
+						</div>
+						<img src="/icons/platinum.png" alt="" class="size-3" />
+					</div>
+					{#if maxedArcaneVolume !== undefined}
+						<div class="text-xs">volume: {countFormatter.format(maxedArcaneVolume)}</div>
+					{/if}
+				</div>
+			{/if}
+			{#if config.show_set_prices && primeSetPrice !== undefined}
 				<div class="flex flex-col items-center px-2 py-1 border-t font-medium">
 					<div class="text-[10px] text-muted-foreground">set</div>
 					<div class="flex justify-around gap-1 w-full">
@@ -246,7 +268,7 @@
 						{#if primeSetDucats !== undefined && primeSetDucats > 0}
 							{@const setPlatPer100Ducats = (primeSetPrice / primeSetDucats) * 100}
 							<div>
-								<span class={getItemActionColor(primeSetDucats, primeSetPrice)}>
+								<span class={getItemActionColor(primeSetDucats, primeSetPrice)} title="Platinum per 100 ducats">
 									{medianFormatter.format(setPlatPer100Ducats)}
 								</span>
 							</div>

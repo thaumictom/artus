@@ -116,6 +116,20 @@ pub struct OcrWord {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub market_median_from_current_offers: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub maxed_arcane_price: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub maxed_arcane_trades_24h: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub maxed_arcane_price_from_current_offers: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prime_set_price: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prime_set_trades_24h: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prime_set_price_from_current_offers: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prime_set_ducats: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub relic_price_is_fallback: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ducats: Option<u64>,
@@ -125,6 +139,8 @@ pub struct OcrWord {
     pub is_custom: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub is_relic: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub is_mod: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub subtype: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]

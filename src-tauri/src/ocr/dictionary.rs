@@ -28,6 +28,9 @@ pub struct OcrDictionaryEntry {
     pub is_custom: bool,
     pub is_relic: bool,
     pub subtype: Option<String>,
+    pub set_slug: Option<String>,
+    pub set_ducats: Option<u64>,
+    pub max_rank: Option<u64>,
 }
 
 pub struct TradeablePriceEntry {
@@ -63,6 +66,10 @@ struct DictionaryApiItem {
     ducats: Option<u64>,
     #[serde(default)]
     vaulted: Option<bool>,
+    #[serde(default)]
+    set_slug: Option<String>,
+    #[serde(default, rename = "maxRank")]
+    max_rank: Option<u64>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -74,9 +81,9 @@ struct TradeableItemsApiResponse {
 #[derive(Debug, Deserialize)]
 struct TradeableItemApiItem {
     slug: String,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "deserialize_statistics")]
     statistics_today: Vec<TradeableItemStats>,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "deserialize_statistics")]
     statistics_live: Vec<TradeableItemStats>,
     #[serde(default)]
     ducats: Option<u64>,
@@ -89,9 +96,54 @@ struct TradeableItemStats {
     moving_avg: Option<f64>,
     #[serde(default)]
     subtype: Option<String>,
+    #[serde(default)]
+    mod_rank: Option<u64>,
 }
 
 // ── HTTP helper ───────────────────────────────────────────────────────────────
+
+// Feeds and individual variants may be null when there are no trades.
+fn deserialize_statistics<'de, D>(deserializer: D) -> Result<Vec<TradeableItemStats>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let entries = Option::<Vec<Option<TradeableItemStats>>>::deserialize(deserializer)?;
+    Ok(entries.unwrap_or_default().into_iter().flatten().collect())
+}
+
+fn resolve_price(
+    stats: Option<&TradeableItemStats>,
+    live: Option<&TradeableItemStats>,
+    ducats: Option<u64>,
+) -> Option<TradeablePriceEntry> {
+    let (median, used_current_offer_fallback) = stats
+        .and_then(|s| s.median)
+        .filter(|v| v.is_finite())
+        .map(|v| (v, false))
+        .or_else(|| {
+            live.and_then(|s| s.median)
+                .filter(|v| v.is_finite())
+                .map(|v| (v, true))
+        })?;
+    Some(TradeablePriceEntry {
+        median,
+        used_current_offer_fallback,
+        relic_price_is_fallback: false,
+        trades_24h: stats.and_then(|s| s.volume).filter(|v| v.is_finite()),
+        moving_avg: stats.and_then(|s| s.moving_avg).filter(|v| v.is_finite()),
+        ducats,
+    })
+}
+
+impl TradeablePriceEntry {
+    fn display_price(&self) -> f64 {
+        if self.used_current_offer_fallback {
+            self.median
+        } else {
+            self.moving_avg.unwrap_or(self.median)
+        }
+    }
+}
 
 /// Builds a blocking HTTP client with the configured timeout.
 fn blocking_http_client() -> AppResult<reqwest::blocking::Client> {
@@ -137,6 +189,14 @@ pub fn load_ocr_dictionary<R: Runtime>(app: &AppHandle<R>) -> AppResult<usize> {
         .error_for_status()?
         .json()?;
 
+    // Set entries carry the total ducats, but are excluded from OCR matching below.
+    let set_ducats: HashMap<String, u64> = payload
+        .items
+        .iter()
+        .filter(|item| item.tags.iter().any(|tag| tag == "set"))
+        .filter_map(|item| item.ducats.map(|ducats| (item.slug.clone(), ducats)))
+        .collect();
+
     let mut entries: Vec<OcrDictionaryEntry> = payload
         .items
         .into_iter()
@@ -177,6 +237,9 @@ pub fn load_ocr_dictionary<R: Runtime>(app: &AppHandle<R>) -> AppResult<usize> {
                             is_custom: false,
                             is_relic: true,
                             subtype: Some(subtype.to_string()),
+                            set_slug: None,
+                            set_ducats: None,
+                            max_rank: None,
                         });
                     }
                 };
@@ -198,6 +261,13 @@ pub fn load_ocr_dictionary<R: Runtime>(app: &AppHandle<R>) -> AppResult<usize> {
                         is_custom: false,
                         is_relic: false,
                         subtype: None,
+                        set_ducats: item
+                            .set_slug
+                            .as_ref()
+                            .and_then(|slug| set_ducats.get(slug))
+                            .copied(),
+                        set_slug: item.set_slug,
+                        max_rank: item.max_rank,
                     });
                 }
             }
@@ -234,9 +304,18 @@ pub fn load_tradeable_item_prices<R: Runtime>(app: &AppHandle<R>) -> AppResult<u
         .error_for_status()?
         .json()?;
 
+    let prices = build_tradeable_prices(payload);
+    let count = prices.len();
+    *app.state::<AppState>().ocr_tradeable_prices.lock()? = prices;
+    Ok(count)
+}
+
+fn build_tradeable_prices(
+    payload: TradeableItemsApiResponse,
+) -> HashMap<String, TradeablePriceEntry> {
     let mut prices = HashMap::new();
 
-    for item in payload.tradeable_items {
+    for item in payload.items {
         let slug = item.slug.trim();
         if slug.is_empty() {
             continue;
@@ -350,8 +429,35 @@ pub fn load_tradeable_item_prices<R: Runtime>(app: &AppHandle<R>) -> AppResult<u
                 );
             }
         } else {
-            let stats_today = item.statistics_today.first();
-            let offers = item.current_offers.first();
+            // Rank order is not stable. Cache each variant independently.
+            let ranks: std::collections::BTreeSet<_> = item
+                .statistics_today
+                .iter()
+                .chain(&item.statistics_live)
+                .filter_map(|s| s.mod_rank)
+                .collect();
+            for rank in &ranks {
+                let stats = item
+                    .statistics_today
+                    .iter()
+                    .find(|s| s.mod_rank == Some(*rank));
+                let live = item
+                    .statistics_live
+                    .iter()
+                    .find(|s| s.mod_rank == Some(*rank));
+                if let Some(price) = resolve_price(stats, live, item.ducats) {
+                    prices.insert(format!("{slug}_rank_{rank}"), price);
+                }
+            }
+            let base_rank = if ranks.is_empty() { None } else { Some(0) };
+            let stats_today = item
+                .statistics_today
+                .iter()
+                .find(|s| s.mod_rank == base_rank);
+            let offers = item
+                .statistics_live
+                .iter()
+                .find(|s| s.mod_rank == base_rank);
 
             let stats_median = stats_today.and_then(|s| s.median).filter(|m| m.is_finite());
             let offers_median = offers.and_then(|s| s.median).filter(|m| m.is_finite());
@@ -380,9 +486,7 @@ pub fn load_tradeable_item_prices<R: Runtime>(app: &AppHandle<R>) -> AppResult<u
         }
     }
 
-    let count = prices.len();
-    *app.state::<AppState>().ocr_tradeable_prices.lock()? = prices;
-    Ok(count)
+    prices
 }
 
 // ── Dictionary matching ───────────────────────────────────────────────────────
@@ -480,11 +584,16 @@ fn match_single_word(
     mapped.vaulted = candidate.vaulted;
     mapped.is_custom = Some(candidate.is_custom);
     mapped.is_relic = Some(candidate.is_relic);
+    // Dictionary tags identify mods regardless of the OCR color filter used.
+    mapped.is_mod = Some(candidate.tags.iter().any(|tag| tag == "mod"));
     mapped.subtype = candidate.subtype.clone();
 
     // Enrich with price data
     if let Some(prices_map) = prices {
-        if let Some(price) = prices_map.get(&candidate.slug) {
+        let base_key = candidate
+            .max_rank
+            .map(|_| format!("{}_rank_0", candidate.slug));
+        if let Some(price) = prices_map.get(base_key.as_ref().unwrap_or(&candidate.slug)) {
             mapped.market_median = Some(price.median);
             mapped.market_median_from_current_offers = Some(price.used_current_offer_fallback);
             mapped.relic_price_is_fallback = Some(price.relic_price_is_fallback);
@@ -493,6 +602,26 @@ fn match_single_word(
             }
             mapped.trades_24h = price.trades_24h;
             mapped.moving_avg = price.moving_avg;
+        }
+        if let Some(price) = candidate
+            .max_rank
+            .filter(|rank| *rank > 0)
+            .and_then(|rank| prices_map.get(&format!("{}_rank_{rank}", candidate.slug)))
+        {
+            // Keep the prepared overlay field names for mods as well as arcanes.
+            mapped.maxed_arcane_price = Some(price.display_price());
+            mapped.maxed_arcane_trades_24h = price.trades_24h;
+            mapped.maxed_arcane_price_from_current_offers = Some(price.used_current_offer_fallback);
+        }
+        if let Some(price) = candidate
+            .set_slug
+            .as_ref()
+            .and_then(|slug| prices_map.get(slug))
+        {
+            mapped.prime_set_price = Some(price.display_price());
+            mapped.prime_set_trades_24h = price.trades_24h;
+            mapped.prime_set_price_from_current_offers = Some(price.used_current_offer_fallback);
+            mapped.prime_set_ducats = candidate.set_ducats.or(price.ducats);
         }
     }
 
@@ -569,6 +698,9 @@ fn build_custom_dictionary_entry(name: &str) -> Option<OcrDictionaryEntry> {
         is_custom: true,
         is_relic: false,
         subtype: None,
+        set_slug: None,
+        set_ducats: None,
+        max_rank: None,
     })
 }
 

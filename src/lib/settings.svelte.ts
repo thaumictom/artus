@@ -14,6 +14,9 @@ type Config = {
 	ocr_theme: string;
 	overlay_toggle_mode: boolean;
 	overlay_duration_secs: number;
+	show_set_prices: boolean;
+	show_max_rank_prices: boolean;
+	show_max_rank_mod_prices: boolean;
 
 	show_ocr_bounding_boxes: boolean;
 	ocr_dictionary_mapping_enabled: boolean;
@@ -53,6 +56,9 @@ export const config = $state({
 	use_window_ownership: false,
 	overlay_toggle_mode: true,
 	overlay_duration_secs: 25,
+	show_set_prices: true as boolean,
+	show_max_rank_prices: true as boolean,
+	show_max_rank_mod_prices: false as boolean,
 	capture_mods: false,
 
 	// Debug settings
@@ -83,6 +89,17 @@ export async function loadSettings() {
 			config[key] = val;
 		}
 	}
+}
+
+// Overlay windows have their own state; keep these display toggles in sync.
+export function watchOverlayPriceSettings() {
+	return store.onChange<boolean>((key, value) => {
+		if (key === 'show_set_prices' || key === 'show_max_rank_prices') {
+			config[key] = typeof value === 'boolean' ? value : true;
+		} else if (key === 'show_max_rank_mod_prices') {
+			config[key] = typeof value === 'boolean' ? value : false;
+		}
+	});
 }
 
 // 3. Export the update logic
