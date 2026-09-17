@@ -153,6 +153,8 @@
 					{
 						type: 'value',
 						name: 'Volume',
+						// Match platinum tick positions while keeping an independent volume scale.
+						alignTicks: true,
 						nameTextStyle: { color: textMain },
 						position: 'right',
 						min: 0,
