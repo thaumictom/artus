@@ -5,40 +5,39 @@
 	import {
 		ItemSchema,
 		DictionarySchema,
-		StatisticsSchema,
-		ClosedStatisticItem,
-		GetOrdersResponseSchema,
 		GetItemResponseSchema,
 	} from '$lib/schemas';
-	import Select from '$lib/components/Select.svelte';
-	import Chart from './Chart.svelte';
 	import Orders from './Orders.svelte';
-	import { Label, RadioGroup } from 'bits-ui';
 	import Statistics from './Statistics.svelte';
 	import InfoCard from './InfoCard.svelte';
 	import { invoke } from '@tauri-apps/api/core';
 
 	let isLoadingDictionary = $state(false);
 	let isSearching = $state(false);
+	let dictionaryError = $state<string | null>(null);
 
 	let dictionaryItems: { label: string; value: string }[] = $state([]);
 
-	onMount(() => {
+	async function loadDictionary() {
 		isLoadingDictionary = true;
-		fetch('https://api.thaumictom.de/warframe/v2/wfm-items')
-			.then((res) => res.json())
-			.then((data: z.infer<typeof DictionarySchema>) => {
-				dictionaryItems = data.items.map((item) => ({
-					label: item.name,
-					value: item.slug,
-				}));
-			})
-			.catch((err) => {
-				console.error('Failed to load dictionary:', err);
-			})
-			.finally(() => {
-				isLoadingDictionary = false;
-			});
+		dictionaryError = null;
+		try {
+			const response = await invoke('get_market_dictionary');
+			const data = DictionarySchema.parse(response);
+			dictionaryItems = data.items.map((item) => ({
+				label: item.name,
+				value: item.slug,
+			}));
+		} catch (err) {
+			console.error('Failed to load dictionary:', err);
+			dictionaryError = 'Could not load the item list. Please try again.';
+		} finally {
+			isLoadingDictionary = false;
+		}
+	}
+
+	onMount(() => {
+		void loadDictionary();
 	});
 
 	let itemData: z.infer<typeof ItemSchema> | null = $state(null);
@@ -69,8 +68,14 @@
 			type="single"
 			items={dictionaryItems}
 			disabled={isLoadingDictionary || isSearching}
-			inputProps={{ placeholder: 'Search for an item...' }}
+			inputProps={{ placeholder: isLoadingDictionary ? 'Loading items...' : 'Search for an item...' }}
 		></Combobox>
+		{#if dictionaryError}
+			<div role="alert" class="flex items-center gap-2 text-sm">
+				<span>{dictionaryError}</span>
+				<button class="underline cursor-pointer" onclick={loadDictionary}>Retry</button>
+			</div>
+		{/if}
 	</div>
 	{#if isSearching || itemData}
 		<div class="bg-surface my-1 w-full max-w-2xl h-px"></div>

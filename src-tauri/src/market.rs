@@ -20,14 +20,26 @@ async fn fetch_json(client: &reqwest::Client, url: &str) -> AppResult<Value> {
     let response = client
         .get(url)
         .header("Language", "en")
+        .timeout(std::time::Duration::from_secs(15))
         .send()
         .await
+        .and_then(reqwest::Response::error_for_status)
         .map_err(|e| AppError::msg(e.to_string()))?;
 
     response
         .json::<Value>()
         .await
         .map_err(|e| AppError::msg(e.to_string()))
+}
+
+/// Fetches the search dictionary outside the webview's CORS restrictions.
+#[tauri::command]
+pub async fn get_market_dictionary(state: State<'_, AppState>) -> AppResult<Value> {
+    fetch_json(
+        &state.http_client,
+        "https://api.thaumictom.de/warframe/v2/wfm-items",
+    )
+    .await
 }
 
 /// Fetches item details from warframe.market.
