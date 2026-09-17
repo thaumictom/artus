@@ -4,45 +4,105 @@
 	import { RadioGroup } from 'bits-ui';
 	import type z from 'zod';
 	import { invoke } from '@tauri-apps/api/core';
+	import { onMount, untrack } from 'svelte';
+	import Button from '$lib/components/Button.svelte';
+	import { toast } from 'svelte-sonner';
+	import Icon from '@iconify/svelte';
 
-	let { slug, itemName }: { slug: string; itemName?: string } = $props();
+	let { slug, itemName, bulkTradable = false }: {
+		slug: string;
+		itemName?: string;
+		bulkTradable?: boolean;
+	} = $props();
 
 	const FILTER_PROPERTIES = ['rank', 'charges', 'subtype', 'amberStars', 'cyanStars'] as const;
+	const REFRESH_INTERVAL_MS = 60_000;
+	const MANUAL_RELOAD_COOLDOWN_MS = 3_000;
 	type FilterProp = (typeof FILTER_PROPERTIES)[number];
+	type Order = z.infer<typeof OrderWithUserSchema>;
+	const priceFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
 
-	// State
+	function quantityPerTrade(order: Order): number {
+		return bulkTradable && order.perTrade !== undefined && order.perTrade > 0
+			? order.perTrade
+			: 1;
+	}
+
+	function unitPrice(order: Order): number {
+		// Bulk order platinum is the total for one bundle, not the unit price.
+		return order.platinum / quantityPerTrade(order);
+	}
+
+	function tradeMessage(order: Order): string {
+		const action = order.type === 'sell' ? 'buy' : 'sell';
+		const quantity = quantityPerTrade(order) > 1 ? `x${quantityPerTrade(order)} ` : '';
+		const variant = groupByProperty && order[groupByProperty] !== undefined
+			? ` (${groupByProperty} ${order[groupByProperty]})`
+			: '';
+		return `/w ${order.user.ingameName} Hi! I want to ${action}: ${quantity}"${itemName ?? slug}${variant}" for ${order.platinum} platinum. (warframe.market)`;
+	}
+
 	let orderType = $state<'sell' | 'buy'>('sell');
-	let ordersData = $state<z.infer<typeof OrderWithUserSchema>[]>([]);
+	let ordersData = $state<Order[]>([]);
 	let groupByProperty = $state<FilterProp | undefined>();
 	let maxFilterValue = $state(0);
 	let groupFilterRange = $state<[number, number]>([0, 0]);
 	let fetchTimestamp = $state<number | undefined>();
+	let now = $state(Date.now());
+	const relativeTime = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
+	let fetchedAgo = $derived.by(() => {
+		if (fetchTimestamp === undefined) return '';
+		const seconds = Math.max(0, Math.floor((now - fetchTimestamp) / 1000));
+		if (seconds < 3) return 'just now';
+		if (seconds < 60) return relativeTime.format(-seconds, 'second');
+		if (seconds < 3600) return relativeTime.format(-Math.floor(seconds / 60), 'minute');
+		if (seconds < 86400) return relativeTime.format(-Math.floor(seconds / 3600), 'hour');
+		return relativeTime.format(-Math.floor(seconds / 86400), 'day');
+	});
 
-	const loadOrdersData = async (targetSlug: string) => {
+	onMount(() => {
+		const timer = setInterval(() => {
+			now = Date.now();
+		}, 1000);
+		return () => clearInterval(timer);
+	});
+	let isRefreshing = $state(false);
+	let isReloadCoolingDown = $state(false);
+	let ordersError = $state<string | null>(null);
+	let reloadOrders = () => {};
+
+	function updateFilterBounds(data: Order[]) {
+		const firstItem = data[0];
+		if (!firstItem) return;
+		const property = FILTER_PROPERTIES.find((key) => key in firstItem);
+		if (!property) return;
+
+		const sameProperty = groupByProperty === property;
+		const fullRange = groupFilterRange[0] === 0 && groupFilterRange[1] === maxFilterValue;
+		groupByProperty = property;
+		if (typeof firstItem[property] !== 'number') return;
+
+		const max = Math.max(...data.map((order) => Number(order[property]) || 0));
+		maxFilterValue = sameProperty ? Math.max(maxFilterValue, max) : max;
+		// Preserve a custom selection while allowing an unfiltered range to expand.
+		if (!sameProperty || fullRange) groupFilterRange = [0, maxFilterValue];
+	}
+
+	const loadOrdersData = async (targetSlug: string, isCurrent: () => boolean) => {
 		try {
 			const response = await invoke('get_market_orders', { slug: targetSlug });
 			const { data } = GetOrdersResponseSchema.parse(response);
+			if (!isCurrent()) return;
 
 			fetchTimestamp = Date.now();
 
 			ordersData = data;
 
-			// Auto-detect property and set initial slider bounds
-			const firstItem = data[0];
-			if (firstItem) {
-				const foundProp = FILTER_PROPERTIES.find((p) => p in firstItem);
-				if (foundProp) {
-					groupByProperty = foundProp;
-					const val = firstItem[foundProp];
-					if (typeof val === 'number') {
-						const max = Math.max(...data.map((i) => Number(i[foundProp]) || 0));
-						maxFilterValue = max;
-						groupFilterRange = [0, max];
-					}
-				}
-			}
+			updateFilterBounds(data);
 		} catch (err) {
+			if (!isCurrent()) return;
 			console.error('Failed to load orders:', err);
+			ordersError = 'Could not refresh orders. Please try again.';
 		}
 	};
 
@@ -50,9 +110,7 @@
 	let filteredOrders = $derived.by(() => {
 		return ordersData
 			.filter((o) => {
-				const typeMatch = o.type === orderType;
-				if (!typeMatch) return false;
-				if (o.user?.status !== 'ingame') return false;
+				if (o.type !== orderType || o.user.status !== 'ingame') return false;
 				if (!groupByProperty) return true;
 
 				const val = o[groupByProperty];
@@ -61,33 +119,85 @@
 				return val >= groupFilterRange[0] && val <= groupFilterRange[1];
 			})
 			.sort((a, b) => {
-				const priceDiff = orderType === 'sell' ? a.platinum - b.platinum : b.platinum - a.platinum;
+				const priceDiff = orderType === 'sell' ? unitPrice(a) - unitPrice(b) : unitPrice(b) - unitPrice(a);
 				if (priceDiff !== 0) return priceDiff;
 
 				// Tie-breaker: newest updatedAt first (descending)
-				const ta = Date.parse(a.updatedAt as string) || 0;
-				const tb = Date.parse(b.updatedAt as string) || 0;
+				const ta = Date.parse(a.updatedAt) || 0;
+				const tb = Date.parse(b.updatedAt) || 0;
 				return tb - ta;
 			});
 	});
 
-	// Handle slug changes
+	// Each mounted item owns its timer and listeners. An overdue refresh waits for focus.
 	$effect(() => {
-		if (slug) loadOrdersData(slug);
+		const targetSlug = slug;
+		if (!targetSlug) return;
+		let disposed = false;
+		let inFlight = false;
+		let nextRefreshAt = 0;
+		let timer: ReturnType<typeof setTimeout> | undefined;
+		let cooldownTimer: ReturnType<typeof setTimeout> | undefined;
+
+		const refresh = async () => {
+			if (disposed || inFlight) return;
+			inFlight = true;
+			isRefreshing = true;
+			ordersError = null;
+			clearTimeout(timer);
+			try {
+				await loadOrdersData(targetSlug, () => !disposed);
+			} finally {
+				if (!disposed) {
+					inFlight = false;
+					isRefreshing = false;
+					// Reset after manual refreshes and failed requests as well, avoiding retry loops.
+					nextRefreshAt = Date.now() + REFRESH_INTERVAL_MS;
+					timer = setTimeout(refreshIfDue, REFRESH_INTERVAL_MS);
+				}
+			}
+		};
+		const refreshIfDue = () => {
+			if (document.hasFocus() && !document.hidden && Date.now() >= nextRefreshAt) {
+				void refresh();
+			}
+		};
+		reloadOrders = () => {
+			if (disposed || inFlight || isReloadCoolingDown) return;
+			isReloadCoolingDown = true;
+			cooldownTimer = setTimeout(() => {
+				isReloadCoolingDown = false;
+			}, MANUAL_RELOAD_COOLDOWN_MS);
+			void refresh();
+		};
+		window.addEventListener('focus', refreshIfDue);
+		document.addEventListener('visibilitychange', refreshIfDue);
+		untrack(() => {
+			isRefreshing = false;
+			isReloadCoolingDown = false;
+			ordersError = null;
+			ordersData = [];
+			fetchTimestamp = undefined;
+			groupByProperty = undefined;
+			maxFilterValue = 0;
+			groupFilterRange = [0, 0];
+			refreshIfDue();
+		});
+		return () => {
+			disposed = true;
+			clearTimeout(timer);
+			clearTimeout(cooldownTimer);
+			window.removeEventListener('focus', refreshIfDue);
+			document.removeEventListener('visibilitychange', refreshIfDue);
+		};
 	});
 
-	import { toast } from 'svelte-sonner';
-	import Icon from '@iconify/svelte';
-
-	// Copy to clipboard, toast on success and error
 	const copyToClipboard = async (text: string) => {
 		try {
 			await navigator.clipboard.writeText(text);
-			// Show success toast
 			toast.success('Copied to clipboard');
 		} catch (err) {
 			console.error('Failed to copy:', err);
-			// Show error toast
 			toast.error('Failed to copy to clipboard');
 		}
 	};
@@ -130,10 +240,21 @@
 			<div class="bg-surface w-full h-px"></div>
 		{/if}
 	</div>
-	<div class="flex justify-between items-center text-muted-foreground">
+	<div class="flex flex-wrap justify-between items-center gap-2 text-muted-foreground">
+		<Button
+			onclick={() => reloadOrders()}
+			disabled={isRefreshing || isReloadCoolingDown}
+			class="flex items-center gap-1 text-sm"
+		>
+			<Icon
+				icon="material-symbols:refresh"
+				class={isRefreshing ? 'size-4 animate-spin' : 'size-4'}
+			/>
+			{isRefreshing ? 'Refreshing...' : 'Reload orders'}
+		</Button>
 		{#if fetchTimestamp}
-			<div class="text-sm">
-				fetched orders at: {new Date(fetchTimestamp).toLocaleString(undefined, { hour12: false })}
+			<div class="tabular-nums text-sm">
+				fetched {fetchedAgo}
 			</div>
 		{/if}
 		<a
@@ -145,7 +266,10 @@
 			<Icon icon="material-symbols:arrow-outward-rounded" class="inline size-4" />
 		</a>
 	</div>
-	<table class="border-collapse">
+	{#if ordersError}
+		<p role="alert" class="text-danger text-sm">{ordersError}</p>
+	{/if}
+	<table class="border-collapse" aria-busy={isRefreshing}>
 		<thead>
 			<tr class="*:px-1 *:py-2">
 				<th scope="col" align="left">Name</th>
@@ -169,21 +293,26 @@
 					</td>
 					<td align="right">
 						<div class="flex justify-end items-center gap-1">
-							<span>{order.platinum}</span>
+							<span>{priceFormatter.format(unitPrice(order))}</span>
 							<img src="/icons/platinum.png" alt="Platinum" class="size-3" />
 						</div>
+						{#if quantityPerTrade(order) > 1}
+							<div class="text-muted-foreground text-xs">{priceFormatter.format(order.platinum)} total</div>
+						{/if}
 					</td>
-					<td align="right">{order.quantity}</td>
+					<td align="right">
+						<div>{order.quantity}</div>
+						{#if quantityPerTrade(order) > 1}
+							<div class="text-muted-foreground text-xs">{quantityPerTrade(order)} per trade</div>
+						{/if}
+					</td>
 					{#if groupByProperty}
 						<td align="right">{order[groupByProperty]} of {maxFilterValue}</td>
 					{/if}
 					<td align="right" class="py-0!">
 						<button
 							class="hover:bg-surface p-1 border cursor-pointer"
-							onclick={() =>
-								copyToClipboard(
-									`/w ${order.user.ingameName} Hi! I want to ${order.type === 'sell' ? 'buy' : 'sell'}: "${itemName}${groupByProperty ? ` (${groupByProperty} ${order[groupByProperty]})` : ''}" for ${order.platinum} platinum. (warframe.market)`,
-								)}
+							onclick={() => copyToClipboard(tradeMessage(order))}
 						>
 							<Icon icon="material-symbols:content-copy" class="size-4" />
 						</button>

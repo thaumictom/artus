@@ -84,7 +84,11 @@
 		{:else if itemData}
 			<InfoCard {itemData} />
 			<Statistics slug={itemData.slug} />
-			<Orders slug={itemData.slug} itemName={itemData.i18n?.en.name} />
+			<Orders
+				slug={itemData.slug}
+				itemName={itemData.i18n?.en.name}
+				bulkTradable={itemData.bulkTradable ?? false}
+			/>
 		{/if}
 	{/if}
 </div>
