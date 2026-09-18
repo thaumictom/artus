@@ -3,6 +3,7 @@ import { z } from 'zod';
 // Keep only the fields used by the card in the Market tab's in-memory copy.
 export const CatalogItemSchema = z.object({
 	name: z.string().optional(),
+	itemCount: z.number().int().nullish(),
 	wikiaUrl: z.string().nullish(),
 	description: z.string().nullish(),
 	type: z.string().nullish(),

@@ -7,6 +7,7 @@ export const DictionarySchema = z.object({
 		z.object({
 			slug: z.string(),
 			set_slug: z.string().nullish(),
+			gameRef: z.string().optional(),
 			name: z.string(),
 			tags: z.array(z.string()),
 			ducats: z.optional(z.number()),

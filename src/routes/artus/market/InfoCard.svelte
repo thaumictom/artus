@@ -14,7 +14,7 @@
 	}: {
 		itemData: z.infer<typeof ItemSchema>;
 		catalogItem?: CatalogItem;
-		relatedItems?: { label: string; value: string }[];
+		relatedItems?: { label: string; value: string; itemCount?: number | null }[];
 		onSelectItem?: (slug: string) => void;
 	} = $props();
 	const number = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
@@ -53,7 +53,9 @@
 		return rows;
 	});
 	let maxRankEffects = $derived(catalogItem?.levelStats?.at(-1)?.stats ?? []);
-	let hasMoreInfo = $derived(Boolean(catalogItem?.description || details.length || maxRankEffects.length));
+	let hasMoreInfo = $derived(
+		Boolean(catalogItem?.description || details.length || maxRankEffects.length),
+	);
 	let moreInfoOpen = $state(false);
 	$effect(() => {
 		itemData.slug;
@@ -98,56 +100,64 @@
 		<Collapsible.Root bind:open={moreInfoOpen}>
 			<div class="flex items-center gap-3">
 				{#if hasMoreInfo}
-					<Collapsible.Trigger class="inline-flex shrink-0 items-center gap-1 text-muted-foreground hover:text-foreground text-sm cursor-pointer">
+					<Collapsible.Trigger
+						class="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground text-sm cursor-pointer shrink-0"
+					>
 						More info
-						<Icon icon="material-symbols:expand-more-rounded" class={moreInfoOpen ? 'size-4 rotate-180' : 'size-4'} />
+						<Icon
+							icon="material-symbols:expand-more-rounded"
+							class={moreInfoOpen ? 'size-4 rotate-180' : 'size-4'}
+						/>
 					</Collapsible.Trigger>
 				{/if}
-				<div class="bg-surface h-px min-w-4 flex-1" aria-hidden="true"></div>
+				<div class="flex-1 bg-surface min-w-4 h-px" aria-hidden="true"></div>
 				{#if relatedItems.length > 1}
-		<nav aria-label="Set and tradable components" class="flex flex-wrap justify-end gap-2 min-w-0">
-			{#each relatedItems as item (item.value)}
-				<button
-					type="button"
-					onclick={() => onSelectItem?.(item.value)}
-					aria-current={item.value === itemData.slug ? 'page' : undefined}
-					class={item.value === itemData.slug
-						? 'px-2 py-1 border border-accent bg-accent/10 text-accent text-xs font-medium'
-						: 'px-2 py-1 border text-muted-foreground hover:text-foreground hover:bg-surface text-xs cursor-pointer'}
-				>
-					{item.label}
-				</button>
-			{/each}
-		</nav>
+					<nav
+						aria-label="Set and tradable components"
+						class="flex flex-wrap justify-end gap-2 min-w-0"
+					>
+						{#each relatedItems as item (item.value)}
+							<button
+								type="button"
+								onclick={() => onSelectItem?.(item.value)}
+								aria-current={item.value === itemData.slug ? 'page' : undefined}
+								class={item.value === itemData.slug
+									? 'px-2 py-1 border border-accent bg-accent/10 text-accent text-xs font-medium'
+									: 'px-2 py-1 border text-muted-foreground hover:text-foreground hover:bg-surface text-xs cursor-pointer'}
+							>
+								{#if item.itemCount != null && item.itemCount > 1}{item.itemCount}x&nbsp;{/if}{item.label}
+							</button>
+						{/each}
+					</nav>
 				{/if}
 			</div>
 			<Collapsible.Content forceMount>
 				{#if moreInfoOpen && hasMoreInfo}
-						<div transition:slide class="flex flex-col gap-4 pt-4">
-							{#if catalogItem?.description}
-								<p class="text-muted-foreground text-sm whitespace-pre-line">
-									{catalogItem.description}
-								</p>
-							{/if}
-							{#if details.length}
-								<dl class="gap-x-4 gap-y-3 grid grid-cols-2 sm:grid-cols-3 text-sm">
-									{#each details as detail (detail.label)}
-										<div>
-											<dt class="text-muted-foreground text-xs">{detail.label}</dt>
-											<dd>{detail.value}</dd>
-										</div>
-									{/each}
-								</dl>
-							{/if}
-							{#if maxRankEffects.length}
-								<div class="pt-3 border-t text-sm">
-									<div class="mb-1 text-muted-foreground text-xs">Max rank effects</div>
-									{#each maxRankEffects as effect}
-										<p class="whitespace-pre-line">{effect.replaceAll('\\n', '\n')}</p>
-									{/each}
-								</div>
-							{/if}
-						</div>
+					<div transition:slide class="flex flex-col gap-4 pt-4">
+						{#if catalogItem?.description}
+							<p class="text-muted-foreground text-sm whitespace-pre-line">
+								{catalogItem.description}
+							</p>
+						{/if}
+						{#if details.length}
+							<dl class="gap-x-4 gap-y-3 grid grid-cols-2 sm:grid-cols-3 text-sm">
+								{#each details as detail (detail.label)}
+									<div>
+										<dt class="text-muted-foreground text-xs">{detail.label}</dt>
+										<dd>{detail.value}</dd>
+									</div>
+								{/each}
+							</dl>
+						{/if}
+						{#if maxRankEffects.length}
+							<div class="pt-3 border-t text-sm">
+								<div class="mb-1 text-muted-foreground text-xs">Max rank effects</div>
+								{#each maxRankEffects as effect}
+									<p class="whitespace-pre-line">{effect.replaceAll('\\n', '\n')}</p>
+								{/each}
+							</div>
+						{/if}
+					</div>
 				{/if}
 			</Collapsible.Content>
 		</Collapsible.Root>

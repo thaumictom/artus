@@ -20,7 +20,7 @@
 	let isSearching = $state(false);
 	let dictionaryError = $state<string | null>(null);
 
-	let dictionaryItems: { label: string; value: string; setSlug?: string | null; isSet: boolean }[] = $state([]);
+	let dictionaryItems: { label: string; value: string; gameRef?: string; setSlug?: string | null; isSet: boolean }[] = $state([]);
 	let selectedSlug = $state('');
 	let searchError = $state<string | null>(null);
 	let relatedItems = $derived.by(() => {
@@ -33,6 +33,7 @@
 			.filter((item) => item.value === setSlug || item.setSlug === setSlug)
 			.map((item) => ({
 				value: item.value,
+				itemCount: !item.isSet && item.gameRef ? catalog?.[item.gameRef]?.itemCount : undefined,
 				label: item.value === setSlug ? 'Set'
 					: setName && item.label.startsWith(`${setName} `)
 						? item.label.slice(setName.length + 1)
@@ -50,6 +51,7 @@
 			dictionaryItems = data.items.map((item) => ({
 				label: item.name,
 				value: item.slug,
+				gameRef: item.gameRef,
 				setSlug: item.set_slug,
 				isSet: item.tags.includes('set'),
 			}));
