@@ -39,6 +39,7 @@
 						? item.label.slice(setName.length + 1)
 						: item.label,
 			}))
+			.map((item) => ({ ...item, label: item.label.replace(/ Blueprint$/, '') }))
 			.sort((a, b) => order(a.label) - order(b.label) || a.label.localeCompare(b.label));
 	});
 

@@ -134,7 +134,10 @@
 
 <Combobox.Root {type} {items} bind:value={value as never} bind:open {...mergedRootProps}>
 	<div class="relative">
-		<Combobox.Input {...mergedInputProps} class="bg-background text-foreground placeholder:text-muted-foreground p-2 pr-10 border w-full outline-none focus-visible:border-accent disabled:opacity-50" />
+		<Combobox.Input
+			{...mergedInputProps}
+			class="bg-background disabled:opacity-50 p-2 pr-10 border focus-visible:border-accent outline-none w-full text-foreground placeholder:text-muted-foreground"
+		/>
 		<Combobox.Trigger class="top-1/2 absolute -translate-y-1/2 touch-none cursor-pointer end-3">
 			<Icon icon="material-symbols:unfold-more-rounded" class="size-5" />
 		</Combobox.Trigger>
@@ -142,14 +145,14 @@
 	<Combobox.Portal>
 		<Combobox.Content
 			{...contentProps}
-			class="z-50 flex flex-col bg-background text-foreground border shadow-lg w-[var(--bits-combobox-anchor-width)] min-w-[var(--bits-combobox-anchor-width)] max-h-[var(--bits-combobox-content-available-height)] overflow-hidden"
+			class="z-50 flex flex-col bg-background shadow-2xl shadow-black/50 border w-[var(--bits-combobox-anchor-width)] min-w-[var(--bits-combobox-anchor-width)] overflow-hidden text-foreground max-h-[var(--bits-combobox-content-available-height)]"
 			sideOffset={4}
 		>
 			<Combobox.Viewport class="min-h-0 max-h-56 overflow-y-auto overscroll-contain">
 				{#each filteredItems as item (item.value)}
 					<Combobox.Item
 						{...item}
-						class="flex justify-between items-center gap-2 p-2 text-sm outline-none cursor-pointer data-[highlighted]:bg-elevated data-[highlighted]:text-foreground data-[highlighted]:inset-ring-1 data-[highlighted]:inset-ring-accent/40 data-[disabled]:opacity-50 data-[disabled]:pointer-events-none"
+						class="data-[highlighted]:inset-ring-1 data-[highlighted]:inset-ring-accent/40 flex justify-between items-center gap-2 data-[highlighted]:bg-elevated data-[disabled]:opacity-50 p-2 outline-none data-[highlighted]:text-foreground text-sm cursor-pointer data-[disabled]:pointer-events-none"
 					>
 						{#snippet children({ selected })}
 							<span class="flex-1 min-w-0 truncate">
@@ -159,7 +162,7 @@
 									</span>
 								{/each}
 							</span>
-							<span class="size-4 shrink-0 text-accent">
+							<span class="size-4 text-accent shrink-0">
 								{#if selected}
 									<Icon icon="material-symbols:check-rounded" class="size-4" />
 								{/if}
@@ -176,15 +179,23 @@
 					</div>
 				{/each}
 			</Combobox.Viewport>
-			<div class="flex shrink-0 items-center gap-3 border-t px-3 py-2 text-xs text-muted-foreground">
+			<div
+				class="flex items-center gap-3 px-3 py-2 border-t text-muted-foreground text-xs shrink-0"
+			>
 				<span class="inline-flex items-center gap-1 whitespace-nowrap">
-					<kbd aria-label="Up arrow" class="inline-flex items-center border p-0.5"><Icon icon="material-symbols:arrow-upward-rounded" class="size-3" /></kbd>
-					<kbd aria-label="Down arrow" class="inline-flex items-center border p-0.5"><Icon icon="material-symbols:arrow-downward-rounded" class="size-3" /></kbd>
+					<kbd aria-label="Up arrow" class="inline-flex items-center p-0.5 border">
+						<Icon icon="material-symbols:arrow-upward-rounded" class="size-3" />
+					</kbd>
+					<kbd aria-label="Down arrow" class="inline-flex items-center p-0.5 border">
+						<Icon icon="material-symbols:arrow-downward-rounded" class="size-3" />
+					</kbd>
 					Navigate
 				</span>
-				<span class="bg-surface h-px min-w-2 flex-1" aria-hidden="true"></span>
+				<span class="flex-1 bg-surface min-w-2 h-px" aria-hidden="true"></span>
 				<span class="inline-flex items-center gap-1 whitespace-nowrap">
-					<kbd aria-label="Enter" class="inline-flex items-center border p-0.5"><Icon icon="material-symbols:keyboard-return-rounded" class="size-3" /></kbd>
+					<kbd aria-label="Enter" class="inline-flex items-center p-0.5 border">
+						<Icon icon="material-symbols:keyboard-return-rounded" class="size-3" />
+					</kbd>
 					Search
 				</span>
 			</div>
