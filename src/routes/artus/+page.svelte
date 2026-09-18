@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { invoke } from '@tauri-apps/api/core';
 	import { onMount } from 'svelte';
+	import { initializeWorldState } from '$lib/worldstate.svelte';
 	// import ArtusMainPage from './ArtusMainPage.svelte';
 	// import ArtusSidebar from './ArtusSidebar.svelte';
 	// import SiteHeader from './SiteHeader.svelte';
@@ -62,6 +63,7 @@
 	let showUpdatePrompt = $derived(Boolean(updateVersion) && !dismissedUpdatePrompt);
 
 	onMount(() => {
+		initializeWorldState();
 		void checkForUpdate();
 	});
 

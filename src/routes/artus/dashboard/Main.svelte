@@ -1,4 +1,7 @@
 <script lang="ts">
+	import WorldDashboard from './WorldDashboard.svelte';
+	/* OCR debug view is temporarily disabled. Keep the listeners and view together
+	 * so they can be restored for OCR troubleshooting.
 	import { listen } from '@tauri-apps/api/event';
 	import { onMount } from 'svelte';
 
@@ -56,8 +59,12 @@
 	function closeImageFullscreen() {
 		isImageFullscreen = false;
 	}
+	*/
 </script>
 
+<WorldDashboard />
+
+<!-- OCR debug view is temporarily disabled.
 <section class="max-w-md">
 	{#if debugImageUrl}
 		<div class="mt-4">
@@ -113,3 +120,4 @@
 		</div>
 	</div>
 {/if}
+-->

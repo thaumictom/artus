@@ -1,5 +1,11 @@
 import { z } from 'zod';
 
+export const MostTradedItemsSchema = z.array(z.object({
+	slug: z.string(),
+	name: z.string(),
+	liquidity: z.number(),
+}));
+
 // Custom dictionary
 export const DictionarySchema = z.object({
 	last_fetched_at: z.string(),

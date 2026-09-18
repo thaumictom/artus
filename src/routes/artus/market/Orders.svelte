@@ -9,7 +9,11 @@
 	import { toast } from 'svelte-sonner';
 	import Icon from '@iconify/svelte';
 
-	let { slug, itemName, bulkTradable = false }: {
+	let {
+		slug,
+		itemName,
+		bulkTradable = false,
+	}: {
 		slug: string;
 		itemName?: string;
 		bulkTradable?: boolean;
@@ -23,9 +27,7 @@
 	const priceFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
 
 	function quantityPerTrade(order: Order): number {
-		return bulkTradable && order.perTrade !== undefined && order.perTrade > 0
-			? order.perTrade
-			: 1;
+		return bulkTradable && order.perTrade !== undefined && order.perTrade > 0 ? order.perTrade : 1;
 	}
 
 	function unitPrice(order: Order): number {
@@ -36,9 +38,10 @@
 	function tradeMessage(order: Order): string {
 		const action = order.type === 'sell' ? 'buy' : 'sell';
 		const quantity = quantityPerTrade(order) > 1 ? `x${quantityPerTrade(order)} ` : '';
-		const variant = groupByProperty && order[groupByProperty] !== undefined
-			? ` (${groupByProperty} ${order[groupByProperty]})`
-			: '';
+		const variant =
+			groupByProperty && order[groupByProperty] !== undefined
+				? ` (${groupByProperty} ${order[groupByProperty]})`
+				: '';
 		return `/w ${order.user.ingameName} Hi! I want to ${action}: ${quantity}"${itemName ?? slug}${variant}" for ${order.platinum} platinum. (warframe.market)`;
 	}
 
@@ -119,7 +122,8 @@
 				return val >= groupFilterRange[0] && val <= groupFilterRange[1];
 			})
 			.sort((a, b) => {
-				const priceDiff = orderType === 'sell' ? unitPrice(a) - unitPrice(b) : unitPrice(b) - unitPrice(a);
+				const priceDiff =
+					orderType === 'sell' ? unitPrice(a) - unitPrice(b) : unitPrice(b) - unitPrice(a);
 				if (priceDiff !== 0) return priceDiff;
 
 				// Tie-breaker: newest updatedAt first (descending)
@@ -297,7 +301,9 @@
 							<img src="/icons/platinum.png" alt="Platinum" class="size-3" />
 						</div>
 						{#if quantityPerTrade(order) > 1}
-							<div class="text-muted-foreground text-xs">{priceFormatter.format(order.platinum)} total</div>
+							<div class="text-muted-foreground text-xs">
+								{priceFormatter.format(order.platinum)} total
+							</div>
 						{/if}
 					</td>
 					<td align="right">
@@ -307,7 +313,10 @@
 						{/if}
 					</td>
 					{#if groupByProperty}
-						<td align="right">{order[groupByProperty]} of {maxFilterValue}</td>
+						<td align="right">
+							{order[groupByProperty]}{#if maxFilterValue !== undefined && maxFilterValue > 0}
+								&nbsp;of {maxFilterValue}{/if}
+						</td>
 					{/if}
 					<td align="right" class="py-0!">
 						<button

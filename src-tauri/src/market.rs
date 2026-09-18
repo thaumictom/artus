@@ -145,6 +145,38 @@ pub async fn get_market_dictionary(state: State<'_, AppState>) -> AppResult<Valu
     .await
 }
 
+/// Minimal landing-page entry from the tradeable item feed.
+#[derive(serde::Deserialize, serde::Serialize)]
+pub struct MostTradedItem {
+    slug: String,
+    name: String,
+    liquidity: Option<f64>,
+}
+
+/// Rank the minimal item feed by liquidity for incremental display in the frontend.
+#[tauri::command]
+pub async fn get_most_traded_items(state: State<'_, AppState>) -> AppResult<Vec<MostTradedItem>> {
+    #[derive(serde::Deserialize)]
+    struct Feed {
+        items: Vec<MostTradedItem>,
+    }
+
+    let response = fetch_json(
+        &state.http_client,
+        "https://api.thaumictom.de/warframe/v2/tradeable-items",
+    )
+    .await?;
+    let mut items = serde_json::from_value::<Feed>(response)?.items;
+    items.retain(|item| item.liquidity.is_some_and(|value| value.is_finite()));
+    items.sort_by(|a, b| {
+        b.liquidity
+            .partial_cmp(&a.liquidity)
+            .unwrap_or(std::cmp::Ordering::Equal)
+            .then_with(|| a.slug.cmp(&b.slug))
+    });
+    Ok(items)
+}
+
 /// Fetches item details from warframe.market.
 #[tauri::command]
 pub async fn get_market_item(state: State<'_, AppState>, slug: String) -> AppResult<Value> {

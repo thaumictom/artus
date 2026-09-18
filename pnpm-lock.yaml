@@ -43,7 +43,7 @@ importers:
         version: 2.0.0-alpha.1
       '@wfcd/items':
         specifier: ^1.1272.167
-        version: 1.1272.167(warframe-worldstate-data@3.10.1)
+        version: 1.1272.167(warframe-worldstate-data@3.16.9)
       change-case:
         specifier: ^5.4.4
         version: 5.4.4
@@ -141,6 +141,9 @@ importers:
       vite:
         specifier: ^6.0.3
         version: 6.4.1(jiti@2.6.1)(lightningcss@1.32.0)
+      warframe-worldstate-data:
+        specifier: 3.16.9
+        version: 3.16.9
 
 packages:
 
@@ -1455,8 +1458,8 @@ packages:
       vite:
         optional: true
 
-  warframe-worldstate-data@3.10.1:
-    resolution: {integrity: sha512-wCepzIbkS9Suv38CpCTNU7zUQg1ZDkrdzQ91gi+z6fJ8dbENzVuDkcSOCZR3boETqE8BYWCT3GV9jdhpGBnZpQ==}
+  warframe-worldstate-data@3.16.9:
+    resolution: {integrity: sha512-7FlvQxeHw8zpoX5M0vBqiPCAcSwcXc/iJipaIwDLJfF94hy9gpOZiiZFeHE9eQI2O3jn2jdVekspZukgmbc/yw==}
     engines: {node: '>=22'}
 
   zimmerframe@1.1.4:
@@ -1928,9 +1931,9 @@ snapshots:
 
   '@types/trusted-types@2.0.7': {}
 
-  '@wfcd/items@1.1272.167(warframe-worldstate-data@3.10.1)':
+  '@wfcd/items@1.1272.167(warframe-worldstate-data@3.16.9)':
     dependencies:
-      warframe-worldstate-data: 3.10.1
+      warframe-worldstate-data: 3.16.9
 
   acorn@8.15.0: {}
 
@@ -2586,7 +2589,7 @@ snapshots:
     optionalDependencies:
       vite: 6.4.1(jiti@2.6.1)(lightningcss@1.32.0)
 
-  warframe-worldstate-data@3.10.1: {}
+  warframe-worldstate-data@3.16.9: {}
 
   zimmerframe@1.1.4: {}
 

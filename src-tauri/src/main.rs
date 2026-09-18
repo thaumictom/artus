@@ -15,6 +15,7 @@ mod state;
 mod store_ext;
 mod updater;
 mod window_watcher;
+mod worldstate;
 
 #[cfg(target_os = "linux")]
 use std::env;
@@ -55,9 +56,11 @@ fn main() {
             updater::download_and_relaunch_update,
             market::get_market_item,
             market::get_market_dictionary,
+            market::get_most_traded_items,
             market::get_cached_market_items,
             market::get_market_orders,
-            market::get_market_statistics
+            market::get_market_statistics,
+            worldstate::get_world_state
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
