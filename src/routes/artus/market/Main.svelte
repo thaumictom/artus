@@ -20,7 +20,26 @@
 	let isSearching = $state(false);
 	let dictionaryError = $state<string | null>(null);
 
-	let dictionaryItems: { label: string; value: string }[] = $state([]);
+	let dictionaryItems: { label: string; value: string; setSlug?: string | null; isSet: boolean }[] = $state([]);
+	let selectedSlug = $state('');
+	let searchError = $state<string | null>(null);
+	let relatedItems = $derived.by(() => {
+		const current = dictionaryItems.find((item) => item.value === itemData?.slug);
+		const setSlug = current?.isSet ? current.value : current?.setSlug;
+		if (!setSlug) return [];
+		const setName = dictionaryItems.find((item) => item.value === setSlug)?.label.replace(/ Set$/, '');
+		const order = (label: string) => label === 'Set' ? 0 : label === 'Blueprint' ? 1 : 2;
+		return dictionaryItems
+			.filter((item) => item.value === setSlug || item.setSlug === setSlug)
+			.map((item) => ({
+				value: item.value,
+				label: item.value === setSlug ? 'Set'
+					: setName && item.label.startsWith(`${setName} `)
+						? item.label.slice(setName.length + 1)
+						: item.label,
+			}))
+			.sort((a, b) => order(a.label) - order(b.label) || a.label.localeCompare(b.label));
+	});
 
 	async function loadDictionary() {
 		isLoadingDictionary = true;
@@ -31,6 +50,8 @@
 			dictionaryItems = data.items.map((item) => ({
 				label: item.name,
 				value: item.slug,
+				setSlug: item.set_slug,
+				isSet: item.tags.includes('set'),
 			}));
 		} catch (err) {
 			console.error('Failed to load dictionary:', err);
@@ -60,16 +81,19 @@
 	let itemData: z.infer<typeof ItemSchema> | null = $state(null);
 
 	const handleValueChange = (slug: string) => {
-		if (!slug) return;
+		if (!slug || isSearching || slug === itemData?.slug) return;
 		isSearching = true;
+		searchError = null;
 
 		invoke('get_market_item', { slug })
 			.then((response: any) => {
 				const { data } = GetItemResponseSchema.parse(response);
 				itemData = data;
+				selectedSlug = data.slug;
 			})
 			.catch((err) => {
 				console.error('Search failed:', err);
+				searchError = 'Could not load this item. Please try again.';
 			})
 			.finally(() => {
 				isSearching = false;
@@ -84,6 +108,7 @@
 			onValueChange={handleValueChange}
 			type="single"
 			items={dictionaryItems}
+			bind:value={selectedSlug}
 			disabled={isLoadingDictionary || isSearching}
 			inputProps={{ placeholder: isLoadingDictionary ? 'Loading items...' : 'Search for an item...' }}
 		></Combobox>
@@ -94,12 +119,20 @@
 			</div>
 		{/if}
 	</div>
+	{#if searchError}
+		<p role="alert" class="text-danger text-sm">{searchError}</p>
+	{/if}
 	{#if isSearching || itemData}
 		<div class="bg-surface my-1 w-full max-w-2xl h-px"></div>
 		{#if isSearching}
 			<div>Loading...</div>
 		{:else if itemData}
-			<InfoCard {itemData} catalogItem={catalog?.[itemData.gameRef]} />
+			<InfoCard
+				{itemData}
+				catalogItem={catalog?.[itemData.gameRef]}
+				{relatedItems}
+				onSelectItem={handleValueChange}
+			/>
 			{#if catalogError}
 				<p class="text-sm text-muted-foreground">Extra item details are unavailable. Restart while online to refresh them.</p>
 			{/if}

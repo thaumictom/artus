@@ -1,26 +1,32 @@
 <script lang="ts">
 	import * as echarts from 'echarts';
+	import { onMount } from 'svelte';
 
 	let { data = [], hourly = false } = $props();
 
 	let chartContainer: HTMLDivElement;
-	let chartInstance: echarts.ECharts;
+	let chartInstance = $state.raw<echarts.ECharts>();
+	let reducedMotion = $state(false);
 
-	$effect(() => {
-		if (!chartContainer) return;
-
-		chartInstance = echarts.init(chartContainer);
-		const resizeObserver = new ResizeObserver(() => chartInstance.resize());
+	onMount(() => {
+		const chart = echarts.init(chartContainer);
+		chartInstance = chart;
+		const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+		const updateMotionPreference = () => { reducedMotion = motionPreference.matches; };
+		updateMotionPreference();
+		motionPreference.addEventListener('change', updateMotionPreference);
+		const resizeObserver = new ResizeObserver(() => chart.resize());
 		resizeObserver.observe(chartContainer);
 
 		return () => {
 			resizeObserver.disconnect();
-			chartInstance.dispose();
+			motionPreference.removeEventListener('change', updateMotionPreference);
+			chart.dispose();
 		};
 	});
 
 	$effect(() => {
-		if (!chartInstance || data.length === 0) return;
+		if (!chartInstance) return;
 
 		const styles = getComputedStyle(document.documentElement);
 		const getStyle = (varName: string, fallback: string = 'red') =>
@@ -41,8 +47,13 @@
 		const opacityVolume = 0.1;
 		const font = getStyle('--font-sans');
 
+		chartInstance.dispatchAction({ type: 'hideTip' });
 		chartInstance.setOption(
 			{
+				animation: !reducedMotion,
+				animationDuration: 350,
+				animationDurationUpdate: 450,
+				animationEasingUpdate: 'cubicInOut',
 				backgroundColor: bgColor,
 				textStyle: {
 					color: textMain,
@@ -182,6 +193,7 @@
 				],
 				series: [
 					{
+						id: 'median',
 						name: 'Median',
 						type: 'line',
 						yAxisIndex: 0,
@@ -191,7 +203,6 @@
 							value: [d.datetime, d.median],
 						})),
 						smooth: true,
-						animation: true,
 						showSymbol: false,
 						itemStyle: { color: colorPlatinum },
 						emphasis: { disabled: true },
@@ -199,6 +210,7 @@
 						z: 2,
 					},
 					{
+						id: 'moving-average',
 						name: 'Moving Avg',
 						type: 'line',
 						yAxisIndex: 0,
@@ -207,7 +219,6 @@
 							value: [d.datetime, d.moving_avg],
 						})),
 						smooth: true,
-						animation: true,
 						showSymbol: false,
 						itemStyle: { color: colorMovingAvg },
 						emphasis: { disabled: true },
@@ -215,6 +226,7 @@
 						z: 2,
 					},
 					{
+						id: 'volume',
 						name: 'Volume',
 						type: 'bar',
 						yAxisIndex: 1,
@@ -222,8 +234,6 @@
 							name: String(d.datetime),
 							value: [d.datetime, d.volume],
 						})),
-						animation: true,
-						animationDurationUpdate: 500,
 						itemStyle: { color: colorVolume, opacity: opacityVolume },
 						emphasis: { disabled: true },
 						silent: true,
@@ -231,7 +241,8 @@
 					},
 				],
 			},
-			true,
+			// Merge by series ID so range changes animate existing geometry.
+			{ notMerge: false },
 		);
 	});
 </script>

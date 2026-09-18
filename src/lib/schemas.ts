@@ -6,6 +6,7 @@ export const DictionarySchema = z.object({
 	items: z.array(
 		z.object({
 			slug: z.string(),
+			set_slug: z.string().nullish(),
 			name: z.string(),
 			tags: z.array(z.string()),
 			ducats: z.optional(z.number()),

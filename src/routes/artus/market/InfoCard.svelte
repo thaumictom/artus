@@ -3,14 +3,19 @@
 	import type z from 'zod';
 	import type { CatalogItem } from '$lib/market-catalog';
 	import Icon from '@iconify/svelte';
-	import Collapsible from '$lib/components/Collapsible.svelte';
+	import { Collapsible } from 'bits-ui';
+	import { slide } from 'svelte/transition';
 
 	let {
 		itemData,
 		catalogItem,
+		relatedItems = [],
+		onSelectItem,
 	}: {
 		itemData: z.infer<typeof ItemSchema>;
 		catalogItem?: CatalogItem;
+		relatedItems?: { label: string; value: string }[];
+		onSelectItem?: (slug: string) => void;
 	} = $props();
 	const number = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
 	let details = $derived.by(() => {
@@ -48,6 +53,12 @@
 		return rows;
 	});
 	let maxRankEffects = $derived(catalogItem?.levelStats?.at(-1)?.stats ?? []);
+	let hasMoreInfo = $derived(Boolean(catalogItem?.description || details.length || maxRankEffects.length));
+	let moreInfoOpen = $state(false);
+	$effect(() => {
+		itemData.slug;
+		moreInfoOpen = false;
+	});
 	let wikiUrl = $derived(
 		catalogItem?.wikiaUrl ||
 			itemData.i18n?.en?.wikiLink ||
@@ -83,23 +94,36 @@
 			</a>
 		</div>
 	</div>
-	{#if catalogItem?.description || details.length || maxRankEffects.length}
-		{#key itemData.slug}
-			<Collapsible>
-				{#snippet button(open)}
-					<span
-						class="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground text-sm cursor-pointer"
-					>
+	{#if hasMoreInfo || relatedItems.length > 1}
+		<Collapsible.Root bind:open={moreInfoOpen}>
+			<div class="flex items-center gap-3">
+				{#if hasMoreInfo}
+					<Collapsible.Trigger class="inline-flex shrink-0 items-center gap-1 text-muted-foreground hover:text-foreground text-sm cursor-pointer">
 						More info
-						<Icon
-							icon="material-symbols:expand-more-rounded"
-							class={open ? 'size-4 rotate-180' : 'size-4'}
-						/>
-					</span>
-				{/snippet}
-				{#snippet content(open)}
-					{#if open}
-						<div class="flex flex-col gap-4 pt-4">
+						<Icon icon="material-symbols:expand-more-rounded" class={moreInfoOpen ? 'size-4 rotate-180' : 'size-4'} />
+					</Collapsible.Trigger>
+				{/if}
+				<div class="bg-surface h-px min-w-4 flex-1" aria-hidden="true"></div>
+				{#if relatedItems.length > 1}
+		<nav aria-label="Set and tradable components" class="flex flex-wrap justify-end gap-2 min-w-0">
+			{#each relatedItems as item (item.value)}
+				<button
+					type="button"
+					onclick={() => onSelectItem?.(item.value)}
+					aria-current={item.value === itemData.slug ? 'page' : undefined}
+					class={item.value === itemData.slug
+						? 'px-2 py-1 border border-accent bg-accent/10 text-accent text-xs font-medium'
+						: 'px-2 py-1 border text-muted-foreground hover:text-foreground hover:bg-surface text-xs cursor-pointer'}
+				>
+					{item.label}
+				</button>
+			{/each}
+		</nav>
+				{/if}
+			</div>
+			<Collapsible.Content forceMount>
+				{#if moreInfoOpen && hasMoreInfo}
+						<div transition:slide class="flex flex-col gap-4 pt-4">
 							{#if catalogItem?.description}
 								<p class="text-muted-foreground text-sm whitespace-pre-line">
 									{catalogItem.description}
@@ -124,9 +148,8 @@
 								</div>
 							{/if}
 						</div>
-					{/if}
-				{/snippet}
-			</Collapsible>
-		{/key}
+				{/if}
+			</Collapsible.Content>
+		</Collapsible.Root>
 	{/if}
 </div>
