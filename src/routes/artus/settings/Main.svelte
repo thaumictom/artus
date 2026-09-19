@@ -4,6 +4,7 @@
 	import Hotkeys from './categories/Hotkeys.svelte';
 	import MetaInformation from './categories/MetaInformation.svelte';
 	import OverlaySettings from './categories/OverlaySettings.svelte';
+	import OverlayBehaviour from './categories/OverlayBehaviour.svelte';
 	import DebugSettings from './categories/DebugSettings.svelte';
 	import { onMount } from 'svelte';
 	import { load, Store, LazyStore } from '@tauri-apps/plugin-store';
@@ -14,6 +15,7 @@
 		{ name: 'Hotkeys', component: Hotkeys },
 		{ name: 'Warframe Settings', component: WarframeSettings },
 		{ name: 'Overlay Settings', component: OverlaySettings },
+		{ name: 'Overlay Behaviour', component: OverlayBehaviour },
 		{ name: 'Debug', component: DebugSettings },
 	];
 
