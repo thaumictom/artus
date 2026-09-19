@@ -53,7 +53,7 @@ export const config = $state({
 	// Overlay settings
 	hide_overlay_on_focus_loss: true,
 	cleanup_on_focus_loss: false,
-	use_window_ownership: false,
+	use_window_ownership: false as boolean,
 	overlay_toggle_mode: true,
 	overlay_duration_secs: 25,
 	show_set_prices: true as boolean,

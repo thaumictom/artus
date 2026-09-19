@@ -38,7 +38,7 @@ Releases are compiled automatically by Github Actions on every push to the main 
 
 ### Liability Disclaimer
 
-There is no liability for any problems caused by using this app. While this tool does not inject into the game or modify any game files, using it is at your own risk.
+This tool runs independently of Warframe by default and does not inject code or modify any game files. While it is designed to be safe, it is provided "as-is" and used at your own risk.
 
 Read more: https://support.warframe.com/hc/en-us/articles/360030014351-Third-Party-Software-and-You
 
@@ -54,14 +54,16 @@ While I have a lot of experience in development (especially on the frontend), AI
 
 ## Building from Source
 
-While most users will just download the pre-packaged application, developers or enthusiasts can build the project from source on Windows and Linux. 
+While most users will just download the pre-packaged application, developers or enthusiasts can build the project from source on Windows and Linux.
 
 **Prerequisites:**
+
 - [Node.js](https://nodejs.org/) or compatible runtime & [pnpm](https://pnpm.io/) or compatible package manager
 - [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) (Windows only)
 - [Rust](https://rustup.rs/)
 
 **Instructions:**
+
 1. Clone the project to your computer.
 2. Open a terminal (PowerShell or Bash) in the project folder and install the frontend dependencies:
    ```bash
@@ -78,10 +80,10 @@ While most users will just download the pre-packaged application, developers or 
 
 **Linux Note (Wayland):**
 If you are on Linux and using Wayland, there is an optional Wayland layer-shell build available. Install system package `gtk-layer-shell` (must provide `gtk-layer-shell-0.pc` for `pkg-config`). You can run it with:
+
 ```bash
 pnpm tauri dev --features wayland-layer-shell
 ```
-
 
 ### Dashboard data
 
@@ -107,7 +109,7 @@ Arbitration and Steel Path incursion schedules, and some bounty objectives, are 
 present in the official feed. The Dashboard does not request additional live services
 for those details. OCR debugging code remains commented out in the Dashboard component.
 
-## Community & Credits 
+## Community & Credits
 
 If Artus is not the app for you, consider using these awesome tools:
 
