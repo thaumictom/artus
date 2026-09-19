@@ -70,7 +70,7 @@ jobs:
 
       - name: Clear Tesseract source cache
         if: runner.os == 'Linux'
-        run: rm -rf "${HOME:?}/.tesseract-rs"
+        run: rm -rf src-tauri/target/kreuzberg-tesseract-cache
 
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
