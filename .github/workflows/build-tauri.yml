@@ -68,6 +68,10 @@ jobs:
         with:
           workspaces: 'src-tauri'
 
+      - name: Clear Tesseract source cache
+        if: runner.os == 'Linux'
+        run: rm -rf "${HOME:?}/.tesseract-rs"
+
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: |
