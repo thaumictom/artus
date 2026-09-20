@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Slider from '$lib/components/Slider.svelte';
+	import { timeAgo } from '$lib/date';
 	import { GetOrdersResponseSchema, type OrderWithUserSchema } from '$lib/schemas';
 	import { RadioGroup } from 'bits-ui';
 	import type z from 'zod';
@@ -8,6 +9,7 @@
 	import Button from '$lib/components/Button.svelte';
 	import { toast } from 'svelte-sonner';
 	import Icon from '@iconify/svelte';
+	import { createFocusedRefresh } from '$lib/focused-refresh';
 
 	let {
 		slug,
@@ -52,16 +54,7 @@
 	let groupFilterRange = $state<[number, number]>([0, 0]);
 	let fetchTimestamp = $state<number | undefined>();
 	let now = $state(Date.now());
-	const relativeTime = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
-	let fetchedAgo = $derived.by(() => {
-		if (fetchTimestamp === undefined) return '';
-		const seconds = Math.max(0, Math.floor((now - fetchTimestamp) / 1000));
-		if (seconds < 3) return 'just now';
-		if (seconds < 60) return relativeTime.format(-seconds, 'second');
-		if (seconds < 3600) return relativeTime.format(-Math.floor(seconds / 60), 'minute');
-		if (seconds < 86400) return relativeTime.format(-Math.floor(seconds / 3600), 'hour');
-		return relativeTime.format(-Math.floor(seconds / 86400), 'day');
-	});
+	let fetchedAgo = $derived(fetchTimestamp === undefined ? '' : timeAgo(fetchTimestamp, now));
 
 	onMount(() => {
 		const timer = setInterval(() => {
@@ -133,49 +126,13 @@
 			});
 	});
 
-	// Each mounted item owns its timer and listeners. An overdue refresh waits for focus.
+	// Each mounted item owns its refresh lifecycle.
 	$effect(() => {
 		const targetSlug = slug;
 		if (!targetSlug) return;
 		let disposed = false;
-		let inFlight = false;
-		let nextRefreshAt = 0;
-		let timer: ReturnType<typeof setTimeout> | undefined;
 		let cooldownTimer: ReturnType<typeof setTimeout> | undefined;
 
-		const refresh = async () => {
-			if (disposed || inFlight) return;
-			inFlight = true;
-			isRefreshing = true;
-			ordersError = null;
-			clearTimeout(timer);
-			try {
-				await loadOrdersData(targetSlug, () => !disposed);
-			} finally {
-				if (!disposed) {
-					inFlight = false;
-					isRefreshing = false;
-					// Reset after manual refreshes and failed requests as well, avoiding retry loops.
-					nextRefreshAt = Date.now() + REFRESH_INTERVAL_MS;
-					timer = setTimeout(refreshIfDue, REFRESH_INTERVAL_MS);
-				}
-			}
-		};
-		const refreshIfDue = () => {
-			if (document.hasFocus() && !document.hidden && Date.now() >= nextRefreshAt) {
-				void refresh();
-			}
-		};
-		reloadOrders = () => {
-			if (disposed || inFlight || isReloadCoolingDown) return;
-			isReloadCoolingDown = true;
-			cooldownTimer = setTimeout(() => {
-				isReloadCoolingDown = false;
-			}, MANUAL_RELOAD_COOLDOWN_MS);
-			void refresh();
-		};
-		window.addEventListener('focus', refreshIfDue);
-		document.addEventListener('visibilitychange', refreshIfDue);
 		untrack(() => {
 			isRefreshing = false;
 			isReloadCoolingDown = false;
@@ -185,14 +142,32 @@
 			groupByProperty = undefined;
 			maxFilterValue = 0;
 			groupFilterRange = [0, 0];
-			refreshIfDue();
 		});
+
+		const focusedRefresh = createFocusedRefresh(async () => {
+			isRefreshing = true;
+			ordersError = null;
+			try {
+				await loadOrdersData(targetSlug, () => !disposed);
+			} finally {
+				if (!disposed) {
+					isRefreshing = false;
+				}
+			}
+		}, REFRESH_INTERVAL_MS, { immediate: true });
+
+		reloadOrders = () => {
+			if (disposed || isRefreshing || isReloadCoolingDown) return;
+			isReloadCoolingDown = true;
+			cooldownTimer = setTimeout(() => {
+				isReloadCoolingDown = false;
+			}, MANUAL_RELOAD_COOLDOWN_MS);
+			void focusedRefresh.refresh();
+		};
 		return () => {
 			disposed = true;
-			clearTimeout(timer);
 			clearTimeout(cooldownTimer);
-			window.removeEventListener('focus', refreshIfDue);
-			document.removeEventListener('visibilitychange', refreshIfDue);
+			focusedRefresh.destroy();
 		};
 	});
 

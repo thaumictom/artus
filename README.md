@@ -88,26 +88,8 @@ pnpm tauri dev --features wayland-layer-shell
 ### Dashboard data
 
 The Dashboard requests the official PC world state once when the main window starts.
-Reload fetches a new snapshot; switching tabs and the displayed countdowns do not
-trigger network refreshes. Failed reloads preserve the previous snapshot. Item names
-reuse the local catalog downloaded at startup, removing `/StoreItems` from world-state
-item paths before matching.
-
-English mission, node, and challenge names are generated from WFCD's static data:
-
-```bash
-pnpm generate:worldstate-labels
-```
-
-Run the world-state parsing checks with Node 22.18+:
-
-```bash
-node --test --test-isolation=none scripts/worldstate.test.mjs
-```
-
-Arbitration and Steel Path incursion schedules, and some bounty objectives, are not
-present in the official feed. The Dashboard does not request additional live services
-for those details. OCR debugging code remains commented out in the Dashboard component.
+Reload fetches a new snapshot. The response is retained in frontend state but is not
+currently interpreted or displayed.
 
 ## Community & Credits
 
@@ -120,8 +102,6 @@ Without these contributions to Warframe, this app wouldn't be possible:
 
 - https://github.com/WFCD/WFInfo
 - https://github.com/WFCD/warframe-items/
-- https://github.com/WFCD/warframe-worldstate-data/
-- https://github.com/WFCD/warframe-worldstate-parser/
 - https://browse.wf/
 - https://warframe.market/
 - https://tenno.tools/

@@ -40,7 +40,7 @@
 
 <CommonSetting
 	title="Use window ownership (experimental)"
-	description="Attach the overlay directly to Warframe to prevent it from displaying over other apps when alt-tabbed, but can cause issues due to Anti-Cheat."
+	description="Attach the overlay directly to Warframe to prevent it from displaying over other apps when alt-tabbed, but can cause issues due to anti-cheat."
 	align="horizontal"
 	labelProps={{ for: setting }}
 >

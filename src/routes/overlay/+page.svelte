@@ -201,44 +201,48 @@
 				{/if}
 				<span>{displayText}</span>
 			</div>
-			<div class="flex flex-col items-center px-2 py-1 font-medium">
-				<div class="flex justify-around gap-1 w-full">
-					{#if displayPrice !== undefined}
-						<div
-							class:col-span-2={trades24h === undefined}
-							class="flex justify-center items-center gap-1"
-						>
-							<div>{pricePrefix}{medianFormatter.format(displayPrice)}</div>
-							<img src="/icons/platinum.png" alt="" class="size-3" />
-						</div>
-					{/if}
-					{#if ducats !== undefined}
-						<div class="flex justify-center items-center gap-1">
-							<div>{countFormatter.format(ducats)}</div>
-							<img src="/icons/ducats.png" alt="" class="size-3" />
-						</div>
-					{/if}
-					{#if displayPrice !== undefined && ducats !== undefined && ducats > 0}
-						{@const platPer100Ducats = (displayPrice / ducats) * 100}
-						<div>
-							<span class={getItemActionColor(ducats, displayPrice)}>
-								{medianFormatter.format(platPer100Ducats)}
-							</span>
+			{#if displayPrice !== undefined || ducats !== undefined || trades24h !== undefined}
+				<div class="flex flex-col items-center px-2 py-1 font-medium">
+					<div class="flex justify-around gap-1 w-full">
+						{#if displayPrice !== undefined}
+							<div
+								class:col-span-2={trades24h === undefined}
+								class="flex justify-center items-center gap-1"
+							>
+								<div>{pricePrefix}{medianFormatter.format(displayPrice)}</div>
+								<img src="/icons/platinum.png" alt="" class="size-3" />
+							</div>
+						{/if}
+						{#if ducats !== undefined}
+							<div class="flex justify-center items-center gap-1">
+								<div>{countFormatter.format(ducats)}</div>
+								<img src="/icons/ducats.png" alt="" class="size-3" />
+							</div>
+						{/if}
+						{#if displayPrice !== undefined && ducats !== undefined && ducats > 0}
+							{@const platPer100Ducats = (displayPrice / ducats) * 100}
+							<div>
+								<span class={getItemActionColor(ducats, displayPrice)}>
+									{medianFormatter.format(platPer100Ducats)}
+								</span>
+							</div>
+						{/if}
+					</div>
+					{#if trades24h !== undefined}
+						<div class="text-xs">
+							volume: {countFormatter.format(trades24h)}
 						</div>
 					{/if}
 				</div>
-				{#if trades24h !== undefined}
-					<div class="text-xs">
-						volume: {countFormatter.format(trades24h)}
-					</div>
-				{/if}
-			</div>
+			{/if}
 			{#if config.show_max_rank_prices && (!word.is_mod || config.show_max_rank_mod_prices) && maxedArcanePrice !== undefined}
 				<div class="flex flex-col items-center px-2 py-1 border-t font-medium">
 					<div class="text-[10px] text-muted-foreground">maxed</div>
 					<div class="flex justify-center items-center gap-1">
 						<div>
-							{word.maxed_arcane_price_from_current_offers ? '~' : ''}{medianFormatter.format(maxedArcanePrice)}
+							{word.maxed_arcane_price_from_current_offers ? '~' : ''}{medianFormatter.format(
+								maxedArcanePrice,
+							)}
 						</div>
 						<img src="/icons/platinum.png" alt="" class="size-3" />
 					</div>
@@ -268,7 +272,10 @@
 						{#if primeSetDucats !== undefined && primeSetDucats > 0}
 							{@const setPlatPer100Ducats = (primeSetPrice / primeSetDucats) * 100}
 							<div>
-								<span class={getItemActionColor(primeSetDucats, primeSetPrice)} title="Platinum per 100 ducats">
+								<span
+									class={getItemActionColor(primeSetDucats, primeSetPrice)}
+									title="Platinum per 100 ducats"
+								>
 									{medianFormatter.format(setPlatPer100Ducats)}
 								</span>
 							</div>
