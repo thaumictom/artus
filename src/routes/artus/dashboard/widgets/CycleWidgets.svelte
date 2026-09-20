@@ -1,16 +1,40 @@
 <script lang="ts">
 	import type { WorldState } from 'warframe-worldstate-parser';
 
-	let { world, now }: { world: WorldState; now: number } = $props();
+	let {
+		world,
+		now,
+		onRefreshRequest,
+	}: {
+		world: WorldState;
+		now: number;
+		onRefreshRequest: () => boolean;
+	} = $props();
 
 	let cycles = $derived([
-		{ label: 'Earth', cycle: world.earthCycle },
-		{ label: 'Cetus', cycle: world.cetusCycle },
-		{ label: 'Cambion Drift', cycle: world.cambionCycle },
-		{ label: 'Orb Vallis', cycle: world.vallisCycle },
-		{ label: 'Zariman', cycle: world.zarimanCycle },
-		{ label: 'Duviri', cycle: world.duviriCycle },
+		{ label: 'Earth', cycle: world.earthCycle, refreshOnExpiry: true },
+		{ label: 'Cetus', cycle: world.cetusCycle, refreshOnExpiry: true },
+		{ label: 'Cambion Drift', cycle: world.cambionCycle, refreshOnExpiry: true },
+		{ label: 'Orb Vallis', cycle: world.vallisCycle, refreshOnExpiry: true },
+		{ label: 'Zariman', cycle: world.zarimanCycle, refreshOnExpiry: false },
+		{ label: 'Duviri', cycle: world.duviriCycle, refreshOnExpiry: true },
 	]);
+	const requestedExpiries = new Map<string, number>();
+
+	$effect(() => {
+		const newlyExpired: { label: string; expiry: number }[] = [];
+		for (const { label, cycle, refreshOnExpiry } of cycles) {
+			const expiry = cycle.expiry?.getTime();
+			if (!refreshOnExpiry || expiry === undefined || now < expiry) continue;
+			if (requestedExpiries.get(label) === expiry) continue;
+
+			newlyExpired.push({ label, expiry });
+		}
+
+		if (newlyExpired.length > 0 && onRefreshRequest()) {
+			for (const { label, expiry } of newlyExpired) requestedExpiries.set(label, expiry);
+		}
+	});
 
 	function formatState(state: string) {
 		return state.charAt(0).toUpperCase() + state.slice(1);

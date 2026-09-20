@@ -9,6 +9,7 @@
 	const REFRESH_INTERVAL_MS = 5 * 60_000;
 	let now = $state(Date.now());
 	let reloadDashboard = $state(reloadWorldState);
+	let requestDashboardReload = $state<() => boolean>(() => false);
 
 	onMount(() => {
 		const focusedRefresh = createFocusedRefresh(reloadWorldState, REFRESH_INTERVAL_MS);
@@ -20,6 +21,7 @@
 		};
 
 		reloadDashboard = focusedRefresh.refresh;
+		requestDashboardReload = focusedRefresh.requestRefresh;
 		document.addEventListener('visibilitychange', updateClock);
 		updateClock();
 
@@ -42,7 +44,7 @@
 	/>
 
 	{#if dashboard.world}
-		<CycleWidgets world={dashboard.world} {now} />
+		<CycleWidgets world={dashboard.world} {now} onRefreshRequest={requestDashboardReload} />
 		<News articles={dashboard.world.news} />
 	{/if}
 </div>
