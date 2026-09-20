@@ -9,37 +9,44 @@ export function createFocusedRefresh(
 ) {
 	let disposed = false;
 	let inFlight = false;
-	let refreshRequested = false;
-	let nextRefreshAt = immediate ? 0 : Date.now() + intervalMs;
+	let manualRefreshRequested = false;
+	let nextIntervalRefreshAt = immediate ? 0 : Date.now() + intervalMs;
 	let timer: ReturnType<typeof setTimeout> | undefined;
+
+	const hasFocus = () => document.hasFocus() && !document.hidden;
+
+	const nextRefreshAt = () => (manualRefreshRequested ? 0 : nextIntervalRefreshAt);
 
 	const schedule = () => {
 		clearTimeout(timer);
-		timer = setTimeout(refreshIfDue, Math.max(0, nextRefreshAt - Date.now()));
+		if (disposed || inFlight) return;
+
+		const refreshAt = nextRefreshAt();
+		// Focus/visibility events will resume an overdue refresh without polling in the background.
+		if (refreshAt <= Date.now() && !hasFocus()) return;
+		timer = setTimeout(refreshIfDue, Math.max(0, refreshAt - Date.now()));
 	};
 
-	const run = async (onlyIfDue: boolean) => {
-		const isDue = refreshRequested || Date.now() >= nextRefreshAt;
-		if (disposed || inFlight || (onlyIfDue && (!document.hasFocus() || document.hidden || !isDue))) {
-			return;
-		}
+	const runIfDue = async () => {
+		const now = Date.now();
+		if (disposed || inFlight || !hasFocus() || now < nextRefreshAt()) return;
 
 		inFlight = true;
-		refreshRequested = false;
+		manualRefreshRequested = false;
 		clearTimeout(timer);
 		try {
 			await callback();
 		} finally {
 			if (!disposed) {
 				inFlight = false;
-				nextRefreshAt = Date.now() + intervalMs;
+				nextIntervalRefreshAt = Date.now() + intervalMs;
 				schedule();
 			}
 		}
 	};
 
 	function refreshIfDue() {
-		void run(true);
+		void runIfDue();
 	}
 
 	window.addEventListener('focus', refreshIfDue);
@@ -48,12 +55,10 @@ export function createFocusedRefresh(
 	else schedule();
 
 	return {
-		refresh: () => run(false),
-		requestRefresh: () => {
-			if (disposed || inFlight) return false;
-			refreshRequested = true;
-			refreshIfDue();
-			return true;
+		refresh: () => {
+			if (disposed) return Promise.resolve();
+			manualRefreshRequested = true;
+			return runIfDue();
 		},
 		destroy: () => {
 			disposed = true;
