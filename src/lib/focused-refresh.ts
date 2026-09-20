@@ -9,7 +9,6 @@ export function createFocusedRefresh(
 ) {
 	let disposed = false;
 	let inFlight = false;
-	let refreshRequested = false;
 	let nextRefreshAt = immediate ? 0 : Date.now() + intervalMs;
 	let timer: ReturnType<typeof setTimeout> | undefined;
 
@@ -19,13 +18,16 @@ export function createFocusedRefresh(
 	};
 
 	const run = async (onlyIfDue: boolean) => {
-		const isDue = refreshRequested || Date.now() >= nextRefreshAt;
-		if (disposed || inFlight || (onlyIfDue && (!document.hasFocus() || document.hidden || !isDue))) {
+		if (
+			disposed ||
+			inFlight ||
+			(onlyIfDue &&
+				(!document.hasFocus() || document.hidden || Date.now() < nextRefreshAt))
+		) {
 			return;
 		}
 
 		inFlight = true;
-		refreshRequested = false;
 		clearTimeout(timer);
 		try {
 			await callback();
@@ -49,12 +51,6 @@ export function createFocusedRefresh(
 
 	return {
 		refresh: () => run(false),
-		requestRefresh: () => {
-			if (disposed || inFlight) return false;
-			refreshRequested = true;
-			refreshIfDue();
-			return true;
-		},
 		destroy: () => {
 			disposed = true;
 			clearTimeout(timer);
