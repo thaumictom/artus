@@ -8,7 +8,6 @@ type Config = {
 		[action: string]: string;
 	};
 
-	warframe_log_path: string;
 	relic_reward_detection: boolean;
 	relic_reward_sound: boolean;
 	dashboard_view_favorites: string[];
@@ -49,7 +48,6 @@ export const config = $state({
 
 	// Warframe settings
 	ocr_theme: 'EQUINOX',
-	warframe_log_path: '%LocalAppData%\\Warframe\\EE.log',
 	relic_reward_detection: false,
 	relic_reward_sound: false,
 	dashboard_view_favorites: [] as string[],
@@ -92,6 +90,11 @@ export async function loadSettings() {
 			// @ts-ignore
 			config[key] = val;
 		}
+	}
+
+	// Remove the obsolete EE.log fallback setting from existing installations.
+	if (await store.delete('warframe_log_path')) {
+		await store.save();
 	}
 }
 

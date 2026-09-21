@@ -5,7 +5,10 @@ use tauri::{App, Manager};
 
 use crate::error::AppResult;
 use crate::state::AppState;
-use crate::{hotkeys, layer_shell, ocr, relic_rewards, window_watcher};
+use crate::{hotkeys, layer_shell, ocr, window_watcher};
+
+#[cfg(target_os = "windows")]
+use crate::relic_rewards;
 
 /// Called by Tauri during startup to configure windows, load data, and spawn
 /// background tasks.
@@ -63,7 +66,8 @@ pub fn init(app: &mut App, is_wayland: bool) -> Result<(), Box<dyn std::error::E
     log_result("cached market items", crate::market::refresh_item_catalog(app.handle()));
 
     // Spawn background tasks
-    relic_rewards::spawn_log_tailer(app.handle().clone());
+    #[cfg(target_os = "windows")]
+    relic_rewards::spawn_dbwin_listener(app.handle().clone());
     hotkeys::register_initial(app.handle())?;
     window_watcher::spawn_window_watcher(app.handle().clone());
 

@@ -8,8 +8,8 @@ mod hotkeys;
 mod layer_shell;
 mod market;
 mod ocr;
+#[cfg(target_os = "windows")]
 mod relic_rewards;
-mod settings;
 mod setup;
 mod state;
 mod store_ext;
@@ -32,7 +32,6 @@ fn main() {
     let is_wayland = apply_wayland_workarounds();
 
     tauri::Builder::default()
-        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
@@ -49,7 +48,6 @@ fn main() {
         .manage(AppState::default())
         .setup(move |app| setup::init(app, is_wayland))
         .invoke_handler(tauri::generate_handler![
-            settings::validate_warframe_log_path,
             hotkeys::get_hotkey,
             hotkeys::set_hotkey,
             ocr::get_ocr_themes,

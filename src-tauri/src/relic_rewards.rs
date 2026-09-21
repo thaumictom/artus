@@ -1,14 +1,12 @@
-//! Warframe EE.log tailer for automatic relic reward detection.
+//! Real-time Warframe relic reward detection through Windows DBWIN.
 //!
-//! Spawns an async task that polls the log file for reward markers
-//! and triggers OCR or overlay hide accordingly.
+//! The listener owns the DBWIN shared objects only while automatic detection
+//! is enabled. It never attaches to or reads memory from the Warframe process.
 
-use std::fs::File;
-use std::io::{Read, Seek, SeekFrom};
 use std::sync::atomic::Ordering;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
-use log::{error, info};
+use log::{error, info, warn};
 use tauri::{AppHandle, Emitter, Manager, Runtime};
 
 use crate::ocr;
@@ -16,153 +14,288 @@ use crate::store_ext::SettingsExt;
 
 // ── Log markers ───────────────────────────────────────────────────────────────
 
-const GOT_REWARDS_MARKER: &str = "ProjectionRewardChoice.lua: Got rewards";
-const SCREEN_SHUTDOWN_MARKER: &str = "ProjectionRewardChoice.lua: Relic reward screen shut down";
-
-// ── Polling intervals ─────────────────────────────────────────────────────────
-
-const DISABLED_SLEEP: Duration = Duration::from_millis(1000);
-const IDLE_SLEEP: Duration = Duration::from_millis(100);
-const ERROR_SLEEP: Duration = Duration::from_millis(500);
+const GOT_REWARDS_MARKER: &str = "Got rewards";
+const SCREEN_SHUTDOWN_MARKER: &str = "Relic reward screen shut down";
+const REWARD_CAPTURE_DELAY: Duration = Duration::from_millis(500);
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
-/// Spawns an async task that continuously tails the Warframe log file.
-///
-/// Uses `tokio::time::sleep` for non-blocking delays. File I/O is brief
-/// (small incremental reads) so it runs on the async runtime directly.
-pub fn spawn_log_tailer<R: Runtime + 'static>(app: AppHandle<R>) {
+/// Starts the DBWIN listener supervisor. The thread remains idle until automatic
+/// detection is enabled.
+pub fn spawn_dbwin_listener<R: Runtime + 'static>(app: AppHandle<R>) {
+    if let Err(err) = std::thread::Builder::new()
+        .name("warframe-dbwin-listener".into())
+        .spawn(move || windows_debug_output::run(app))
+    {
+        error!("failed to spawn DBWIN listener: {err}");
+    }
+}
+
+fn process_debug_message<R: Runtime>(app: &AppHandle<R>, message: &str) {
+    if !app.get_setting_bool("relic_reward_detection", false) {
+        return;
+    }
+
+    if message.contains(SCREEN_SHUTDOWN_MARKER) {
+        info!("detected relic reward screen shutdown via DBWIN, hiding overlay");
+        let _ = ocr::hide_overlay(app);
+    } else if message.contains(GOT_REWARDS_MARKER) {
+        trigger_relic_capture(app);
+    }
+}
+
+fn trigger_relic_capture<R: Runtime>(app: &AppHandle<R>) {
+    // The setting can change while a DBWIN wait is in flight.
+    if !app.get_setting_bool("relic_reward_detection", false) {
+        return;
+    }
+
+    info!("detected relic rewards via DBWIN, scheduling OCR after {REWARD_CAPTURE_DELAY:?}");
+    if app.get_setting_bool("relic_reward_sound", false) {
+        let _ = app.emit("relic_reward_detected", ());
+    }
+    app.state::<crate::state::AppState>()
+        .overlay_is_relic_mode
+        .store(true, Ordering::Release);
+
+    let handle = app.clone();
+    let sequence = ocr::bump_overlay_sequence(&handle).unwrap_or(0);
+
+    let failsafe_handle = handle.clone();
     tauri::async_runtime::spawn(async move {
-        let mut last_path = String::new();
-        let mut last_pos: u64 = 0;
-        let mut file: Option<File> = None;
+        tokio::time::sleep(Duration::from_secs(15)).await;
 
-        loop {
-            let (enabled, path) = read_tailer_config(&app);
+        let current = failsafe_handle
+            .state::<crate::state::AppState>()
+            .overlay_sequence
+            .lock()
+            .map(|v| *v)
+            .unwrap_or(0);
 
-            if !enabled || path.is_empty() {
-                reset_state(&mut file, &mut last_path, &mut last_pos);
-                tokio::time::sleep(DISABLED_SLEEP).await;
-                continue;
-            }
-
-            // Re-open on path change
-            if path != last_path {
-                open_log_file(&path, &mut file, &mut last_path, &mut last_pos);
-            }
-
-            // Read any new bytes appended since the last poll
-            let data = read_new_data(&mut file, &last_path, &mut last_pos);
-
-            if !data.is_empty() {
-                process_log_chunk(&app, &data);
-            }
-
-            tokio::time::sleep(IDLE_SLEEP).await;
+        if current == sequence {
+            info!("relic reward 15s failsafe triggered, hiding overlay");
+            let _ = ocr::hide_overlay(&failsafe_handle);
         }
     });
-}
 
-// ── Internals ─────────────────────────────────────────────────────────────────
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(REWARD_CAPTURE_DELAY).await;
 
-/// Reads the current relic-reward settings from the store.
-fn read_tailer_config<R: Runtime>(app: &AppHandle<R>) -> (bool, String) {
-    let enabled = app.get_setting_bool("relic_reward_detection", false);
-    let path = app.get_setting_string("warframe_log_path", "");
-    (enabled, path)
-}
-
-/// Resets all tailer state when the feature is disabled.
-fn reset_state(file: &mut Option<File>, path: &mut String, pos: &mut u64) {
-    if file.is_some() {
-        *file = None;
-        path.clear();
-        *pos = 0;
-    }
-}
-
-/// Opens a new log file and seeks to the end (only processes new data).
-fn open_log_file(path: &str, file: &mut Option<File>, last_path: &mut String, last_pos: &mut u64) {
-    *last_path = path.to_string();
-    *file = File::open(last_path.as_str()).ok();
-    *last_pos = file
-        .as_mut()
-        .and_then(|f| f.seek(SeekFrom::End(0)).ok())
-        .unwrap_or(0);
-
-    if file.is_some() {
-        info!("tailing log: {last_path}, starting at {last_pos} bytes");
-    }
-}
-
-/// Reads bytes appended since `last_pos`. Handles file truncation/rotation.
-fn read_new_data(file: &mut Option<File>, last_path: &str, last_pos: &mut u64) -> Vec<u8> {
-    let mut buf = Vec::new();
-
-    if let Some(f) = file.as_mut() {
-        if let Ok(current_len) = f.seek(SeekFrom::End(0)) {
-            if current_len > *last_pos {
-                if f.seek(SeekFrom::Start(*last_pos)).is_ok() && f.read_to_end(&mut buf).is_ok() {
-                    *last_pos = current_len;
-                }
-            } else if current_len < *last_pos {
-                // File was truncated or rotated
-                *last_pos = current_len;
-            }
+        if !handle.get_setting_bool("relic_reward_detection", false) {
+            return;
         }
-    } else if !last_path.is_empty() {
-        // Try to re-open after a brief delay (file may have been temporarily unavailable)
-        std::thread::sleep(ERROR_SLEEP);
-        *file = File::open(last_path).ok();
-        *last_pos = file
-            .as_mut()
-            .and_then(|f| f.seek(SeekFrom::End(0)).ok())
+
+        let current_sequence = handle
+            .state::<crate::state::AppState>()
+            .overlay_sequence
+            .lock()
+            .map(|value| *value)
             .unwrap_or(0);
-    }
 
-    buf
-}
-
-/// Inspects a chunk of log data for relic reward markers and acts accordingly.
-fn process_log_chunk<R: Runtime>(app: &AppHandle<R>, data: &[u8]) {
-    let content = String::from_utf8_lossy(data);
-
-    if content.contains(SCREEN_SHUTDOWN_MARKER) {
-        info!("detected relic reward screen shutdown, hiding overlay");
-        let _ = ocr::hide_overlay(app);
-    } else if content.contains(GOT_REWARDS_MARKER) {
-        info!("detected relic rewards, triggering OCR");
-        if app.get_setting_bool("relic_reward_sound", false) {
-            let _ = app.emit("relic_reward_detected", ());
+        if current_sequence != sequence {
+            info!("cancelled delayed relic reward OCR because the reward screen closed");
+            return;
         }
-        app.state::<crate::state::AppState>()
-            .overlay_is_relic_mode
-            .store(true, Ordering::Release);
-
-        let handle = app.clone();
-        let sequence = ocr::bump_overlay_sequence(&handle).unwrap_or(0);
-
-        let failsafe_handle = handle.clone();
-        tauri::async_runtime::spawn(async move {
-            tokio::time::sleep(Duration::from_secs(15)).await;
-
-            let current = failsafe_handle
-                .state::<crate::state::AppState>()
-                .overlay_sequence
-                .lock()
-                .map(|v| *v)
-                .unwrap_or(0);
-
-            if current == sequence {
-                info!("relic reward 15s failsafe triggered, hiding overlay");
-                let _ = ocr::hide_overlay(&failsafe_handle);
-            }
-        });
 
         tauri::async_runtime::spawn_blocking(move || {
-            if let Err(err) = ocr::capture_active_window_with_mode(&handle, false, false, Some(sequence), false) {
+            if let Err(err) =
+                ocr::capture_active_window_with_mode(&handle, false, false, Some(sequence), false)
+            {
                 error!("relic reward OCR failed: {err}");
             }
         });
+    });
+}
+
+mod windows_debug_output {
+    use super::*;
+    use std::ffi::OsStr;
+    use std::slice;
+    use sysinfo::{Pid, ProcessesToUpdate, System};
+    use windows::core::w;
+    use windows::Win32::Foundation::{
+        CloseHandle, GetLastError, ERROR_ALREADY_EXISTS, HANDLE, INVALID_HANDLE_VALUE,
+        WAIT_OBJECT_0, WAIT_TIMEOUT,
+    };
+    use windows::Win32::System::Memory::{
+        CreateFileMappingW, MapViewOfFile, UnmapViewOfFile, FILE_MAP_READ,
+        MEMORY_MAPPED_VIEW_ADDRESS, PAGE_READWRITE,
+    };
+    use windows::Win32::System::Threading::{CreateEventW, SetEvent, WaitForSingleObject};
+
+    const DBWIN_BUFFER_SIZE: usize = 4096;
+    const SETTING_POLL_MS: u32 = 250;
+    const RETRY_DELAY: Duration = Duration::from_secs(5);
+    const PROCESS_REFRESH_INTERVAL: Duration = Duration::from_secs(2);
+    const WARFRAME_PROCESS_NAMES: [&str; 2] = ["Warframe.x64.exe", "Warframe.exe"];
+
+    struct OwnedHandle(HANDLE);
+
+    impl Drop for OwnedHandle {
+        fn drop(&mut self) {
+            unsafe {
+                let _ = CloseHandle(self.0);
+            }
+        }
+    }
+
+    struct DbwinListener {
+        _mapping: OwnedHandle,
+        buffer_ready: OwnedHandle,
+        data_ready: OwnedHandle,
+        view: MEMORY_MAPPED_VIEW_ADDRESS,
+    }
+
+    impl DbwinListener {
+        fn create() -> Result<Self, String> {
+            unsafe {
+                let mapping = CreateFileMappingW(
+                    INVALID_HANDLE_VALUE,
+                    None,
+                    PAGE_READWRITE,
+                    0,
+                    DBWIN_BUFFER_SIZE as u32,
+                    w!("DBWIN_BUFFER"),
+                )
+                .map_err(|err| format!("create DBWIN buffer: {err}"))?;
+                let mapping = claim_new_handle(mapping, "DBWIN_BUFFER")?;
+
+                let buffer_ready = CreateEventW(None, false, false, w!("DBWIN_BUFFER_READY"))
+                    .map_err(|err| format!("create DBWIN_BUFFER_READY: {err}"))?;
+                let buffer_ready = claim_new_handle(buffer_ready, "DBWIN_BUFFER_READY")?;
+
+                let data_ready = CreateEventW(None, false, false, w!("DBWIN_DATA_READY"))
+                    .map_err(|err| format!("create DBWIN_DATA_READY: {err}"))?;
+                let data_ready = claim_new_handle(data_ready, "DBWIN_DATA_READY")?;
+
+                let view = MapViewOfFile(mapping.0, FILE_MAP_READ, 0, 0, DBWIN_BUFFER_SIZE);
+                if view.Value.is_null() {
+                    return Err(format!(
+                        "map DBWIN buffer: {}",
+                        windows::core::Error::from_thread()
+                    ));
+                }
+
+                SetEvent(buffer_ready.0)
+                    .map_err(|err| format!("signal DBWIN_BUFFER_READY: {err}"))?;
+
+                Ok(Self {
+                    _mapping: mapping,
+                    buffer_ready,
+                    data_ready,
+                    view,
+                })
+            }
+        }
+
+        fn next_message(&self) -> Result<Option<(u32, String)>, String> {
+            unsafe {
+                match WaitForSingleObject(self.data_ready.0, SETTING_POLL_MS) {
+                    WAIT_OBJECT_0 => {
+                        let buffer =
+                            slice::from_raw_parts(self.view.Value.cast::<u8>(), DBWIN_BUFFER_SIZE);
+                        let process_id = u32::from_ne_bytes(
+                            buffer[..std::mem::size_of::<u32>()]
+                                .try_into()
+                                .expect("DBWIN process id has a fixed size"),
+                        );
+                        let message_bytes = &buffer[std::mem::size_of::<u32>()..];
+                        let end = message_bytes
+                            .iter()
+                            .position(|byte| *byte == 0)
+                            .unwrap_or(message_bytes.len());
+                        let message = String::from_utf8_lossy(&message_bytes[..end]).into_owned();
+
+                        // Release Warframe immediately; parsing and OCR happen afterwards.
+                        SetEvent(self.buffer_ready.0)
+                            .map_err(|err| format!("signal DBWIN_BUFFER_READY: {err}"))?;
+                        Ok(Some((process_id, message)))
+                    }
+                    WAIT_TIMEOUT => Ok(None),
+                    status => Err(format!("wait for DBWIN_DATA_READY returned {}", status.0)),
+                }
+            }
+        }
+    }
+
+    impl Drop for DbwinListener {
+        fn drop(&mut self) {
+            unsafe {
+                let _ = UnmapViewOfFile(self.view);
+            }
+        }
+    }
+
+    unsafe fn claim_new_handle(handle: HANDLE, name: &str) -> Result<OwnedHandle, String> {
+        let already_exists = unsafe { GetLastError() == ERROR_ALREADY_EXISTS };
+        let handle = OwnedHandle(handle);
+        if already_exists {
+            Err(format!("{name} is already owned by another debug listener"))
+        } else {
+            Ok(handle)
+        }
+    }
+
+    fn is_warframe_process(system: &System, process_id: u32) -> bool {
+        system
+            .process(Pid::from_u32(process_id))
+            .is_some_and(|process| {
+                WARFRAME_PROCESS_NAMES
+                    .iter()
+                    .any(|name| process.name() == OsStr::new(name))
+            })
+    }
+
+    pub(super) fn run<R: Runtime + 'static>(app: AppHandle<R>) {
+        let mut unavailable_logged = false;
+
+        loop {
+            while !app.get_setting_bool("relic_reward_detection", false) {
+                std::thread::sleep(Duration::from_millis(SETTING_POLL_MS.into()));
+            }
+
+            let listener = match DbwinListener::create() {
+                Ok(listener) => {
+                    info!("listening for real-time Warframe debug output via DBWIN");
+                    unavailable_logged = false;
+                    listener
+                }
+                Err(err) => {
+                    if !unavailable_logged {
+                        warn!("DBWIN listener unavailable: {err}");
+                        unavailable_logged = true;
+                    }
+                    std::thread::sleep(RETRY_DELAY);
+                    continue;
+                }
+            };
+
+            let mut system = System::new_all();
+            let mut last_process_refresh = Instant::now();
+
+            while app.get_setting_bool("relic_reward_detection", false) {
+                match listener.next_message() {
+                    Ok(Some((process_id, message))) => {
+                        if last_process_refresh.elapsed() >= PROCESS_REFRESH_INTERVAL {
+                            system.refresh_processes(ProcessesToUpdate::All, true);
+                            last_process_refresh = Instant::now();
+                        }
+
+                        if is_warframe_process(&system, process_id) {
+                            process_debug_message(&app, &message);
+                        }
+                    }
+                    Ok(None) => {}
+                    Err(err) => {
+                        error!("DBWIN listener failed: {err}");
+                        break;
+                    }
+                }
+            }
+
+            // Drop all DBWIN handles promptly when the setting is disabled.
+            drop(listener);
+            info!("stopped real-time Warframe debug output listener");
+        }
     }
 }

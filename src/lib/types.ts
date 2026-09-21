@@ -43,7 +43,6 @@ export interface SettingsPayload {
 	overlay_duration_secs: number;
 	overlay_toggle_mode: boolean;
 	ocr_dictionary_mapping: OcrDictionaryMappingSettingsPayload;
-	warframe_log_path: string;
 	relic_reward_detection: boolean;
 	relic_reward_sound: boolean;
 	show_ocr_bounding_boxes: boolean;
@@ -55,7 +54,6 @@ export interface SettingsPatchPayload {
 	overlay_toggle_mode?: boolean;
 	ocr_dictionary_mapping_enabled?: boolean;
 	ocr_dictionary_match_threshold?: number;
-	warframe_log_path?: string;
 	relic_reward_detection?: boolean;
 	relic_reward_sound?: boolean;
 	show_ocr_bounding_boxes?: boolean;
