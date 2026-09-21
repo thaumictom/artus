@@ -1,13 +1,20 @@
 <script lang="ts">
 	import { formatTimeLeft } from '$lib/date';
-	import { RadioGroup } from 'bits-ui';
+	import RadioGroup from '$lib/components/RadioGroup.svelte';
 	import type { DashboardViewProps } from './view-types';
+
+	const fissureFilterOptions = [
+		{ value: 'all', label: 'All' },
+		{ value: 'noVoidStorms', label: 'No Void Storms' },
+		{ value: 'normal', label: 'Normal' },
+		{ value: 'steelPath', label: 'Steel Path' },
+		{ value: 'voidStorm', label: 'Void Storm' },
+	] as const;
+	type FissureFilter = (typeof fissureFilterOptions)[number]['value'];
 
 	let { world, now }: DashboardViewProps = $props();
 	let fissures = $derived(world.fissures);
-	let fissureFilter = $state<'all' | 'noVoidStorms' | 'normal' | 'steelPath' | 'voidStorm'>(
-		'noVoidStorms',
-	);
+	let fissureFilter = $state<FissureFilter>('noVoidStorms');
 	let eraFilter = $state('all');
 	let activeEras = $derived.by(() => {
 		const eras = new Map<string, number>();
@@ -16,10 +23,12 @@
 				eras.set(fissure.tier, Number(fissure.tierNum));
 			}
 		}
-		return [...eras.entries()]
-			.sort(([, tierA], [, tierB]) => tierA - tierB)
-			.map(([tier]) => tier);
+		return [...eras.entries()].sort(([, tierA], [, tierB]) => tierA - tierB).map(([tier]) => tier);
 	});
+	let eraFilterOptions = $derived([
+		{ value: 'all', label: 'All' },
+		...activeEras.map((era) => ({ value: era, label: era })),
+	]);
 
 	let activeFissures = $derived(
 		fissures
@@ -38,82 +47,82 @@
 					(a.expiry?.getTime() ?? 0) - (b.expiry?.getTime() ?? 0),
 			),
 	);
+
+	function eraLabelClass(tier: string) {
+		const base = 'border px-2 py-0.5 font-medium text-xs';
+		switch (tier.toLowerCase()) {
+			case 'lith':
+				return `${base} bg-[#d08770]/20 border-[#d08770]/50 text-[#d08770]`;
+			case 'meso':
+				return `${base} bg-[#4c588a] border-[#7b88a1] text-[#eceff4]`;
+			case 'neo':
+				return `${base} bg-[#d8dee9]/15 border-[#d8dee9]/50 text-[#d8dee9]`;
+			case 'axi':
+				return `${base} bg-[#ebcb8b]/20 border-[#ebcb8b]/50 text-[#ebcb8b]`;
+			case 'requiem':
+				return `${base} bg-[#bf616a]/20 border-[#bf616a]/50 text-[#bf616a]`;
+			case 'omnia':
+				return `${base} omnia-era border-white/40 text-white`;
+			default:
+				return `${base} bg-surface text-muted-foreground`;
+		}
+	}
 </script>
 
-<section class="bg-background border border-surface min-w-0" aria-labelledby="fissures-heading">
-	<div class="flex flex-col gap-3 p-4 border-surface border-b">
-		<div class="flex flex-wrap items-center gap-3">
-			<h2 id="fissures-heading" class="font-medium">Fissure missions</h2>
-			<RadioGroup.Root
-				aria-label="Filter fissure mission type"
-				class="flex p-0.5 border"
-				bind:value={fissureFilter}
-			>
-				<div
-					class="inline-flex gap-0.5 *:data-[state=checked]:bg-surface *:px-2.5 *:py-1 *:text-xs *:cursor-pointer"
-				>
-					<RadioGroup.Item value="all">All</RadioGroup.Item>
-					<RadioGroup.Item value="noVoidStorms">No Void Storms</RadioGroup.Item>
-					<RadioGroup.Item value="normal">Normal</RadioGroup.Item>
-					<RadioGroup.Item value="steelPath">Steel Path</RadioGroup.Item>
-					<RadioGroup.Item value="voidStorm">Void Storm</RadioGroup.Item>
-				</div>
-			</RadioGroup.Root>
-			<span class="ml-auto text-muted-foreground text-xs">{activeFissures.length} active</span>
-		</div>
-		<div class="flex flex-wrap items-center gap-2">
-			<span class="text-muted-foreground text-xs">Era</span>
-			<RadioGroup.Root
-				aria-label="Filter fissure era"
-				class="flex p-0.5 border"
-				bind:value={eraFilter}
-			>
-				<div
-					class="inline-flex flex-wrap gap-0.5 *:data-[state=checked]:bg-surface *:px-2.5 *:py-1 *:text-xs *:cursor-pointer"
-				>
-					<RadioGroup.Item value="all">All</RadioGroup.Item>
-					{#each activeEras as era (era)}
-						<RadioGroup.Item value={era}>{era}</RadioGroup.Item>
-					{/each}
-				</div>
-			</RadioGroup.Root>
-		</div>
+<div class="flex flex-col gap-2">
+	<div class="flex flex-wrap items-center gap-2">
+		<RadioGroup
+			label="Filter fissure mission type"
+			options={fissureFilterOptions}
+			bind:value={fissureFilter}
+		/>
+		<div class="flex-1 bg-surface h-px"></div>
+		<RadioGroup
+			label="Filter fissure era"
+			options={eraFilterOptions}
+			bind:value={eraFilter}
+		/>
 	</div>
+</div>
 
-	<ul class="divide-y divide-surface">
-		{#each activeFissures as fissure (fissure.id)}
-			<li class="gap-x-3 grid grid-cols-[minmax(0,1fr)_auto] px-4 py-2.5 text-sm">
-				<div class="flex flex-col gap-1">
-					<div class="flex items-center gap-1">
-						<span class="bg-surface px-2 py-0.5 text-muted-foreground text-xs">
-							{fissure.tier}
-						</span>
-
-						<p class="truncate">
-							{fissure.missionType}
-						</p>
-					</div>
-					<p class="text-muted-foreground text-xs truncate">
-						{fissure.node}
-						{#if fissure.isStorm}
-							· Void Storm{/if}
-						{#if fissure.isHard}
-							· Steel Path{/if}
+<ul>
+	{#each activeFissures as fissure (fissure.id)}
+		<li class="gap-x-3 grid grid-cols-[minmax(0,1fr)_auto] px-1.5 py-3 not-last:border-b text-sm">
+			<div class="flex flex-col gap-1">
+				<div class="flex items-center gap-1.5">
+					<span class={eraLabelClass(fissure.tier)}>
+						{fissure.tier}
+					</span>
+					<p class="truncate">
+						{fissure.missionType}
 					</p>
 				</div>
-				<div class="flex items-center gap-2">
-					{#if fissure.expiry}
-						<time
-							class="tabular-nums text-muted-foreground text-sm whitespace-nowrap"
-							datetime={fissure.expiry.toISOString()}
-						>
-							{formatTimeLeft(fissure.expiry, now)}
-						</time>
-					{/if}
-				</div>
-			</li>
-		{:else}
-			<li class="p-4 text-muted-foreground text-sm">No active fissures in this snapshot.</li>
-		{/each}
-	</ul>
-</section>
+				<p class="text-muted-foreground text-xs truncate">
+					{fissure.node}
+					{#if fissure.isStorm}
+						· Void Storm{/if}
+					{#if fissure.isHard}
+						· Steel Path{/if}
+				</p>
+			</div>
+			<div class="flex items-center gap-2">
+				{#if fissure.expiry}
+					<time
+						class="tabular-nums text-muted-foreground text-sm whitespace-nowrap"
+						datetime={fissure.expiry.toISOString()}
+					>
+						{formatTimeLeft(fissure.expiry, now)}
+					</time>
+				{/if}
+			</div>
+		</li>
+	{:else}
+		<li class="p-4 text-muted-foreground text-sm">No active fissures in this snapshot.</li>
+	{/each}
+</ul>
+
+<style>
+	.omnia-era {
+		background: linear-gradient(100deg, #d0877060, #4c566a60, #d8dee960, #ebcb8b60, #bf616a60);
+	}
+</style>

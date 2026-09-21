@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { RadioGroup } from 'bits-ui';
 	import { dashboard, reloadWorldState } from '$lib/worldstate.svelte';
 	import { config, loadSettings } from '$lib/settings.svelte';
 	import Button from '$lib/components/Button.svelte';
+	import RadioGroup from '$lib/components/RadioGroup.svelte';
 	import { createFocusedRefresh } from '$lib/focused-refresh';
 	import CycleWidgets from './widgets/CycleWidgets.svelte';
 	import DashboardHeader from './widgets/DashboardHeader.svelte';
@@ -102,23 +102,16 @@
 			<div class="bg-surface w-full h-px"></div>
 			<div class="flex flex-col gap-4">
 				<div class="flex items-start gap-2">
-					<RadioGroup.Root
-						aria-label="Dashboard view"
-						class="flex flex-wrap flex-1 gap-2 min-w-0"
+					<RadioGroup
+						label="Dashboard view"
+						options={visibleViews}
+						variant="tabs"
+						separatorBefore={showAllViews && favoriteViews.length > 0 && favoriteViews.length < dashboardViews.length
+							? favoriteViews.length
+							: undefined}
+						class="flex-1 min-w-0"
 						bind:value={activeView}
-					>
-						{#each visibleViews as view, index (view.value)}
-							{#if showAllViews && favoriteViews.length > 0 && favoriteViews.length < dashboardViews.length && index === favoriteViews.length}
-								<div aria-hidden="true" class="self-stretch bg-surface w-px min-h-7"></div>
-							{/if}
-							<RadioGroup.Item
-								value={view.value}
-								class="data-[state=checked]:bg-accent/10 hover:bg-surface px-2 py-1.5 border data-[state=checked]:border-accent text-muted-foreground data-[state=checked]:text-accent hover:text-foreground text-sm cursor-pointer"
-							>
-								{view.label}
-							</RadioGroup.Item>
-						{/each}
-					</RadioGroup.Root>
+					/>
 					<div class="flex gap-2 ml-auto shrink-0">
 						{#if hasHiddenViews}
 							<Button
