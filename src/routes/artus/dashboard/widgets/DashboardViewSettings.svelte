@@ -1,13 +1,20 @@
 <script lang="ts">
+	import { tick } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import { Dialog } from 'bits-ui';
 	import { mode } from 'mode-watcher';
-	import { OverlayScrollbarsComponent } from 'overlayscrollbars-svelte';
+	import {
+		OverlayScrollbarsComponent,
+		type OverlayScrollbarsComponentRef,
+	} from 'overlayscrollbars-svelte';
+	import { SortableList, sortItems } from '@rodrigodagostino/svelte-sortable-list';
 	import Button from '$lib/components/Button.svelte';
 	import { config, updateSetting } from '$lib/settings.svelte';
 	import { dashboardViews, type DashboardView } from '../dashboard-views';
 
+	const DRAG_TRANSITION_MS = 200;
 	let saveError = $state<string | null>(null);
+	let scrollbars = $state<OverlayScrollbarsComponentRef | null>(null);
 	let favoriteValues = $derived(
 		Array.isArray(config.dashboard_view_favorites) ? config.dashboard_view_favorites : [],
 	);
@@ -33,39 +40,63 @@
 			});
 	}
 
-	function toggleFavorite(value: DashboardView) {
+	async function toggleFavorite(value: DashboardView) {
+		const isAdding = !favorites.has(value);
+		const scrollElement = isAdding
+			? scrollbars?.osInstance()?.elements().scrollOffsetElement
+			: undefined;
+		const scrollTop = scrollElement?.scrollTop;
 		const values = orderedFavorites.map((view) => view.value);
 		saveFavorites(
 			favorites.has(value) ? values.filter((favorite) => favorite !== value) : [...values, value],
 		);
+
+		if (scrollTop === undefined) return;
+		await tick();
+		const updatedScrollElement = scrollbars?.osInstance()?.elements().scrollOffsetElement;
+		if (updatedScrollElement) updatedScrollElement.scrollTop = scrollTop;
 	}
 
-	function moveFavorite(value: DashboardView, offset: -1 | 1) {
+	function noTransition() {
+		return { duration: 0 };
+	}
+
+	function handleDragEnd(event: SortableList.RootEvents['ondragend']) {
+		const { draggedItemIndex, targetItemIndex, isCanceled } = event;
+		if (isCanceled || targetItemIndex === null || draggedItemIndex === targetItemIndex) return;
+
 		const values = orderedFavorites.map((view) => view.value);
-		const from = values.indexOf(value);
-		const to = from + offset;
-		if (from < 0 || to < 0 || to >= values.length) return;
-		[values[from], values[to]] = [values[to], values[from]];
-		saveFavorites(values);
+		saveFavorites(sortItems(values, draggedItemIndex, targetItemIndex));
 	}
 </script>
 
 <Dialog.Root>
 	<Dialog.Trigger>
-		<Button class="flex justify-center items-center p-2" aria-label="Configure dashboard views" title="Configure dashboard views">
+		<Button
+			class="flex justify-center items-center p-2"
+			aria-label="Configure dashboard views"
+			title="Configure dashboard views"
+		>
 			<Icon icon="material-symbols:settings-outline-rounded" class="size-4" />
 		</Button>
 	</Dialog.Trigger>
 	<Dialog.Portal>
-		<Dialog.Overlay class="data-[state=open]:animate-in data-[state=closed]:animate-out fixed inset-0 z-50 bg-black/50 data-[state=open]:backdrop-blur-xs" />
-		<Dialog.Content class="fixed top-1/2 left-1/2 z-50 flex flex-col gap-4 bg-background p-6 border outline-hidden w-[min(42rem,calc(100vw-2rem))] h-[min(42rem,calc(100vh-2rem))] -translate-x-1/2 -translate-y-1/2">
+		<Dialog.Overlay
+			class="z-50 fixed inset-0 bg-black/50 data-[state=open]:backdrop-blur-xs data-[state=closed]:animate-out data-[state=open]:animate-in"
+		/>
+		<Dialog.Content
+			class="top-1/2 left-1/2 z-50 fixed flex flex-col gap-4 bg-background p-6 border outline-hidden w-[min(42rem,calc(100vw-2rem))] h-[min(42rem,calc(100vh-2rem))] -translate-x-1/2 -translate-y-1/2"
+		>
 			<div>
-				<Dialog.Title class="font-bold text-lg font-expanded">Favorite dashboard views</Dialog.Title>
+				<Dialog.Title class="font-expanded font-bold text-lg">
+					Favorite dashboard views
+				</Dialog.Title>
 				<Dialog.Description class="mt-1 text-muted-foreground text-sm">
 					Choose as many favorites as you like and arrange them in dashboard order.
 				</Dialog.Description>
 			</div>
 			<OverlayScrollbarsComponent
+				bind:this={scrollbars}
 				defer
 				class="flex-1 min-h-0"
 				options={{ scrollbars: { theme: scrollbarTheme, autoHide: 'move' } }}
@@ -76,43 +107,46 @@
 							<h3 id="favorite-views-heading" class="font-medium text-sm">Favorites</h3>
 							<span class="text-muted-foreground text-xs">{orderedFavorites.length} selected</span>
 						</div>
-						<div class="flex flex-col gap-2">
+						<SortableList.Root
+							gap={orderedFavorites.length === 0 ? 0 : 8}
+							hasLockedAxis
+							transition={{ duration: DRAG_TRANSITION_MS }}
+							aria-labelledby="favorite-views-heading"
+							ondragend={handleDragEnd}
+							class="w-full dashboard-favorites-sortable"
+						>
 							{#each orderedFavorites as view, index (view.value)}
-								<div class="flex bg-accent/10 border border-accent text-accent">
-									<button
-										type="button"
-										onclick={() => toggleFavorite(view.value)}
-										aria-label={`Remove ${view.label} from favorites`}
-										class="flex flex-1 items-center gap-2 px-3 py-2 text-left cursor-pointer"
+								<SortableList.Item
+									id={`dashboard-favorite-${view.value}`}
+									{index}
+									aria-label={view.label}
+									class="w-full"
+									transitionIn={noTransition}
+									transitionOut={noTransition}
+								>
+									<div
+										class="flex items-stretch bg-background border border-accent w-full text-accent"
 									>
-										<Icon icon="material-symbols:star-rounded" class="size-4 shrink-0" />
-										<span class="text-sm">{view.label}</span>
-									</button>
-									<div class="flex border-accent border-l">
-										<button
+										<span class="flex items-center px-3 text-muted-foreground">
+											<Icon icon="material-symbols:drag-indicator-rounded" class="size-5" />
+										</span>
+										<span class="flex flex-1 items-center py-2 text-sm favorite-label">
+											{view.label}
+										</span>
+										<SortableList.ItemRemove
 											type="button"
-											onclick={() => moveFavorite(view.value, -1)}
-											disabled={index === 0}
-											aria-label={`Move ${view.label} up`}
-											class="hover:bg-accent/10 p-2 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+											onclick={() => toggleFavorite(view.value)}
+											aria-label={`Remove ${view.label} from favorites`}
+											class="flex items-center hover:bg-accent/10 px-3 border-accent border-l cursor-pointer"
 										>
-											<Icon icon="material-symbols:arrow-upward-rounded" class="size-4" />
-										</button>
-										<button
-											type="button"
-											onclick={() => moveFavorite(view.value, 1)}
-											disabled={index === orderedFavorites.length - 1}
-											aria-label={`Move ${view.label} down`}
-											class="hover:bg-accent/10 p-2 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-										>
-											<Icon icon="material-symbols:arrow-downward-rounded" class="size-4" />
-										</button>
+											<Icon icon="material-symbols:close-rounded" class="size-4" />
+										</SortableList.ItemRemove>
 									</div>
-								</div>
+								</SortableList.Item>
 							{:else}
 								<p class="p-3 border text-muted-foreground text-sm">No favorite views selected.</p>
 							{/each}
-						</div>
+						</SortableList.Root>
 					</section>
 
 					<section aria-labelledby="available-views-heading">
@@ -140,3 +174,24 @@
 		</Dialog.Content>
 	</Dialog.Portal>
 </Dialog.Root>
+
+<style>
+	/* Keep the floating drag copy unchanged and reduce its original slot to an outline. */
+	:global(
+			.dashboard-favorites-sortable
+				.ssl-item[data-is-ghost='false'][data-drag-state*='ptr-drag']
+				> div
+		) {
+		background-color: transparent;
+		border-color: var(--color-muted-foreground);
+	}
+
+	:global(
+			.dashboard-favorites-sortable
+				.ssl-item[data-is-ghost='false'][data-drag-state*='ptr-drag']
+				> div
+				> *
+		) {
+		visibility: hidden;
+	}
+</style>

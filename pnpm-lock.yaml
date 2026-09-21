@@ -11,6 +11,9 @@ importers:
       '@fontsource-variable/archivo':
         specifier: ^5.2.8
         version: 5.2.8
+      '@rodrigodagostino/svelte-sortable-list':
+        specifier: ^2.2.6
+        version: 2.2.6(svelte@5.51.2)
       '@rose-pine/palette':
         specifier: ^4.0.1
         version: 4.0.1
@@ -383,6 +386,11 @@ packages:
 
   '@polka/url@1.0.0-next.29':
     resolution: {integrity: sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww==}
+
+  '@rodrigodagostino/svelte-sortable-list@2.2.6':
+    resolution: {integrity: sha512-gKPKHTaP4VViIXuS46OVk5WXYEmzQp9kyOcVESaymI63gui7YnDBjEXkWUm5cmOrk1Ad5PhjE1yqKqd0UAsA5A==}
+    peerDependencies:
+      svelte: ^5.29.0
 
   '@rollup/plugin-inject@5.0.5':
     resolution: {integrity: sha512-2+DEJbNBoPROPkgTDNe8/1YXWcqxbN5DTjASVIOx8HS+pITXushyNiBV56RB08zuptzz8gT3YfkqriTBVycepg==}
@@ -2157,6 +2165,10 @@ snapshots:
       d3-time-format: 4.1.0
 
   '@polka/url@1.0.0-next.29': {}
+
+  '@rodrigodagostino/svelte-sortable-list@2.2.6(svelte@5.51.2)':
+    dependencies:
+      svelte: 5.51.2
 
   '@rollup/plugin-inject@5.0.5(rollup@4.57.1)':
     dependencies:

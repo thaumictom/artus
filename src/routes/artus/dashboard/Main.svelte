@@ -31,10 +31,12 @@
 	);
 	let expandedViews = $derived([
 		...favoriteViews,
-		...dashboardViews.filter((view) => !favoriteViews.some((favorite) => favorite.value === view.value)),
+		...dashboardViews.filter(
+			(view) => !favoriteViews.some((favorite) => favorite.value === view.value),
+		),
 	]);
 	let collapsedViews = $derived(
-		favoriteViews.length > 1 ? favoriteViews : dashboardViews.slice(0, 5),
+		favoriteViews.length > 0 ? favoriteViews : dashboardViews.slice(0, 5),
 	);
 	let visibleViews = $derived(showAllViews ? expandedViews : collapsedViews);
 	let hasHiddenViews = $derived(collapsedViews.length < dashboardViews.length);
@@ -105,10 +107,13 @@
 						class="flex flex-wrap flex-1 gap-2 min-w-0"
 						bind:value={activeView}
 					>
-						{#each visibleViews as view (view.value)}
+						{#each visibleViews as view, index (view.value)}
+							{#if showAllViews && favoriteViews.length > 0 && favoriteViews.length < dashboardViews.length && index === favoriteViews.length}
+								<div aria-hidden="true" class="self-stretch bg-surface w-px min-h-7"></div>
+							{/if}
 							<RadioGroup.Item
 								value={view.value}
-								class="data-[state=checked]:bg-accent/10 hover:bg-surface px-2 py-1 border data-[state=checked]:border-accent text-muted-foreground data-[state=checked]:text-accent hover:text-foreground text-sm cursor-pointer"
+								class="data-[state=checked]:bg-accent/10 hover:bg-surface px-2 py-1.5 border data-[state=checked]:border-accent text-muted-foreground data-[state=checked]:text-accent hover:text-foreground text-sm cursor-pointer"
 							>
 								{view.label}
 							</RadioGroup.Item>

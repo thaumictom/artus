@@ -18,6 +18,7 @@
 	"license": "UNLICENSED",
 	"dependencies": {
 		"@fontsource-variable/archivo": "^5.2.8",
+		"@rodrigodagostino/svelte-sortable-list": "^2.2.6",
 		"@rose-pine/palette": "^4.0.1",
 		"@tailwindcss/vite": "^4.2.4",
 		"@tanstack/table-core": "^8.21.3",
