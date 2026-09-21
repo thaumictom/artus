@@ -131,6 +131,7 @@
 						<DashboardViewSettings />
 					</div>
 				</div>
+				<div class="bg-surface w-full h-px"></div>
 
 				{#if ActiveView}
 					<ActiveView world={dashboard.world} now={worldNow} />
