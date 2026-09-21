@@ -77,17 +77,15 @@
 			bind:value={fissureFilter}
 		/>
 		<div class="flex-1 bg-surface h-px"></div>
-		<RadioGroup
-			label="Filter fissure era"
-			options={eraFilterOptions}
-			bind:value={eraFilter}
-		/>
+		<RadioGroup label="Filter fissure era" options={eraFilterOptions} bind:value={eraFilter} />
 	</div>
 </div>
 
 <ul>
 	{#each activeFissures as fissure (fissure.id)}
-		<li class="gap-x-3 grid grid-cols-[minmax(0,1fr)_auto] px-1.5 py-3 not-last:border-b text-sm">
+		<li
+			class="gap-x-3 grid grid-cols-[minmax(0,1fr)_auto] px-1.5 py-3 border-surface not-last:border-b text-sm"
+		>
 			<div class="flex flex-col gap-1">
 				<div class="flex items-center gap-1.5">
 					<span class={eraLabelClass(fissure.tier)}>
