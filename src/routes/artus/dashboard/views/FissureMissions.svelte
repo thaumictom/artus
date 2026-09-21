@@ -71,13 +71,18 @@
 
 <div class="flex flex-col gap-2">
 	<div class="flex flex-wrap items-center gap-2">
-		<RadioGroup
-			label="Filter fissure mission type"
-			options={fissureFilterOptions}
-			bind:value={fissureFilter}
-		/>
-		<div class="flex-1 bg-surface h-px"></div>
-		<RadioGroup label="Filter fissure era" options={eraFilterOptions} bind:value={eraFilter} />
+		<div class="flex flex-col gap-1">
+			<div class="font-semibold text-muted-foreground text-xs">Mission type</div>
+			<RadioGroup
+				label="Filter fissure mission type"
+				options={fissureFilterOptions}
+				bind:value={fissureFilter}
+			/>
+		</div>
+		<div class="flex flex-col gap-1">
+			<div class="font-semibold text-muted-foreground text-xs">Era</div>
+			<RadioGroup label="Filter fissure era" options={eraFilterOptions} bind:value={eraFilter} />
+		</div>
 	</div>
 </div>
 

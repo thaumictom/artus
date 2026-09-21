@@ -14,6 +14,7 @@
 			},
 			size: {
 				default: 'px-3 py-1.5',
+				icon: 'p-2',
 			},
 		},
 		defaultVariants: {

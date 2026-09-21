@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { tick } from 'svelte';
 	import Icon from '@iconify/svelte';
-	import { Dialog } from 'bits-ui';
 	import { mode } from 'mode-watcher';
 	import {
 		OverlayScrollbarsComponent,
@@ -9,6 +8,7 @@
 	} from 'overlayscrollbars-svelte';
 	import { SortableList, sortItems } from '@rodrigodagostino/svelte-sortable-list';
 	import Button from '$lib/components/Button.svelte';
+	import Dialog from '$lib/components/Dialog.svelte';
 	import { config, updateSetting } from '$lib/settings.svelte';
 	import { dashboardViews, type DashboardView } from '../dashboard-views';
 
@@ -70,110 +70,99 @@
 	}
 </script>
 
-<Dialog.Root>
-	<Dialog.Trigger>
-		<Button
-			class="flex justify-center items-center p-2"
-			aria-label="Configure dashboard views"
-			title="Configure dashboard views"
-		>
-			<Icon icon="material-symbols:settings-outline-rounded" class="size-4" />
-		</Button>
-	</Dialog.Trigger>
-	<Dialog.Portal>
-		<Dialog.Overlay
-			class="z-50 fixed inset-0 bg-black/50 data-[state=open]:backdrop-blur-xs data-[state=closed]:animate-out data-[state=open]:animate-in"
-		/>
-		<Dialog.Content
-			class="top-1/2 left-1/2 z-50 fixed flex flex-col gap-4 bg-background p-6 border outline-hidden w-[min(42rem,calc(100vw-2rem))] h-[min(42rem,calc(100vh-2rem))] -translate-x-1/2 -translate-y-1/2"
-		>
-			<div>
-				<Dialog.Title class="font-expanded font-bold text-lg">
-					Favorite dashboard views
-				</Dialog.Title>
-				<Dialog.Description class="mt-1 text-muted-foreground text-sm">
-					Choose as many favorites as you like and arrange them in dashboard order.
-				</Dialog.Description>
-			</div>
-			<OverlayScrollbarsComponent
-				bind:this={scrollbars}
-				defer
-				class="flex-1 min-h-0"
-				options={{ scrollbars: { theme: scrollbarTheme, autoHide: 'move' } }}
-			>
-				<div class="flex flex-col gap-5 pr-3">
-					<section aria-labelledby="favorite-views-heading">
-						<div class="flex justify-between items-baseline mb-2">
-							<h3 id="favorite-views-heading" class="font-medium text-sm">Favorites</h3>
-							<span class="text-muted-foreground text-xs">{orderedFavorites.length} selected</span>
-						</div>
-						<SortableList.Root
-							gap={orderedFavorites.length === 0 ? 0 : 8}
-							hasLockedAxis
-							transition={{ duration: DRAG_TRANSITION_MS }}
-							aria-labelledby="favorite-views-heading"
-							ondragend={handleDragEnd}
-							class="w-full dashboard-favorites-sortable"
-						>
-							{#each orderedFavorites as view, index (view.value)}
-								<SortableList.Item
-									id={`dashboard-favorite-${view.value}`}
-									{index}
-									aria-label={view.label}
-									class="w-full"
-									transitionIn={noTransition}
-									transitionOut={noTransition}
-								>
-									<div
-										class="flex items-stretch bg-background border border-accent w-full text-accent"
-									>
-										<span class="flex items-center px-3 text-muted-foreground">
-											<Icon icon="material-symbols:drag-indicator-rounded" class="size-5" />
-										</span>
-										<span class="flex flex-1 items-center py-2 text-sm favorite-label">
-											{view.label}
-										</span>
-										<SortableList.ItemRemove
-											type="button"
-											onclick={() => toggleFavorite(view.value)}
-											aria-label={`Remove ${view.label} from favorites`}
-											class="flex items-center hover:bg-accent/10 px-3 border-accent border-l cursor-pointer"
-										>
-											<Icon icon="material-symbols:close-rounded" class="size-4" />
-										</SortableList.ItemRemove>
-									</div>
-								</SortableList.Item>
-							{:else}
-								<p class="p-3 border text-muted-foreground text-sm">No favorite views selected.</p>
-							{/each}
-						</SortableList.Root>
-					</section>
+{#snippet trigger()}
+	<Button
+		class="flex justify-center items-center p-2"
+		aria-label="Configure dashboard views"
+		title="Configure dashboard views"
+	>
+		<Icon icon="material-symbols:settings-outline-rounded" class="size-4" />
+	</Button>
+{/snippet}
 
-					<section aria-labelledby="available-views-heading">
-						<h3 id="available-views-heading" class="mb-2 font-medium text-sm">Available views</h3>
-						<div class="gap-2 grid grid-cols-1 sm:grid-cols-2">
-							{#each availableViews as view (view.value)}
-								<button
+{#snippet title()}Favorite dashboard views{/snippet}
+
+{#snippet description()}
+	Choose as many favorites as you like and arrange them in dashboard order.
+{/snippet}
+
+{#snippet dialogClose()}<Button>Done</Button>{/snippet}
+
+<Dialog {trigger} {title} {description} {dialogClose}>
+	<OverlayScrollbarsComponent
+		bind:this={scrollbars}
+		defer
+		class="flex-1 mr-1.75 min-w-0 min-h-0"
+		options={{ scrollbars: { theme: scrollbarTheme, autoHide: 'move' } }}
+	>
+		<div class="flex flex-col gap-5 pr-4.25 pl-6">
+			<section aria-labelledby="favorite-views-heading">
+				<div class="flex justify-between items-baseline mb-2">
+					<h3 id="favorite-views-heading" class="font-medium text-sm">Favorites</h3>
+					<span class="text-muted-foreground text-xs">{orderedFavorites.length} selected</span>
+				</div>
+				<SortableList.Root
+					gap={orderedFavorites.length === 0 ? 0 : 8}
+					hasLockedAxis
+					transition={{ duration: DRAG_TRANSITION_MS }}
+					aria-labelledby="favorite-views-heading"
+					ondragend={handleDragEnd}
+					class="w-full dashboard-favorites-sortable"
+				>
+					{#each orderedFavorites as view, index (view.value)}
+						<SortableList.Item
+							id={`dashboard-favorite-${view.value}`}
+							{index}
+							aria-label={view.label}
+							class="w-full"
+							transitionIn={noTransition}
+							transitionOut={noTransition}
+						>
+							<div
+								class="flex items-stretch bg-background border border-accent w-full text-accent"
+							>
+								<span class="flex items-center px-3 text-muted-foreground">
+									<Icon icon="material-symbols:drag-indicator-rounded" class="size-5" />
+								</span>
+								<span class="flex flex-1 items-center py-2 text-sm favorite-label">
+									{view.label}
+								</span>
+								<SortableList.ItemRemove
 									type="button"
 									onclick={() => toggleFavorite(view.value)}
-									aria-label={`Add ${view.label} to favorites`}
-									class="flex items-center gap-2 hover:bg-surface px-3 py-2 border text-muted-foreground hover:text-foreground text-left cursor-pointer"
+									aria-label={`Remove ${view.label} from favorites`}
+									class="flex items-center hover:bg-accent/10 px-3 border-accent border-l cursor-pointer"
 								>
-									<Icon icon="material-symbols:star-outline-rounded" class="size-4 shrink-0" />
-									<span class="text-sm">{view.label}</span>
-								</button>
-							{/each}
-						</div>
-					</section>
+									<Icon icon="material-symbols:close-rounded" class="size-4" />
+								</SortableList.ItemRemove>
+							</div>
+						</SortableList.Item>
+					{:else}
+						<p class="p-3 border text-muted-foreground text-sm">No favorite views selected.</p>
+					{/each}
+				</SortableList.Root>
+			</section>
+
+			<section aria-labelledby="available-views-heading">
+				<h3 id="available-views-heading" class="mb-2 font-medium text-sm">Available views</h3>
+				<div class="gap-2 grid grid-cols-1 sm:grid-cols-2">
+					{#each availableViews as view (view.value)}
+						<button
+							type="button"
+							onclick={() => toggleFavorite(view.value)}
+							aria-label={`Add ${view.label} to favorites`}
+							class="flex items-center gap-2 hover:bg-surface px-3 py-2 border text-muted-foreground hover:text-foreground text-left cursor-pointer"
+						>
+							<Icon icon="material-symbols:star-outline-rounded" class="size-4 shrink-0" />
+							<span class="text-sm">{view.label}</span>
+						</button>
+					{/each}
 				</div>
-			</OverlayScrollbarsComponent>
-			{#if saveError}<p role="alert" class="text-danger text-sm">{saveError}</p>{/if}
-			<div class="flex justify-end">
-				<Dialog.Close><Button>Done</Button></Dialog.Close>
-			</div>
-		</Dialog.Content>
-	</Dialog.Portal>
-</Dialog.Root>
+			</section>
+		</div>
+	</OverlayScrollbarsComponent>
+	{#if saveError}<p role="alert" class="text-danger text-sm">{saveError}</p>{/if}
+</Dialog>
 
 <style>
 	/* Keep the floating drag copy unchanged and reduce its original slot to an outline. */

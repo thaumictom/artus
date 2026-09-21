@@ -35,7 +35,7 @@
 >
 	{#if variant === 'segmented'}
 		<div
-			class="inline-flex flex-wrap gap-0.5 *:data-[state=checked]:bg-surface *:px-2.5 *:py-1 *:text-xs *:cursor-pointer"
+			class="inline-flex flex-wrap gap-0.5 *:data-[state=checked]:bg-surface *:px-2.5 *:py-1 text-muted-foreground *:data-[state=checked]:text-surface-foreground *:text-xs *:cursor-pointer"
 		>
 			{#each options as option (option.value)}
 				<BitsRadioGroup.Item value={option.value} disabled={option.disabled}>
@@ -51,7 +51,7 @@
 			<BitsRadioGroup.Item
 				value={option.value}
 				disabled={option.disabled}
-				class="data-[state=checked]:bg-accent/10 hover:bg-surface px-2 py-1.5 border data-[state=checked]:border-accent text-muted-foreground data-[state=checked]:text-accent hover:text-foreground text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+				class="data-[state=checked]:bg-accent/10 hover:bg-surface disabled:opacity-50 px-2 py-1.5 border data-[state=checked]:border-accent text-muted-foreground data-[state=checked]:text-accent hover:text-foreground text-sm cursor-pointer disabled:cursor-not-allowed"
 			>
 				{option.label}
 			</BitsRadioGroup.Item>

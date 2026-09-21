@@ -9,6 +9,7 @@
 	import DashboardHeader from './widgets/DashboardHeader.svelte';
 	import DashboardViewSettings from './widgets/DashboardViewSettings.svelte';
 	import { dashboardViews, type DashboardView } from './dashboard-views';
+	import Icon from '@iconify/svelte';
 
 	const REFRESH_INTERVAL_MS = 5 * 60_000;
 	const MANUAL_RELOAD_COOLDOWN_MS = 3_000;
@@ -98,37 +99,51 @@
 		/>
 		<div class="bg-surface w-full h-px"></div>
 		{#if dashboard.world}
-			<CycleWidgets world={dashboard.world} now={worldNow} />
-			<div class="bg-surface w-full h-px"></div>
-			<div class="flex flex-col gap-4">
-				<div class="flex items-start gap-2">
-					<RadioGroup
-						label="Dashboard view"
-						options={visibleViews}
-						variant="tabs"
-						separatorBefore={showAllViews && favoriteViews.length > 0 && favoriteViews.length < dashboardViews.length
-							? favoriteViews.length
-							: undefined}
-						class="flex-1 min-w-0"
-						bind:value={activeView}
-					/>
-					<div class="flex gap-2 ml-auto shrink-0">
-						{#if hasHiddenViews}
-							<Button
-								onclick={() => (showAllViews = !showAllViews)}
-								class="text-sm whitespace-nowrap"
-							>
-								{showAllViews ? 'Show less' : 'Show more'}
-							</Button>
-						{/if}
-						<DashboardViewSettings />
+			<div class="flex flex-col gap-12">
+				<CycleWidgets world={dashboard.world} now={worldNow} />
+				<!-- <div class="bg-surface w-full h-px"></div> -->
+				<div class="flex flex-col gap-4">
+					<div class="flex flex-col gap-2">
+						<div class="flex justify-between items-center gap-2">
+							<div class="font-medium text-sm whitespace-nowrap">Live World State Views</div>
+							<div class="bg-surface w-full h-px shrink grow-0"></div>
+							<div class="flex items-center gap-2">
+								{#if hasHiddenViews}
+									<Button
+										onclick={() => (showAllViews = !showAllViews)}
+										class="text-sm whitespace-nowrap"
+									>
+										{showAllViews ? 'Show less views' : 'Show all views'}
+									</Button>
+								{/if}
+								<Button size="icon" disabled title="Add notification (Coming Soon)">
+									<Icon
+										icon="material-symbols:notification-add-outline-rounded"
+										class="size-4 shrink-0"
+									/>
+								</Button>
+								<DashboardViewSettings />
+							</div>
+						</div>
+						<RadioGroup
+							label="Dashboard view"
+							options={visibleViews}
+							variant="tabs"
+							separatorBefore={showAllViews &&
+							favoriteViews.length > 0 &&
+							favoriteViews.length < dashboardViews.length
+								? favoriteViews.length
+								: undefined}
+							class="flex-1 min-w-0"
+							bind:value={activeView}
+						/>
 					</div>
-				</div>
-				<div class="bg-surface w-full h-px"></div>
+					<div class="bg-surface w-full h-px"></div>
 
-				{#if ActiveView}
-					<ActiveView world={dashboard.world} now={worldNow} />
-				{/if}
+					{#if ActiveView}
+						<ActiveView world={dashboard.world} now={worldNow} />
+					{/if}
+				</div>
 			</div>
 		{/if}
 	</div>
