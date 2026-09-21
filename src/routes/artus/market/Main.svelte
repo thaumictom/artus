@@ -180,7 +180,7 @@
 </script>
 
 <div class="flex flex-col items-center gap-4 mx-auto p-8 w-full">
-	<div class="flex flex-col gap-1 w-full max-w-2xl">
+	<div class="flex flex-col gap-1 w-full max-w-3xl">
 		<h1>View prices of any item on warframe.market</h1>
 		<div class="flex gap-4 w-full">
 			<div class="flex-1">
@@ -211,7 +211,7 @@
 	{#if searchError}
 		<p role="alert" class="text-danger text-sm">{searchError}</p>
 	{/if}
-	<div class="bg-surface my-1 w-full max-w-2xl h-px" aria-hidden="true"></div>
+	<div class="bg-surface my-1 w-full max-w-3xl h-px" aria-hidden="true"></div>
 	{#if isSearching || itemData}
 		{#if isSearching}
 			<div>Loading...</div>
@@ -235,7 +235,7 @@
 			/>
 		{/if}
 	{:else}
-		<section class="flex flex-col gap-3 w-full max-w-2xl" aria-labelledby="most-traded-heading">
+		<section class="flex flex-col gap-3 w-full max-w-3xl" aria-labelledby="most-traded-heading">
 			<div class="flex justify-between items-baseline gap-4">
 				<h2 id="most-traded-heading">Most traded items</h2>
 				<span class="text-muted-foreground text-xs">Sorted by liquidity</span>
@@ -275,7 +275,6 @@
 					</RadioGroup.Root>
 				{/if}
 				-->
-				<div class="flex justify-end px-3 text-muted-foreground text-xs">Liquidity</div>
 				<ol class="divide-y divide-surface">
 					{#each visibleMostTradedItems as item, index (item.slug)}
 						<li>

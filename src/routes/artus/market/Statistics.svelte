@@ -107,7 +107,7 @@
 	});
 </script>
 
-<div class="flex items-center gap-4 w-full max-w-2xl">
+<div class="flex items-center gap-4 w-full max-w-3xl">
 	{#if isGrouped}
 		<Select
 			type="single"

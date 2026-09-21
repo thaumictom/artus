@@ -2,6 +2,7 @@
 	import type { WorldState } from 'warframe-worldstate-parser';
 	import { formatTimeLeft } from '$lib/date';
 	import { getDashboardCycles } from '../cycles';
+	import BaroKiTeer from './BaroKiTeer.svelte';
 
 	let { world, now }: { world: WorldState; now: number } = $props();
 
@@ -12,16 +13,9 @@
 	}
 </script>
 
-<section
-	aria-label="World cycles"
-	class="gap-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5"
->
+<section aria-label="World cycles" class="gap-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
 	{#each cycles as { key, label, cycle } (key)}
-		<div
-			class="bg-background p-3 border border-surface min-w-0"
-			class:sm:col-span-2={key === 'duviriCycle'}
-			class:xl:col-span-1={key === 'duviriCycle'}
-		>
+		<div class="bg-background p-3 border border-surface min-w-0">
 			<p class="text-muted-foreground text-xs truncate">{label}</p>
 			<div class="flex flex-wrap justify-between items-baseline gap-x-2 gap-y-1">
 				<span class="font-medium text-sm truncate">{formatState(cycle.state)}</span>
@@ -57,4 +51,5 @@
 			</div>
 		</div>
 	{/each}
+	<BaroKiTeer trader={world.voidTrader} {now} />
 </section>

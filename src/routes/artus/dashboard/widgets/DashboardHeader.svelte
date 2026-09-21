@@ -1,9 +1,11 @@
 <script lang="ts">
 	import Button from '$lib/components/Button.svelte';
 	import { timeAgo } from '$lib/date';
+	import Icon from '@iconify/svelte';
 
 	let {
 		loading,
+		reloadCoolingDown,
 		error,
 		worldTimestamp,
 		fetchedAt,
@@ -11,6 +13,7 @@
 		onReload,
 	}: {
 		loading: boolean;
+		reloadCoolingDown: boolean;
 		error: string | null;
 		worldTimestamp?: Date;
 		fetchedAt: number | null;
@@ -19,18 +22,25 @@
 	} = $props();
 </script>
 
-<div class="flex items-center gap-3">
-	<Button onclick={onReload} disabled={loading}>
-		{loading ? 'Loading...' : 'Reload'}
+<div class="flex justify-between items-center gap-3">
+	<Button
+		onclick={onReload}
+		disabled={loading || reloadCoolingDown}
+		class="flex items-center gap-1 text-sm"
+	>
+		<Icon icon="material-symbols:refresh" class={loading ? 'size-4 animate-spin' : 'size-4'} />
+		{loading ? 'Refreshing...' : 'Reload dashboard'}
 	</Button>
-	{#if worldTimestamp}
-		<time class="text-muted-foreground text-sm" datetime={worldTimestamp.toISOString()}>
-			{worldTimestamp.toLocaleString()}
-		</time>
-	{/if}
-	{#if fetchedAt !== null}
-		<span class="text-muted-foreground text-sm">fetched {timeAgo(fetchedAt, now)}</span>
-	{/if}
+	<div class="text-right leading-0">
+		{#if fetchedAt !== null}
+			<div class="text-muted-foreground text-sm">fetched {timeAgo(fetchedAt, now)}</div>
+		{/if}
+		{#if worldTimestamp}
+			<time class="text-muted-foreground text-xs" datetime={worldTimestamp.toISOString()}>
+				snapshot: {worldTimestamp.toLocaleTimeString()}
+			</time>
+		{/if}
+	</div>
 </div>
 
 {#if error}<p class="text-danger text-sm">{error}</p>{/if}

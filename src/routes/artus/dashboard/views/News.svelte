@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { openUrl } from '@tauri-apps/plugin-opener';
-	import type { WorldState } from 'warframe-worldstate-parser';
+	import type { DashboardViewProps } from './view-types';
 
-	let { articles }: { articles: WorldState['news'] } = $props();
+	let { world }: DashboardViewProps = $props();
+	let articles = $derived(world.news);
 	let linkError = $state(false);
 
 	async function openArticle(url: string) {

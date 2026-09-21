@@ -182,7 +182,7 @@
 	};
 </script>
 
-<div class="flex flex-col gap-4 w-full max-w-2xl">
+<div class="flex flex-col gap-4 w-full max-w-3xl">
 	<div class="flex items-center gap-4 w-full">
 		{#if groupByProperty && maxFilterValue > 0}
 			<div class="flex flex-col gap-1 grow">
