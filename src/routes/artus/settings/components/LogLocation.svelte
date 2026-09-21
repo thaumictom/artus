@@ -64,6 +64,7 @@
 	};
 
 	const relicSetting = 'relic_reward_detection';
+	const relicSoundSetting = 'relic_reward_sound';
 </script>
 
 <CommonSetting
@@ -99,5 +100,16 @@
 		id="relic-reward-detection-toggle"
 		onCheckedChange={() => updateSetting(relicSetting)}
 		bind:checked={config[relicSetting]}
+	/>
+</CommonSetting>
+<CommonSetting
+	title="Relic detection sound"
+	description="Play a sound when automatic relic reward detection is triggered."
+	disabled={!config.relic_reward_detection}
+>
+	<Switch
+		id="relic-reward-sound-toggle"
+		onCheckedChange={() => updateSetting(relicSoundSetting)}
+		bind:checked={config[relicSoundSetting]}
 	/>
 </CommonSetting>

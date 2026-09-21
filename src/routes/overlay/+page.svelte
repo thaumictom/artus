@@ -39,6 +39,8 @@
 
 	onMount(() => {
 		loadSettings();
+		const relicDetectionSound = new Audio('/sound/beep.wav');
+		relicDetectionSound.preload = 'auto';
 		const cleanups: Array<() => void> = [];
 		let disposed = false;
 		const registerCleanup = (cleanup: () => void) => {
@@ -63,6 +65,13 @@
 		listen('ocr_clear', () => {
 			words = [];
 			processing = false;
+		}).then(registerCleanup);
+
+		listen('relic_reward_detected', () => {
+			relicDetectionSound.currentTime = 0;
+			void relicDetectionSound.play().catch((error) => {
+				console.error('[relic detection] failed to play sound', error);
+			});
 		}).then(registerCleanup);
 
 		return () => {

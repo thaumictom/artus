@@ -10,6 +10,7 @@ type Config = {
 
 	warframe_log_path: string;
 	relic_reward_detection: boolean;
+	relic_reward_sound: boolean;
 	dashboard_view_favorites: string[];
 
 	ocr_theme: string;
@@ -50,6 +51,7 @@ export const config = $state({
 	ocr_theme: 'EQUINOX',
 	warframe_log_path: '%LocalAppData%\\Warframe\\EE.log',
 	relic_reward_detection: false,
+	relic_reward_sound: false,
 	dashboard_view_favorites: [] as string[],
 
 	// Overlay settings

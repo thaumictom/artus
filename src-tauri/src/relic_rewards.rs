@@ -9,7 +9,7 @@ use std::sync::atomic::Ordering;
 use std::time::Duration;
 
 use log::{error, info};
-use tauri::{AppHandle, Manager, Runtime};
+use tauri::{AppHandle, Emitter, Manager, Runtime};
 
 use crate::ocr;
 use crate::store_ext::SettingsExt;
@@ -132,6 +132,9 @@ fn process_log_chunk<R: Runtime>(app: &AppHandle<R>, data: &[u8]) {
         let _ = ocr::hide_overlay(app);
     } else if content.contains(GOT_REWARDS_MARKER) {
         info!("detected relic rewards, triggering OCR");
+        if app.get_setting_bool("relic_reward_sound", false) {
+            let _ = app.emit("relic_reward_detected", ());
+        }
         app.state::<crate::state::AppState>()
             .overlay_is_relic_mode
             .store(true, Ordering::Release);
