@@ -10,6 +10,10 @@ mod market;
 mod ocr;
 #[cfg(target_os = "windows")]
 mod relic_rewards;
+#[cfg(any(target_os = "windows", target_os = "linux"))]
+mod relic_reward_capture;
+#[cfg(any(target_os = "windows", target_os = "linux"))]
+mod relic_visual_detection;
 mod setup;
 mod state;
 mod store_ext;

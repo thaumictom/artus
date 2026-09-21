@@ -44,6 +44,7 @@ export interface SettingsPayload {
 	overlay_toggle_mode: boolean;
 	ocr_dictionary_mapping: OcrDictionaryMappingSettingsPayload;
 	relic_reward_detection: boolean;
+	visual_relic_reward_detection: boolean;
 	relic_reward_sound: boolean;
 	show_ocr_bounding_boxes: boolean;
 }
@@ -55,6 +56,7 @@ export interface SettingsPatchPayload {
 	ocr_dictionary_mapping_enabled?: boolean;
 	ocr_dictionary_match_threshold?: number;
 	relic_reward_detection?: boolean;
+	visual_relic_reward_detection?: boolean;
 	relic_reward_sound?: boolean;
 	show_ocr_bounding_boxes?: boolean;
 }

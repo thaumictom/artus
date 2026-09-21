@@ -3,13 +3,13 @@
 //! The listener owns the DBWIN shared objects only while automatic detection
 //! is enabled. It never attaches to or reads memory from the Warframe process.
 
-use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
 
 use log::{error, info, warn};
-use tauri::{AppHandle, Emitter, Manager, Runtime};
+use tauri::{AppHandle, Runtime};
 
 use crate::ocr;
+use crate::relic_reward_capture;
 use crate::store_ext::SettingsExt;
 
 // ── Log markers ───────────────────────────────────────────────────────────────
@@ -45,66 +45,7 @@ fn process_debug_message<R: Runtime>(app: &AppHandle<R>, message: &str) {
 }
 
 fn trigger_relic_capture<R: Runtime>(app: &AppHandle<R>) {
-    // The setting can change while a DBWIN wait is in flight.
-    if !app.get_setting_bool("relic_reward_detection", false) {
-        return;
-    }
-
-    info!("detected relic rewards via DBWIN, scheduling OCR after {REWARD_CAPTURE_DELAY:?}");
-    if app.get_setting_bool("relic_reward_sound", false) {
-        let _ = app.emit("relic_reward_detected", ());
-    }
-    app.state::<crate::state::AppState>()
-        .overlay_is_relic_mode
-        .store(true, Ordering::Release);
-
-    let handle = app.clone();
-    let sequence = ocr::bump_overlay_sequence(&handle).unwrap_or(0);
-
-    let failsafe_handle = handle.clone();
-    tauri::async_runtime::spawn(async move {
-        tokio::time::sleep(Duration::from_secs(15)).await;
-
-        let current = failsafe_handle
-            .state::<crate::state::AppState>()
-            .overlay_sequence
-            .lock()
-            .map(|v| *v)
-            .unwrap_or(0);
-
-        if current == sequence {
-            info!("relic reward 15s failsafe triggered, hiding overlay");
-            let _ = ocr::hide_overlay(&failsafe_handle);
-        }
-    });
-
-    tauri::async_runtime::spawn(async move {
-        tokio::time::sleep(REWARD_CAPTURE_DELAY).await;
-
-        if !handle.get_setting_bool("relic_reward_detection", false) {
-            return;
-        }
-
-        let current_sequence = handle
-            .state::<crate::state::AppState>()
-            .overlay_sequence
-            .lock()
-            .map(|value| *value)
-            .unwrap_or(0);
-
-        if current_sequence != sequence {
-            info!("cancelled delayed relic reward OCR because the reward screen closed");
-            return;
-        }
-
-        tauri::async_runtime::spawn_blocking(move || {
-            if let Err(err) =
-                ocr::capture_active_window_with_mode(&handle, false, false, Some(sequence), false)
-            {
-                error!("relic reward OCR failed: {err}");
-            }
-        });
-    });
+    relic_reward_capture::trigger(app, "relic_reward_detection", "DBWIN", REWARD_CAPTURE_DELAY);
 }
 
 mod windows_debug_output {

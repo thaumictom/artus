@@ -9,6 +9,7 @@ type Config = {
 	};
 
 	relic_reward_detection: boolean;
+	visual_relic_reward_detection: boolean;
 	relic_reward_sound: boolean;
 	dashboard_view_favorites: string[];
 
@@ -48,8 +49,9 @@ export const config = $state({
 
 	// Warframe settings
 	ocr_theme: 'EQUINOX',
-	relic_reward_detection: false,
-	relic_reward_sound: false,
+	relic_reward_detection: false as boolean,
+	visual_relic_reward_detection: false as boolean,
+	relic_reward_sound: false as boolean,
 	dashboard_view_favorites: [] as string[],
 
 	// Overlay settings
@@ -113,5 +115,35 @@ export function watchOverlayPriceSettings() {
 export async function updateSetting(key: keyof typeof config) {
 	console.log(`Updating setting ${key} to`, config[key]);
 	await store.set(key, config[key]);
+	await store.save();
+}
+
+type RelicDetectionSetting = 'relic_reward_detection' | 'visual_relic_reward_detection';
+
+// DBWIN and visual polling are alternative automatic detectors. Persist both
+// values together so a restart can never leave both enabled through the UI.
+export async function updateRelicDetectionSetting(
+	setting: RelicDetectionSetting,
+	enabled: boolean
+) {
+	const otherSetting: RelicDetectionSetting =
+		setting === 'relic_reward_detection'
+			? 'visual_relic_reward_detection'
+			: 'relic_reward_detection';
+
+	config[setting] = enabled;
+	if (enabled) {
+		config[otherSetting] = false;
+	}
+
+	// Disable the previous detector before enabling the replacement so the
+	// backend never observes an overlap while these writes are in flight.
+	if (enabled) {
+		await store.set(otherSetting, false);
+	}
+	await store.set(setting, config[setting]);
+	if (!enabled) {
+		await store.set(otherSetting, config[otherSetting]);
+	}
 	await store.save();
 }

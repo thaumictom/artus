@@ -9,6 +9,8 @@ use crate::{hotkeys, layer_shell, ocr, window_watcher};
 
 #[cfg(target_os = "windows")]
 use crate::relic_rewards;
+#[cfg(any(target_os = "windows", target_os = "linux"))]
+use crate::relic_visual_detection;
 
 /// Called by Tauri during startup to configure windows, load data, and spawn
 /// background tasks.
@@ -68,6 +70,8 @@ pub fn init(app: &mut App, is_wayland: bool) -> Result<(), Box<dyn std::error::E
     // Spawn background tasks
     #[cfg(target_os = "windows")]
     relic_rewards::spawn_dbwin_listener(app.handle().clone());
+    #[cfg(any(target_os = "windows", target_os = "linux"))]
+    relic_visual_detection::spawn_visual_listener(app.handle().clone());
     hotkeys::register_initial(app.handle())?;
     window_watcher::spawn_window_watcher(app.handle().clone());
 
