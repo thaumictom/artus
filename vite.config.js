@@ -9,6 +9,43 @@ import { nodePolyfills } from 'vite-plugin-node-polyfills';
 const host = process.env.TAURI_DEV_HOST;
 const COMMIT_HASH_LENGTH = 7;
 
+/** @returns {import('vite').Plugin} */
+function bundleWorldstateDataJson() {
+	return {
+		name: 'bundle-worldstate-data-json',
+		enforce: 'pre',
+		transform(code, id) {
+			const normalizedId = id.replaceAll('\\', '/');
+			if (
+				!normalizedId.includes('/warframe-worldstate-data/dist/safeImport-') ||
+				!code.includes('//#region safeImport.ts')
+			) {
+				return;
+			}
+
+			// The package uses import(path) for JSON, which Vite cannot discover and
+			// leaves as broken runtime requests in the static Tauri production build.
+			// Artus currently requests English only, so locale subdirectories can keep
+			// using the package's built-in English fallback instead of bloating the app.
+			const bundledLoader = code
+				.replace(
+					'//#region safeImport.ts',
+					'//#region safeImport.ts\nconst bundledJsonModules = import.meta.glob("./data/*.json", { eager: true });',
+				)
+				.replace(
+					'await import(path, { with: { type: "json" } })',
+					'bundledJsonModules[path]',
+				);
+
+			if (bundledLoader === code) {
+				this.error('Could not replace the warframe-worldstate-data JSON loader.');
+			}
+
+			return bundledLoader;
+		},
+	};
+}
+
 function resolveCommitHash() {
 	// @ts-expect-error process is a nodejs global
 	const ciHash = process.env.GITHUB_SHA;
@@ -42,7 +79,12 @@ const appVersion = resolveAppVersion();
 
 // https://vite.dev/config/
 export default defineConfig(async () => ({
-	plugins: [nodePolyfills({ include: ['crypto', 'stream', 'vm'] }), tailwindcss(), sveltekit()],
+	plugins: [
+		bundleWorldstateDataJson(),
+		nodePolyfills({ include: ['crypto', 'stream', 'vm'] }),
+		tailwindcss(),
+		sveltekit(),
+	],
 	optimizeDeps: {
 		exclude: ['warframe-worldstate-parser', 'warframe-worldstate-data'],
 		include: ['warframe-worldstate-parser > class-transformer', 'warframe-worldstate-parser > class-validator'],
