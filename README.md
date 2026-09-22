@@ -3,6 +3,14 @@
 > [!CAUTION]
 > This project is in a very early alpha stage and is under heavy, active development. Expect bugs, crashes, or missing features.
 
+<div align="center">
+  <img src="img/showcase.png" alt="Dashboard Showcase">
+</div>
+
+<div align="center">
+  <img src="img/void_fissure_rewards.jpg" alt="Void Fissure Rewards Showcase">
+</div>
+
 Artus is a desktop companion app for the game Warframe, compatible with Windows and Linux (including Wayland). At its heart, it runs a sophisticated OCR (Optical Character Recognition) pipeline to read item names directly from your screen (e.g. your inventory or during the reward screen of Fissure missions) and enriches them with valuable market information like platinum prices and trading volume.
 
 - [Artus](#artus)
