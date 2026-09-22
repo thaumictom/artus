@@ -42,7 +42,7 @@ from the perspective of the consumer of this component, it will be typed appropr
 		<Select.Content
 			{...contentProps}
 			class={cn(
-				'border min-w-(--bits-select-anchor-width) backdrop-blur bg-surface/50 max-h-56',
+				'z-50 border min-w-(--bits-select-anchor-width) backdrop-blur bg-surface/50 max-h-56',
 				contentProps?.class,
 			)}
 			sideOffset={4}

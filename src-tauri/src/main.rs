@@ -7,11 +7,12 @@ mod error;
 mod hotkeys;
 mod layer_shell;
 mod market;
+mod market_notifications;
 mod ocr;
-#[cfg(target_os = "windows")]
-mod relic_rewards;
 #[cfg(any(target_os = "windows", target_os = "linux"))]
 mod relic_reward_capture;
+#[cfg(target_os = "windows")]
+mod relic_rewards;
 #[cfg(any(target_os = "windows", target_os = "linux"))]
 mod relic_visual_detection;
 mod setup;
@@ -37,6 +38,7 @@ fn main() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_os::init())
+        .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_store::Builder::new().build())
@@ -63,6 +65,8 @@ fn main() {
             market::get_cached_market_items,
             market::get_market_orders,
             market::get_market_statistics,
+            market_notifications::start_market_notification_socket,
+            market_notifications::stop_market_notification_socket,
             worldstate::get_world_state
         ])
         .run(tauri::generate_context!())

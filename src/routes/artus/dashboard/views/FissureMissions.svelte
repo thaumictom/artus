@@ -72,7 +72,7 @@
 <div class="flex flex-col gap-2">
 	<div class="flex flex-wrap items-center gap-2">
 		<div class="flex flex-col gap-1">
-			<div class="font-semibold text-muted-foreground text-xs">Mission type</div>
+			<div class="font-semibold text-muted-foreground text-xs">Mission category</div>
 			<RadioGroup
 				label="Filter fissure mission type"
 				options={fissureFilterOptions}

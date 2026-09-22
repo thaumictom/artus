@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { dashboard, reloadWorldState } from '$lib/worldstate.svelte';
 	import { config, loadSettings } from '$lib/settings.svelte';
+	import { hasActiveNotificationRules } from '$lib/notifications.svelte';
 	import Button from '$lib/components/Button.svelte';
 	import RadioGroup from '$lib/components/RadioGroup.svelte';
 	import { createFocusedRefresh } from '$lib/focused-refresh';
@@ -9,7 +10,7 @@
 	import DashboardHeader from './widgets/DashboardHeader.svelte';
 	import DashboardViewSettings from './widgets/DashboardViewSettings.svelte';
 	import { dashboardViews, type DashboardView } from './dashboard-views';
-	import Icon from '@iconify/svelte';
+	import NotificationRuleSettings from './widgets/NotificationRuleSettings.svelte';
 
 	const REFRESH_INTERVAL_MS = 5 * 60_000;
 	const MANUAL_RELOAD_COOLDOWN_MS = 3_000;
@@ -53,7 +54,9 @@
 		void loadSettings().catch((error) =>
 			console.error('Could not load dashboard favorites:', error),
 		);
-		const focusedRefresh = createFocusedRefresh(reloadWorldState, REFRESH_INTERVAL_MS);
+		const focusedRefresh = createFocusedRefresh(() => {
+			if (!hasActiveNotificationRules()) return reloadWorldState();
+		}, REFRESH_INTERVAL_MS);
 		let clock: ReturnType<typeof setInterval> | undefined;
 		let cooldownTimer: ReturnType<typeof setTimeout> | undefined;
 		const updateClock = () => {
@@ -66,7 +69,7 @@
 			if (dashboard.loading || isReloadCoolingDown) return;
 			isReloadCoolingDown = true;
 			cooldownTimer = setTimeout(() => (isReloadCoolingDown = false), MANUAL_RELOAD_COOLDOWN_MS);
-			void focusedRefresh.refresh();
+			void reloadWorldState();
 		};
 		document.addEventListener('visibilitychange', updateClock);
 		updateClock();
@@ -116,12 +119,7 @@
 										{showAllViews ? 'Show less views' : 'Show all views'}
 									</Button>
 								{/if}
-								<Button size="icon" disabled title="Add notification (Coming Soon)">
-									<Icon
-										icon="material-symbols:notification-add-outline-rounded"
-										class="size-4 shrink-0"
-									/>
-								</Button>
+								<NotificationRuleSettings world={dashboard.world} />
 								<DashboardViewSettings />
 							</div>
 						</div>

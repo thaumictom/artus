@@ -2,6 +2,35 @@
 import { LazyStore } from '@tauri-apps/plugin-store';
 
 const store = new LazyStore('settings.json');
+let settingsLoadPromise: Promise<void> | null = null;
+
+export type FissureNotificationCategory = 'normal' | 'steelPath' | 'voidStorm';
+
+export type NotificationRules = {
+	fissures: {
+		enabled: boolean;
+		eras: string[];
+		missionTypes: string[];
+		categories: FissureNotificationCategory[];
+	};
+	alerts: boolean;
+	invasions: boolean;
+	dailyDeals: boolean;
+	baro: boolean;
+};
+
+export const defaultNotificationRules = (): NotificationRules => ({
+	fissures: {
+		enabled: false,
+		eras: [],
+		missionTypes: [],
+		categories: [],
+	},
+	alerts: false,
+	invasions: false,
+	dailyDeals: false,
+	baro: false,
+});
 
 type Config = {
 	hotkeys: {
@@ -12,6 +41,9 @@ type Config = {
 	visual_relic_reward_detection: boolean;
 	relic_reward_sound: boolean;
 	dashboard_view_favorites: string[];
+	desktop_notifications_enabled: boolean;
+	notification_sound: boolean;
+	notification_rules: NotificationRules;
 
 	ocr_theme: string;
 	overlay_toggle_mode: boolean;
@@ -53,6 +85,9 @@ export const config = $state({
 	visual_relic_reward_detection: false as boolean,
 	relic_reward_sound: false as boolean,
 	dashboard_view_favorites: [] as string[],
+	desktop_notifications_enabled: true as boolean,
+	notification_sound: false as boolean,
+	notification_rules: defaultNotificationRules(),
 
 	// Overlay settings
 	hide_overlay_on_focus_loss: true,
@@ -85,19 +120,38 @@ export const config = $state({
 }) satisfies Config;
 
 // 2. Export the initialization logic
-export async function loadSettings() {
-	const savedEntries = await store.entries();
-	for (const [key, val] of savedEntries) {
-		if (key in config) {
-			// @ts-ignore
-			config[key] = val;
+export function loadSettings() {
+	if (settingsLoadPromise) return settingsLoadPromise;
+	settingsLoadPromise = (async () => {
+		const savedEntries = await store.entries();
+		for (const [key, val] of savedEntries) {
+			if (key in config) {
+				// @ts-ignore
+				config[key] = val;
+			}
 		}
-	}
 
-	// Remove the obsolete EE.log fallback setting from existing installations.
-	if (await store.delete('warframe_log_path')) {
-		await store.save();
-	}
+		// Merge nested notification defaults so new rule fields remain available to
+		// installations that already have an older settings.json.
+		const savedRules = config.notification_rules;
+		const defaults = defaultNotificationRules();
+		config.notification_rules = {
+			...defaults,
+			...(savedRules && typeof savedRules === 'object' ? savedRules : {}),
+			fissures: {
+				...defaults.fissures,
+				...(savedRules?.fissures && typeof savedRules.fissures === 'object'
+					? savedRules.fissures
+					: {}),
+			},
+		};
+
+		// Remove the obsolete EE.log fallback setting from existing installations.
+		if (await store.delete('warframe_log_path')) {
+			await store.save();
+		}
+	})();
+	return settingsLoadPromise;
 }
 
 // Overlay windows have their own state; keep these display toggles in sync.

@@ -1,7 +1,14 @@
 <script lang="ts">
 	import { invoke } from '@tauri-apps/api/core';
-	import { onMount } from 'svelte';
-	import { initializeWorldState } from '$lib/worldstate.svelte';
+	import { onMount, tick } from 'svelte';
+	import { initializeWorldState, reloadWorldState } from '$lib/worldstate.svelte';
+	import {
+		hasActiveNotificationRules,
+		initializeNotificationCenter,
+	} from '$lib/notifications.svelte';
+	import { loadSettings } from '$lib/settings.svelte';
+	import { initializeMarketNotifications } from '$lib/market-notifications.svelte';
+	import { marketNavigation } from '$lib/market-navigation.svelte';
 	// import ArtusMainPage from './ArtusMainPage.svelte';
 	// import ArtusSidebar from './ArtusSidebar.svelte';
 	// import SiteHeader from './SiteHeader.svelte';
@@ -53,6 +60,7 @@
 	};
 
 	let activeSection = $state('dashboard');
+	let handledMarketNavigationId: number | null = null;
 	const CurrentComponent = $derived.by(() => sections[activeSection].component);
 
 	let updateVersion: string | null = $state(null);
@@ -61,10 +69,30 @@
 	let isInstallingUpdate = $state(false);
 
 	let showUpdatePrompt = $derived(Boolean(updateVersion) && !dismissedUpdatePrompt);
+	const NOTIFICATION_REFRESH_INTERVAL_MS = 5 * 60_000;
 
 	onMount(() => {
+		// Dashboard data must not depend on the settings stores being available.
+		// In particular, a first-run store initialization can be slower than the
+		// page mount or fail independently while world state is still usable.
 		initializeWorldState();
+		void loadSettings().catch((error) => console.error('Could not load settings:', error));
+		void initializeNotificationCenter();
+		void initializeMarketNotifications();
 		void checkForUpdate();
+	});
+
+	$effect(() => {
+		if (!hasActiveNotificationRules()) return;
+		const timer = setInterval(() => void reloadWorldState(), NOTIFICATION_REFRESH_INTERVAL_MS);
+		return () => clearInterval(timer);
+	});
+
+	$effect(() => {
+		const target = marketNavigation.target;
+		if (!target || target.id === handledMarketNavigationId) return;
+		handledMarketNavigationId = target.id;
+		activeSection = 'market';
 	});
 
 	async function checkForUpdate() {
@@ -95,10 +123,19 @@
 	function continueWithoutUpdating() {
 		dismissedUpdatePrompt = true;
 	}
+
+	async function openNotificationSettings() {
+		activeSection = 'settings';
+		await tick();
+		document.getElementById('notifications')?.scrollIntoView({ block: 'start' });
+	}
 </script>
 
 <div class="flex flex-col bg-surface h-full">
-	<Header title={sections[activeSection].label}></Header>
+	<Header
+		title={sections[activeSection].label}
+		onOpenNotificationSettings={openNotificationSettings}
+	></Header>
 	<AlertDialog bind:open={showUpdatePrompt}>
 		{#snippet title()}
 			<div>{updateVersion ?? 'The next version'} is ready to install</div>

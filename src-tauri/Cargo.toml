@@ -36,8 +36,15 @@ thiserror = "2"
 log = "0.4"
 env_logger = "0.11"
 tokio = { version = "1", features = ["rt", "time"] }
+tokio-tungstenite = { version = "0.28", default-features = false, features = [
+	"connect",
+	"handshake",
+	"rustls-tls-webpki-roots",
+] }
+futures-util = "0.3"
 rayon = "1.12.0"
 tauri-plugin-os = "2.3.2"
+tauri-plugin-notification = "2"
 
 [features]
 default = []

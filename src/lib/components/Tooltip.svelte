@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import { Tooltip } from 'bits-ui';
+	import { Tooltip, type WithoutChildren } from 'bits-ui';
 	import { cn } from '$lib/utils';
 
 	let {
@@ -10,6 +10,7 @@
 		side = 'top',
 		align = 'center',
 		class: className,
+		triggerProps,
 	}: {
 		children: Snippet;
 		content: Snippet;
@@ -17,12 +18,16 @@
 		side?: 'top' | 'right' | 'bottom' | 'left';
 		align?: 'start' | 'center' | 'end';
 		class?: string;
+		triggerProps?: WithoutChildren<Tooltip.TriggerProps>;
 	} = $props();
 </script>
 
 <Tooltip.Provider {delayDuration} skipDelayDuration={100}>
 	<Tooltip.Root>
-		<Tooltip.Trigger class={cn('focus-visible:outline-2 focus-visible:outline-accent', className)}>
+		<Tooltip.Trigger
+			{...triggerProps}
+			class={cn('focus-visible:outline-2 focus-visible:outline-accent', className, triggerProps?.class)}
+		>
 			{@render children()}
 		</Tooltip.Trigger>
 		<Tooltip.Portal>

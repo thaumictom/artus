@@ -6,14 +6,15 @@
 	import OverlaySettings from './categories/OverlaySettings.svelte';
 	import OverlayBehaviour from './categories/OverlayBehaviour.svelte';
 	import DebugSettings from './categories/DebugSettings.svelte';
+	import NotificationSettings from './categories/NotificationSettings.svelte';
 	import { onMount } from 'svelte';
-	import { load, Store, LazyStore } from '@tauri-apps/plugin-store';
 	import { loadSettings } from '$lib/settings.svelte';
 	import { kebabCase } from 'change-case';
 
 	let components = [
 		{ name: 'Hotkeys', component: Hotkeys },
 		{ name: 'Warframe Settings', component: WarframeSettings },
+		{ name: 'Notifications', component: NotificationSettings },
 		{ name: 'Overlay Settings', component: OverlaySettings },
 		{ name: 'Overlay Behaviour', component: OverlayBehaviour },
 		{ name: 'Debug', component: DebugSettings },

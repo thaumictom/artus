@@ -2,6 +2,7 @@
 	import Icon from '@iconify/svelte';
 	import { getCurrentWindow } from '@tauri-apps/api/window';
 	import { Button } from 'bits-ui';
+	import NotificationCenter from './NotificationCenter.svelte';
 
 	let isMaximized = $state(false);
 
@@ -30,7 +31,10 @@
 		};
 	});
 
-	let { title = 'Artus' } = $props();
+	let {
+		title = 'Artus',
+		onOpenNotificationSettings,
+	}: { title?: string; onOpenNotificationSettings?: () => void } = $props();
 </script>
 
 <header class="flex justify-between items-center w-full" data-tauri-drag-region>
@@ -50,19 +54,7 @@
 			<Icon icon="simple-icons:kofi" class="size-4" />
 			Donate
 		</Button.Root>
-		<Button.Root
-			disabled
-			aria-label="Notifications (Coming soon)"
-			title="Notifications (Coming soon)"
-			class="relative flex justify-center items-center gap-0.5 opacity-50 px-1 border min-w-7.5 h-7.5 cursor-not-allowed"
-		>
-			<Icon icon="material-symbols:notifications-outline-rounded" class="opacity-50 size-4.5" />
-			<!-- <span
-				class="flex justify-center items-center bg-accent px-1.5 rounded-full min-w-5 h-4 font-bold text-xs leading-none text-accent-foreground"
-			>
-				1
-			</span> -->
-		</Button.Root>
+		<NotificationCenter {onOpenNotificationSettings} />
 		<div class="flex *:hover:bg-elevated *:px-4 *:h-10 overflow-hidden *:cursor-pointer">
 			<Button.Root aria-label="Minimize window" onclick={minimize} tabindex={-1}>
 				<Icon icon="mdi:minimize" />

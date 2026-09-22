@@ -15,6 +15,8 @@
 	import InfoCard from './InfoCard.svelte';
 	import { invoke } from '@tauri-apps/api/core';
 	import { MarketCatalogSchema, type CatalogItem } from '$lib/market-catalog';
+	import MarketNotificationRules from './MarketNotificationRules.svelte';
+	import { clearMarketNotificationTarget, marketNavigation } from '$lib/market-navigation.svelte';
 
 	let catalog = $state.raw<Record<string, CatalogItem> | null>(null);
 	let catalogError = $state(false);
@@ -145,6 +147,7 @@
 	});
 
 	let itemData: z.infer<typeof ItemSchema> | null = $state(null);
+	let handledMarketNavigationId: number | null = null;
 
 	function closeItem() {
 		// Ignore pending detail requests after returning to the landing page.
@@ -153,10 +156,11 @@
 		selectedSlug = '';
 		searchError = null;
 		isSearching = false;
+		clearMarketNotificationTarget();
 	}
 
-	const handleValueChange = (slug: string) => {
-		if (!slug || isSearching || slug === itemData?.slug) return;
+	function loadItem(slug: string) {
+		if (!slug || slug === itemData?.slug) return;
 		isSearching = true;
 		searchError = null;
 		const sequence = ++searchSequence;
@@ -176,13 +180,27 @@
 			.finally(() => {
 				if (!disposed && sequence === searchSequence) isSearching = false;
 			});
+	}
+
+	const handleValueChange = (slug: string) => {
+		clearMarketNotificationTarget();
+		loadItem(slug);
 	};
+
+	$effect(() => {
+		const target = marketNavigation.target;
+		if (!target || target.id === handledMarketNavigationId) return;
+		handledMarketNavigationId = target.id;
+		loadItem(target.slug);
+	});
 </script>
 
 <div class="flex flex-col items-center gap-4 mx-auto p-8 w-full">
 	<div class="flex flex-col gap-1 w-full max-w-3xl">
-		<h1>View prices of any item on warframe.market</h1>
-		<div class="flex gap-4 w-full">
+		<div class="flex justify-between items-center gap-3">
+			<h1>View prices of any item on warframe.market</h1>
+		</div>
+		<div class="flex gap-2 w-full h-full">
 			<div class="flex-1">
 				<Combobox
 					onValueChange={handleValueChange}
@@ -195,8 +213,20 @@
 					}}
 				></Combobox>
 			</div>
+			<div>
+				<div class="h-full">
+					<MarketNotificationRules
+						currentItem={itemData
+							? {
+									slug: itemData.slug,
+									name: itemData.i18n?.en.name ?? itemData.slug,
+								}
+							: undefined}
+					/>
+				</div>
+			</div>
 			{#if itemData}
-				<div class="flex-shrink-0">
+				<div class="shrink-0">
 					<Button onclick={closeItem} class="h-full">Close</Button>
 				</div>
 			{/if}
@@ -232,6 +262,12 @@
 				slug={itemData.slug}
 				itemName={itemData.i18n?.en.name}
 				bulkTradable={itemData.bulkTradable ?? false}
+				highlightSince={marketNavigation.target?.slug === itemData.slug
+					? marketNavigation.target.since
+					: undefined}
+				initialOrderType={marketNavigation.target?.slug === itemData.slug
+					? marketNavigation.target.orderType
+					: undefined}
 			/>
 		{/if}
 	{:else}

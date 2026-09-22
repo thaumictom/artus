@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import 'reflect-metadata';
 import { WorldState, type InitialWorldState } from 'warframe-worldstate-parser';
+import { processWorldStateNotifications } from '$lib/notifications.svelte';
 
 export const dashboard = $state({
 	world: null as WorldState | null,
@@ -18,8 +19,11 @@ export function reloadWorldState(): Promise<void> {
 	pending = (async () => {
 		try {
 			const raw = await invoke<InitialWorldState>('get_world_state');
-			dashboard.world = new WorldState(raw, { locale: 'en' });
+			const previousWorld = dashboard.world;
+			const world = new WorldState(raw, { locale: 'en' });
+			dashboard.world = world;
 			dashboard.fetchedAt = Date.now();
+			await processWorldStateNotifications(world, previousWorld);
 		} catch (error) {
 			console.error('Could not load world state:', error);
 			dashboard.error = 'Could not fetch world state. Check your connection and try Reload.';

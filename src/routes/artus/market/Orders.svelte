@@ -10,15 +10,20 @@
 	import { toast } from 'svelte-sonner';
 	import Icon from '@iconify/svelte';
 	import { createFocusedRefresh } from '$lib/focused-refresh';
+	import Tooltip from '$lib/components/Tooltip.svelte';
 
 	let {
 		slug,
 		itemName,
 		bulkTradable = false,
+		highlightSince,
+		initialOrderType,
 	}: {
 		slug: string;
 		itemName?: string;
 		bulkTradable?: boolean;
+		highlightSince?: number;
+		initialOrderType?: 'buy' | 'sell';
 	} = $props();
 
 	const FILTER_PROPERTIES = ['rank', 'charges', 'subtype', 'amberStars', 'cyanStars'] as const;
@@ -27,6 +32,15 @@
 	type FilterProp = (typeof FILTER_PROPERTIES)[number];
 	type Order = z.infer<typeof OrderWithUserSchema>;
 	const priceFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
+	const timestampFormatter = new Intl.DateTimeFormat(undefined, {
+		dateStyle: 'medium',
+		timeStyle: 'medium',
+	});
+
+	function formatTimestamp(timestamp: string) {
+		const date = new Date(timestamp);
+		return Number.isFinite(date.getTime()) ? timestampFormatter.format(date) : 'Unknown';
+	}
 
 	function quantityPerTrade(order: Order): number {
 		return bulkTradable && order.perTrade !== undefined && order.perTrade > 0 ? order.perTrade : 1;
@@ -49,6 +63,8 @@
 
 	let orderType = $state<'sell' | 'buy'>('sell');
 	let ordersData = $state<Order[]>([]);
+	let newOrderIds = $state.raw(new Set<string>());
+	let previousOrderIds: Set<string> | null = null;
 	let groupByProperty = $state<FilterProp | undefined>();
 	let maxFilterValue = $state(0);
 	let groupFilterRange = $state<[number, number]>([0, 0]);
@@ -84,13 +100,31 @@
 		if (!sameProperty || fullRange) groupFilterRange = [0, maxFilterValue];
 	}
 
-	const loadOrdersData = async (targetSlug: string, isCurrent: () => boolean) => {
+	const loadOrdersData = async (
+		targetSlug: string,
+		targetHighlightSince: number | undefined,
+		isCurrent: () => boolean,
+	) => {
 		try {
 			const response = await invoke('get_market_orders', { slug: targetSlug });
 			const { data } = GetOrdersResponseSchema.parse(response);
 			if (!isCurrent()) return;
 
 			fetchTimestamp = Date.now();
+			newOrderIds =
+				previousOrderIds === null
+					? new Set(
+							targetHighlightSince === undefined
+								? []
+								: data
+										.filter(
+											(order) =>
+												(Date.parse(order.createdAt) || 0) >= targetHighlightSince,
+										)
+										.map((order) => order.id),
+								)
+							: new Set(data.filter((order) => !previousOrderIds?.has(order.id)).map((order) => order.id));
+			previousOrderIds = new Set(data.map((order) => order.id));
 
 			ordersData = data;
 
@@ -129,6 +163,8 @@
 	// Each mounted item owns its refresh lifecycle.
 	$effect(() => {
 		const targetSlug = slug;
+		const targetHighlightSince = highlightSince;
+		const targetOrderType = initialOrderType;
 		if (!targetSlug) return;
 		let disposed = false;
 		let cooldownTimer: ReturnType<typeof setTimeout> | undefined;
@@ -138,6 +174,9 @@
 			isReloadCoolingDown = false;
 			ordersError = null;
 			ordersData = [];
+			newOrderIds = new Set();
+			previousOrderIds = null;
+			orderType = targetOrderType ?? 'sell';
 			fetchTimestamp = undefined;
 			groupByProperty = undefined;
 			maxFilterValue = 0;
@@ -148,7 +187,7 @@
 			isRefreshing = true;
 			ordersError = null;
 			try {
-				await loadOrdersData(targetSlug, () => !disposed);
+				await loadOrdersData(targetSlug, targetHighlightSince, () => !disposed);
 			} finally {
 				if (!disposed) {
 					isRefreshing = false;
@@ -266,7 +305,18 @@
 		<tbody>
 			{#each filteredOrders as order (order.id)}
 				<tr class="*:px-1 *:py-2 *:border-t">
-					<td>{order.user.ingameName}</td>
+					<td>
+						<div class="flex items-center gap-2">
+							{#if newOrderIds.has(order.id)}
+								<span
+									class="bg-success rounded-full size-2 shrink-0"
+									title="New since the previous fetch"
+									aria-label="New order"
+								></span>
+							{/if}
+							<span>{order.user.ingameName}</span>
+						</div>
+					</td>
 					<td align="right" class={{ 'text-muted-foreground': order.user.reputation < 5 }}>
 						<span>{order.user.reputation}</span>
 					</td>
@@ -294,12 +344,30 @@
 						</td>
 					{/if}
 					<td align="right" class="py-0!">
-						<button
+						<Tooltip
+							side="left"
+							align="center"
 							class="hover:bg-surface p-1 border cursor-pointer"
-							onclick={() => copyToClipboard(tradeMessage(order))}
+							triggerProps={{
+								'aria-label': 'Copy trade message to clipboard',
+								onclick: () => copyToClipboard(tradeMessage(order)),
+							}}
 						>
-							<Icon icon="material-symbols:content-copy" class="size-4" />
-						</button>
+							{#snippet children()}
+								<Icon icon="material-symbols:content-copy" class="size-4" />
+							{/snippet}
+							{#snippet content()}
+								<div class="whitespace-nowrap text-xs">
+									<div class="mb-2 font-medium">Copy to clipboard</div>
+									<div class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+										<span class="text-muted-foreground">Created</span>
+										<time datetime={order.createdAt}>{formatTimestamp(order.createdAt)}</time>
+										<span class="text-muted-foreground">Updated</span>
+										<time datetime={order.updatedAt}>{formatTimestamp(order.updatedAt)}</time>
+									</div>
+								</div>
+							{/snippet}
+						</Tooltip>
 					</td>
 				</tr>
 			{/each}
