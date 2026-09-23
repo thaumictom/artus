@@ -62,6 +62,7 @@ fn main() {
             market::get_market_item,
             market::get_market_dictionary,
             market::get_most_traded_items,
+            market::get_mastery_tradeable_prices,
             market::get_cached_market_items,
             market::get_market_orders,
             market::get_market_statistics,

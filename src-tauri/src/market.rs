@@ -4,6 +4,7 @@
 //! to reuse connections and respect keep-alive.
 
 use serde_json::Value;
+use std::collections::HashMap;
 use tauri::{AppHandle, Manager, State};
 
 use crate::error::{AppError, AppResult};
@@ -175,6 +176,32 @@ pub async fn get_most_traded_items(state: State<'_, AppState>) -> AppResult<Vec<
             .then_with(|| a.slug.cmp(&b.slug))
     });
     Ok(items)
+}
+
+/// Exposes the tradeable-items medians already loaded for OCR at startup.
+#[derive(serde::Serialize)]
+pub struct MasteryTradeablePrice {
+    median: f64,
+    from_current_offers: bool,
+}
+
+#[tauri::command]
+pub fn get_mastery_tradeable_prices(
+    state: State<'_, AppState>,
+) -> AppResult<HashMap<String, MasteryTradeablePrice>> {
+    let prices = state.ocr_tradeable_prices.lock()?;
+    Ok(prices
+        .iter()
+        .map(|(slug, price)| {
+            (
+                slug.clone(),
+                MasteryTradeablePrice {
+                    median: price.median,
+                    from_current_offers: price.used_current_offer_fallback,
+                },
+            )
+        })
+        .collect())
 }
 
 /// Fetches item details from warframe.market.

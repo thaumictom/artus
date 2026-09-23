@@ -45,6 +45,10 @@ pub fn capture_active_window_inventory<R: Runtime>(app: &AppHandle<R>) -> AppRes
     capture_active_window_with_mode(app, true, true, None, true)
 }
 
+pub fn capture_active_window_mastery<R: Runtime>(app: &AppHandle<R>) -> AppResult<()> {
+    capture_active_window_with_mode_inner(app, true, true, None, false, true)
+}
+
 /// Toggles the overlay: if visible, hides it; otherwise captures and shows it.
 pub fn toggle_overlay_hotkey<R: Runtime>(app: &AppHandle<R>) -> AppResult<()> {
     let overlay = app
@@ -71,6 +75,17 @@ pub fn capture_active_window_with_mode<R: Runtime>(
     provided_sequence: Option<u64>,
     is_inventory_add: bool,
 ) -> AppResult<()> {
+    capture_active_window_with_mode_inner(app, should_auto_hide, is_manual, provided_sequence, is_inventory_add, false)
+}
+
+fn capture_active_window_with_mode_inner<R: Runtime>(
+    app: &AppHandle<R>,
+    should_auto_hide: bool,
+    is_manual: bool,
+    provided_sequence: Option<u64>,
+    is_inventory_add: bool,
+    is_mastery_add: bool,
+) -> AppResult<()> {
     let total = Instant::now();
     let run_sequence = provided_sequence.unwrap_or_else(|| bump_overlay_sequence(app).unwrap_or(0));
 
@@ -80,11 +95,11 @@ pub fn capture_active_window_with_mode<R: Runtime>(
     // gets feedback before the slow OCR pipeline runs.
     show_overlay_processing(app, &capture)?;
 
-    let (filtered, upscale_factor) = preprocess_capture(app, &capture, is_manual);
+    let (filtered, upscale_factor) = preprocess_capture(app, &capture, is_manual, is_mastery_add);
     emit_debug_image(app, &filtered, upscale_factor);
     let words = run_tesseract(app, &filtered, upscale_factor)?;
     let grouped = group_words(app, words);
-    let blocks = postprocess_words(app, &grouped, &capture, is_manual);
+    let blocks = postprocess_words(app, &grouped, &capture, is_manual, is_mastery_add);
 
     let current_sequence = app
         .state::<AppState>()
@@ -111,7 +126,7 @@ pub fn capture_active_window_with_mode<R: Runtime>(
         return Ok(());
     }
 
-    show_overlay(app, &capture, &blocks, is_inventory_add)?;
+    show_overlay(app, &capture, &blocks, is_inventory_add, is_mastery_add)?;
 
     if should_auto_hide {
         schedule_auto_hide(app, run_sequence)?;
@@ -175,22 +190,25 @@ fn preprocess_capture<R: Runtime>(
     app: &AppHandle<R>,
     capture: &CapturedWindow,
     is_manual: bool,
+    is_mastery_add: bool,
 ) -> (image::GrayImage, u32) {
     let t = Instant::now();
 
-    let theme_name = app.get_setting_string("ocr_theme", "EQUINOX");
-    let target_rgb = app
-        .state::<AppState>()
-        .ocr_theme_colors
-        .lock()
-        .ok()
-        .and_then(|map| map.get(&theme_name).copied())
-        .unwrap_or(DEFAULT_OCR_TARGET_RGB);
+    // Mastered inventory cards use dark lettering regardless of the chosen UI theme.
+    let mut targets = if is_mastery_add {
+        vec![[0x30, 0x32, 0x32]]
+    } else {
+        let theme_name = app.get_setting_string("ocr_theme", "EQUINOX");
+        vec![app
+            .state::<AppState>()
+            .ocr_theme_colors
+            .lock()
+            .ok()
+            .and_then(|map| map.get(&theme_name).copied())
+            .unwrap_or(DEFAULT_OCR_TARGET_RGB)]
+    };
 
-    let capture_mods = app.get_setting_bool("capture_mods", false);
-
-    let mut targets = vec![target_rgb];
-    if is_manual && capture_mods {
+    if is_manual && !is_mastery_add && app.get_setting_bool("capture_mods", false) {
         targets.push(crate::ocr::preprocessing::MOD_COLOR_GOLD);
         targets.push(crate::ocr::preprocessing::MOD_COLOR_SILVER);
         targets.push(crate::ocr::preprocessing::MOD_COLOR_BRONZE);
@@ -338,6 +356,7 @@ fn postprocess_words<R: Runtime>(
     words: &[OcrWord],
     capture: &CapturedWindow,
     is_manual: bool,
+    is_mastery_add: bool,
 ) -> Vec<OcrWord> {
     let t = Instant::now();
 
@@ -355,14 +374,15 @@ fn postprocess_words<R: Runtime>(
             MAX_OCR_DICTIONARY_MATCH_THRESHOLD,
         );
 
-    let mut finalized = if ENABLE_OCR_DICTIONARY_MAPPING && mapping_enabled {
+    // Mastery matches against the full catalog in the UI, including non-tradeable gear.
+    let mut finalized = if !is_mastery_add && ENABLE_OCR_DICTIONARY_MAPPING && mapping_enabled {
         map_words_to_dictionary(app, words, mapping_threshold)
     } else {
         words.to_vec()
     };
 
     let capture_mods = app.get_setting_bool("capture_mods", false);
-    if is_manual && capture_mods {
+    if is_manual && !is_mastery_add && capture_mods {
         for word in &mut finalized {
             word.mod_type = crate::ocr::preprocessing::identify_mod_type(&capture.image, word);
         }
@@ -377,7 +397,7 @@ fn postprocess_words<R: Runtime>(
         words.len(),
         mapped,
         dropped,
-        ENABLE_OCR_DICTIONARY_MAPPING && mapping_enabled,
+        !is_mastery_add && ENABLE_OCR_DICTIONARY_MAPPING && mapping_enabled,
         mapping_threshold,
     );
 
@@ -530,6 +550,7 @@ fn show_overlay<R: Runtime>(
     capture: &CapturedWindow,
     words: &[OcrWord],
     is_inventory_add: bool,
+    is_mastery_add: bool,
 ) -> AppResult<()> {
     let t = Instant::now();
 
@@ -568,6 +589,7 @@ fn show_overlay<R: Runtime>(
             words: words.to_vec(),
             show_ocr_bounding_boxes: show_bounding_boxes,
             is_inventory_add,
+            is_mastery_add,
         },
     )
     .map_err(|err| AppError::msg(format!("failed to emit OCR result: {err}")))?;

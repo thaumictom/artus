@@ -77,6 +77,7 @@ export const config = $state({
 	hotkeys: {
 		screenshot: 'control+Home',
 		screenshot_add_inventory: 'shift+control+Home',
+		screenshot_add_mastery: 'alt+control+Home',
 	},
 
 	// Warframe settings
@@ -130,6 +131,7 @@ export function loadSettings() {
 				config[key] = val;
 			}
 		}
+		config.hotkeys = { ...config.hotkeys, screenshot_add_mastery: config.hotkeys.screenshot_add_mastery ?? 'alt+control+Home' };
 
 		// Merge nested notification defaults so new rule fields remain available to
 		// installations that already have an older settings.json.

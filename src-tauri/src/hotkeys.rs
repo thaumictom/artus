@@ -24,13 +24,19 @@ const DEFAULT_SCREENSHOT_HOTKEY: &str = "Ctrl+Home";
 
 pub const HOTKEY_ACTION_SCREENSHOT_ADD_TO_INVENTORY: &str = "screenshot_add_inventory";
 const DEFAULT_SCREENSHOT_ADD_TO_INVENTORY_HOTKEY: &str = "Ctrl+Shift+Home";
+pub const HOTKEY_ACTION_SCREENSHOT_ADD_TO_MASTERY: &str = "screenshot_add_mastery";
+const DEFAULT_SCREENSHOT_ADD_TO_MASTERY_HOTKEY: &str = "Ctrl+Alt+Home";
 
 /// All known actions and their default shortcuts.
-const HOTKEY_DEFINITIONS: [(&str, &str); 2] = [
+const HOTKEY_DEFINITIONS: [(&str, &str); 3] = [
     (HOTKEY_ACTION_SCREENSHOT, DEFAULT_SCREENSHOT_HOTKEY),
     (
         HOTKEY_ACTION_SCREENSHOT_ADD_TO_INVENTORY,
         DEFAULT_SCREENSHOT_ADD_TO_INVENTORY_HOTKEY,
+    ),
+    (
+        HOTKEY_ACTION_SCREENSHOT_ADD_TO_MASTERY,
+        DEFAULT_SCREENSHOT_ADD_TO_MASTERY_HOTKEY,
     ),
 ];
 
@@ -201,6 +207,9 @@ pub fn on_pressed<R: Runtime>(app: &AppHandle<R>, shortcut: &Shortcut) {
         Some(HOTKEY_ACTION_SCREENSHOT) => trigger_screenshot(app),
         Some(HOTKEY_ACTION_SCREENSHOT_ADD_TO_INVENTORY) => {
             spawn_ocr_task(app, ocr::capture_active_window_inventory);
+        }
+        Some(HOTKEY_ACTION_SCREENSHOT_ADD_TO_MASTERY) => {
+            spawn_ocr_task(app, ocr::capture_active_window_mastery);
         }
         Some(unknown) => error!("no handler for action '{unknown}'"),
         None => {}

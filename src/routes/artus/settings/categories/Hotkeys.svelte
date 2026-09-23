@@ -12,4 +12,8 @@
 		<p class="mb-1">Screenshot + add to inventory</p>
 		<HotkeyCapture tauriHotkey="screenshot_add_inventory" />
 	</div>
+	<div>
+		<p class="mb-1">Screenshot + mark mastery items</p>
+		<HotkeyCapture tauriHotkey="screenshot_add_mastery" />
+	</div>
 </div>

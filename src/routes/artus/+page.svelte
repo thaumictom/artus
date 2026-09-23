@@ -8,7 +8,8 @@
 	} from '$lib/notifications.svelte';
 	import { loadSettings } from '$lib/settings.svelte';
 	import { initializeMarketNotifications } from '$lib/market-notifications.svelte';
-	import { marketNavigation } from '$lib/market-navigation.svelte';
+	import { marketNavigation, openMarketNotificationTarget } from '$lib/market-navigation.svelte';
+	import { initializeMastery, stopMasteryListener } from '$lib/mastery.svelte';
 	// import ArtusMainPage from './ArtusMainPage.svelte';
 	// import ArtusSidebar from './ArtusSidebar.svelte';
 	// import SiteHeader from './SiteHeader.svelte';
@@ -79,7 +80,9 @@
 		void loadSettings().catch((error) => console.error('Could not load settings:', error));
 		void initializeNotificationCenter();
 		void initializeMarketNotifications();
+		void initializeMastery();
 		void checkForUpdate();
+		return () => stopMasteryListener();
 	});
 
 	$effect(() => {
@@ -94,6 +97,11 @@
 		handledMarketNavigationId = target.id;
 		activeSection = 'market';
 	});
+
+	function openMasteryMarket(slug: string) {
+		openMarketNotificationTarget(slug, Date.now(), 'sell');
+		activeSection = 'market';
+	}
 
 	async function checkForUpdate() {
 		try {
@@ -177,7 +185,11 @@
 			<Sidebar {sections}></Sidebar>
 		</div>
 		<MainContent>
-			<CurrentComponent />
+			{#if activeSection === 'mastery'}
+				<MasteryMain onOpenMarket={openMasteryMarket} />
+			{:else}
+				<CurrentComponent />
+			{/if}
 		</MainContent>
 	</Tabs.Root>
 </div>
