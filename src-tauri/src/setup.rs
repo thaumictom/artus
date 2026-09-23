@@ -15,6 +15,7 @@ use crate::relic_visual_detection;
 /// Called by Tauri during startup to configure windows, load data, and spawn
 /// background tasks.
 pub fn init(app: &mut App, is_wayland: bool) -> Result<(), Box<dyn std::error::Error>> {
+    crate::window_size::restore_artus_size(app);
     let overlay = app
         .get_webview_window("overlay")
         .ok_or("overlay window not found")?;

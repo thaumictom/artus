@@ -19,6 +19,7 @@ mod setup;
 mod state;
 mod store_ext;
 mod updater;
+mod window_size;
 mod window_watcher;
 mod worldstate;
 
@@ -53,6 +54,7 @@ fn main() {
         )
         .manage(AppState::default())
         .setup(move |app| setup::init(app, is_wayland))
+        .on_window_event(window_size::handle_window_event)
         .invoke_handler(tauri::generate_handler![
             hotkeys::get_hotkey,
             hotkeys::set_hotkey,

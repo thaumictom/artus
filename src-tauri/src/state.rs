@@ -12,6 +12,8 @@ use crate::ocr::dictionary::{OcrDictionaryEntry, TradeablePriceEntry};
 /// concurrent Tauri command handlers and background tasks can access
 /// it safely.
 pub struct AppState {
+    /// Last normal Artus window size in logical pixels.
+    pub artus_window_size: Mutex<(f64, f64)>,
     /// Mapping of action name → shortcut string (e.g. "screenshot" → "Ctrl+Home").
     pub hotkeys: Mutex<HashMap<String, String>>,
 
@@ -49,6 +51,7 @@ pub struct AppState {
 impl Default for AppState {
     fn default() -> Self {
         Self {
+            artus_window_size: Mutex::new((800.0, 600.0)),
             hotkeys: Mutex::new(HashMap::new()),
             overlay_sequence: Mutex::new(0),
             overlay_toggle_in_flight: AtomicBool::new(false),
