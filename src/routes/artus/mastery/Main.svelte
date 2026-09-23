@@ -2,6 +2,7 @@
 	import { mastery, setMasteryChecked, dismissMasteryDots, type MasteryItem } from '$lib/mastery.svelte';
 	import Select from '$lib/components/Select.svelte';
 	import Button from '$lib/components/Button.svelte';
+	import { masteryRankProgress, masteryXpFor } from '$lib/mastery-xp';
 	let { onOpenMarket = () => {} }: { onOpenMarket?: (slug: string) => void } = $props();
 
 	let search = $state('');
@@ -15,7 +16,7 @@
 	const checked = $derived(new Set(mastery.checked));
 	const automatic = $derived(new Set(mastery.automatic));
 	const categories = $derived(['All', ...new Set(mastery.items.map((item) => item.category ?? 'Other'))]);
-	const tags = $derived(['All', 'Prime', 'Tradeable', 'Has components', ...new Set(mastery.items.flatMap((item) => item.tags ?? []))]);
+	const tags = $derived(['All', ...new Set(['Prime', 'Tradeable', 'Has components', ...mastery.items.flatMap((item) => item.tags ?? [])])]);
 	const categoryOptions = $derived(categories.map((value) => ({ value, label: value })));
 	const tagOptions = $derived(tags.map((value) => ({ value, label: value })));
 	const progressOptions = [
@@ -55,6 +56,8 @@
 	});
 	const visible = $derived(sorted.slice(0, visibleCount));
 	const checkedCount = $derived(mastery.items.filter((item) => checked.has(item.key)).length);
+	const earnedXp = $derived(mastery.items.reduce((total, item) => total + (checked.has(item.key) ? masteryXpFor(item) : 0), 0));
+	const rankProgress = $derived(masteryRankProgress(earnedXp));
 	function toggle(key: string) { expanded = expanded.includes(key) ? expanded.filter((entry) => entry !== key) : [...expanded, key]; }
 	function openMarket(item: MasteryItem) { if (item.marketSlug) onOpenMarket(item.marketSlug); }
 	function wikiUrl(item: MasteryItem, parentName?: string) { return item.wikiaUrl ?? `https://wiki.warframe.com/w/Special:Search?search=${encodeURIComponent(parentName ? `${parentName} ${item.name}` : item.name)}`; }
@@ -77,8 +80,14 @@
 
 <div class="flex h-full w-full flex-col gap-5 overflow-y-auto bg-background p-6 text-foreground">
 	<div class="flex flex-wrap items-start justify-between gap-4">
-		<div><h1 class="text-3xl font-bold uppercase tracking-tight">Mastery</h1><p class="text-sm text-muted-foreground">Track gear and components. Use Ctrl+Alt+Home in Warframe to mark recognized items.</p></div>
-		<div class="flex items-center gap-3 text-sm"><span>{checkedCount} / {mastery.items.length} checked</span>{#if mastery.automatic.length > 0}<button class="rounded border border-border px-3 py-1.5 hover:bg-muted" onclick={dismissMasteryDots}>Dismiss {mastery.automatic.length} new dots</button>{/if}</div>
+		<div class="min-w-56 flex-1"><h1 class="text-3xl font-bold uppercase tracking-tight">Mastery</h1><p class="text-sm text-muted-foreground">Track gear and components. Use Ctrl+Alt+Home in Warframe to mark recognized items.</p></div>
+		<div class="w-full rounded-md border border-border bg-card/50 p-3 text-sm sm:w-96">
+			<div class="flex items-baseline justify-between gap-3"><span class="font-semibold">{rankProgress.label} · tracked mastery</span><span class="text-xs text-muted-foreground">{checkedCount} / {mastery.items.length} checked</span></div>
+			<div class="mt-2 h-2 overflow-hidden rounded-full bg-muted" role="progressbar" aria-label="Mastery XP toward next rank" aria-valuenow={rankProgress.current} aria-valuemin="0" aria-valuemax={rankProgress.required}><div class="h-full rounded-full bg-accent transition-[width]" style:width={`${rankProgress.percent}%`}></div></div>
+			<div class="mt-1.5 flex justify-between gap-3 text-xs text-muted-foreground"><span>{rankProgress.current.toLocaleString()} / {rankProgress.required.toLocaleString()} XP to next rank</span><span>{rankProgress.xp.toLocaleString()} total XP</span></div>
+			<p class="mt-1 text-xs text-muted-foreground">Based on checked gear; missions and Intrinsics are excluded.</p>
+			{#if mastery.automatic.length > 0}<button class="mt-2 rounded border border-border px-2 py-1 text-xs hover:bg-muted" onclick={dismissMasteryDots}>Dismiss {mastery.automatic.length} new dots</button>{/if}
+		</div>
 	</div>
 	{#if mastery.loading}<p class="py-10 text-center text-muted-foreground">Loading mastery items…</p>
 	{:else if mastery.error}<p class="rounded border border-destructive p-4 text-destructive">{mastery.error}</p>
