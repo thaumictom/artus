@@ -1,6 +1,8 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
+	import { tick } from 'svelte';
 	import Checkbox from '$lib/components/Checkbox.svelte';
+	import ActionPopover from '$lib/components/ActionPopover.svelte';
 	import { isOwnedMasteryComponent, mastery, setMasteryChecked, type MasteryItem } from '$lib/mastery.svelte';
 
 	let {
@@ -13,6 +15,7 @@
 		expanded = false,
 		onToggle = () => {},
 		onOpenMarket = () => {},
+		onBuy = () => {},
 	}: {
 		item: MasteryItem;
 		parentName?: string;
@@ -23,6 +26,7 @@
 		expanded?: boolean;
 		onToggle?: () => void;
 		onOpenMarket?: (slug: string) => void;
+		onBuy?: (slug: string, name: string) => void;
 	} = $props();
 
 	const isComponent = $derived(parentName !== undefined);
@@ -43,6 +47,13 @@
 		item.wikiaUrl ??
 		`https://wiki.warframe.com/w/Special:Search?search=${encodeURIComponent(parentName ? `${parentName} ${item.name}` : item.name)}`,
 	);
+	let menuOpen = $state(false);
+	async function buy() {
+		if (!item.marketSlug) return;
+		menuOpen = false;
+		await tick();
+		requestAnimationFrame(() => onBuy(item.marketSlug!, parentName && !item.name.startsWith(parentName) ? `${parentName} ${item.name}` : item.name));
+	}
 
 </script>
 
@@ -123,9 +134,11 @@
 		{:else}<span class="text-muted-foreground">—</span>{/if}
 	</td>
 	<td class="px-3 py-3.5 text-right align-middle">
-		<div class="inline-flex items-center gap-3">
-			{#if item.marketSlug}<button class="text-accent hover:underline cursor-pointer" onclick={() => onOpenMarket(item.marketSlug!)}>Market</button>{/if}
-			<a class="text-muted-foreground hover:text-foreground hover:underline" href={wikiUrl} target="_blank" rel="noopener noreferrer">Wiki ↗</a>
-		</div>
+		<ActionPopover bind:open={menuOpen} triggerAriaLabel={`Actions for ${parentName ? `${parentName} ` : ''}${item.name}`} triggerClass="inline-flex items-center justify-center hover:bg-elevated border border-border-secondary size-7" contentClass="w-44">
+			{#snippet trigger()}<Icon icon="lucide:ellipsis" class="size-4" />{/snippet}
+			{#if item.marketSlug}<button type="button" onclick={() => { menuOpen = false; onOpenMarket(item.marketSlug!); }} class="flex items-center gap-2 hover:bg-elevated px-2 py-1.5 w-full text-sm text-left cursor-pointer"><Icon icon="lucide:store" class="size-4" /> View market</button>{/if}
+			{#if item.marketSlug}<button type="button" onclick={buy} class="flex items-center gap-2 hover:bg-elevated px-2 py-1.5 w-full text-sm text-left cursor-pointer"><Icon icon="lucide:shopping-cart" class="size-4" /> Buy</button>{/if}
+			<a href={wikiUrl} target="_blank" rel="noopener noreferrer" onclick={() => (menuOpen = false)} class="flex items-center gap-2 hover:bg-elevated px-2 py-1.5 text-sm"><Icon icon="lucide:external-link" class="size-4" /> View wiki</a>
+		</ActionPopover>
 	</td>
 </tr>

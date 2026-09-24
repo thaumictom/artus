@@ -2,6 +2,7 @@
 	import { Button, Tabs } from 'bits-ui';
 	import Icon from '@iconify/svelte';
 	import type { Sections } from '$lib/types';
+	import { marketAccount } from '$lib/market-account.svelte';
 
 	let {
 		sections,
@@ -20,7 +21,7 @@
 >
 	<div class="flex flex-col">
 		{#each Object.entries(sections) as [id, section]}
-			<Tabs.Trigger value={id} class="data-[state=active]:bg-elevated p-1 rounded">
+			<Tabs.Trigger value={id} disabled={id === 'listings' && !marketAccount.session} title={id === 'listings' && !marketAccount.session ? 'Log in to warframe.market to view listings' : undefined} class="data-[state=active]:bg-elevated disabled:opacity-40 disabled:cursor-not-allowed p-1 rounded">
 				<div class="flex items-center h-full">
 					<Icon icon={section.icon} class="size-6" />
 					<span

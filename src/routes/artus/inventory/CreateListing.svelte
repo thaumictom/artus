@@ -3,9 +3,11 @@
 	import Dialog from '$lib/components/Dialog.svelte';
 	import Button from '$lib/components/Button.svelte';
 	import type { InventoryItem } from '$lib/inventory';
+	import ListingItemInfo from '$lib/components/ListingItemInfo.svelte';
+	import ListingQuantityWarning from '$lib/components/ListingQuantityWarning.svelte';
 	type ListingItemDetails = { maxRank?: number; maxCharges?: number; maxAmberStars?: number; maxCyanStars?: number; subtypes?: string[]; bulkTradable?: boolean };
 
-	let { item = $bindable<InventoryItem | null>(null) }: { item: InventoryItem | null } = $props();
+	let { item = $bindable<InventoryItem | null>(null), mastered = false }: { item: InventoryItem | null; mastered?: boolean } = $props();
 	let open = $derived(item !== null);
 	let sell = $state<number[]>([]);
 	let buy = $state<number[]>([]);
@@ -27,7 +29,6 @@
 		(!details?.maxAmberStars || (Number.isSafeInteger(amberStars) && amberStars >= 0 && amberStars <= details.maxAmberStars)) &&
 		(!details?.maxCyanStars || (Number.isSafeInteger(cyanStars) && cyanStars >= 0 && cyanStars <= details.maxCyanStars)) &&
 		(!details?.subtypes?.length || details.subtypes.includes(subtype)));
-	const exceedsOwned = $derived(item !== null && quantity > item.quantity);
 	const median = $derived.by(() => {
 		if (!sell.length) return null;
 		const values = [...sell].sort((a, b) => a - b);
@@ -76,7 +77,7 @@
 </script>
 
 {#snippet title()}Create sell listing{/snippet}
-{#snippet description()}{item?.name ?? ''}{/snippet}
+{#snippet description()}<ListingItemInfo name={item?.name ?? ''} {mastered} ownedCount={item?.quantity ?? 0} />{/snippet}
 {#snippet dialogClose()}<Button>Cancel</Button>{/snippet}
 {#snippet dialogActions()}<Button variant="primary" disabled={!valid || busy || loading} onclick={create}>{busy ? 'Creating...' : 'Create listing'}</Button>{/snippet}
 <Dialog bind:open={() => open, (value) => { if (!value) item = null; }} {title} {description} {dialogClose} {dialogActions} contentProps={{ class: 'h-auto max-h-[calc(100vh-2rem)]' }}>
@@ -110,7 +111,7 @@
 				{#if details.subtypes?.length}<label class="flex flex-col gap-1 text-sm">Subtype<select bind:value={subtype} class="bg-background p-2 border border-border-secondary focus-visible:border-accent outline-none text-foreground">{#each details.subtypes as option}<option value={option}>{option}</option>{/each}</select></label>{/if}
 			</div>
 		{/if}
-		{#if exceedsOwned}<p role="alert" class="text-amber-400 text-sm">You own {item?.quantity ?? 0}; this listing quantity is higher.</p>{/if}
+		<ListingQuantityWarning {quantity} ownedCount={item?.quantity ?? 0} />
 		{#if error}<p role="alert" class="text-danger text-sm">{error}</p>{/if}
 	</div>
 </Dialog>

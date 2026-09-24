@@ -18,6 +18,7 @@
 	import { DictionarySchema } from '$lib/schemas';
 	import InventoryRow from './InventoryRow.svelte';
 	import CreateListing from './CreateListing.svelte';
+	import { masteredMarketItems } from '$lib/listing-context';
 
 	let { onOpenMarket = () => {} }: { onOpenMarket?: (slug: string) => void } = $props();
 
@@ -29,7 +30,7 @@
 		{ key: 'ducats', label: 'Ducats', sortable: true, align: 'right', class: 'w-24' },
 		{ key: 'totalPrice', label: 'Total P.', align: 'right', class: 'w-28' },
 		{ key: 'totalDucats', label: 'Total d.', align: 'right', class: 'w-28' },
-		{ key: 'links', label: 'Links', align: 'right', class: 'w-32' },
+		{ key: 'links', label: 'Actions', align: 'right', class: 'w-20' },
 	];
 	type SortColumn = 'name' | 'quantity' | 'median' | 'ducats';
 	let data = $state<InventoryItem[]>([]);
@@ -153,23 +154,7 @@
 		data.reduce((sum, item) => sum + (item.ducats ?? 0) * item.quantity, 0),
 	);
 	const platinumFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
-	const masteredItems = $derived.by(() => {
-		const checked = new Set(mastery.checked);
-		const slugs = new Set<string>();
-		const names = new Set<string>();
-		for (const item of mastery.items) {
-			if (checked.has(item.key)) {
-				if (item.marketSlug) slugs.add(item.marketSlug);
-				names.add(inventoryNameKey(item.name));
-			}
-			for (const component of item.components) {
-				if (!checked.has(item.key) && !checked.has(component.key)) continue;
-				if (component.marketSlug) slugs.add(component.marketSlug);
-				names.add(inventoryNameKey(`${item.name} ${component.name}`));
-			}
-		}
-		return { slugs, names };
-	});
+	const masteredItems = $derived(masteredMarketItems(mastery.items, mastery.checked));
 
 	function isMastered(item: InventoryItem) {
 		if (item.isCustom) return false;
@@ -345,7 +330,7 @@
 					</tr>
 				{/each}
 			</Table>
-			<CreateListing bind:item={listingItem} />
+			<CreateListing bind:item={listingItem} mastered={listingItem ? isMastered(listingItem) : false} />
 			<p class="text-muted-foreground text-sm">Showing {sorted.length} of {data.length} items</p>
 			{#snippet addTitle()}Add inventory item{/snippet}
 			{#snippet addDescription()}Search the market item list and add it to your inventory.{/snippet}

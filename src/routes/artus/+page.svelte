@@ -22,6 +22,8 @@
 	import DashboardMain from './dashboard/Main.svelte';
 	import InventoryTab from './inventory/Main.svelte';
 	import MarketMain from './market/Main.svelte';
+	import Listings from './market/Listings.svelte';
+	import { marketAccount } from '$lib/market-account.svelte';
 	import MasteryMain from './mastery/Main.svelte';
 
 	import Sidebar from './Sidebar.svelte';
@@ -59,9 +61,14 @@
 			component: InventoryTab,
 		},
 		market: {
-			label: 'Market',
+			label: 'Browse Market',
 			icon: 'material-symbols:shopping-cart-outline-rounded',
 			component: MarketMain,
+		},
+		listings: {
+			label: 'Listings',
+			icon: 'material-symbols:format-list-bulleted-rounded',
+			component: Listings,
 		},
 		settings: {
 			label: 'Settings',
@@ -158,6 +165,10 @@
 	});
 
 	$effect(() => {
+		if (marketAccount.ready && !marketAccount.session && activeSection === 'listings') navigateTo('market');
+	});
+
+	$effect(() => {
 		const target = marketNavigation.target;
 		if (!target || target.id === handledMarketNavigationId) return;
 		handledMarketNavigationId = target.id;
@@ -205,7 +216,7 @@
 	}
 </script>
 
-<div class="flex flex-col bg-surface h-full">
+<div class="artus-app-shell flex flex-col bg-surface h-full">
 	<Header
 		title={sections[activeSection].label}
 		onOpenNotificationSettings={openNotificationSettings}

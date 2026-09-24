@@ -33,7 +33,7 @@
 	{/if}
 	<BitsDialog.Portal>
 		<BitsDialog.Overlay
-			class="z-50 fixed inset-0 bg-black/50 data-[state=open]:backdrop-blur-xs data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+			class="artus-modal-overlay z-50 fixed inset-0 bg-black/50 data-[state=open]:backdrop-blur-xs data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
 		/>
 		<BitsDialog.Content
 			{...contentProps}

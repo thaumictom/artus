@@ -21,9 +21,6 @@
 	import MarketNotificationRules from './MarketNotificationRules.svelte';
 	import { clearMarketNotificationTarget, marketNavigation } from '$lib/market-navigation.svelte';
 	import { appNavigation, navigateTo } from '$lib/app-navigation.svelte';
-	import { marketAccount } from '$lib/market-account.svelte';
-	import Listings from './Listings.svelte';
-	let activeMarketTab = $state<'browse' | 'listings'>('browse');
 
 	let catalog = $state.raw<Record<string, CatalogItem> | null>(null);
 	let catalogError = $state(false);
@@ -251,19 +248,12 @@
 	$effect(() => {
 		const location = appNavigation.current;
 		if (location.section !== 'market') return;
-		if (location.marketSlug) { activeMarketTab = 'browse'; loadItem(location.marketSlug); }
+		if (location.marketSlug) loadItem(location.marketSlug);
 		else if (requestedSlug || itemData) resetItem();
 	});
 </script>
 
 <div class="flex flex-col items-center gap-4 mx-auto p-8 w-full">
-	<div class="flex gap-2 w-full max-w-5xl border-b border-border-secondary">
-		<button class={`px-3 py-2 text-sm cursor-pointer ${activeMarketTab === 'browse' ? 'border-b-2 border-accent text-accent' : 'text-muted-foreground'}`} onclick={() => (activeMarketTab = 'browse')}>Browse</button>
-		<button class={`px-3 py-2 text-sm ${activeMarketTab === 'listings' ? 'border-b-2 border-accent text-accent' : 'text-muted-foreground'} disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer`} disabled={!marketAccount.session} title={marketAccount.session ? 'Your warframe.market listings' : 'Log in to warframe.market to view listings'} onclick={() => (activeMarketTab = 'listings')}>Listings</button>
-	</div>
-	{#if activeMarketTab === 'listings' && marketAccount.session}
-		<Listings />
-	{:else}
 	<div class="flex flex-col gap-1 w-full max-w-3xl">
 		<div class="flex justify-between items-center gap-3">
 			<h1>View prices of any item on warframe.market</h1>
@@ -403,6 +393,5 @@
 				{/if}
 			{/if}
 		</section>
-	{/if}
 	{/if}
 </div>

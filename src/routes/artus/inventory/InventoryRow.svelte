@@ -1,7 +1,9 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
+	import { tick } from 'svelte';
 	import { inventoryMarketSlug, type InventoryItem } from '$lib/inventory';
 	import { marketAccount } from '$lib/market-account.svelte';
+	import ActionPopover from '$lib/components/ActionPopover.svelte';
 
 	let {
 		item,
@@ -24,6 +26,13 @@
 	);
 	const marketSlug = $derived(inventoryMarketSlug(item));
 	const platinumFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
+	let menuOpen = $state(false);
+	async function createListing() {
+		if (!marketSlug) return;
+		menuOpen = false;
+		await tick();
+		requestAnimationFrame(() => onCreateListing({ ...item, slug: marketSlug }));
+	}
 </script>
 
 <tr class="border-t border-border-secondary transition-colors hover:bg-surface/70">
@@ -84,10 +93,11 @@
 		{:else}<span class="text-muted-foreground font-normal">—</span>{/if}
 	</td>
 	<td class="px-3 py-3.5 text-right">
-		<div class="inline-flex items-center gap-3">
-			{#if marketSlug}<button class="text-accent hover:underline cursor-pointer" onclick={() => onOpenMarket(marketSlug!)}>Market</button>{/if}
-			{#if marketSlug}<button class="text-accent hover:underline disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer" disabled={!marketAccount.session} title={marketAccount.session ? 'Create sell listing' : 'Log in to warframe.market to create a listing'} onclick={() => onCreateListing({ ...item, slug: marketSlug! })}>List</button>{/if}
-			<a class="text-muted-foreground hover:text-foreground hover:underline" href={wikiUrl} target="_blank" rel="noopener noreferrer">Wiki ↗</a>
-		</div>
+		<ActionPopover bind:open={menuOpen} triggerAriaLabel={`Actions for ${item.name}`} triggerClass="inline-flex items-center justify-center hover:bg-elevated border border-border-secondary size-7" contentClass="w-44">
+			{#snippet trigger()}<Icon icon="lucide:ellipsis" class="size-4" />{/snippet}
+			{#if marketSlug}<button type="button" onclick={() => { menuOpen = false; onOpenMarket(marketSlug!); }} class="flex items-center gap-2 hover:bg-elevated px-2 py-1.5 w-full text-sm text-left cursor-pointer"><Icon icon="lucide:store" class="size-4" /> View market</button>{/if}
+			{#if marketSlug}<button type="button" disabled={!marketAccount.session} title={marketAccount.session ? undefined : 'Log in to warframe.market to create a listing'} onclick={createListing} class="flex items-center gap-2 hover:bg-elevated disabled:opacity-40 disabled:cursor-not-allowed px-2 py-1.5 w-full text-sm text-left cursor-pointer"><Icon icon="lucide:plus" class="size-4" /> Create listing</button>{/if}
+			<a href={wikiUrl} target="_blank" rel="noopener noreferrer" onclick={() => (menuOpen = false)} class="flex items-center gap-2 hover:bg-elevated px-2 py-1.5 text-sm"><Icon icon="lucide:external-link" class="size-4" /> View wiki</a>
+		</ActionPopover>
 	</td>
 </tr>

@@ -36,7 +36,7 @@
 	{/if}
 	<AlertDialog.Portal>
 		<AlertDialog.Overlay
-			class="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50 data-[state=open]:backdrop-blur-xs"
+			class="artus-modal-overlay data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50 data-[state=open]:backdrop-blur-xs"
 		/>
 		<AlertDialog.Content
 			class={cn(

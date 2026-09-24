@@ -7,10 +7,9 @@
 	import { invoke } from '@tauri-apps/api/core';
 	import { onMount, untrack } from 'svelte';
 	import Button from '$lib/components/Button.svelte';
-	import { toast } from 'svelte-sonner';
 	import Icon from '@iconify/svelte';
 	import { createFocusedRefresh } from '$lib/focused-refresh';
-	import Tooltip from '$lib/components/Tooltip.svelte';
+	import CopyTradeMessage from '$lib/components/CopyTradeMessage.svelte';
 
 	let {
 		slug,
@@ -32,11 +31,6 @@
 	type FilterProp = (typeof FILTER_PROPERTIES)[number];
 	type Order = z.infer<typeof OrderWithUserSchema>;
 	const priceFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
-	const timestampFormatter = new Intl.DateTimeFormat(undefined, {
-		dateStyle: 'medium',
-		timeStyle: 'medium',
-	});
-	const languageNames = new Intl.DisplayNames(undefined, { type: 'language' });
 	const platformNames: Record<string, string> = {
 		pc: 'PC',
 		ps4: 'PlayStation',
@@ -50,14 +44,6 @@
 		return platformNames[platform.toLowerCase()] ?? platform;
 	}
 
-	function formatLanguage(locale: string) {
-		try {
-			return languageNames.of(locale) ?? locale;
-		} catch {
-			return locale;
-		}
-	}
-
 	function platformIcon(platform: string) {
 		switch (platform.toLowerCase()) {
 			case 'pc':
@@ -69,11 +55,6 @@
 		}
 	}
 
-	function formatTimestamp(timestamp: string) {
-		const date = new Date(timestamp);
-		return Number.isFinite(date.getTime()) ? timestampFormatter.format(date) : 'Unknown';
-	}
-
 	function quantityPerTrade(order: Order): number {
 		return bulkTradable && order.perTrade !== undefined && order.perTrade > 0 ? order.perTrade : 1;
 	}
@@ -81,16 +62,6 @@
 	function unitPrice(order: Order): number {
 		// Bulk order platinum is the total for one bundle, not the unit price.
 		return order.platinum / quantityPerTrade(order);
-	}
-
-	function tradeMessage(order: Order): string {
-		const action = order.type === 'sell' ? 'buy' : 'sell';
-		const quantity = quantityPerTrade(order) > 1 ? `x${quantityPerTrade(order)} ` : '';
-		const variant =
-			groupByProperty && order[groupByProperty] !== undefined
-				? ` (${groupByProperty} ${order[groupByProperty]})`
-				: '';
-		return `/w ${order.user.ingameName} Hi! I want to ${action}: ${quantity}"${itemName ?? slug}${variant}" for ${order.platinum} platinum. (warframe.market)`;
 	}
 
 	let orderType = $state<'sell' | 'buy'>('sell');
@@ -245,15 +216,6 @@
 		};
 	});
 
-	const copyToClipboard = async (text: string) => {
-		try {
-			await navigator.clipboard.writeText(text);
-			toast.success('Copied to clipboard');
-		} catch (err) {
-			console.error('Failed to copy:', err);
-			toast.error('Failed to copy to clipboard');
-		}
-	};
 </script>
 
 <div class="flex flex-col gap-4 w-full max-w-3xl">
@@ -388,37 +350,7 @@
 						</td>
 					{/if}
 					<td align="right" class="py-0!">
-						<Tooltip
-							side="left"
-							align="center"
-							class="hover:bg-surface p-1 border cursor-pointer"
-							triggerProps={{
-								'aria-label': 'Copy trade message to clipboard',
-								onclick: () => copyToClipboard(tradeMessage(order)),
-							}}
-						>
-							{#snippet children()}
-								<Icon icon="material-symbols:content-copy" class="size-4" />
-							{/snippet}
-							{#snippet content()}
-								<div class="text-xs whitespace-nowrap">
-									<div class="mb-2 font-medium">Copy to clipboard</div>
-									<div class="gap-x-3 gap-y-1 grid grid-cols-[auto_1fr]">
-										<span class="text-muted-foreground">Platform</span>
-										<span class="inline-flex items-center gap-1">
-											<Icon icon={platformIcon(order.user.platform)} class="size-3.5" />
-											{formatPlatform(order.user.platform)}
-										</span>
-										<span class="text-muted-foreground">Language</span>
-										<span>{formatLanguage(order.user.locale)}</span>
-										<span class="text-muted-foreground">Created</span>
-										<time datetime={order.createdAt}>{formatTimestamp(order.createdAt)}</time>
-										<span class="text-muted-foreground">Updated</span>
-										<time datetime={order.updatedAt}>{formatTimestamp(order.updatedAt)}</time>
-									</div>
-								</div>
-							{/snippet}
-						</Tooltip>
+						<CopyTradeMessage {order} itemName={itemName ?? slug} {bulkTradable} variantProperty={groupByProperty} />
 					</td>
 				</tr>
 			{/each}

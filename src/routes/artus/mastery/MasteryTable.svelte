@@ -14,6 +14,7 @@
 		onSort,
 		onToggle,
 		onOpenMarket,
+		onBuy,
 		ownedComponentCount,
 		completedComponentCount,
 	}: {
@@ -26,6 +27,7 @@
 		onSort: (column: SortColumn) => void;
 		onToggle: (key: string) => void;
 		onOpenMarket: (slug: string) => void;
+		onBuy: (slug: string, name: string) => void;
 		ownedComponentCount: (component: MasteryItem, parentName: string) => number;
 		completedComponentCount: (item: MasteryItem) => number;
 	} = $props();
@@ -35,7 +37,7 @@
 		{ key: 'name', label: 'Item', sortable: true },
 		{ key: 'median', label: 'Median', sortable: true, align: 'right', class: 'w-28' },
 		{ key: 'ducats', label: 'Ducats', sortable: true, align: 'right', class: 'w-28' },
-		{ key: 'links', label: 'Links', align: 'right', class: 'w-36' },
+		{ key: 'actions', label: 'Actions', align: 'right', class: 'w-20' },
 	];
 </script>
 
@@ -50,6 +52,7 @@
 					expanded={expanded.includes(item.key)}
 					onToggle={() => onToggle(item.key)}
 					{onOpenMarket}
+					{onBuy}
 				/>
 				{#if expanded.includes(item.key)}
 					{#each item.components as component (component.key)}
@@ -60,6 +63,7 @@
 							checked={checked.has(component.key)}
 							automatic={automatic.has(component.key)}
 							{onOpenMarket}
+							{onBuy}
 						/>
 					{/each}
 				{/if}

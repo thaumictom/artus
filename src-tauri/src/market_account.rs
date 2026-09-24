@@ -16,6 +16,7 @@ const USER_AGENT: &str = concat!("Artus/", env!("CARGO_PKG_VERSION"), " (+https:
 pub struct MarketSession {
     token: String,
     pub ingame_name: String,
+    pub slug: String,
     pub status: String,
     socket: mpsc::Sender<StatusCommand>,
 }
@@ -29,11 +30,12 @@ struct StatusCommand {
 #[serde(rename_all = "camelCase")]
 pub struct SessionView {
     ingame_name: String,
+    slug: String,
     status: String,
 }
 
 fn view(session: &MarketSession) -> SessionView {
-    SessionView { ingame_name: session.ingame_name.clone(), status: session.status.clone() }
+    SessionView { ingame_name: session.ingame_name.clone(), slug: session.slug.clone(), status: session.status.clone() }
 }
 
 fn token(state: &AppState) -> AppResult<String> {
@@ -150,6 +152,8 @@ pub async fn market_login(state: State<'_, AppState>, email: String, password: S
     let me = response_json(state.http_client.get(format!("{API}/v2/me")).bearer_auth(&jwt)).await?;
     let ingame_name = me.pointer("/data/ingameName").and_then(Value::as_str)
         .unwrap_or("warframe.market account").to_owned();
+    let slug = me.pointer("/data/slug").and_then(Value::as_str)
+        .ok_or_else(|| AppError::msg("warframe.market did not return a profile slug"))?.to_owned();
     let (sender, receiver) = mpsc::channel(4);
     let (ready_sender, ready_receiver) = oneshot::channel();
     tokio::spawn(socket_actor(jwt.clone(), receiver, ready_sender));
@@ -160,7 +164,7 @@ pub async fn market_login(state: State<'_, AppState>, email: String, password: S
     tokio::time::timeout(std::time::Duration::from_secs(15), confirmation).await
         .map_err(|_| AppError::msg("Timed out setting invisible status"))?.map_err(AppError::msg)??;
     let mut guard = state.market_session.lock()?;
-    *guard = Some(MarketSession { token: jwt, ingame_name, status: "invisible".into(), socket: sender });
+    *guard = Some(MarketSession { token: jwt, ingame_name, slug, status: "invisible".into(), socket: sender });
     Ok(view(guard.as_ref().unwrap()))
 }
 
@@ -223,12 +227,21 @@ pub async fn market_my_orders(state: State<'_, AppState>) -> AppResult<Value> {
     authenticated(&state, reqwest::Method::GET, "orders/my", None).await
 }
 
+#[derive(Serialize)]
+pub struct ListingItemDetails {
+    name: String,
+    slug: String,
+}
+
 #[tauri::command]
-pub async fn market_item_names(state: State<'_, AppState>) -> AppResult<std::collections::HashMap<String, String>> {
+pub async fn market_item_details(state: State<'_, AppState>) -> AppResult<std::collections::HashMap<String, ListingItemDetails>> {
     let response = response_json(state.http_client.get(format!("{API}/v2/items"))).await?;
     let items = response["data"].as_array().ok_or_else(|| AppError::msg("Invalid item list"))?;
     Ok(items.iter().filter_map(|item| {
-        Some((item["id"].as_str()?.to_owned(), item.pointer("/i18n/en/name").and_then(Value::as_str).unwrap_or_else(|| item["slug"].as_str().unwrap_or("Item")).to_owned()))
+        Some((item["id"].as_str()?.to_owned(), ListingItemDetails {
+            name: item.pointer("/i18n/en/name").and_then(Value::as_str).unwrap_or_else(|| item["slug"].as_str().unwrap_or("Item")).to_owned(),
+            slug: item["slug"].as_str()?.to_owned(),
+        }))
     }).collect())
 }
 

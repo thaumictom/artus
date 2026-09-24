@@ -79,7 +79,7 @@ fn main() {
             market_account::market_set_status,
             market_account::market_top_orders,
             market_account::market_my_orders,
-            market_account::market_item_names,
+            market_account::market_item_details,
             market_account::market_create_listing,
             market_account::market_update_listing,
             market_account::market_delete_listing,

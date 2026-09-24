@@ -2,7 +2,11 @@ import { invoke } from '@tauri-apps/api/core';
 import { LazyStore } from '@tauri-apps/plugin-store';
 
 export type MarketStatus = 'invisible' | 'online' | 'ingame';
-export type MarketSession = { ingameName: string; status: MarketStatus };
+export type MarketSession = { ingameName: string; slug: string; status: MarketStatus };
+
+export function marketProfileUrl(session: MarketSession) {
+	return `https://warframe.market/profile/${encodeURIComponent(session.slug)}`;
+}
 
 const credentials = new LazyStore('market-account.json');
 export const marketAccount = $state<{ session: MarketSession | null; ready: boolean }>({

@@ -6,10 +6,12 @@
 	import Select from '$lib/components/Select.svelte';
 	import Button from '$lib/components/Button.svelte';
 	import MasteryTable from './MasteryTable.svelte';
+	import BuyDialog from './BuyDialog.svelte';
 	import TrackedMastery from './TrackedMastery.svelte';
 	let { onOpenMarket = () => {} }: { onOpenMarket?: (slug: string) => void } = $props();
 
 	let search = $state('');
+	let buyItem = $state<{ slug: string; name: string } | null>(null);
 	const searchQuery = $derived(search.trim().toLowerCase());
 	let category = $state('All');
 	let tag = $state('All');
@@ -230,6 +232,7 @@
 				onSort={setSort}
 				onToggle={toggle}
 				{onOpenMarket}
+				onBuy={(slug, name) => (buyItem = { slug, name })}
 				{ownedComponentCount}
 				{completedComponentCount}
 			/>
@@ -245,3 +248,4 @@
 		{/if}
 	</div>
 </div>
+<BuyDialog bind:item={buyItem} />

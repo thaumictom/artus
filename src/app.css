@@ -100,3 +100,26 @@ body {
 [data-overlayscrollbars-viewport] {
 	scroll-behavior: smooth;
 }
+
+.artus-app-shell {
+	--dialog-ease: cubic-bezier(0.19, 1, 0.22, 1);
+	transition:
+		transform 600ms var(--dialog-ease),
+		border-radius 600ms var(--dialog-ease);
+}
+
+body:has(.artus-modal-overlay[data-state='open']) {
+	background-color: var(--color-background) !important;
+}
+
+body:has(.artus-modal-overlay[data-state='open']) .artus-app-shell {
+	transform: scale(0.98);
+	border-radius: 16px;
+	overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.artus-app-shell {
+		transition: none;
+	}
+}
