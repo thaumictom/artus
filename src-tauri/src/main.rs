@@ -7,6 +7,7 @@ mod error;
 mod hotkeys;
 mod layer_shell;
 mod market;
+mod market_account;
 mod market_notifications;
 mod ocr;
 #[cfg(any(target_os = "windows", target_os = "linux"))]
@@ -72,6 +73,16 @@ fn main() {
             market::get_cached_market_items,
             market::get_market_orders,
             market::get_market_statistics,
+            market_account::market_login,
+            market_account::market_logout,
+            market_account::market_session,
+            market_account::market_set_status,
+            market_account::market_top_orders,
+            market_account::market_my_orders,
+            market_account::market_item_names,
+            market_account::market_create_listing,
+            market_account::market_update_listing,
+            market_account::market_delete_listing,
             market_notifications::start_market_notification_socket,
             market_notifications::stop_market_notification_socket,
             worldstate::get_world_state

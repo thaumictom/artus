@@ -8,6 +8,7 @@
 		initializeNotificationCenter,
 	} from '$lib/notifications.svelte';
 	import { loadSettings } from '$lib/settings.svelte';
+	import { loadMarketSession } from '$lib/market-account.svelte';
 	import { ocrDebug } from '$lib/ocr-debug.svelte';
 	import { addOcrWordsToInventory, type InventoryOcrWord } from '$lib/inventory';
 	import { initializeMarketNotifications } from '$lib/market-notifications.svelte';
@@ -132,6 +133,7 @@
 		// page mount or fail independently while world state is still usable.
 		initializeWorldState();
 		void loadSettings().catch((error) => console.error('Could not load settings:', error));
+		void loadMarketSession().catch((error) => console.error('Could not load market session:', error));
 		void initializeNotificationCenter();
 		void initializeMarketNotifications();
 		void initializeMastery();

@@ -17,6 +17,7 @@
 	import { mastery } from '$lib/mastery.svelte';
 	import { DictionarySchema } from '$lib/schemas';
 	import InventoryRow from './InventoryRow.svelte';
+	import CreateListing from './CreateListing.svelte';
 
 	let { onOpenMarket = () => {} }: { onOpenMarket?: (slug: string) => void } = $props();
 
@@ -38,6 +39,7 @@
 	let sortColumn = $state<SortColumn>('name');
 	let sortDirection = $state<'asc' | 'desc'>('asc');
 	let addOpen = $state(false);
+	let listingItem = $state<InventoryItem | null>(null);
 	let addItems = $state<{ label: string; value: string; ducats?: number }[]>([]);
 	let addItemsAttempted = $state(false);
 	let addItemsLoading = $state(false);
@@ -329,6 +331,7 @@
 						isNew={!!item.slug && newSlugs.includes(item.slug)}
 						onChangeQuantity={updateQuantity}
 						{onOpenMarket}
+						onCreateListing={(item) => (listingItem = item)}
 					/>
 				{:else}
 					<tr>
@@ -342,6 +345,7 @@
 					</tr>
 				{/each}
 			</Table>
+			<CreateListing bind:item={listingItem} />
 			<p class="text-muted-foreground text-sm">Showing {sorted.length} of {data.length} items</p>
 			{#snippet addTitle()}Add inventory item{/snippet}
 			{#snippet addDescription()}Search the market item list and add it to your inventory.{/snippet}

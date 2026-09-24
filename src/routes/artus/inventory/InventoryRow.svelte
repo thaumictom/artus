@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
 	import { inventoryMarketSlug, type InventoryItem } from '$lib/inventory';
+	import { marketAccount } from '$lib/market-account.svelte';
 
 	let {
 		item,
@@ -8,12 +9,14 @@
 		isNew,
 		onChangeQuantity,
 		onOpenMarket,
+		onCreateListing,
 	}: {
 		item: InventoryItem;
 		mastered: boolean;
 		isNew: boolean;
 		onChangeQuantity: (item: InventoryItem, delta: number) => void;
 		onOpenMarket: (slug: string) => void;
+		onCreateListing: (item: InventoryItem) => void;
 	} = $props();
 
 	const wikiUrl = $derived(
@@ -83,6 +86,7 @@
 	<td class="px-3 py-3.5 text-right">
 		<div class="inline-flex items-center gap-3">
 			{#if marketSlug}<button class="text-accent hover:underline cursor-pointer" onclick={() => onOpenMarket(marketSlug!)}>Market</button>{/if}
+			{#if marketSlug}<button class="text-accent hover:underline disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer" disabled={!marketAccount.session} title={marketAccount.session ? 'Create sell listing' : 'Log in to warframe.market to create a listing'} onclick={() => onCreateListing({ ...item, slug: marketSlug! })}>List</button>{/if}
 			<a class="text-muted-foreground hover:text-foreground hover:underline" href={wikiUrl} target="_blank" rel="noopener noreferrer">Wiki ↗</a>
 		</div>
 	</td>

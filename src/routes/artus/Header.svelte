@@ -4,6 +4,7 @@
 	import { Button } from 'bits-ui';
 	import { appNavigation, navigateBack, navigateForward } from '$lib/app-navigation.svelte';
 	import NotificationCenter from './NotificationCenter.svelte';
+	import MarketProfile from './MarketProfile.svelte';
 
 	let isMaximized = $state(false);
 
@@ -78,6 +79,7 @@
 			Donate
 		</Button.Root>
 		<NotificationCenter {onOpenNotificationSettings} />
+		<MarketProfile />
 		<div class="flex *:hover:bg-elevated *:px-4 *:h-10 overflow-hidden *:cursor-pointer">
 			<Button.Root aria-label="Minimize window" onclick={minimize} tabindex={-1}>
 				<Icon icon="mdi:minimize" />
