@@ -9,6 +9,7 @@
 	} from '$lib/notifications.svelte';
 	import { loadSettings } from '$lib/settings.svelte';
 	import { ocrDebug } from '$lib/ocr-debug.svelte';
+	import { addOcrWordsToInventory, type InventoryOcrWord } from '$lib/inventory';
 	import { initializeMarketNotifications } from '$lib/market-notifications.svelte';
 	import { marketNavigation, openMarketNotificationTarget } from '$lib/market-navigation.svelte';
 	import { appNavigation, navigateBack, navigateForward, navigateTo } from '$lib/app-navigation.svelte';
@@ -83,6 +84,7 @@
 	onMount(() => {
 		let disposed = false;
 		let unlistenDebug: (() => void) | undefined;
+		let unlistenInventory: (() => void) | undefined;
 		void listen<OcrDebugImagePayload>('ocr_debug_image', ({ payload }) => {
 			if (disposed) return;
 			if (ocrDebug.imageUrl) URL.revokeObjectURL(ocrDebug.imageUrl);
@@ -97,6 +99,21 @@
 				else unlistenDebug = unlisten;
 			})
 			.catch((error) => console.error('Could not listen for OCR debug images:', error));
+		void listen<{ words: InventoryOcrWord[]; is_inventory_add?: boolean }>(
+			'ocr_result',
+			({ payload }) => {
+				if (!disposed && payload.is_inventory_add) {
+					void addOcrWordsToInventory(payload.words).catch((error) =>
+						console.error('Could not add OCR items to inventory:', error),
+					);
+				}
+			},
+		)
+			.then((unlisten) => {
+				if (disposed) unlisten();
+				else unlistenInventory = unlisten;
+			})
+			.catch((error) => console.error('Could not listen for inventory OCR:', error));
 		// Side buttons are reported as buttons 3 (Back) and 4 (Forward).
 		function preventSideButtonDefault(event: MouseEvent) {
 			if (event.button === 3 || event.button === 4) event.preventDefault();
@@ -122,6 +139,7 @@
 		return () => {
 			disposed = true;
 			unlistenDebug?.();
+			unlistenInventory?.();
 			if (ocrDebug.imageUrl) URL.revokeObjectURL(ocrDebug.imageUrl);
 			ocrDebug.imageUrl = null;
 			window.removeEventListener('mousedown', preventSideButtonDefault, true);

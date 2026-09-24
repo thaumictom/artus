@@ -21,6 +21,7 @@ use super::{
     PASS_IMAGE_TO_FRONTEND, PASS_TEXT_TO_FRONTEND,
 };
 use crate::error::{AppError, AppResult};
+use crate::ocr::preprocessing::CheckmarkMatch;
 use crate::layer_shell;
 use crate::state::AppState;
 use crate::store_ext::SettingsExt;
@@ -97,11 +98,19 @@ fn capture_active_window_with_mode_inner<R: Runtime>(
     // gets feedback before the slow OCR pipeline runs.
     show_overlay_processing(app, &capture)?;
 
-    let (filtered, upscale_factor) = preprocess_capture(app, &capture, is_manual, is_mastery_add);
+    let (filtered, upscale_factor, checkmarks) =
+        preprocess_capture(app, &capture, is_manual, is_mastery_add);
     emit_debug_image(app, &filtered, upscale_factor);
+    let quantities = if is_mastery_add {
+        Vec::new()
+    } else {
+        read_checkmark_quantities(app, &filtered, upscale_factor, &checkmarks)
+    };
+    info!("checkmarks: {}, quantities read: {}", checkmarks.len(), quantities.len());
     let words = run_tesseract(app, &filtered, upscale_factor)?;
     let grouped = group_words(app, words);
-    let blocks = postprocess_words(app, &grouped, &capture, is_manual, is_mastery_add);
+    let mut blocks = postprocess_words(app, &grouped, &capture, is_manual, is_mastery_add);
+    assign_quantities(&mut blocks, &quantities);
 
     let current_sequence = app
         .state::<AppState>()
@@ -193,7 +202,7 @@ fn preprocess_capture<R: Runtime>(
     capture: &CapturedWindow,
     is_manual: bool,
     is_mastery_add: bool,
-) -> (image::GrayImage, u32) {
+) -> (image::GrayImage, u32, Vec<CheckmarkMatch>) {
     let t = Instant::now();
 
     // Mastered inventory cards use dark lettering regardless of the chosen UI theme.
@@ -219,7 +228,7 @@ fn preprocess_capture<R: Runtime>(
     }
 
     let mut filtered = binary_target_filter(&capture.image, &targets);
-    crate::ocr::preprocessing::remove_checkmarks(&mut filtered);
+    let checkmarks = crate::ocr::preprocessing::remove_checkmarks(&mut filtered);
     apply_morphology(&mut filtered);
 
     let upscale_factor = 2;
@@ -252,7 +261,7 @@ fn preprocess_capture<R: Runtime>(
         "preprocess (binary filter + checkmarks + morphology + upscale): {:?}",
         t.elapsed()
     );
-    (upscaled, upscale_factor)
+    (upscaled, upscale_factor, checkmarks)
 }
 
 // ── Step 3: Debug image ───────────────────────────────────────────────────────
@@ -284,6 +293,126 @@ fn emit_debug_image<R: Runtime>(app: &AppHandle<R>, filtered: &image::GrayImage,
 }
 
 // ── Step 4: Tesseract OCR ─────────────────────────────────────────────────────
+
+fn read_checkmark_quantities<R: Runtime>(
+    app: &AppHandle<R>,
+    image: &image::GrayImage,
+    scale: u32,
+    checkmarks: &[CheckmarkMatch],
+) -> Vec<(CheckmarkMatch, u32)> {
+    if checkmarks.is_empty() {
+        return Vec::new();
+    }
+    let Ok(tessdata) = resolve_tessdata(app) else {
+        return Vec::new();
+    };
+    let api = TesseractAPI::new();
+    if api.init(&tessdata, "eng").is_err()
+        || api
+            .set_page_seg_mode(TessPageSegMode::PSM_SINGLE_WORD)
+            .is_err()
+        || api
+            .set_variable("tessedit_char_whitelist", "0123456789")
+            .is_err()
+    {
+        return Vec::new();
+    }
+
+    checkmarks
+        .iter()
+        .filter_map(|&mark| {
+            let x = (mark.x + mark.width + 2) * scale;
+            let y = mark.y.saturating_sub(4) * scale;
+            let right = (mark.x + mark.width * 3)
+                .saturating_mul(scale)
+                .min(image.width());
+            let bottom = (mark.y + mark.height + 4)
+                .saturating_mul(scale)
+                .min(image.height());
+            if right <= x || bottom <= y {
+                return None;
+            }
+            let crop = image::imageops::crop_imm(image, x, y, right - x, bottom - y).to_image();
+            if api
+                .set_image(
+                    crop.as_raw(),
+                    crop.width() as i32,
+                    crop.height() as i32,
+                    1,
+                    crop.width() as i32,
+                )
+                .is_err()
+                || api.recognize().is_err()
+            {
+                return None;
+            }
+            let iter = api.get_iterator().ok()?;
+            let text = iter.get_utf8_text(TessPageIteratorLevel::RIL_WORD).ok()?;
+            let digits: String = text.chars().filter(char::is_ascii_digit).collect();
+            let quantity = digits
+                .parse::<u32>()
+                .ok()
+                .filter(|&value| (1..=999).contains(&value))?;
+            Some((mark, quantity))
+        })
+        .collect()
+}
+
+fn assign_quantities(words: &mut [OcrWord], quantities: &[(CheckmarkMatch, u32)]) {
+    for &(mark, quantity) in quantities {
+        let number_x = (mark.x + mark.width + mark.width / 2) as f64;
+        let bottom = (mark.y + mark.height) as f64;
+        let max_gap = (mark.height * 10) as f64;
+        if let Some(word) = words
+            .iter_mut()
+            .filter(|word| word.slug.is_some() && word.quantity.is_none())
+            .filter(|word| word.y >= bottom && word.y - bottom <= max_gap)
+            .filter(|word| {
+                number_x >= word.x - mark.width as f64
+                    && number_x <= word.x + word.width + mark.width as f64
+            })
+            .min_by(|a, b| (a.y - bottom).total_cmp(&(b.y - bottom)))
+        {
+            word.quantity = Some(quantity);
+        }
+    }
+}
+
+#[cfg(test)]
+mod quantity_tests {
+    use super::*;
+
+    #[test]
+    fn assigns_quantity_to_item_below_in_same_column() {
+        let mut words = vec![
+            OcrWord {
+                slug: Some("left".into()),
+                ..OcrWord::new("Left".into(), 350.0, 190.0, 150.0, 50.0)
+            },
+            OcrWord {
+                slug: Some("target".into()),
+                ..OcrWord::new("Target".into(), 615.0, 195.0, 180.0, 50.0)
+            },
+            OcrWord {
+                slug: Some("next-row".into()),
+                ..OcrWord::new("Next".into(), 615.0, 550.0, 180.0, 50.0)
+            },
+        ];
+        let mark = CheckmarkMatch {
+            x: 580,
+            y: 40,
+            width: 31,
+            height: 31,
+        };
+
+        assign_quantities(&mut words, &[(mark, 3)]);
+
+        assert_eq!(
+            words.iter().map(|word| word.quantity).collect::<Vec<_>>(),
+            vec![None, Some(3), None]
+        );
+    }
+}
 
 /// Initializes Tesseract, feeds it the preprocessed image, and extracts words.
 fn run_tesseract<R: Runtime>(

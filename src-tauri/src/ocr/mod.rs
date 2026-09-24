@@ -103,6 +103,8 @@ pub enum ModType {
 #[derive(Debug, Clone, Serialize, Default)]
 pub struct OcrWord {
     pub text: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub quantity: Option<u32>,
     #[serde(default)]
     pub x: f64,
     #[serde(default)]

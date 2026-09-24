@@ -10,6 +10,7 @@
 
 	type OcrWord = {
 		text: string;
+		quantity?: number;
 		slug?: string;
 		x: number;
 		y: number;
@@ -39,6 +40,7 @@
 	let words: OcrWord[] = $state([]);
 	let showBoundingBoxes = $state(false);
 	let processing = $state(false);
+	let isInventoryAdd = $state(false);
 	let masteredSlugs = $state(new Set<string>());
 	let ownedBySlug = $state(new Map<string, number>());
 	let ownedByName = $state(new Map<string, number>());
@@ -104,24 +106,30 @@
 			masteryReadSequence++;
 			words = [];
 			processing = true;
+			isInventoryAdd = false;
 		}).then(registerCleanup);
 
-		listen<{ words: OcrWord[]; show_ocr_bounding_boxes: boolean }>('ocr_result', (event) => {
-			processing = false;
-			words = event.payload?.words ?? [];
-			// One small store lookup replaces a full catalog load and relationship scan.
-			void refreshMasteredSlugs(++masteryReadSequence);
-			void refreshInventory(++inventoryReadSequence);
-			showBoundingBoxes = event.payload?.show_ocr_bounding_boxes ?? false;
-			// Reload settings to get the latest thresholds if changed
-			loadSettings();
-		}).then(registerCleanup);
+		listen<{ words: OcrWord[]; show_ocr_bounding_boxes: boolean; is_inventory_add: boolean }>(
+			'ocr_result',
+			(event) => {
+				processing = false;
+				words = event.payload?.words ?? [];
+				isInventoryAdd = event.payload?.is_inventory_add ?? false;
+				// One small store lookup replaces a full catalog load and relationship scan.
+				void refreshMasteredSlugs(++masteryReadSequence);
+				void refreshInventory(++inventoryReadSequence);
+				showBoundingBoxes = event.payload?.show_ocr_bounding_boxes ?? false;
+				// Reload settings to get the latest thresholds if changed
+				loadSettings();
+			},
+		).then(registerCleanup);
 
 		listen('ocr_clear', () => {
 			masteryReadSequence++;
 			inventoryReadSequence++;
 			words = [];
 			processing = false;
+			isInventoryAdd = false;
 		}).then(registerCleanup);
 
 		listen('relic_reward_detected', () => {
@@ -278,6 +286,9 @@
 					<span class="[text-box-trim:trim-both] [text-box-edge:cap_alphabetic]">
 						{displayText}
 					</span>
+					{#if word.quantity != null && !isInventoryAdd}
+						<span class="ml-1 text-amber-400">×{word.quantity}</span>
+					{/if}
 					{#if word.slug && masteredSlugs.has(word.slug)}
 						<Icon icon="hugeicons:laurel-wreath-right-03" class="inline size-3.5 text-orange-300" />
 					{/if}
@@ -291,7 +302,10 @@
 							<span class="mx-0.5">•</span>
 						{/if}
 						<!-- {#if word.slug && masteredSlugs.has(word.slug)}mastered{/if} -->
-						{#if ownedCount > 0}{ownedCount} owned{/if}
+						{#if ownedCount > 0}
+							{ownedCount} owned
+							{#if isInventoryAdd && word.slug}(+{word.quantity ?? 1}){/if}
+						{/if}
 					</div>
 				{/if}
 			</div>

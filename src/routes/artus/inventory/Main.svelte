@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { LazyStore } from '@tauri-apps/plugin-store';
-	import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 	import { invoke } from '@tauri-apps/api/core';
 	import { onMount } from 'svelte';
 	import Icon from '@iconify/svelte';
@@ -12,6 +11,7 @@
 		inventoryMarketSlug,
 		inventoryNameKey,
 		trackInventorySave,
+		waitForInventorySave,
 		type InventoryItem,
 	} from '$lib/inventory';
 	import { mastery } from '$lib/mastery.svelte';
@@ -20,14 +20,6 @@
 
 	let { onOpenMarket = () => {} }: { onOpenMarket?: (slug: string) => void } = $props();
 
-	type InventoryOcrWord = {
-		slug?: string;
-		is_custom?: boolean;
-		text: string;
-		market_median?: number;
-		market_median_from_current_offers?: boolean;
-		ducats?: number;
-	};
 	const store = new LazyStore('inventory.json');
 	const columns: TableColumn[] = [
 		{ key: 'name', label: 'Item', sortable: true, class: 'min-w-48' },
@@ -45,7 +37,6 @@
 	let search = $state('');
 	let sortColumn = $state<SortColumn>('name');
 	let sortDirection = $state<'asc' | 'desc'>('asc');
-	let saveQueue = Promise.resolve();
 	let addOpen = $state(false);
 	let addItems = $state<{ label: string; value: string; ducats?: number }[]>([]);
 	let addItemsAttempted = $state(false);
@@ -187,10 +178,19 @@
 	}
 
 	onMount(() => {
-		let unlisten: UnlistenFn | undefined;
+		let unlisten: (() => void) | undefined;
 		let disposed = false;
 		(async () => {
 			try {
+				unlisten = await store.onChange<unknown>((key, value) => {
+					if (key === 'items' && Array.isArray(value)) data = value as InventoryItem[];
+					if (key === 'newSlugs' && Array.isArray(value)) newSlugs = value as string[];
+				});
+				if (disposed) {
+					unlisten();
+					return;
+				}
+				await waitForInventorySave().catch(() => undefined);
 				const [items, savedNewSlugs] = await Promise.all([
 					store.get<InventoryItem[]>('items'),
 					store.get<string[]>('newSlugs'),
@@ -199,45 +199,6 @@
 				data = items ?? [];
 				newSlugs = Array.isArray(savedNewSlugs) ? savedNewSlugs : [];
 				if (data.some((item) => !item.slug)) void restoreLegacySlugs(() => disposed);
-				unlisten = await listen<{ words: InventoryOcrWord[]; is_inventory_add?: boolean }>(
-					'ocr_result',
-					(event) => {
-						if (!event.payload.is_inventory_add) return;
-						let addedAny = false;
-						for (const word of event.payload.words) {
-							if (!word.slug) continue;
-							if (!newSlugs.includes(word.slug)) newSlugs.push(word.slug);
-							const existing = data.find((item) =>
-								item.slug
-									? item.slug === word.slug
-									: inventoryNameKey(item.name) === inventoryNameKey(word.text),
-							);
-							if (existing) {
-								existing.quantity += 1;
-								existing.slug ??= word.slug;
-								existing.isCustom ??= word.is_custom;
-								if (word.market_median != null) {
-									existing.marketMedian = word.market_median;
-									existing.marketMedianUsesOfferFallback = word.market_median_from_current_offers;
-								}
-								existing.ducats ??= word.ducats;
-							} else {
-								data.push({
-									name: word.text,
-									slug: word.slug,
-									isCustom: word.is_custom,
-									quantity: 1,
-									marketMedian: word.market_median,
-									marketMedianUsesOfferFallback: word.market_median_from_current_offers,
-									ducats: word.ducats,
-								});
-							}
-							addedAny = true;
-						}
-						if (addedAny) saveInventory();
-					},
-				);
-				if (disposed) unlisten();
 			} catch (error) {
 				console.error('Could not load inventory:', error);
 			} finally {
@@ -275,7 +236,7 @@
 	function saveInventory() {
 		const items = $state.snapshot(data);
 		const savedNewSlugs = [...newSlugs];
-		saveQueue = saveQueue
+		const save = waitForInventorySave()
 			.catch(() => undefined)
 			.then(async () => {
 				await store.set('items', items);
@@ -283,7 +244,7 @@
 				await store.save();
 			})
 			.catch((error) => console.error('Could not save inventory:', error));
-		trackInventorySave(saveQueue);
+		trackInventorySave(save);
 	}
 
 	function updateQuantity(item: InventoryItem, delta: number) {
