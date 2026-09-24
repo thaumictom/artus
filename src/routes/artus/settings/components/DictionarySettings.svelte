@@ -24,6 +24,7 @@
 <CommonSetting
 	title="Mastery match threshold"
 	description="Minimum OCR name match confidence for automatically checking mastery items. Separate from price-check dictionary matching."
+	disabled={!config[mainSetting]}
 	align="vertical"
 >
 	<Slider
