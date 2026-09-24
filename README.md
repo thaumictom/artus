@@ -18,20 +18,24 @@ Artus is a desktop companion app for the game Warframe, compatible with Windows 
   - [Download](#download)
   - [Disclaimers](#disclaimers)
     - [Liability Disclaimer](#liability-disclaimer)
-    - [EE.log](#eelog)
+    - [Relic Reward Detection](#relic-reward-detection)
     - [AI Usage](#ai-usage)
   - [Building from Source](#building-from-source)
   - [Community \& Credits](#community--credits)
 
 ## Features
 
-- Sophisticated OCR System: Artus quickly scans your screen to recognize Warframe items.
-- Smart Overlay: The app features a clickthrough, semi-transparent overlay that always sits on top of your game. Linux Wayland users can enable the optional layer-shell feature for better compatibility.
-- Market Integration: Fetches current market prices and trading volume for recognized items using the `warframe.market` API.
-- Automatic Relic Rewards Detection: Automatically detects the relic reward screen during Fissure missions to run OCR, and automatically hides the overlay once the screen is closed.
-- Customizable: The app includes various settings to fit your preferences.
-- Market Tab: A dedicated Market tab connected to the `warframe.market` API, featuring a searchable item database synced with custom external APIs.
-- Automatic Updates: The app checks for and downloads updates on its own, keeping you on the latest version.
+- Screen OCR: Capture relic rewards, inventory items, and mastery items with hotkeys; recognize item names and enrich them with market prices, trading volume, and ducat values.
+- Game Overlay: Show recognized items in a transparent, clickthrough overlay with prices, volume, vault status, owned counts, and configurable sell or salvage hints. Optional Wayland layer-shell support is available on Linux.
+- Automatic Relic Detection: Detect Fissure reward screens through Windows debug output or optional experimental visual detection, capture rewards, and hide the overlay when the screen closes.
+- Live Dashboard: Browse world cycles, Fissures, Baro Ki'Teer, alerts, invasions, Sorties, Nightwave, and other world-state views; choose favorite views and refresh the data.
+- Market: Search tradeable items, browse popular items and related set parts, and inspect item details, current buy and sell orders, and price and volume history from `warframe.market`.
+- Inventory: Add items manually or by OCR, edit quantities, track platinum and ducat totals, and open items in the Market tab.
+- Mastery: Track completed gear and components manually or by OCR, filter the catalog, and estimate mastery rank progress with an entry for other mastery XP.
+- Notifications: Create world-state alerts and live market price rules; review notification history and optionally use desktop notifications and sounds.
+- Settings: Configure capture hotkeys, OCR, overlay behavior, price thresholds, notifications, and game detection.
+- System Tray: Hide the main window to the tray and reopen, restart, or quit Artus from its menu.
+- Updates: Check for new releases and offer an in-app download and relaunch.
 
 ## Download
 
@@ -50,9 +54,9 @@ This tool runs independently of Warframe by default and does not inject code or 
 
 Read more: https://support.warframe.com/hc/en-us/articles/360030014351-Third-Party-Software-and-You
 
-### EE.log
+### Relic Reward Detection
 
-The OCR can be triggered manually with a hotkey. If the path to the EE.log file is provided and the corresponding setting is enabled, the app can automatically detect the relic reward screen and show the overlay during Fissure missions. It does not read any other information from the log file, and the file is not modified in any way.
+OCR can be triggered manually with a hotkey. Automatic relic reward detection can use Warframe's Windows debug output or an optional experimental visual detector on Windows and Linux. It does not read or modify EE.log or other game files, and it does not attach to the game process.
 
 The code for this feature can be read here: [src-tauri/src/relic_rewards.rs](src-tauri/src/relic_rewards.rs)
 
@@ -92,12 +96,6 @@ If you are on Linux and using Wayland, there is an optional Wayland layer-shell 
 ```bash
 pnpm tauri dev --features wayland-layer-shell
 ```
-
-### Dashboard data
-
-The Dashboard requests the official PC world state once when the main window starts.
-Reload fetches a new snapshot. The response is retained in frontend state but is not
-currently interpreted or displayed.
 
 ## Community & Credits
 
