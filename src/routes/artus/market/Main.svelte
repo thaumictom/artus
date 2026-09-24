@@ -14,9 +14,13 @@
 	import Statistics from './Statistics.svelte';
 	import InfoCard from './InfoCard.svelte';
 	import { invoke } from '@tauri-apps/api/core';
+	import { LazyStore } from '@tauri-apps/plugin-store';
+	import { inventoryMarketSlug, inventoryNameKey, waitForInventorySave, type InventoryItem } from '$lib/inventory';
+	import { mastery } from '$lib/mastery.svelte';
 	import { MarketCatalogSchema, type CatalogItem } from '$lib/market-catalog';
 	import MarketNotificationRules from './MarketNotificationRules.svelte';
 	import { clearMarketNotificationTarget, marketNavigation } from '$lib/market-navigation.svelte';
+	import { appNavigation, navigateTo } from '$lib/app-navigation.svelte';
 
 	let catalog = $state.raw<Record<string, CatalogItem> | null>(null);
 	let catalogError = $state(false);
@@ -81,6 +85,37 @@
 
 	let selectedSlug = $state('');
 	let searchError = $state<string | null>(null);
+	let inventoryItems = $state<InventoryItem[]>([]);
+	const ownedItems = $derived.by(() => {
+		const bySlug = new Map<string, number>();
+		const byName = new Map<string, number>();
+		for (const item of inventoryItems) {
+			if (item.isCustom || item.quantity <= 0) continue;
+			const slug = inventoryMarketSlug(item);
+			if (slug) bySlug.set(slug, (bySlug.get(slug) ?? 0) + item.quantity);
+			else {
+				const name = inventoryNameKey(item.name);
+				byName.set(name, (byName.get(name) ?? 0) + item.quantity);
+			}
+		}
+		return { bySlug, byName };
+	});
+	function ownedCountFor(slug: string) {
+		const name = dictionaryItems.find((item) => item.value === slug)?.label;
+		return (ownedItems.bySlug.get(slug) ?? 0) + (name ? ownedItems.byName.get(inventoryNameKey(name)) ?? 0 : 0);
+	}
+	const masteredSlugs = $derived.by(() => {
+		const checked = new Set(mastery.checked);
+		const slugs = new Set<string>();
+		for (const item of mastery.items) {
+			if (checked.has(item.key) && item.marketSlug) slugs.add(item.marketSlug);
+			for (const component of item.components) {
+				if ((checked.has(item.key) || checked.has(component.key)) && component.marketSlug)
+					slugs.add(component.marketSlug);
+			}
+		}
+		return slugs;
+	});
 	let relatedItems = $derived.by(() => {
 		const current = dictionaryItems.find((item) => item.value === itemData?.slug);
 		const setSlug = current?.isSet ? current.value : current?.setSlug;
@@ -93,6 +128,7 @@
 			.filter((item) => item.value === setSlug || item.setSlug === setSlug)
 			.map((item) => ({
 				value: item.value,
+				owned: ownedCountFor(item.value) > 0,
 				itemCount: !item.isSet && item.gameRef ? catalog?.[item.gameRef]?.itemCount : undefined,
 				label:
 					item.value === setSlug
@@ -128,6 +164,10 @@
 	}
 
 	onMount(() => {
+		void waitForInventorySave()
+			.then(() => new LazyStore('inventory.json').get<InventoryItem[]>('items'))
+			.then((items) => { if (!disposed) inventoryItems = items ?? []; })
+			.catch((error) => console.error('Could not load inventory ownership:', error));
 		void loadDictionary();
 		void loadMostTraded();
 		void invoke('get_cached_market_items')
@@ -147,11 +187,12 @@
 	});
 
 	let itemData: z.infer<typeof ItemSchema> | null = $state(null);
-	let handledMarketNavigationId: number | null = null;
+	let requestedSlug = '';
 
-	function closeItem() {
+	function resetItem() {
 		// Ignore pending detail requests after returning to the landing page.
 		searchSequence += 1;
+		requestedSlug = '';
 		itemData = null;
 		selectedSlug = '';
 		searchError = null;
@@ -159,8 +200,20 @@
 		clearMarketNotificationTarget();
 	}
 
+	function closeItem() {
+		navigateTo('market');
+	}
+
 	function loadItem(slug: string) {
-		if (!slug || slug === itemData?.slug) return;
+		if (slug === requestedSlug) return;
+		requestedSlug = slug;
+		if (slug === itemData?.slug) {
+			searchSequence += 1;
+			selectedSlug = slug;
+			isSearching = false;
+			searchError = null;
+			return;
+		}
 		isSearching = true;
 		searchError = null;
 		const sequence = ++searchSequence;
@@ -175,6 +228,7 @@
 			.catch((err) => {
 				if (disposed || sequence !== searchSequence) return;
 				console.error('Search failed:', err);
+				requestedSlug = '';
 				searchError = 'Could not load this item. Please try again.';
 			})
 			.finally(() => {
@@ -183,15 +237,19 @@
 	}
 
 	const handleValueChange = (slug: string) => {
+		if (slug === appNavigation.current.marketSlug) {
+			if (searchError) loadItem(slug);
+			return;
+		}
 		clearMarketNotificationTarget();
-		loadItem(slug);
+		navigateTo('market', slug);
 	};
 
 	$effect(() => {
-		const target = marketNavigation.target;
-		if (!target || target.id === handledMarketNavigationId) return;
-		handledMarketNavigationId = target.id;
-		loadItem(target.slug);
+		const location = appNavigation.current;
+		if (location.section !== 'market') return;
+		if (location.marketSlug) loadItem(location.marketSlug);
+		else if (requestedSlug || itemData) resetItem();
 	});
 </script>
 
@@ -249,6 +307,8 @@
 			<InfoCard
 				{itemData}
 				catalogItem={catalog?.[itemData.gameRef]}
+				mastered={masteredSlugs.has(itemData.slug)}
+				ownedCount={ownedCountFor(itemData.slug)}
 				{relatedItems}
 				onSelectItem={handleValueChange}
 			/>

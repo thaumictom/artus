@@ -14,6 +14,8 @@
 		onSort,
 		onToggle,
 		onOpenMarket,
+		ownedComponentCount,
+		completedComponentCount,
 	}: {
 		items: MasteryItem[];
 		checked: Set<string>;
@@ -24,10 +26,12 @@
 		onSort: (column: SortColumn) => void;
 		onToggle: (key: string) => void;
 		onOpenMarket: (slug: string) => void;
+		ownedComponentCount: (component: MasteryItem, parentName: string) => number;
+		completedComponentCount: (item: MasteryItem) => number;
 	} = $props();
 
 	const columns: TableColumn[] = [
-		{ key: 'checked', label: '', class: 'w-14 px-4' },
+		{ key: 'checked', label: '', class: 'w-18 px-4' },
 		{ key: 'name', label: 'Item', sortable: true },
 		{ key: 'median', label: 'Median', sortable: true, align: 'right', class: 'w-28' },
 		{ key: 'ducats', label: 'Ducats', sortable: true, align: 'right', class: 'w-28' },
@@ -40,6 +44,7 @@
 				<MasteryRow
 					{item}
 					checked={checked.has(item.key)}
+					completedComponents={completedComponentCount(item)}
 					automatic={automatic.has(item.key) ||
 						item.components.some((part) => automatic.has(part.key))}
 					expanded={expanded.includes(item.key)}
@@ -51,6 +56,7 @@
 						<MasteryRow
 							item={component}
 							parentName={item.name}
+							ownedCount={ownedComponentCount(component, item.name)}
 							checked={checked.has(component.key)}
 							automatic={automatic.has(component.key)}
 							{onOpenMarket}

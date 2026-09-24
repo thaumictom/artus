@@ -8,6 +8,7 @@
 		title: Snippet;
 		description: Snippet;
 		dialogClose?: Snippet;
+		dialogActions?: Snippet;
 		contentProps?: WithoutChild<BitsDialog.ContentProps>;
 	};
 
@@ -18,6 +19,7 @@
 		title,
 		description,
 		dialogClose,
+		dialogActions,
 		contentProps,
 		...restProps
 	}: Props = $props();
@@ -51,11 +53,14 @@
 
 			{@render children?.()}
 
-			{#if dialogClose}
-				<div class="flex justify-end px-6">
-					<BitsDialog.Close>
-						{@render dialogClose()}
-					</BitsDialog.Close>
+			{#if dialogClose || dialogActions}
+				<div class="flex justify-end gap-2 px-6">
+					{#if dialogClose}
+						<BitsDialog.Close>
+							{@render dialogClose()}
+						</BitsDialog.Close>
+					{/if}
+					{@render dialogActions?.()}
 				</div>
 			{/if}
 		</BitsDialog.Content>

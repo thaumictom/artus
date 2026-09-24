@@ -4,10 +4,14 @@
 
 	let {
 		item,
+		mastered,
+		isNew,
 		onChangeQuantity,
 		onOpenMarket,
 	}: {
 		item: InventoryItem;
+		mastered: boolean;
+		isNew: boolean;
 		onChangeQuantity: (item: InventoryItem, delta: number) => void;
 		onOpenMarket: (slug: string) => void;
 	} = $props();
@@ -21,7 +25,21 @@
 
 <tr class="border-t border-border-secondary transition-colors hover:bg-surface/70">
 	<td class="px-3 py-3.5 font-semibold text-foreground min-w-48">
-		<span class="break-words">{item.name}</span>
+		<div class="flex items-center gap-2">
+			<span class="break-words">{item.name}</span>
+			{#if mastered}
+				<span title="Mastered" aria-label="Mastered" class="shrink-0">
+					<Icon icon="material-symbols:check-circle-rounded" class="size-4 text-accent" />
+				</span>
+			{/if}
+			{#if isNew}
+				<span
+					class="bg-accent rounded-full size-2 shrink-0"
+					title="Newly added by inventory hotkey"
+					aria-label="Newly added"
+				></span>
+			{/if}
+		</div>
 		{#if item.category}<div class="mt-0.5 text-muted-foreground text-xs font-normal">{item.category}</div>{/if}
 	</td>
 	<td class="px-3 py-3.5 text-right tabular-nums">

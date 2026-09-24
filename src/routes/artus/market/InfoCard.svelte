@@ -9,12 +9,16 @@
 	let {
 		itemData,
 		catalogItem,
+		mastered = false,
+		ownedCount = 0,
 		relatedItems = [],
 		onSelectItem,
 	}: {
 		itemData: z.infer<typeof ItemSchema>;
 		catalogItem?: CatalogItem;
-		relatedItems?: { label: string; value: string; itemCount?: number | null }[];
+		mastered?: boolean;
+		ownedCount?: number;
+		relatedItems?: { label: string; value: string; itemCount?: number | null; owned: boolean }[];
 		onSelectItem?: (slug: string) => void;
 	} = $props();
 	const number = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
@@ -66,6 +70,13 @@
 			itemData.i18n?.en?.wikiLink ||
 			`https://wiki.warframe.com/w/Special:Search?search=${encodeURIComponent(itemData.i18n?.en?.name ?? itemData.slug)}`,
 	);
+	let statusLabels = $derived.by(() => {
+		const labels: string[] = [];
+		if (itemData.vaulted) labels.push('Vaulted');
+		if (itemData.ducats != null) labels.push(`${itemData.ducats} Ducats`);
+		if (ownedCount > 0) labels.push(`${ownedCount} owned`);
+		return labels;
+	});
 </script>
 
 <div class="flex flex-col gap-4 p-4 border w-full max-w-3xl">
@@ -77,12 +88,18 @@
 		/>
 		<div class="flex justify-between items-center gap-2 w-full">
 			<div class="flex flex-col">
-				<h1 class="font-medium text-lg">{itemData.i18n?.en.name}</h1>
-				{#if itemData.vaulted}
-					<div class="text-muted-foreground text-xs uppercase">Vaulted</div>
-				{/if}
-				{#if itemData.ducats}
-					<div class="text-muted-foreground text-xs uppercase">{itemData.ducats} Ducats</div>
+				<div class="flex items-center gap-2">
+					<h1 class="font-medium text-lg">{itemData.i18n?.en.name}</h1>
+					{#if mastered}
+						<span title="Mastered" aria-label="Mastered" class="shrink-0">
+							<Icon icon="material-symbols:check-circle-rounded" class="size-4 text-accent" />
+						</span>
+					{/if}
+				</div>
+				{#if statusLabels.length}
+					<div class="text-muted-foreground text-xs uppercase">
+						{statusLabels.join(' · ')}
+					</div>
 				{/if}
 			</div>
 			<a
@@ -125,7 +142,17 @@
 									? 'px-2 py-1 border border-accent bg-accent/10 text-accent text-xs font-medium'
 									: 'px-2 py-1 border text-muted-foreground hover:text-foreground hover:bg-surface text-xs cursor-pointer'}
 							>
-								{#if item.itemCount != null && item.itemCount > 1}{item.itemCount}x&nbsp;{/if}{item.label}
+								<span class="inline-flex items-center gap-1">
+									<span>
+										{#if item.itemCount != null && item.itemCount > 1}{item.itemCount}x&nbsp;{/if}{item.label}
+									</span>
+									{#if item.owned}<span
+											class="inline-flex justify-center items-center border-current size-3.5"
+											aria-label="Owned"
+										>
+											<Icon icon="material-symbols:check-rounded" class="size-4" />
+										</span>{/if}
+								</span>
 							</button>
 						{/each}
 					</nav>

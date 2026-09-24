@@ -29,6 +29,13 @@ export type MasteryItem = Omit<z.infer<typeof catalogItemSchema>, 'components'> 
 	components: MasteryItem[];
 };
 
+export function isOwnedMasteryComponent(item: MasteryItem, ownedCount: number) {
+	// Crafting resources remain manual even when the inventory has enough of them.
+	return item.type?.toLowerCase() !== 'resource'
+		&& item.category?.toLowerCase() !== 'resources'
+		&& ownedCount >= Math.max(1, item.itemCount ?? 1);
+}
+
 const store = new LazyStore('mastery.json');
 export const mastery = $state({
 	items: [] as MasteryItem[],
@@ -139,14 +146,21 @@ export function initializeMastery() {
 			mastery.ducats = catalogDucats;
 			mastery.items = [...catalog]
 				.filter(([, item]) => item.masterable)
-				.map(([key, item]) => ({
-					...item,
-					key,
-					components: (item.components ?? []).flatMap((componentKey) => {
+				.map(([key, item]) => {
+					const components = new Map<string, MasteryItem>();
+					for (const componentKey of item.components ?? []) {
 						const component = catalog.get(componentKey);
-						return component ? [{ ...component, key: componentKey, components: [] }] : [];
-					})
-				}))
+						if (!component) continue;
+						const existing = components.get(componentKey);
+						if (existing) {
+							// The catalog repeats keys for recipes such as Afuris (two Furis).
+							existing.itemCount = (existing.itemCount ?? 1) + (component.itemCount ?? 1);
+						} else {
+							components.set(componentKey, { ...component, key: componentKey, components: [] });
+						}
+					}
+					return { ...item, key, components: [...components.values()] };
+				})
 				.sort((a, b) => a.name.localeCompare(b.name));
 			overlaySlugsByMasteryKey = buildOverlaySlugIndex(mastery.items);
 			// Populate the overlay cache for progress saved before this index existed.

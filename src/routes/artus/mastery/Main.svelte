@@ -1,5 +1,8 @@
 <script lang="ts">
-	import { mastery } from '$lib/mastery.svelte';
+	import { LazyStore } from '@tauri-apps/plugin-store';
+	import { onMount } from 'svelte';
+	import { inventoryMarketSlug, inventoryNameKey, waitForInventorySave, type InventoryItem } from '$lib/inventory';
+	import { isOwnedMasteryComponent, mastery, type MasteryItem } from '$lib/mastery.svelte';
 	import Select from '$lib/components/Select.svelte';
 	import Button from '$lib/components/Button.svelte';
 	import MasteryTable from './MasteryTable.svelte';
@@ -16,8 +19,46 @@
 	let sortDirection = $state<'asc' | 'desc'>('asc');
 	let visibleCount = $state(150);
 	let expanded = $state<string[]>([]);
+	let inventoryItems = $state<InventoryItem[]>([]);
+	onMount(() => {
+		let disposed = false;
+		void waitForInventorySave()
+			.then(() => new LazyStore('inventory.json').get<InventoryItem[]>('items'))
+			.then((items) => {
+				if (!disposed) inventoryItems = items ?? [];
+			})
+			.catch((error) => console.error('Could not load inventory ownership:', error));
+		return () => { disposed = true; };
+	});
+	const ownedComponents = $derived.by(() => {
+		const bySlug = new Map<string, number>();
+		const byName = new Map<string, number>();
+		for (const item of inventoryItems) {
+			if (item.quantity <= 0 || item.isCustom) continue;
+			const slug = inventoryMarketSlug(item);
+			if (slug) bySlug.set(slug, (bySlug.get(slug) ?? 0) + item.quantity);
+			const name = inventoryNameKey(item.name);
+			byName.set(name, (byName.get(name) ?? 0) + item.quantity);
+		}
+		return { bySlug, byName };
+	});
+	function ownedComponentCount(component: { marketSlug?: string | null; name: string }, parentName: string) {
+		const componentName = inventoryNameKey(component.name);
+		const parent = inventoryNameKey(parentName);
+		const fullName = componentName.startsWith(`${parent} `)
+			? componentName
+			: inventoryNameKey(`${parentName} ${component.name}`);
+		return (component.marketSlug ? ownedComponents.bySlug.get(component.marketSlug) : undefined)
+			?? ownedComponents.byName.get(fullName)
+			?? 0;
+	}
 	const checked = $derived(new Set(mastery.checked));
 	const automatic = $derived(new Set(mastery.automatic));
+	function completedComponentCount(item: MasteryItem) {
+		return item.components.filter((part) =>
+			checked.has(part.key) || isOwnedMasteryComponent(part, ownedComponentCount(part, item.name))
+		).length;
+	}
 	const categories = $derived([
 		'All',
 		...new Set(mastery.items.map((item) => item.category ?? 'Other')),
@@ -38,6 +79,7 @@
 		{ value: 'All', label: 'All' },
 		{ value: 'Checked', label: 'Checked' },
 		{ value: 'Unchecked', label: 'Unchecked' },
+		{ value: 'In progress', label: 'In progress' },
 	];
 	const filtered = $derived(
 		mastery.items.filter((item) => {
@@ -55,6 +97,7 @@
 				return false;
 			if (progress === 'Checked' && !checked.has(item.key)) return false;
 			if (progress === 'Unchecked' && checked.has(item.key)) return false;
+			if (progress === 'In progress' && (checked.has(item.key) || completedComponentCount(item) === 0)) return false;
 			return !searchQuery || item.name.toLowerCase().includes(searchQuery);
 		}),
 	);
@@ -187,6 +230,8 @@
 				onSort={setSort}
 				onToggle={toggle}
 				{onOpenMarket}
+				{ownedComponentCount}
+				{completedComponentCount}
 			/>
 			<div class="flex justify-between items-center text-muted-foreground text-sm">
 				<span>Showing {visible.length} of {filtered.length} items</span>

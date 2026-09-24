@@ -9,6 +9,7 @@
 	import { loadSettings } from '$lib/settings.svelte';
 	import { initializeMarketNotifications } from '$lib/market-notifications.svelte';
 	import { marketNavigation, openMarketNotificationTarget } from '$lib/market-navigation.svelte';
+	import { appNavigation, navigateBack, navigateForward, navigateTo } from '$lib/app-navigation.svelte';
 	import { initializeMastery, stopMasteryListener } from '$lib/mastery.svelte';
 	// import ArtusMainPage from './ArtusMainPage.svelte';
 	// import ArtusSidebar from './ArtusSidebar.svelte';
@@ -60,7 +61,7 @@
 		},
 	};
 
-	let activeSection = $state('dashboard');
+	let activeSection = $derived(appNavigation.current.section);
 	let handledMarketNavigationId: number | null = null;
 	const CurrentComponent = $derived.by(() => sections[activeSection].component);
 
@@ -73,6 +74,19 @@
 	const NOTIFICATION_REFRESH_INTERVAL_MS = 5 * 60_000;
 
 	onMount(() => {
+		// Side buttons are reported as buttons 3 (Back) and 4 (Forward).
+		function preventSideButtonDefault(event: MouseEvent) {
+			if (event.button === 3 || event.button === 4) event.preventDefault();
+		}
+		function handleSideButton(event: MouseEvent) {
+			if (event.button === 3) navigateBack();
+			else if (event.button === 4) navigateForward();
+			else return;
+			event.preventDefault();
+		}
+		window.addEventListener('mousedown', preventSideButtonDefault, true);
+		window.addEventListener('mouseup', handleSideButton, true);
+		window.addEventListener('auxclick', preventSideButtonDefault, true);
 		// Dashboard data must not depend on the settings stores being available.
 		// In particular, a first-run store initialization can be slower than the
 		// page mount or fail independently while world state is still usable.
@@ -82,7 +96,12 @@
 		void initializeMarketNotifications();
 		void initializeMastery();
 		void checkForUpdate();
-		return () => stopMasteryListener();
+		return () => {
+			window.removeEventListener('mousedown', preventSideButtonDefault, true);
+			window.removeEventListener('mouseup', handleSideButton, true);
+			window.removeEventListener('auxclick', preventSideButtonDefault, true);
+			stopMasteryListener();
+		};
 	});
 
 	$effect(() => {
@@ -95,12 +114,12 @@
 		const target = marketNavigation.target;
 		if (!target || target.id === handledMarketNavigationId) return;
 		handledMarketNavigationId = target.id;
-		activeSection = 'market';
+		navigateTo('market', target.slug);
 	});
 
 	function openMarket(slug: string) {
 		openMarketNotificationTarget(slug, Date.now(), 'sell');
-		activeSection = 'market';
+		navigateTo('market', slug);
 	}
 
 	async function checkForUpdate() {
@@ -133,7 +152,7 @@
 	}
 
 	async function openNotificationSettings() {
-		activeSection = 'settings';
+		navigateTo('settings');
 		await tick();
 		document.getElementById('notifications')?.scrollIntoView({ block: 'start' });
 	}
@@ -180,7 +199,7 @@
 			</Button>
 		{/snippet}
 	</AlertDialog>
-	<Tabs.Root class="flex flex-1 overflow-hidden" orientation="vertical" bind:value={activeSection}>
+	<Tabs.Root class="flex flex-1 overflow-hidden" orientation="vertical" value={activeSection} onValueChange={(value) => navigateTo(value)}>
 		<div>
 			<Sidebar {sections}></Sidebar>
 		</div>
