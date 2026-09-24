@@ -1,7 +1,6 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
 	import { listen } from '@tauri-apps/api/event';
-	import { invoke } from '@tauri-apps/api/core';
 	import { LazyStore } from '@tauri-apps/plugin-store';
 	import { onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
@@ -41,61 +40,14 @@
 	let processing = $state(false);
 	let masteredSlugs = $state(new Set<string>());
 	const masteryStore = new LazyStore('mastery.json');
-	type CatalogItem = {
-		masterable?: boolean;
-		components?: string[] | null;
-		marketSlug?: string | null;
-	};
-	let masteryKeysBySlugPromise: Promise<Map<string, string[]>> | null = null;
-	let resultSequence = 0;
+	let masteryReadSequence = 0;
 
-	function masteryKeysBySlug() {
-		if (!masteryKeysBySlugPromise) {
-			masteryKeysBySlugPromise = invoke<Record<string, CatalogItem>>('get_cached_market_items')
-				.then((catalog) => {
-					const bySlug = new Map<string, string[]>();
-					const addKey = (slug: string | null | undefined, key: string) => {
-						if (!slug) return;
-						const keys = bySlug.get(slug) ?? [];
-						if (!keys.includes(key)) bySlug.set(slug, [...keys, key]);
-					};
-					for (const [parentKey, item] of Object.entries(catalog)) {
-						if (!item.masterable) continue;
-						addKey(item.marketSlug, parentKey);
-						for (const componentKey of item.components ?? []) {
-							const componentSlug = catalog[componentKey]?.marketSlug;
-							// A mastered parent also masters its component in the price-check overlay.
-							addKey(componentSlug, parentKey);
-							addKey(componentSlug, componentKey);
-						}
-					}
-					return bySlug;
-				})
-				.catch((error) => {
-					masteryKeysBySlugPromise = null;
-					throw error;
-				});
-		}
-		return masteryKeysBySlugPromise;
-	}
-
-	async function refreshMasteredSlugs(resultWords: OcrWord[], sequence: number) {
-		if (!resultWords.some((word) => word.slug)) return;
+	async function refreshMasteredSlugs(sequence: number) {
 		try {
-			const bySlug = await masteryKeysBySlug();
-			// The store plugin shares the loaded store between Artus windows.
-			const checked = new Set((await masteryStore.get<string[]>('checked')) ?? []);
-			if (sequence !== resultSequence) return;
-			masteredSlugs = new Set(
-				resultWords
-					.map((word) => word.slug)
-					.filter(
-						(slug): slug is string =>
-							!!slug && (bySlug.get(slug) ?? []).some((key) => checked.has(key)),
-					),
-			);
+			const slugs = await masteryStore.get<string[]>('masteredSlugs');
+			if (sequence === masteryReadSequence) masteredSlugs = new Set(slugs ?? []);
 		} catch (error) {
-			console.error('Could not read mastery progress for overlay:', error);
+			console.error('Could not read overlay mastery progress:', error);
 		}
 	}
 
@@ -110,10 +62,10 @@
 			else cleanups.push(cleanup);
 		};
 		watchOverlayPriceSettings().then(registerCleanup);
+		void refreshMasteredSlugs(masteryReadSequence);
 
 		listen('ocr_processing', () => {
-			resultSequence++;
-			masteredSlugs = new Set();
+			masteryReadSequence++;
 			words = [];
 			processing = true;
 		}).then(registerCleanup);
@@ -121,16 +73,15 @@
 		listen<{ words: OcrWord[]; show_ocr_bounding_boxes: boolean }>('ocr_result', (event) => {
 			processing = false;
 			words = event.payload?.words ?? [];
-			masteredSlugs = new Set();
-			void refreshMasteredSlugs(words, ++resultSequence);
+			// One small store lookup replaces a full catalog load and relationship scan.
+			void refreshMasteredSlugs(++masteryReadSequence);
 			showBoundingBoxes = event.payload?.show_ocr_bounding_boxes ?? false;
 			// Reload settings to get the latest thresholds if changed
 			loadSettings();
 		}).then(registerCleanup);
 
 		listen('ocr_clear', () => {
-			resultSequence++;
-			masteredSlugs = new Set();
+			masteryReadSequence++;
 			words = [];
 			processing = false;
 		}).then(registerCleanup);
@@ -144,7 +95,7 @@
 
 		return () => {
 			disposed = true;
-			resultSequence++;
+			masteryReadSequence++;
 			for (const cleanup of cleanups) cleanup();
 		};
 	});

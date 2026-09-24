@@ -44,17 +44,40 @@ export const mastery = $state({
 let startPromise: Promise<void> | null = null;
 let unlisten: UnlistenFn | undefined;
 let saveQueue = Promise.resolve();
+let overlaySlugsByMasteryKey = new Map<string, string[]>();
+
+function buildOverlaySlugIndex(items: MasteryItem[]) {
+	const byKey = new Map<string, Set<string>>();
+	const add = (key: string, slug: string | null | undefined) => {
+		if (!slug) return;
+		const slugs = byKey.get(key) ?? new Set<string>();
+		slugs.add(slug);
+		byKey.set(key, slugs);
+	};
+	for (const item of items) {
+		add(item.key, item.marketSlug);
+		for (const component of item.components) {
+			// A mastered parent also masters its components in the price-check overlay.
+			add(item.key, component.marketSlug);
+			add(component.key, component.marketSlug);
+		}
+	}
+	return new Map([...byKey].map(([key, slugs]) => [key, [...slugs]]));
+}
 
 function persist() {
 	const checked = [...mastery.checked];
 	const automatic = [...mastery.automatic];
 	const otherXp = mastery.otherXp;
+	const masteredSlugs = [...new Set(checked.flatMap((key) => overlaySlugsByMasteryKey.get(key) ?? []))];
 	saveQueue = saveQueue.then(async () => {
 		await store.set('checked', checked);
 		await store.set('automatic', automatic);
 		await store.set('otherXp', otherXp);
+		await store.set('masteredSlugs', masteredSlugs);
 		await store.save();
 	}).catch((error) => console.error('Could not save mastery progress:', error));
+	return saveQueue;
 }
 
 export function setMasteryChecked(key: string, checked: boolean) {
@@ -125,6 +148,9 @@ export function initializeMastery() {
 					})
 				}))
 				.sort((a, b) => a.name.localeCompare(b.name));
+			overlaySlugsByMasteryKey = buildOverlaySlugIndex(mastery.items);
+			// Populate the overlay cache for progress saved before this index existed.
+			await persist();
 			void invoke('get_mastery_tradeable_prices')
 				.then((value) => { mastery.prices = tradeablePriceSchema.parse(value); })
 				.catch((error) => console.error('Could not load mastery median prices:', error));
