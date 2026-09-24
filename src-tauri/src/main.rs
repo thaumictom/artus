@@ -18,6 +18,7 @@ mod relic_visual_detection;
 mod setup;
 mod state;
 mod store_ext;
+mod tray;
 mod updater;
 mod window_size;
 mod window_watcher;
@@ -54,7 +55,10 @@ fn main() {
         )
         .manage(AppState::default())
         .setup(move |app| setup::init(app, is_wayland))
-        .on_window_event(window_size::handle_window_event)
+        .on_window_event(|window, event| {
+            window_size::handle_window_event(window, event);
+            tray::handle_window_event(window, event);
+        })
         .invoke_handler(tauri::generate_handler![
             hotkeys::get_hotkey,
             hotkeys::set_hotkey,

@@ -3,7 +3,7 @@
 	import { Popover } from 'bits-ui';
 	import { tick } from 'svelte';
 	import { dashboard } from '$lib/worldstate.svelte';
-	import { activeMarketNotificationCount } from '$lib/market-notifications.svelte';
+	import { activeMarketNotificationCount, marketNotificationState } from '$lib/market-notifications.svelte';
 	import { openMarketNotificationTarget } from '$lib/market-navigation.svelte';
 	import {
 		clearNotificationHistory,
@@ -20,6 +20,7 @@
 	let marketNotificationRulesOpen = $state(false);
 	let unreadCount = $derived(notificationCenter.entries.filter((entry) => !entry.read).length);
 	let activeMarketRules = $derived(activeMarketNotificationCount());
+	let marketConnection = $derived(marketNotificationState.connection);
 
 	function sourceIcon(source: NotificationSource) {
 		switch (source) {
@@ -102,11 +103,16 @@
 
 <Popover.Root {open} onOpenChange={handleOpenChange}>
 	<Popover.Trigger
-		aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
-		title="Notifications"
+		aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}${marketConnection !== 'disconnected' ? `, market feed ${marketConnection}` : ''}`}
+		title={marketConnection === 'disconnected' ? 'Notifications' : `Notifications · market feed ${marketConnection}`}
 		class="flex justify-center items-center gap-1.5 hover:bg-elevated px-1.5 border min-w-7.5 h-7.5 cursor-pointer"
 	>
-		<Icon icon="material-symbols:notifications-outline-rounded" class="size-4.5" />
+		<Icon
+			icon={marketConnection === 'connected'
+				? 'material-symbols:notifications-active-rounded'
+				: 'material-symbols:notifications-outline-rounded'}
+			class={`size-4.5 ${marketConnection === 'connecting' ? 'text-warn' : ''}`}
+		/>
 		{#if unreadCount > 0}
 			<span
 				class="flex justify-center items-center bg-accent px-1 rounded-full min-w-4 h-4 font-bold text-[10px] leading-none text-accent-foreground"

@@ -8,6 +8,7 @@
 	import DebugSettings from './categories/DebugSettings.svelte';
 	import Maintenance from './categories/Maintenance.svelte';
 	import NotificationSettings from './categories/NotificationSettings.svelte';
+	import AppBehaviour from './categories/AppBehaviour.svelte';
 	import { onMount } from 'svelte';
 	import { loadSettings } from '$lib/settings.svelte';
 	import { kebabCase } from 'change-case';
@@ -16,6 +17,7 @@
 		{ name: 'Hotkeys', component: Hotkeys },
 		{ name: 'Warframe Settings', component: WarframeSettings },
 		{ name: 'Notifications', component: NotificationSettings },
+		{ name: 'App Behaviour', component: AppBehaviour },
 		{ name: 'Overlay Settings', component: OverlaySettings },
 		{ name: 'Overlay Behaviour', component: OverlayBehaviour },
 		{ name: 'Maintenance', component: Maintenance },
