@@ -4,6 +4,7 @@
 	import { OverlayScrollbarsComponent } from 'overlayscrollbars-svelte';
 	import type { WorldState } from 'warframe-worldstate-parser';
 	import Button from '$lib/components/Button.svelte';
+	import Checkbox from '$lib/components/Checkbox.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
 	import Switch from '$lib/components/Switch.svelte';
 	import { requestDesktopNotificationPermission } from '$lib/notifications.svelte';
@@ -58,7 +59,11 @@
 	const simpleRules = [
 		{ key: 'alerts', title: 'Alerts', description: 'Notify when a new alert appears.' },
 		{ key: 'invasions', title: 'Invasions', description: 'Notify when a new invasion begins.' },
-		{ key: 'dailyDeals', title: 'Daily deals', description: 'Notify when Darvo offers a new deal.' },
+		{
+			key: 'dailyDeals',
+			title: 'Daily deals',
+			description: 'Notify when Darvo offers a new deal.',
+		},
 		{ key: 'baro', title: "Baro Ki'Teer", description: 'Notify when Baro arrives at a relay.' },
 	] as const;
 	let eraOptions = $derived(
@@ -67,7 +72,9 @@
 		),
 	);
 	let missionTypeOptions = $derived(
-		[...new Set([...standardMissionTypes, ...fissures.map((fissure) => fissure.missionType)])].sort(),
+		[
+			...new Set([...standardMissionTypes, ...fissures.map((fissure) => fissure.missionType)]),
+		].sort(),
 	);
 
 	function saveRules() {
@@ -123,13 +130,7 @@
 
 {#snippet dialogClose()}<Button>Done</Button>{/snippet}
 
-<Dialog
-	bind:open
-	trigger={showTrigger ? trigger : undefined}
-	{title}
-	{description}
-	{dialogClose}
->
+<Dialog bind:open trigger={showTrigger ? trigger : undefined} {title} {description} {dialogClose}>
 	<OverlayScrollbarsComponent
 		defer
 		class="flex-1 mr-1.75 min-w-0 min-h-0"
@@ -140,7 +141,9 @@
 				<div class="flex justify-between items-center gap-4 p-4">
 					<div>
 						<h3 class="font-medium text-sm">Fissure missions</h3>
-						<p class="text-muted-foreground text-xs">Notify only when all selected filters match.</p>
+						<p class="text-muted-foreground text-xs">
+							Notify only when all selected filters match.
+						</p>
 					</div>
 					<Switch
 						checked={config.notification_rules.fissures.enabled}
@@ -152,7 +155,10 @@
 						aria-label="Fissure mission notifications"
 					/>
 				</div>
-				<div class:opacity-50={!config.notification_rules.fissures.enabled} class="flex flex-col gap-4 px-4 pb-4">
+				<div
+					class:opacity-50={!config.notification_rules.fissures.enabled}
+					class="flex flex-col gap-4 px-4 pb-4"
+				>
 					<div>
 						<div class="flex justify-between mb-1.5 text-xs">
 							<span class="font-semibold text-muted-foreground">Mission category</span>
@@ -163,9 +169,11 @@
 								<button
 									type="button"
 									disabled={!config.notification_rules.fissures.enabled}
-									aria-pressed={config.notification_rules.fissures.categories.includes(category.value)}
+									aria-pressed={config.notification_rules.fissures.categories.includes(
+										category.value,
+									)}
 									onclick={() => toggleFilter('categories', category.value)}
-									class="aria-pressed:bg-accent aria-pressed:border-accent px-2.5 py-1 border aria-pressed:text-accent-foreground text-xs cursor-pointer disabled:cursor-not-allowed"
+									class="aria-pressed:bg-accent px-2.5 py-1 border aria-pressed:border-accent text-xs aria-pressed:text-accent-foreground cursor-pointer disabled:cursor-not-allowed"
 								>
 									{category.label}
 								</button>
@@ -184,7 +192,7 @@
 									disabled={!config.notification_rules.fissures.enabled}
 									aria-pressed={config.notification_rules.fissures.eras.includes(era)}
 									onclick={() => toggleFilter('eras', era)}
-									class="aria-pressed:bg-accent aria-pressed:border-accent px-2.5 py-1 border aria-pressed:text-accent-foreground text-xs cursor-pointer disabled:cursor-not-allowed"
+									class="aria-pressed:bg-accent px-2.5 py-1 border aria-pressed:border-accent text-xs aria-pressed:text-accent-foreground cursor-pointer disabled:cursor-not-allowed"
 								>
 									{era}
 								</button>
@@ -201,9 +209,11 @@
 								<button
 									type="button"
 									disabled={!config.notification_rules.fissures.enabled}
-									aria-pressed={config.notification_rules.fissures.missionTypes.includes(missionType)}
+									aria-pressed={config.notification_rules.fissures.missionTypes.includes(
+										missionType,
+									)}
 									onclick={() => toggleFilter('missionTypes', missionType)}
-									class="aria-pressed:bg-accent aria-pressed:border-accent px-2.5 py-1 border aria-pressed:text-accent-foreground text-xs cursor-pointer disabled:cursor-not-allowed"
+									class="aria-pressed:bg-accent px-2.5 py-1 border aria-pressed:border-accent text-xs aria-pressed:text-accent-foreground cursor-pointer disabled:cursor-not-allowed"
 								>
 									{missionType}
 								</button>
@@ -214,16 +224,38 @@
 			</section>
 
 			{#each simpleRules as rule (rule.key)}
-				<section class="flex justify-between items-center gap-4 p-4 border">
-					<div>
-						<h3 class="font-medium text-sm">{rule.title}</h3>
-						<p class="text-muted-foreground text-xs">{rule.description}</p>
+				<section class="border">
+					<div class="flex justify-between items-center gap-4 p-4">
+						<div>
+							<h3 class="font-medium text-sm">{rule.title}</h3>
+							<p class="text-muted-foreground text-xs">{rule.description}</p>
+						</div>
+						<Switch
+							checked={config.notification_rules[rule.key]}
+							onCheckedChange={(enabled) => setRule(rule.key, enabled)}
+							aria-label={`${rule.title} notifications`}
+						/>
 					</div>
-					<Switch
-						checked={config.notification_rules[rule.key]}
-						onCheckedChange={(enabled) => setRule(rule.key, enabled)}
-						aria-label={`${rule.title} notifications`}
-					/>
+					{#if rule.key === 'invasions'}
+						<div
+							class="flex items-start gap-3 px-4 pb-4"
+							class:opacity-50={!config.notification_rules.invasions}
+						>
+							<Checkbox
+								id="invasion-exclude-common-rewards"
+								checked={config.notification_rules.invasionExcludeCommonRewards}
+								disabled={!config.notification_rules.invasions}
+								onCheckedChange={(checked) => {
+									config.notification_rules.invasionExcludeCommonRewards = checked;
+									saveRules();
+								}}
+							/>
+							<label for="invasion-exclude-common-rewards" class="text-xs leading-5 cursor-pointer">
+								Do not notify when reward is Fieldron, Detonite Injector, Mutagen Mass or Mutalist
+								Alad V Nav Coordinate
+							</label>
+						</div>
+					{/if}
 				</section>
 			{/each}
 		</div>

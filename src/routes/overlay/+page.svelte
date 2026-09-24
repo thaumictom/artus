@@ -6,6 +6,7 @@
 	import { fade } from 'svelte/transition';
 	import { flyAndScale } from '$lib/transition';
 	import { config, loadSettings, watchOverlayPriceSettings } from '$lib/settings.svelte';
+	import { inventoryNameKey, type InventoryItem } from '$lib/inventory';
 
 	type OcrWord = {
 		text: string;
@@ -39,8 +40,12 @@
 	let showBoundingBoxes = $state(false);
 	let processing = $state(false);
 	let masteredSlugs = $state(new Set<string>());
+	let ownedBySlug = $state(new Map<string, number>());
+	let ownedByName = $state(new Map<string, number>());
 	const masteryStore = new LazyStore('mastery.json');
+	const inventoryStore = new LazyStore('inventory.json');
 	let masteryReadSequence = 0;
+	let inventoryReadSequence = 0;
 
 	async function refreshMasteredSlugs(sequence: number) {
 		try {
@@ -48,6 +53,28 @@
 			if (sequence === masteryReadSequence) masteredSlugs = new Set(slugs ?? []);
 		} catch (error) {
 			console.error('Could not read overlay mastery progress:', error);
+		}
+	}
+
+	function updateOwnedCounts(items: InventoryItem[]) {
+		const slugs = new Map<string, number>();
+		const names = new Map<string, number>();
+		for (const item of items) {
+			if (!Number.isFinite(item.quantity) || item.quantity <= 0) continue;
+			if (item.slug) slugs.set(item.slug, (slugs.get(item.slug) ?? 0) + item.quantity);
+			const name = inventoryNameKey(item.name);
+			names.set(name, (names.get(name) ?? 0) + item.quantity);
+		}
+		ownedBySlug = slugs;
+		ownedByName = names;
+	}
+
+	async function refreshInventory(sequence: number) {
+		try {
+			const items = await inventoryStore.get<InventoryItem[]>('items');
+			if (sequence === inventoryReadSequence) updateOwnedCounts(items ?? []);
+		} catch (error) {
+			console.error('Could not read overlay inventory:', error);
 		}
 	}
 
@@ -63,6 +90,13 @@
 		};
 		watchOverlayPriceSettings().then(registerCleanup);
 		void refreshMasteredSlugs(masteryReadSequence);
+		void refreshInventory(inventoryReadSequence);
+		inventoryStore.onChange<InventoryItem[]>((key, value) => {
+			if (key === 'items') {
+				inventoryReadSequence++;
+				updateOwnedCounts(Array.isArray(value) ? value : []);
+			}
+		}).then(registerCleanup);
 
 		listen('ocr_processing', () => {
 			masteryReadSequence++;
@@ -75,6 +109,7 @@
 			words = event.payload?.words ?? [];
 			// One small store lookup replaces a full catalog load and relationship scan.
 			void refreshMasteredSlugs(++masteryReadSequence);
+			void refreshInventory(++inventoryReadSequence);
 			showBoundingBoxes = event.payload?.show_ocr_bounding_boxes ?? false;
 			// Reload settings to get the latest thresholds if changed
 			loadSettings();
@@ -82,6 +117,7 @@
 
 		listen('ocr_clear', () => {
 			masteryReadSequence++;
+			inventoryReadSequence++;
 			words = [];
 			processing = false;
 		}).then(registerCleanup);
@@ -96,6 +132,7 @@
 		return () => {
 			disposed = true;
 			masteryReadSequence++;
+			inventoryReadSequence++;
 			for (const cleanup of cleanups) cleanup();
 		};
 	});
@@ -198,6 +235,7 @@
 			: word.text}
 
 		{@const isCustom = word.is_custom === true}
+		{@const ownedCount = (word.slug ? ownedBySlug.get(word.slug) : undefined) ?? ownedByName.get(inventoryNameKey(word.text)) ?? 0}
 		<!-- Bounding box for debugging -->
 		{#if showBoundingBoxes}
 			<div
@@ -229,8 +267,11 @@
 					<Icon icon="streamline-flex:safe-vault-solid" class="inline mr-0.5 text-amber-500" />
 				{/if}
 				<span>{displayText}</span>
-				{#if word.slug && masteredSlugs.has(word.slug)}
-					<div class="font-medium text-[10px] text-muted-foreground">mastered</div>
+				{#if (word.slug && masteredSlugs.has(word.slug)) || ownedCount > 0}
+					<div class="font-medium text-[10px] text-muted-foreground">
+						{#if word.slug && masteredSlugs.has(word.slug)}mastered{/if}
+						{#if ownedCount > 0}{word.slug && masteredSlugs.has(word.slug) ? ' · ' : ''}{ownedCount} owned{/if}
+					</div>
 				{/if}
 			</div>
 			{#if displayPrice !== undefined || ducats !== undefined || trades24h !== undefined}

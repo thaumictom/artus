@@ -15,6 +15,7 @@ export type NotificationRules = {
 	};
 	alerts: boolean;
 	invasions: boolean;
+	invasionExcludeCommonRewards: boolean;
 	dailyDeals: boolean;
 	baro: boolean;
 };
@@ -28,6 +29,7 @@ export const defaultNotificationRules = (): NotificationRules => ({
 	},
 	alerts: false,
 	invasions: false,
+	invasionExcludeCommonRewards: true,
 	dailyDeals: false,
 	baro: false,
 });

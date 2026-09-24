@@ -98,7 +98,7 @@
 		activeSection = 'market';
 	});
 
-	function openMasteryMarket(slug: string) {
+	function openMarket(slug: string) {
 		openMarketNotificationTarget(slug, Date.now(), 'sell');
 		activeSection = 'market';
 	}
@@ -186,7 +186,9 @@
 		</div>
 		<MainContent>
 			{#if activeSection === 'mastery'}
-				<MasteryMain onOpenMarket={openMasteryMarket} />
+				<MasteryMain onOpenMarket={openMarket} />
+			{:else if activeSection === 'inventory'}
+				<InventoryTab onOpenMarket={openMarket} />
 			{:else}
 				<CurrentComponent />
 			{/if}

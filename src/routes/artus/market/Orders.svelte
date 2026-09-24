@@ -36,6 +36,18 @@
 		dateStyle: 'medium',
 		timeStyle: 'medium',
 	});
+	const platformNames: Record<string, string> = {
+		pc: 'PC',
+		ps4: 'PlayStation',
+		ps5: 'PlayStation',
+		xbox: 'Xbox',
+		switch: 'Nintendo Switch',
+		mobile: 'Mobile',
+	};
+
+	function formatPlatform(platform: string) {
+		return platformNames[platform.toLowerCase()] ?? platform;
+	}
 
 	function formatTimestamp(timestamp: string) {
 		const date = new Date(timestamp);
@@ -314,6 +326,19 @@
 									aria-label="New order"
 								></span>
 							{/if}
+							<span
+								title={formatPlatform(order.user.platform)}
+								aria-label={`${formatPlatform(order.user.platform)} platform`}
+							>
+								<Icon
+									icon={order.user.platform.toLowerCase() === 'pc'
+										? 'material-symbols:computer-outline-rounded'
+										: order.user.platform.toLowerCase() === 'mobile'
+											? 'material-symbols:smartphone-outline-rounded'
+											: 'material-symbols:sports-esports-outline-rounded'}
+									class="size-4 text-muted-foreground"
+								/>
+							</span>
 							<span>{order.user.ingameName}</span>
 						</div>
 					</td>
@@ -360,6 +385,14 @@
 								<div class="whitespace-nowrap text-xs">
 									<div class="mb-2 font-medium">Copy to clipboard</div>
 									<div class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+										<span class="text-muted-foreground">Platform</span>
+										<span>{formatPlatform(order.user.platform)}</span>
+										{#if order.user.country}
+											<span class="text-muted-foreground">Country</span>
+											<span>{order.user.country}</span>
+										{/if}
+										<span class="text-muted-foreground">Language</span>
+										<span>{order.user.locale}</span>
 										<span class="text-muted-foreground">Created</span>
 										<time datetime={order.createdAt}>{formatTimestamp(order.createdAt)}</time>
 										<span class="text-muted-foreground">Updated</span>

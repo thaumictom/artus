@@ -164,6 +164,7 @@ export async function processWorldStateNotifications(
 		for (const invasion of world.invasions) {
 			const sourceId = invasionKey(invasion);
 			if (previousIds.has(sourceId) || invasion.completed) continue;
+			if (rules.invasionExcludeCommonRewards && hasOnlyExcludedInvasionRewards(invasion)) continue;
 			candidates.push({
 				source: 'invasion',
 				sourceId,
@@ -334,6 +335,28 @@ function alertKey(alert: WorldState['alerts'][number]) {
 
 function invasionKey(invasion: WorldState['invasions'][number]) {
 	return invasion.id || `${invasion.nodeKey}:${dateKey(invasion.activation)}`;
+}
+
+const excludedInvasionRewards = new Set([
+	'fieldron',
+	'detonite injector',
+	'mutagen mass',
+	'mutalist alad v nav coordinate',
+]);
+
+function hasOnlyExcludedInvasionRewards(invasion: WorldState['invasions'][number]) {
+	// Keep invasions that offer any other item on either side.
+	const rewards = [invasion.attacker.reward, invasion.defender.reward].flatMap((reward) =>
+		reward?.countedItems?.length
+			? reward.countedItems.map((item) => item.type)
+			: (reward?.items ?? []),
+	);
+	return (
+		rewards.length > 0 &&
+		rewards.every((item) =>
+			excludedInvasionRewards.has(item.trim().replace(/\s+/g, ' ').toLowerCase()),
+		)
+	);
 }
 
 function dailyDealKey(deal: WorldState['dailyDeals'][number]) {

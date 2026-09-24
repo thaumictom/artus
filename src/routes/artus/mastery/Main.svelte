@@ -26,6 +26,7 @@
 		'All',
 		...new Set([
 			'Prime',
+			'Non-prime',
 			'Tradeable',
 			'Has components',
 			...mastery.items.flatMap((item) => item.tags ?? []),
@@ -41,12 +42,14 @@
 	const filtered = $derived(
 		mastery.items.filter((item) => {
 			if (category !== 'All' && (item.category ?? 'Other') !== category) return false;
-			if (tag === 'Prime' && !item.name.includes('Prime')) return false;
+			const isPrime = item.name.includes('Prime');
+			if (tag === 'Prime' && !isPrime) return false;
+			if (tag === 'Non-prime' && isPrime) return false;
 			if (tag === 'Tradeable' && !item.marketSlug && !item.components.some((part) => part.tradable))
 				return false;
 			if (tag === 'Has components' && item.components.length === 0) return false;
 			if (
-				!['All', 'Prime', 'Tradeable', 'Has components'].includes(tag) &&
+				!['All', 'Prime', 'Non-prime', 'Tradeable', 'Has components'].includes(tag) &&
 				!(item.tags ?? []).includes(tag)
 			)
 				return false;

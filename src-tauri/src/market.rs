@@ -121,8 +121,11 @@ pub async fn get_cached_market_items(app: AppHandle) -> AppResult<Value> {
 
 /// Fetches JSON from a URL with the `Language: en` header.
 async fn fetch_json(client: &reqwest::Client, url: &str) -> AppResult<Value> {
-    let response = client
-        .get(url)
+    fetch_json_request(client.get(url)).await
+}
+
+async fn fetch_json_request(request: reqwest::RequestBuilder) -> AppResult<Value> {
+    let response = request
         .header("Language", "en")
         .timeout(std::time::Duration::from_secs(15))
         .send()
@@ -215,7 +218,14 @@ pub async fn get_market_item(state: State<'_, AppState>, slug: String) -> AppRes
 #[tauri::command]
 pub async fn get_market_orders(state: State<'_, AppState>, slug: String) -> AppResult<Value> {
     let url = format!("{MARKET_API_V2}/orders/item/{slug}");
-    fetch_json(&state.http_client, &url).await
+    fetch_json_request(
+        state
+            .http_client
+            .get(&url)
+            .header("Platform", "pc")
+            .header("Crossplay", "true"),
+    )
+    .await
 }
 
 /// Fetches historical price statistics for an item.
