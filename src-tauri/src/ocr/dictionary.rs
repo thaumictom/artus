@@ -631,7 +631,7 @@ fn match_single_word(
 // ── String similarity ─────────────────────────────────────────────────────────
 
 /// Combined similarity score: 85% Levenshtein distance + 15% token overlap.
-fn similarity_score(left: &str, right: &str) -> f64 {
+pub(super) fn similarity_score(left: &str, right: &str) -> f64 {
     if left == right {
         return 1.0;
     }

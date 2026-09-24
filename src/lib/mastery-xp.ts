@@ -12,8 +12,10 @@ export function masteryXpFor(item: MasteryItem): number {
 }
 
 export function masteryRankProgress(xp: number) {
-	let rank = 0;
-	while (xp >= xpForRank(rank + 1)) rank++;
+	// Manual mastery XP can be any safe integer, so avoid stepping through every rank.
+	const rank = xp < NORMAL_RANK_CAP_XP
+		? Math.floor(Math.sqrt(xp / 2_500))
+		: NORMAL_RANK_CAP + Math.floor((xp - NORMAL_RANK_CAP_XP) / LEGENDARY_RANK_XP);
 	const rankStart = xpForRank(rank);
 	const nextRank = xpForRank(rank + 1);
 	return {

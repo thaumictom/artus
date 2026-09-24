@@ -7,6 +7,7 @@
 
 	const mainSetting = 'ocr_dictionary_mapping_enabled';
 	const thresholdSetting = 'ocr_dictionary_match_threshold';
+	const masteryThresholdSetting = 'ocr_mastery_dictionary_match_threshold';
 </script>
 
 <CommonSetting
@@ -19,6 +20,24 @@
 		onCheckedChange={() => updateSetting(mainSetting)}
 		bind:checked={config[mainSetting]}
 	/>
+</CommonSetting>
+<CommonSetting
+	title="Mastery match threshold"
+	description="Minimum OCR name match confidence for automatically checking mastery items. Separate from price-check dictionary matching."
+	align="vertical"
+>
+	<Slider
+		min={0}
+		max={1}
+		step={0.01}
+		type="single"
+		onValueCommit={() => updateSetting(masteryThresholdSetting)}
+		bind:value={config[masteryThresholdSetting]}
+	>
+		{#snippet thumbLabel({ value })}
+			{(typeof value === 'number' ? value : config[masteryThresholdSetting]).toFixed(2)}
+		{/snippet}
+	</Slider>
 </CommonSetting>
 <CommonSetting
 	title="Dictionary match threshold"

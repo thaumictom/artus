@@ -9,6 +9,7 @@
 pub mod capture;
 pub mod dictionary;
 pub mod engine;
+pub mod mastery;
 pub mod preprocessing;
 
 // ── Public API (explicit re-exports) ──────────────────────────────────────────
@@ -23,6 +24,7 @@ pub use dictionary::{
     map_words_to_dictionary,
 };
 pub use engine::{group_words, resolve_tessdata};
+pub use mastery::{load_mastery_dictionary, map_mastery_words_to_dictionary};
 pub use preprocessing::{apply_morphology, binary_target_filter, gray_to_png_bytes};
 
 use serde::Serialize;
@@ -54,6 +56,7 @@ pub const DEFAULT_OCR_TARGET_RGB: [u8; 3] = [158, 159, 167];
 pub const DEFAULT_OVERLAY_DURATION_SECS: u64 = 10;
 pub const DEFAULT_OCR_DICTIONARY_MAPPING_ENABLED: bool = true;
 pub const DEFAULT_OCR_DICTIONARY_MATCH_THRESHOLD: f64 = 0.62;
+pub const DEFAULT_MASTERY_DICTIONARY_MATCH_THRESHOLD: f64 = 0.86;
 pub const MIN_OCR_DICTIONARY_MATCH_THRESHOLD: f64 = 0.0;
 pub const MAX_OCR_DICTIONARY_MATCH_THRESHOLD: f64 = 1.0;
 
@@ -110,6 +113,8 @@ pub struct OcrWord {
     pub height: f64,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub slug: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mastery_key: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mapping_confidence: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]

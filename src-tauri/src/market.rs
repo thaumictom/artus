@@ -16,7 +16,7 @@ const MARKET_API_V2: &str = "https://api.warframe.market/v2";
 /// Base URL for warframe.market API v1 (statistics endpoint).
 const MARKET_API_V1: &str = "https://api.warframe.market/v1";
 
-fn catalog_path(app: &AppHandle) -> AppResult<std::path::PathBuf> {
+pub(crate) fn catalog_path(app: &AppHandle) -> AppResult<std::path::PathBuf> {
     Ok(app
         .path()
         .app_data_dir()

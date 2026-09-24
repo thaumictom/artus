@@ -5,6 +5,7 @@ use std::sync::atomic::AtomicBool;
 use std::sync::Mutex;
 
 use crate::ocr::dictionary::{OcrDictionaryEntry, TradeablePriceEntry};
+use crate::ocr::mastery::MasteryDictionaryEntry;
 
 /// Shared mutable state for the Tauri application.
 ///
@@ -35,6 +36,9 @@ pub struct AppState {
     /// OCR dictionary entries fetched from the remote API on startup.
     pub ocr_dictionary: Mutex<Vec<OcrDictionaryEntry>>,
 
+    /// Full masterable item and component names, including non-tradeable gear.
+    pub mastery_dictionary: Mutex<Vec<MasteryDictionaryEntry>>,
+
     /// Median prices keyed by item slug, fetched from the remote API.
     pub ocr_tradeable_prices: Mutex<HashMap<String, TradeablePriceEntry>>,
 
@@ -59,6 +63,7 @@ impl Default for AppState {
             overlay_was_visible: AtomicBool::new(false),
             ocr_theme_colors: Mutex::new(HashMap::new()),
             ocr_dictionary: Mutex::new(Vec::new()),
+            mastery_dictionary: Mutex::new(Vec::new()),
             ocr_tradeable_prices: Mutex::new(HashMap::new()),
             warframe_focused: AtomicBool::new(false),
             warframe_running: AtomicBool::new(false),

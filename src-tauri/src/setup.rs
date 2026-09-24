@@ -67,6 +67,7 @@ pub fn init(app: &mut App, is_wayland: bool) -> Result<(), Box<dyn std::error::E
 
     // Refresh the disk-only catalog before the UI can request its local copy.
     log_result("cached market items", crate::market::refresh_item_catalog(app.handle()));
+    log_result("mastery dictionary entries", ocr::load_mastery_dictionary(app.handle()));
 
     // Spawn background tasks
     #[cfg(target_os = "windows")]

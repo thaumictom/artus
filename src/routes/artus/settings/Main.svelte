@@ -6,6 +6,7 @@
 	import OverlaySettings from './categories/OverlaySettings.svelte';
 	import OverlayBehaviour from './categories/OverlayBehaviour.svelte';
 	import DebugSettings from './categories/DebugSettings.svelte';
+	import Maintenance from './categories/Maintenance.svelte';
 	import NotificationSettings from './categories/NotificationSettings.svelte';
 	import { onMount } from 'svelte';
 	import { loadSettings } from '$lib/settings.svelte';
@@ -17,6 +18,7 @@
 		{ name: 'Notifications', component: NotificationSettings },
 		{ name: 'Overlay Settings', component: OverlaySettings },
 		{ name: 'Overlay Behaviour', component: OverlayBehaviour },
+		{ name: 'Maintenance', component: Maintenance },
 		{ name: 'Debug', component: DebugSettings },
 	];
 

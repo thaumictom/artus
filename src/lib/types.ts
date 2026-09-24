@@ -55,6 +55,7 @@ export interface SettingsPatchPayload {
 	overlay_toggle_mode?: boolean;
 	ocr_dictionary_mapping_enabled?: boolean;
 	ocr_dictionary_match_threshold?: number;
+	ocr_mastery_dictionary_match_threshold?: number;
 	relic_reward_detection?: boolean;
 	visual_relic_reward_detection?: boolean;
 	relic_reward_sound?: boolean;

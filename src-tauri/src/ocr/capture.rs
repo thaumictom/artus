@@ -11,9 +11,11 @@ use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, Positio
 use xcap::Window;
 
 use super::{
-    apply_morphology, binary_target_filter, gray_to_png_bytes, group_words, map_words_to_dictionary,
+    apply_morphology, binary_target_filter, gray_to_png_bytes, group_words,
+    map_mastery_words_to_dictionary, map_words_to_dictionary,
     resolve_tessdata, OcrDebugImagePayload, OcrPayload, OcrTextPayload, OcrWord,
-    DEFAULT_OCR_DICTIONARY_MAPPING_ENABLED, DEFAULT_OCR_DICTIONARY_MATCH_THRESHOLD,
+    DEFAULT_MASTERY_DICTIONARY_MATCH_THRESHOLD, DEFAULT_OCR_DICTIONARY_MAPPING_ENABLED,
+    DEFAULT_OCR_DICTIONARY_MATCH_THRESHOLD,
     DEFAULT_OCR_TARGET_RGB, DEFAULT_OVERLAY_DURATION_SECS, ENABLE_OCR_DICTIONARY_MAPPING,
     MAX_OCR_DICTIONARY_MATCH_THRESHOLD, MIN_OCR_DICTIONARY_MATCH_THRESHOLD, OCR_WHITELIST,
     PASS_IMAGE_TO_FRONTEND, PASS_TEXT_TO_FRONTEND,
@@ -374,8 +376,19 @@ fn postprocess_words<R: Runtime>(
             MAX_OCR_DICTIONARY_MATCH_THRESHOLD,
         );
 
-    // Mastery matches against the full catalog in the UI, including non-tradeable gear.
-    let mut finalized = if !is_mastery_add && ENABLE_OCR_DICTIONARY_MAPPING && mapping_enabled {
+    let mastery_mapping_threshold = app
+        .get_setting_f64(
+            "ocr_mastery_dictionary_match_threshold",
+            DEFAULT_MASTERY_DICTIONARY_MATCH_THRESHOLD,
+        )
+        .clamp(
+            MIN_OCR_DICTIONARY_MATCH_THRESHOLD,
+            MAX_OCR_DICTIONARY_MATCH_THRESHOLD,
+        );
+
+    let mut finalized = if is_mastery_add {
+        map_mastery_words_to_dictionary(app, words, mastery_mapping_threshold)
+    } else if ENABLE_OCR_DICTIONARY_MAPPING && mapping_enabled {
         map_words_to_dictionary(app, words, mapping_threshold)
     } else {
         words.to_vec()
@@ -388,7 +401,10 @@ fn postprocess_words<R: Runtime>(
         }
     }
 
-    let mapped = finalized.iter().filter(|w| w.slug.is_some()).count();
+    let mapped = finalized
+        .iter()
+        .filter(|w| w.slug.is_some() || w.mastery_key.is_some())
+        .count();
     let dropped = words.len().saturating_sub(finalized.len());
 
     info!(
@@ -397,8 +413,8 @@ fn postprocess_words<R: Runtime>(
         words.len(),
         mapped,
         dropped,
-        !is_mastery_add && ENABLE_OCR_DICTIONARY_MAPPING && mapping_enabled,
-        mapping_threshold,
+        is_mastery_add || (ENABLE_OCR_DICTIONARY_MAPPING && mapping_enabled),
+        if is_mastery_add { mastery_mapping_threshold } else { mapping_threshold },
     );
 
     // Optionally emit plain text to the dashboard

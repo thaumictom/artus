@@ -34,6 +34,7 @@ export const mastery = $state({
 	items: [] as MasteryItem[],
 	checked: [] as string[],
 	automatic: [] as string[],
+	otherXp: 0,
 	prices: {} as z.infer<typeof tradeablePriceSchema>,
 	ducats: {} as Record<string, number>,
 	loading: true,
@@ -47,9 +48,11 @@ let saveQueue = Promise.resolve();
 function persist() {
 	const checked = [...mastery.checked];
 	const automatic = [...mastery.automatic];
+	const otherXp = mastery.otherXp;
 	saveQueue = saveQueue.then(async () => {
 		await store.set('checked', checked);
 		await store.set('automatic', automatic);
+		await store.set('otherXp', otherXp);
 		await store.save();
 	}).catch((error) => console.error('Could not save mastery progress:', error));
 }
@@ -67,23 +70,21 @@ export function dismissMasteryDots() {
 	persist();
 }
 
-function normalize(value: string) {
-	return value.toLowerCase().replace(/[^a-z0-9]/g, '');
+export function resetMasteryItems() {
+	mastery.checked = [];
+	mastery.automatic = [];
+	persist();
 }
 
-function markOcrWords(words: { text: string }[]) {
-	const byName = new Map<string, string[]>();
-	for (const item of mastery.items) {
-		for (const entry of [item, ...item.components]) {
-			const name = normalize(`${entry === item ? entry.name : `${item.name} ${entry.name}`} MAX RANK`);
-			byName.set(name, [...(byName.get(name) ?? []), entry.key]);
-		}
-	}
-	const found = new Set<string>();
-	for (const word of words) {
-		const matches = byName.get(normalize(word.text));
-		if (matches?.length === 1) found.add(matches[0]);
-	}
+export function setOtherMasteryXp(xp: number) {
+	if (!Number.isSafeInteger(xp) || xp < 0) return;
+	mastery.otherXp = xp;
+	persist();
+}
+
+function markOcrWords(words: { mastery_key?: string }[]) {
+	const validKeys = new Set(mastery.items.flatMap((item) => [item.key, ...item.components.map((part) => part.key)]));
+	const found = new Set(words.map((word) => word.mastery_key).filter((key): key is string => !!key && validKeys.has(key)));
 	if (found.size === 0) return;
 	mastery.checked = [...new Set([...mastery.checked, ...found])];
 	mastery.automatic = [...new Set([...mastery.automatic, ...found])];
@@ -94,13 +95,15 @@ export function initializeMastery() {
 	if (startPromise) return startPromise;
 	startPromise = (async () => {
 		try {
-			const [checked, automatic, response] = await Promise.all([
+			const [checked, automatic, otherXp, response] = await Promise.all([
 				store.get<string[]>('checked'),
 				store.get<string[]>('automatic'),
+				store.get<number>('otherXp'),
 				invoke<Record<string, unknown>>('get_cached_market_items')
 			]);
 			mastery.checked = Array.isArray(checked) ? checked : [];
 			mastery.automatic = Array.isArray(automatic) ? automatic : [];
+			mastery.otherXp = typeof otherXp === 'number' && Number.isSafeInteger(otherXp) && otherXp >= 0 ? otherXp : 0;
 			const catalog = new Map<string, z.infer<typeof catalogItemSchema>>();
 			for (const [key, value] of Object.entries(response)) {
 				const parsed = catalogItemSchema.safeParse(value);
@@ -135,7 +138,7 @@ export function initializeMastery() {
 					mastery.ducats = ducats;
 				})
 				.catch((error) => console.error('Could not load mastery ducat values:', error));
-			unlisten = await listen<{ words: { text: string }[]; is_mastery_add?: boolean }>('ocr_result', (event) => {
+			unlisten = await listen<{ words: { mastery_key?: string }[]; is_mastery_add?: boolean }>('ocr_result', (event) => {
 				if (event.payload.is_mastery_add) markOcrWords(event.payload.words);
 			});
 			mastery.error = '';

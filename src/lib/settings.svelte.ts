@@ -55,6 +55,7 @@ type Config = {
 	show_ocr_bounding_boxes: boolean;
 	ocr_dictionary_mapping_enabled: boolean;
 	ocr_dictionary_match_threshold: number;
+	ocr_mastery_dictionary_match_threshold: number;
 	capture_mods: boolean;
 	hide_overlay_on_focus_loss: boolean;
 	cleanup_on_focus_loss: boolean;
@@ -111,6 +112,7 @@ export const config = $state({
 
 	ocr_dictionary_mapping_enabled: true,
 	ocr_dictionary_match_threshold: 0.62,
+	ocr_mastery_dictionary_match_threshold: 0.86,
 
 	// Ducat price/salvage ratio settings
 	threshold_100: [10, 15],
