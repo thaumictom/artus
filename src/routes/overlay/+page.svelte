@@ -91,12 +91,14 @@
 		watchOverlayPriceSettings().then(registerCleanup);
 		void refreshMasteredSlugs(masteryReadSequence);
 		void refreshInventory(inventoryReadSequence);
-		inventoryStore.onChange<InventoryItem[]>((key, value) => {
-			if (key === 'items') {
-				inventoryReadSequence++;
-				updateOwnedCounts(Array.isArray(value) ? value : []);
-			}
-		}).then(registerCleanup);
+		inventoryStore
+			.onChange<InventoryItem[]>((key, value) => {
+				if (key === 'items') {
+					inventoryReadSequence++;
+					updateOwnedCounts(Array.isArray(value) ? value : []);
+				}
+			})
+			.then(registerCleanup);
 
 		listen('ocr_processing', () => {
 			masteryReadSequence++;
@@ -235,7 +237,10 @@
 			: word.text}
 
 		{@const isCustom = word.is_custom === true}
-		{@const ownedCount = (word.slug ? ownedBySlug.get(word.slug) : undefined) ?? ownedByName.get(inventoryNameKey(word.text)) ?? 0}
+		{@const ownedCount =
+			(word.slug ? ownedBySlug.get(word.slug) : undefined) ??
+			ownedByName.get(inventoryNameKey(word.text)) ??
+			0}
 		<!-- Bounding box for debugging -->
 		{#if showBoundingBoxes}
 			<div
@@ -255,7 +260,7 @@
 		>
 			<div
 				class={{
-					'border-b text-center font-semibold px-2 py-1': true,
+					'border-b text-center font-semibold px-2 py-1 flex flex-col': true,
 					'font-stretch-extra-condensed': displayText.length > 30,
 					'font-stretch-condensed': displayText.length > 20,
 					'font-stretch-semi-condensed': displayText.length > 15,
@@ -263,14 +268,30 @@
 				}}
 				style:border-bottom-color={modColor}
 			>
-				{#if word.vaulted}
-					<Icon icon="streamline-flex:safe-vault-solid" class="inline mr-0.5 text-amber-500" />
-				{/if}
-				<span>{displayText}</span>
-				{#if (word.slug && masteredSlugs.has(word.slug)) || ownedCount > 0}
+				<div>
+					<!-- {#if word.vaulted}
+						<Icon icon="streamline-flex:safe-vault-solid" class="inline mr-0.5 text-amber-500" />
+					{/if} -->
+					{#if word.slug && masteredSlugs.has(word.slug)}
+						<Icon icon="hugeicons:laurel-wreath-left-03" class="inline size-3.5 text-orange-300" />
+					{/if}
+					<span class="[text-box-trim:trim-both] [text-box-edge:cap_alphabetic]">
+						{displayText}
+					</span>
+					{#if word.slug && masteredSlugs.has(word.slug)}
+						<Icon icon="hugeicons:laurel-wreath-right-03" class="inline size-3.5 text-orange-300" />
+					{/if}
+				</div>
+				{#if word.vaulted || ownedCount > 0}
 					<div class="font-medium text-[10px] text-muted-foreground">
-						{#if word.slug && masteredSlugs.has(word.slug)}mastered{/if}
-						{#if ownedCount > 0}{word.slug && masteredSlugs.has(word.slug) ? ' · ' : ''}{ownedCount} owned{/if}
+						{#if word.vaulted}
+							<span class="text-amber-500">vaulted</span>
+						{/if}
+						{#if word.vaulted && ownedCount > 0}
+							<span class="mx-0.5">•</span>
+						{/if}
+						<!-- {#if word.slug && masteredSlugs.has(word.slug)}mastered{/if} -->
+						{#if ownedCount > 0}{ownedCount} owned{/if}
 					</div>
 				{/if}
 			</div>

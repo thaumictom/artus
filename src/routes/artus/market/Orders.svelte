@@ -36,6 +36,7 @@
 		dateStyle: 'medium',
 		timeStyle: 'medium',
 	});
+	const languageNames = new Intl.DisplayNames(undefined, { type: 'language' });
 	const platformNames: Record<string, string> = {
 		pc: 'PC',
 		ps4: 'PlayStation',
@@ -47,6 +48,25 @@
 
 	function formatPlatform(platform: string) {
 		return platformNames[platform.toLowerCase()] ?? platform;
+	}
+
+	function formatLanguage(locale: string) {
+		try {
+			return languageNames.of(locale) ?? locale;
+		} catch {
+			return locale;
+		}
+	}
+
+	function platformIcon(platform: string) {
+		switch (platform.toLowerCase()) {
+			case 'pc':
+				return 'material-symbols:computer-outline-rounded';
+			case 'mobile':
+				return 'material-symbols:smartphone-outline-rounded';
+			default:
+				return 'material-symbols:sports-esports-outline-rounded';
+		}
 	}
 
 	function formatTimestamp(timestamp: string) {
@@ -129,13 +149,12 @@
 							targetHighlightSince === undefined
 								? []
 								: data
-										.filter(
-											(order) =>
-												(Date.parse(order.createdAt) || 0) >= targetHighlightSince,
-										)
+										.filter((order) => (Date.parse(order.createdAt) || 0) >= targetHighlightSince)
 										.map((order) => order.id),
-								)
-							: new Set(data.filter((order) => !previousOrderIds?.has(order.id)).map((order) => order.id));
+						)
+					: new Set(
+							data.filter((order) => !previousOrderIds?.has(order.id)).map((order) => order.id),
+						);
 			previousOrderIds = new Set(data.map((order) => order.id));
 
 			ordersData = data;
@@ -195,17 +214,21 @@
 			groupFilterRange = [0, 0];
 		});
 
-		const focusedRefresh = createFocusedRefresh(async () => {
-			isRefreshing = true;
-			ordersError = null;
-			try {
-				await loadOrdersData(targetSlug, targetHighlightSince, () => !disposed);
-			} finally {
-				if (!disposed) {
-					isRefreshing = false;
+		const focusedRefresh = createFocusedRefresh(
+			async () => {
+				isRefreshing = true;
+				ordersError = null;
+				try {
+					await loadOrdersData(targetSlug, targetHighlightSince, () => !disposed);
+				} finally {
+					if (!disposed) {
+						isRefreshing = false;
+					}
 				}
-			}
-		}, REFRESH_INTERVAL_MS, { immediate: true });
+			},
+			REFRESH_INTERVAL_MS,
+			{ immediate: true },
+		);
 
 		reloadOrders = () => {
 			if (disposed || isRefreshing || isReloadCoolingDown) return;
@@ -331,11 +354,7 @@
 								aria-label={`${formatPlatform(order.user.platform)} platform`}
 							>
 								<Icon
-									icon={order.user.platform.toLowerCase() === 'pc'
-										? 'material-symbols:computer-outline-rounded'
-										: order.user.platform.toLowerCase() === 'mobile'
-											? 'material-symbols:smartphone-outline-rounded'
-											: 'material-symbols:sports-esports-outline-rounded'}
+									icon={platformIcon(order.user.platform)}
 									class="size-4 text-muted-foreground"
 								/>
 							</span>
@@ -382,17 +401,16 @@
 								<Icon icon="material-symbols:content-copy" class="size-4" />
 							{/snippet}
 							{#snippet content()}
-								<div class="whitespace-nowrap text-xs">
+								<div class="text-xs whitespace-nowrap">
 									<div class="mb-2 font-medium">Copy to clipboard</div>
-									<div class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+									<div class="gap-x-3 gap-y-1 grid grid-cols-[auto_1fr]">
 										<span class="text-muted-foreground">Platform</span>
-										<span>{formatPlatform(order.user.platform)}</span>
-										{#if order.user.country}
-											<span class="text-muted-foreground">Country</span>
-											<span>{order.user.country}</span>
-										{/if}
+										<span class="inline-flex items-center gap-1">
+											<Icon icon={platformIcon(order.user.platform)} class="size-3.5" />
+											{formatPlatform(order.user.platform)}
+										</span>
 										<span class="text-muted-foreground">Language</span>
-										<span>{order.user.locale}</span>
+										<span>{formatLanguage(order.user.locale)}</span>
 										<span class="text-muted-foreground">Created</span>
 										<time datetime={order.createdAt}>{formatTimestamp(order.createdAt)}</time>
 										<span class="text-muted-foreground">Updated</span>

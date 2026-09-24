@@ -4,6 +4,7 @@ use image::{DynamicImage, GrayImage, ImageFormat};
 use imageproc::distance_transform::Norm;
 use imageproc::morphology::{dilate_mut, erode_mut};
 use std::io::Cursor;
+use std::sync::OnceLock;
 
 use super::{BINARY_FILTER_SPILL_THRESHOLD, ENABLE_MORPHOLOGY};
 use crate::error::AppResult;
@@ -43,6 +44,90 @@ pub fn binary_target_filter(source: &image::RgbaImage, target_rgbs: &[[u8; 3]]) 
     }
 
     GrayImage::from_raw(width, height, output).expect("invalid binary filter output dimensions")
+}
+
+/// Erases checkmark icons from the binary image before they can become OCR text.
+pub fn remove_checkmarks(image: &mut GrayImage) {
+    static TEMPLATE: OnceLock<GrayImage> = OnceLock::new();
+    let template = TEMPLATE.get_or_init(|| {
+        image::load_from_memory(include_bytes!("../checkmark_template.png"))
+            .expect("invalid checkmark template")
+            .into_luma8()
+    });
+    let (width, height) = image.dimensions();
+    let (tw, th) = template.dimensions();
+    if width < tw || height < th {
+        return;
+    }
+
+    let foreground: Vec<_> = template.pixels().map(|pixel| pixel[0] == 0).collect();
+    let black_total = foreground.iter().filter(|&&v| v).count();
+    let white_total = foreground.len() - black_total;
+    let raw = image.as_mut();
+    for y in 0..=height - th {
+        let mut x = 0;
+        while x <= width - tw {
+            let anchors = [(14, 1), (18, 14), (15, 18), (15, 28)];
+            if anchors
+                .iter()
+                .filter(|&&(ax, ay)| {
+                    raw[(y + ay) as usize * width as usize + (x + ax) as usize] == 0
+                })
+                .count()
+                < 3
+            {
+                x += 1;
+                continue;
+            }
+            let mut black = 0;
+            let mut white = 0;
+            for ty in 0..th as usize {
+                let row = (y as usize + ty) * width as usize + x as usize;
+                let template_row = ty * tw as usize;
+                for tx in 0..tw as usize {
+                    if foreground[template_row + tx] {
+                        black += (raw[row + tx] == 0) as usize;
+                    } else {
+                        white += (raw[row + tx] == 255) as usize;
+                    }
+                }
+            }
+            if black * 10 >= 8 * black_total && white * 10 >= 8 * white_total {
+                for ty in 0..th as usize {
+                    let start = (y as usize + ty) * width as usize + x as usize;
+                    raw[start..start + tw as usize].fill(255);
+                }
+                x += tw;
+            } else {
+                x += 1;
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod checkmark_tests {
+    use super::*;
+
+    #[test]
+    fn erases_checkmark_without_erasing_other_pixels() {
+        let template = image::load_from_memory(include_bytes!("../checkmark_template.png"))
+            .unwrap()
+            .into_luma8();
+        let mut image = GrayImage::from_pixel(60, 40, image::Luma([255]));
+        for (x, y, pixel) in template.enumerate_pixels() {
+            if pixel[0] == 0 {
+                image.put_pixel(x + 5, y + 5, image::Luma([0]));
+            }
+        }
+        image.put_pixel(50, 20, image::Luma([0]));
+
+        remove_checkmarks(&mut image);
+
+        assert!(image
+            .enumerate_pixels()
+            .all(|(x, y, pixel)| (x, y) == (50, 20) || pixel[0] == 255));
+    }
 }
 
 /// Applies erosion followed by dilation to remove noise.

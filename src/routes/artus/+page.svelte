@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { invoke } from '@tauri-apps/api/core';
+	import { listen } from '@tauri-apps/api/event';
 	import { onMount, tick } from 'svelte';
 	import { initializeWorldState, reloadWorldState } from '$lib/worldstate.svelte';
 	import {
@@ -7,6 +8,7 @@
 		initializeNotificationCenter,
 	} from '$lib/notifications.svelte';
 	import { loadSettings } from '$lib/settings.svelte';
+	import { ocrDebug } from '$lib/ocr-debug.svelte';
 	import { initializeMarketNotifications } from '$lib/market-notifications.svelte';
 	import { marketNavigation, openMarketNotificationTarget } from '$lib/market-navigation.svelte';
 	import { appNavigation, navigateBack, navigateForward, navigateTo } from '$lib/app-navigation.svelte';
@@ -31,6 +33,11 @@
 
 	type UpdateAvailablePayload = {
 		version: string;
+	};
+	type OcrDebugImagePayload = {
+		png_bytes: number[];
+		width: number;
+		height: number;
 	};
 
 	const sections: Sections = {
@@ -74,6 +81,22 @@
 	const NOTIFICATION_REFRESH_INTERVAL_MS = 5 * 60_000;
 
 	onMount(() => {
+		let disposed = false;
+		let unlistenDebug: (() => void) | undefined;
+		void listen<OcrDebugImagePayload>('ocr_debug_image', ({ payload }) => {
+			if (disposed) return;
+			if (ocrDebug.imageUrl) URL.revokeObjectURL(ocrDebug.imageUrl);
+			ocrDebug.imageUrl = URL.createObjectURL(
+				new Blob([new Uint8Array(payload.png_bytes)], { type: 'image/png' }),
+			);
+			ocrDebug.width = payload.width;
+			ocrDebug.height = payload.height;
+		})
+			.then((unlisten) => {
+				if (disposed) unlisten();
+				else unlistenDebug = unlisten;
+			})
+			.catch((error) => console.error('Could not listen for OCR debug images:', error));
 		// Side buttons are reported as buttons 3 (Back) and 4 (Forward).
 		function preventSideButtonDefault(event: MouseEvent) {
 			if (event.button === 3 || event.button === 4) event.preventDefault();
@@ -97,6 +120,10 @@
 		void initializeMastery();
 		void checkForUpdate();
 		return () => {
+			disposed = true;
+			unlistenDebug?.();
+			if (ocrDebug.imageUrl) URL.revokeObjectURL(ocrDebug.imageUrl);
+			ocrDebug.imageUrl = null;
 			window.removeEventListener('mousedown', preventSideButtonDefault, true);
 			window.removeEventListener('mouseup', handleSideButton, true);
 			window.removeEventListener('auxclick', preventSideButtonDefault, true);

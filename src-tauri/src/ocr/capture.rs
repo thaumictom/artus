@@ -219,6 +219,7 @@ fn preprocess_capture<R: Runtime>(
     }
 
     let mut filtered = binary_target_filter(&capture.image, &targets);
+    crate::ocr::preprocessing::remove_checkmarks(&mut filtered);
     apply_morphology(&mut filtered);
 
     let upscale_factor = 2;
@@ -247,7 +248,10 @@ fn preprocess_capture<R: Runtime>(
     let upscaled = image::GrayImage::from_raw(dst_width, dst_height, dst_raw)
         .expect("Failed to create upscaled image");
 
-    info!("preprocess (binary filter + morphology + upscale): {:?}", t.elapsed());
+    info!(
+        "preprocess (binary filter + checkmarks + morphology + upscale): {:?}",
+        t.elapsed()
+    );
     (upscaled, upscale_factor)
 }
 

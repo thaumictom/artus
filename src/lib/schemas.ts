@@ -141,7 +141,6 @@ export const UserSchema = z.looseObject({
 	masteryLevel: z.number().int().optional(),
 
 	platform: z.string(),
-	country: z.string().optional(),
 	crossplay: z.boolean(),
 	locale: z.string(),
 
