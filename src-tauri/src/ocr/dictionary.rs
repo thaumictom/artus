@@ -1,9 +1,11 @@
 //! Remote dictionary fetching, fuzzy matching, and tradeable-item price lookups.
 
 use std::collections::{BTreeMap, HashMap};
-use std::time::Duration;
+use std::sync::atomic::Ordering;
+use std::time::{Duration, Instant};
 
 use log::{info, warn};
+use rayon::prelude::*;
 use serde::Deserialize;
 use tauri::{AppHandle, Manager, Runtime};
 
@@ -22,6 +24,7 @@ pub struct OcrDictionaryEntry {
     pub name: String,
     pub slug: String,
     pub tags: Vec<String>,
+    pub normalized_tags: Vec<String>,
     pub normalized_name: String,
     pub ducats: Option<u64>,
     pub vaulted: Option<bool>,
@@ -231,6 +234,7 @@ pub fn load_ocr_dictionary<R: Runtime>(app: &AppHandle<R>) -> AppResult<usize> {
                             name: entry_name,
                             slug: format!("{}_{}", slug, slug_suffix),
                             tags: item.tags.clone(),
+                            normalized_tags: Vec::new(),
                             normalized_name: normalized,
                             ducats: item.ducats,
                             vaulted: item.vaulted,
@@ -255,6 +259,7 @@ pub fn load_ocr_dictionary<R: Runtime>(app: &AppHandle<R>) -> AppResult<usize> {
                         name: name.to_string(),
                         slug: slug.to_string(),
                         tags: item.tags,
+                        normalized_tags: Vec::new(),
                         normalized_name,
                         ducats: item.ducats,
                         vaulted: item.vaulted,
@@ -281,6 +286,14 @@ pub fn load_ocr_dictionary<R: Runtime>(app: &AppHandle<R>) -> AppResult<usize> {
         if let Some(entry) = build_custom_dictionary_entry(name) {
             entries.push(entry);
         }
+    }
+
+    for entry in &mut entries {
+        entry.normalized_tags = entry
+            .tags
+            .iter()
+            .map(|tag| normalize_dictionary_text(tag))
+            .collect();
     }
 
     entries.sort_by(|a, b| a.normalized_name.cmp(&b.normalized_name));
@@ -514,27 +527,48 @@ pub fn map_words_to_dictionary<R: Runtime>(
         return words.to_vec();
     }
 
-    // Lazy-load prices if they haven't been fetched yet
+    // Retry a failed startup price fetch in the background; OCR must not wait on HTTP.
     let needs_prices = state
         .ocr_tradeable_prices
         .lock()
         .map(|p| p.is_empty())
         .unwrap_or(false);
 
-    if needs_prices {
-        match load_tradeable_item_prices(app) {
-            Ok(count) => info!("lazy-loaded tradeable item prices: {count}"),
-            Err(err) => warn!("failed to lazy-load tradeable item prices: {err}"),
-        }
+    if needs_prices
+        && !state
+            .ocr_price_retry_in_progress
+            .swap(true, Ordering::AcqRel)
+    {
+        let app = app.clone();
+        tauri::async_runtime::spawn_blocking(move || {
+            match load_tradeable_item_prices(&app) {
+                Ok(count) => info!("background-loaded tradeable item prices: {count}"),
+                Err(err) => warn!("failed to background-load tradeable item prices: {err}"),
+            }
+            app.state::<AppState>()
+                .ocr_price_retry_in_progress
+                .store(false, Ordering::Release);
+        });
     }
 
     let prices = state.ocr_tradeable_prices.lock().ok();
     let prices_ref = prices.as_deref();
-
-    words
-        .iter()
-        .filter_map(|word| match_single_word(word, &dict, prices_ref, threshold))
-        .collect()
+    let dictionary: &[OcrDictionaryEntry] = &dict;
+    let start = Instant::now();
+    let mapped = words
+        .par_iter()
+        .map(|word| match_single_word(word, dictionary, prices_ref, threshold))
+        .collect::<Vec<_>>()
+        .into_iter()
+        .flatten()
+        .collect::<Vec<_>>();
+    info!(
+        "dictionary matching: {:?} ({} words, {} entries)",
+        start.elapsed(),
+        words.len(),
+        dictionary.len()
+    );
+    mapped
 }
 
 /// Finds the best dictionary match for a single word/block.
@@ -550,28 +584,39 @@ fn match_single_word(
     }
     let tokens: Vec<&str> = normalized.split_whitespace().collect();
 
-    // Find the highest-scoring candidate
-    let best = dictionary
-        .iter()
-        .map(|candidate| {
-            // Bonus for tag overlap with OCR tokens
-            let tag_bonus = candidate
-                .tags
-                .iter()
-                .filter(|tag| {
-                    let nt = normalize_dictionary_text(tag);
-                    !nt.is_empty() && tokens.iter().any(|t| *t == nt.as_str())
-                })
-                .count() as f64
-                * 0.02;
+    let mut scratch = LevenshteinScratch::default();
+    let mut best: Option<(&OcrDictionaryEntry, f64)> = None;
+    for candidate in dictionary {
+        // Bonus for tag overlap with OCR tokens.
+        let tag_bonus = candidate
+            .normalized_tags
+            .iter()
+            .filter(|tag| !tag.is_empty() && tokens.iter().any(|t| *t == tag.as_str()))
+            .count() as f64
+            * 0.02;
+        let overlap = token_overlap_score(&normalized, &candidate.normalized_name);
+        let max_len = normalized.len().max(candidate.normalized_name.len());
+        let length_bound = 1.0
+            - normalized.len().abs_diff(candidate.normalized_name.len()) as f64 / max_len as f64;
+        let score_bound = (length_bound * 0.85 + overlap * 0.15 + tag_bonus).min(1.0);
+        // Levenshtein distance cannot be smaller than the difference in lengths.
+        if score_bound + 1e-12 < threshold.max(best.map_or(0.0, |(_, score)| score)) {
+            continue;
+        }
+        let score = (similarity_score_with_overlap(
+            &normalized,
+            &candidate.normalized_name,
+            overlap,
+            &mut scratch,
+        ) + tag_bonus)
+            .min(1.0);
+        // The previous max_by chose the last entry on equal scores.
+        if best.is_none_or(|(_, best_score)| score >= best_score) {
+            best = Some((candidate, score));
+        }
+    }
 
-            let score =
-                (similarity_score(&normalized, &candidate.normalized_name) + tag_bonus).min(1.0);
-            (candidate, score)
-        })
-        .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))?;
-
-    let (candidate, score) = best;
+    let (candidate, score) = best?;
     if score < threshold {
         return None;
     }
@@ -632,6 +677,16 @@ fn match_single_word(
 
 /// Combined similarity score: 85% Levenshtein distance + 15% token overlap.
 pub(super) fn similarity_score(left: &str, right: &str) -> f64 {
+    let overlap = token_overlap_score(left, right);
+    similarity_score_with_overlap(left, right, overlap, &mut LevenshteinScratch::default())
+}
+
+fn similarity_score_with_overlap(
+    left: &str,
+    right: &str,
+    overlap: f64,
+    scratch: &mut LevenshteinScratch,
+) -> f64 {
     if left == right {
         return 1.0;
     }
@@ -641,21 +696,23 @@ pub(super) fn similarity_score(left: &str, right: &str) -> f64 {
         return 0.0;
     }
 
-    let distance = levenshtein_distance(left.as_bytes(), right.as_bytes());
+    let distance = scratch.distance(left.as_bytes(), right.as_bytes());
     let lev_score = 1.0 - distance as f64 / max_len as f64;
-    let overlap = token_overlap_score(left, right);
     (lev_score * 0.85 + overlap * 0.15).clamp(0.0, 1.0)
 }
 
 /// Fraction of tokens shared between two strings.
 fn token_overlap_score(left: &str, right: &str) -> f64 {
-    let lt: Vec<&str> = left.split_whitespace().collect();
-    let rt: Vec<&str> = right.split_whitespace().collect();
-    if lt.is_empty() || rt.is_empty() {
+    let left_tokens = left.split_whitespace();
+    let left_count = left_tokens.clone().count();
+    let right_count = right.split_whitespace().count();
+    if left_count == 0 || right_count == 0 {
         return 0.0;
     }
-    let shared = lt.iter().filter(|t| rt.contains(t)).count();
-    shared as f64 / lt.len().max(rt.len()) as f64
+    let shared = left_tokens
+        .filter(|token| right.split_whitespace().any(|other| token == &other))
+        .count();
+    shared as f64 / left_count.max(right_count) as f64
 }
 
 /// Normalizes text for dictionary comparison: lowercase alphanumeric with
@@ -692,6 +749,7 @@ fn build_custom_dictionary_entry(name: &str) -> Option<OcrDictionaryEntry> {
         name: trimmed.to_string(),
         slug: normalized.replace(' ', "_"),
         tags: Vec::new(),
+        normalized_tags: Vec::new(),
         normalized_name: normalized,
         ducats: None,
         vaulted: None,
@@ -704,26 +762,103 @@ fn build_custom_dictionary_entry(name: &str) -> Option<OcrDictionaryEntry> {
     })
 }
 
-/// Classic two-row dynamic-programming Levenshtein distance.
-fn levenshtein_distance(left: &[u8], right: &[u8]) -> usize {
-    if left.is_empty() {
-        return right.len();
-    }
-    if right.is_empty() {
-        return left.len();
-    }
+/// Reuse the two DP rows across candidates for one OCR word.
+#[derive(Default)]
+struct LevenshteinScratch {
+    prev: Vec<usize>,
+    curr: Vec<usize>,
+}
 
-    let mut prev: Vec<usize> = (0..=right.len()).collect();
-    let mut curr = vec![0usize; right.len() + 1];
-
-    for (li, lb) in left.iter().enumerate() {
-        curr[0] = li + 1;
-        for (ri, rb) in right.iter().enumerate() {
-            let cost = if lb == rb { 0 } else { 1 };
-            curr[ri + 1] = (prev[ri + 1] + 1).min(curr[ri] + 1).min(prev[ri] + cost);
+impl LevenshteinScratch {
+    fn distance(&mut self, left: &[u8], right: &[u8]) -> usize {
+        if left.is_empty() {
+            return right.len();
         }
-        std::mem::swap(&mut prev, &mut curr);
+        if right.is_empty() {
+            return left.len();
+        }
+        let row_len = right.len() + 1;
+        self.prev.resize(row_len, 0);
+        self.curr.resize(row_len, 0);
+        for (index, value) in self.prev[..row_len].iter_mut().enumerate() {
+            *value = index;
+        }
+        for (li, lb) in left.iter().enumerate() {
+            self.curr[0] = li + 1;
+            for (ri, rb) in right.iter().enumerate() {
+                let cost = usize::from(lb != rb);
+                self.curr[ri + 1] = (self.prev[ri + 1] + 1)
+                    .min(self.curr[ri] + 1)
+                    .min(self.prev[ri] + cost);
+            }
+            std::mem::swap(&mut self.prev, &mut self.curr);
+        }
+        self.prev[right.len()]
     }
+}
 
-    prev[right.len()]
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn optimized_match_keeps_reference_ranking_and_threshold() {
+        let mut entries = [
+            "Gyre Prime",
+            "Gyre Prime Chassis Blueprint",
+            "Gyre Prime Systems Blueprint",
+            "Gara Prime Chassis Blueprint",
+            "Gyre Prime Neuroptics Blueprint",
+            "Gyre Prime Set",
+        ]
+        .iter()
+        .map(|name| build_custom_dictionary_entry(name).unwrap())
+        .collect::<Vec<_>>();
+        entries[1].tags = vec!["prime".into()];
+        entries[1].normalized_tags = vec!["prime".into()];
+        // Duplicate names exercise the original last-entry tie behavior.
+        let mut duplicate = entries[1].clone();
+        duplicate.slug = "last_equal_match".into();
+        entries.push(duplicate);
+
+        for text in [
+            "Gyre Prime Chassis Blueprint",
+            "Gyre Prirne Chassis Blueprint",
+            "Gyre Prime Systems Blueprint",
+            "Gara Prime Chassis Blueprint",
+            "unrelated text",
+        ] {
+            let normalized = normalize_dictionary_text(text);
+            let tokens = normalized.split_whitespace().collect::<Vec<_>>();
+            let reference = entries
+                .iter()
+                .map(|entry| {
+                    let tag_bonus = entry
+                        .normalized_tags
+                        .iter()
+                        .filter(|tag| tokens.iter().any(|token| *token == tag.as_str()))
+                        .count() as f64
+                        * 0.02;
+                    let score = (similarity_score(&normalized, &entry.normalized_name) + tag_bonus)
+                        .min(1.0);
+                    (entry, score)
+                })
+                .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
+
+            for threshold in [0.0, 0.62, 0.86, 1.0] {
+                let expected = reference
+                    .filter(|(_, score)| *score >= threshold)
+                    .map(|(entry, score)| (entry.slug.as_str(), score));
+                let word = OcrWord::new(text.into(), 0.0, 0.0, 0.0, 0.0);
+                let actual = match_single_word(&word, &entries, None, threshold);
+                assert_eq!(
+                    actual.as_ref().and_then(|word| word.slug.as_deref()),
+                    expected.map(|value| value.0)
+                );
+                if let (Some(actual), Some((_, expected_score))) = (actual, expected) {
+                    assert!((actual.mapping_confidence.unwrap() - expected_score).abs() < 1e-12);
+                }
+            }
+        }
+    }
 }

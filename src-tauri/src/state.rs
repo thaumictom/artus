@@ -42,6 +42,9 @@ pub struct AppState {
     /// Median prices keyed by item slug, fetched from the remote API.
     pub ocr_tradeable_prices: Mutex<HashMap<String, TradeablePriceEntry>>,
 
+    /// Prevents concurrent background price retries when the startup fetch failed.
+    pub ocr_price_retry_in_progress: AtomicBool,
+
     /// `true` while the Warframe window is the active foreground window.
     pub warframe_focused: AtomicBool,
 
@@ -65,6 +68,7 @@ impl Default for AppState {
             ocr_dictionary: Mutex::new(Vec::new()),
             mastery_dictionary: Mutex::new(Vec::new()),
             ocr_tradeable_prices: Mutex::new(HashMap::new()),
+            ocr_price_retry_in_progress: AtomicBool::new(false),
             warframe_focused: AtomicBool::new(false),
             warframe_running: AtomicBool::new(false),
             http_client: reqwest::Client::new(),
