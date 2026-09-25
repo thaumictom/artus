@@ -55,6 +55,8 @@ pub struct AppState {
     pub http_client: reqwest::Client,
     /// warframe.market credentials are never kept here; only the active JWT and socket handle.
     pub market_session: Mutex<Option<crate::market_account::MarketSession>>,
+    /// Serializes manual, scheduled, and exit-time market status changes.
+    pub market_status_operation: tokio::sync::Mutex<()>,
 }
 
 impl Default for AppState {
@@ -75,6 +77,7 @@ impl Default for AppState {
             warframe_running: AtomicBool::new(false),
             http_client: reqwest::Client::new(),
             market_session: Mutex::new(None),
+            market_status_operation: tokio::sync::Mutex::new(()),
         }
     }
 }

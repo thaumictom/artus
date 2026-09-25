@@ -5,7 +5,7 @@ use serde::Serialize;
 use tauri::{AppHandle, Runtime};
 use tauri_plugin_updater::UpdaterExt;
 
-use crate::error::{AppError, AppResult};
+use crate::{error::{AppError, AppResult}, market_account};
 
 /// Payload sent to the frontend when an update is available.
 #[derive(Debug, Clone, Serialize)]
@@ -38,7 +38,7 @@ pub async fn check_for_update<R: Runtime>(
 
 /// Downloads the pending update, installs it, and relaunches the application.
 #[tauri::command]
-pub async fn download_and_relaunch_update<R: Runtime>(app: AppHandle<R>) -> AppResult<()> {
+pub async fn download_and_relaunch_update(app: AppHandle) -> AppResult<()> {
     let updater = app
         .updater()
         .map_err(|err| AppError::msg(format!("failed to create updater: {err}")))?;
@@ -68,5 +68,6 @@ pub async fn download_and_relaunch_update<R: Runtime>(app: AppHandle<R>) -> AppR
         .map_err(|err| AppError::msg(format!("failed to download/install update: {err}")))?;
 
     info!("update installed, restarting app");
+    market_account::apply_close_status(&app).await;
     app.restart();
 }

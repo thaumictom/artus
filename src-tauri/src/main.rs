@@ -77,6 +77,7 @@ fn main() {
             market_account::market_logout,
             market_account::market_session,
             market_account::market_set_status,
+            market_account::market_schedule_invisible,
             market_account::market_top_orders,
             market_account::market_my_orders,
             market_account::market_item_details,

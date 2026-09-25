@@ -6,7 +6,7 @@ use tauri::{
     App, AppHandle, Manager, Window, WindowEvent,
 };
 
-use crate::store_ext::SettingsExt;
+use crate::{market_account, store_ext::SettingsExt};
 
 const HIDE_TO_TRAY_KEY: &str = "hide_to_tray_on_close";
 
@@ -26,8 +26,8 @@ pub fn init(app: &App) -> tauri::Result<()> {
         .on_menu_event(|app, event| match event.id().as_ref() {
             #[cfg(target_os = "linux")]
             "open" => show_artus(app),
-            "restart" => app.restart(),
-            "quit" => app.exit(0),
+            "restart" => market_account::exit_app(app.clone(), true),
+            "quit" => market_account::exit_app(app.clone(), false),
             _ => {}
         })
         .on_tray_icon_event(|tray, event| {
@@ -59,14 +59,19 @@ pub fn handle_window_event(window: &Window, event: &WindowEvent) {
     if let WindowEvent::CloseRequested { api, .. } = event {
         if window.app_handle().get_setting_bool(HIDE_TO_TRAY_KEY, true) {
             match window.hide() {
-                Ok(()) => api.prevent_close(),
+                Ok(()) => {
+                    api.prevent_close();
+                    market_account::hide_to_tray(window.app_handle().clone());
+                }
                 Err(error) => {
                     log::warn!("could not hide Artus to tray: {error}");
-                    window.app_handle().exit(0);
+                    api.prevent_close();
+                    market_account::exit_app(window.app_handle().clone(), false);
                 }
             }
         } else {
-            window.app_handle().exit(0);
+            api.prevent_close();
+            market_account::exit_app(window.app_handle().clone(), false);
         }
     }
 }

@@ -5,6 +5,7 @@
 	type Props = WithoutChild<Collapsible.RootProps> & {
 		button: Snippet<[open: boolean]>;
 		content: Snippet<[open: boolean]>;
+		triggerClass?: string;
 	};
 
 	let {
@@ -12,11 +13,12 @@
 		ref = $bindable(null),
 		button,
 		content,
+		triggerClass,
 		...restProps
 	}: Props = $props();
 </script>
 
 <Collapsible.Root bind:open bind:ref {...restProps}>
-	<Collapsible.Trigger>{@render button?.(open)}</Collapsible.Trigger>
+	<Collapsible.Trigger class={triggerClass}>{@render button?.(open)}</Collapsible.Trigger>
 	<Collapsible.Content forceMount>{@render content?.(open)}</Collapsible.Content>
 </Collapsible.Root>

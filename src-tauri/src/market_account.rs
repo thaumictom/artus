@@ -2,9 +2,11 @@
 //! all order management uses v2. Passwords never enter backend persistence or logs.
 
 use futures_util::{SinkExt, StreamExt};
+use std::{sync::atomic::{AtomicBool, AtomicU64, Ordering}, time::{Duration, SystemTime, UNIX_EPOCH}};
 use serde::Serialize;
 use serde_json::{json, Value};
-use tauri::State;
+use tauri::{AppHandle, Emitter, Manager, State};
+use tauri_plugin_store::StoreExt;
 use tokio::sync::{mpsc, oneshot};
 use tokio_tungstenite::tungstenite::{client::IntoClientRequest, Message};
 
@@ -12,12 +14,18 @@ use crate::{error::{AppError, AppResult}, state::AppState};
 
 const API: &str = "https://api.warframe.market";
 const USER_AGENT: &str = concat!("Artus/", env!("CARGO_PKG_VERSION"), " (+https://github.com/thaumictom/artus)");
+const ACCOUNT_STORE_PATH: &str = "market-account.json";
+const EXIT_INVISIBLE_KEY: &str = "invisible_on_exit";
+static NEXT_TIMER_ID: AtomicU64 = AtomicU64::new(1);
+static EXIT_IN_PROGRESS: AtomicBool = AtomicBool::new(false);
 
 pub struct MarketSession {
     token: String,
     pub ingame_name: String,
     pub slug: String,
     pub status: String,
+    invisible_at: Option<u64>,
+    timer_id: u64,
     socket: mpsc::Sender<StatusCommand>,
 }
 
@@ -26,16 +34,17 @@ struct StatusCommand {
     reply: oneshot::Sender<AppResult<()>>,
 }
 
-#[derive(Serialize)]
+#[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SessionView {
     ingame_name: String,
     slug: String,
     status: String,
+    invisible_at: Option<u64>,
 }
 
 fn view(session: &MarketSession) -> SessionView {
-    SessionView { ingame_name: session.ingame_name.clone(), slug: session.slug.clone(), status: session.status.clone() }
+    SessionView { ingame_name: session.ingame_name.clone(), slug: session.slug.clone(), status: session.status.clone(), invisible_at: session.invisible_at }
 }
 
 fn token(state: &AppState) -> AppResult<String> {
@@ -164,7 +173,7 @@ pub async fn market_login(state: State<'_, AppState>, email: String, password: S
     tokio::time::timeout(std::time::Duration::from_secs(15), confirmation).await
         .map_err(|_| AppError::msg("Timed out setting invisible status"))?.map_err(AppError::msg)??;
     let mut guard = state.market_session.lock()?;
-    *guard = Some(MarketSession { token: jwt, ingame_name, slug, status: "invisible".into(), socket: sender });
+    *guard = Some(MarketSession { token: jwt, ingame_name, slug, status: "invisible".into(), invisible_at: None, timer_id: 0, socket: sender });
     Ok(view(guard.as_ref().unwrap()))
 }
 
@@ -176,7 +185,16 @@ pub fn market_logout(state: State<'_, AppState>) -> AppResult<()> {
 
 #[tauri::command]
 pub async fn market_set_status(state: State<'_, AppState>, status: String) -> AppResult<SessionView> {
+    set_status(&state, status).await
+}
+
+async fn set_status(state: &AppState, status: String) -> AppResult<SessionView> {
     if !matches!(status.as_str(), "invisible" | "online" | "ingame") { return Err(AppError::msg("Invalid market status")); }
+    let _operation = state.market_status_operation.lock().await;
+    set_status_locked(state, status).await
+}
+
+async fn set_status_locked(state: &AppState, status: String) -> AppResult<SessionView> {
     let sender = state.market_session.lock()?.as_ref()
         .ok_or_else(|| AppError::msg("Log in to warframe.market first"))?.socket.clone();
     let (reply, confirmation) = oneshot::channel();
@@ -185,8 +203,87 @@ pub async fn market_set_status(state: State<'_, AppState>, status: String) -> Ap
         .map_err(|_| AppError::msg("Timed out changing market status"))?.map_err(AppError::msg)??;
     let mut guard = state.market_session.lock()?;
     let session = guard.as_mut().ok_or_else(|| AppError::msg("Logged out"))?;
+    if !session.socket.same_channel(&sender) { return Err(AppError::msg("Market session changed")); }
     session.status = status;
+    session.invisible_at = None;
     Ok(view(session))
+}
+
+#[tauri::command]
+pub async fn market_schedule_invisible(app: AppHandle, state: State<'_, AppState>, minutes: u64) -> AppResult<SessionView> {
+    if !matches!(minutes, 0 | 30 | 60 | 120 | 240) { return Err(AppError::msg("Invalid invisible timer")); }
+    let _operation = state.market_status_operation.lock().await;
+    let mut guard = state.market_session.lock()?;
+    let session = guard.as_mut().ok_or_else(|| AppError::msg("Log in to warframe.market first"))?;
+    if minutes > 0 && session.status == "invisible" { return Err(AppError::msg("Change your status before starting a timer")); }
+    let timer_id = NEXT_TIMER_ID.fetch_add(1, Ordering::Relaxed);
+    session.timer_id = timer_id;
+    session.invisible_at = if minutes == 0 { None } else {
+        let now = SystemTime::now().duration_since(UNIX_EPOCH).map_err(AppError::msg)?.as_millis() as u64;
+        Some(now + minutes * 60_000)
+    };
+    let result = view(session);
+    drop(guard);
+    if minutes > 0 {
+        tauri::async_runtime::spawn(async move {
+            tokio::time::sleep(Duration::from_secs(minutes * 60)).await;
+            expire_invisible_timer(app, timer_id).await;
+        });
+    }
+    Ok(result)
+}
+
+async fn expire_invisible_timer(app: AppHandle, timer_id: u64) {
+    let state = app.state::<AppState>();
+    let _operation = state.market_status_operation.lock().await;
+    let active = state.market_session.lock().ok().and_then(|guard| guard.as_ref().map(|session| session.timer_id == timer_id && session.invisible_at.is_some())).unwrap_or(false);
+    if !active { return; }
+    match set_status_locked(&state, "invisible".into()).await {
+        Ok(session) => { let _ = app.emit("market_session_changed", session); }
+        Err(error) => {
+            log::warn!("could not apply scheduled invisible status: {error}");
+            if let Ok(mut guard) = state.market_session.lock() {
+                if let Some(session) = guard.as_mut().filter(|session| session.timer_id == timer_id) {
+                    session.invisible_at = None;
+                    let _ = app.emit("market_session_changed", view(session));
+                }
+            }
+            let _ = app.emit("market_invisible_timer_error", error.to_string());
+        }
+    }
+}
+
+fn invisible_on_close(app: &AppHandle) -> bool {
+    app.store(ACCOUNT_STORE_PATH).ok()
+        .and_then(|store| store.get(EXIT_INVISIBLE_KEY))
+        .and_then(|value| value.as_bool())
+        .unwrap_or(true)
+}
+
+pub async fn apply_close_status(app: &AppHandle) {
+    if !invisible_on_close(app) { return; }
+    let state = app.state::<AppState>();
+    let should_change = state.market_session.lock().ok()
+        .and_then(|guard| guard.as_ref().map(|session| session.status != "invisible" && !session.socket.is_closed()))
+        .unwrap_or(false);
+    if !should_change { return; }
+    match tokio::time::timeout(Duration::from_secs(5), set_status(&state, "invisible".into())).await {
+        Ok(Ok(session)) => { let _ = app.emit("market_session_changed", session); }
+        Ok(Err(error)) => log::warn!("could not go invisible on close: {error}"),
+        Err(_) => log::warn!("timed out going invisible on close"),
+    }
+}
+
+pub fn hide_to_tray(app: AppHandle) {
+    tauri::async_runtime::spawn(async move { apply_close_status(&app).await; });
+}
+
+pub fn exit_app(app: AppHandle, restart: bool) {
+    if EXIT_IN_PROGRESS.swap(true, Ordering::SeqCst) { return; }
+    tauri::async_runtime::spawn(async move {
+        apply_close_status(&app).await;
+        if restart { app.restart(); } else { app.exit(0); }
+    });
 }
 
 #[tauri::command]
