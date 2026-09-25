@@ -8,7 +8,7 @@ use std::str::FromStr;
 use std::sync::atomic::Ordering;
 
 use log::error;
-use tauri::{AppHandle, Manager, Runtime, State};
+use tauri::{AppHandle, Emitter, Manager, Runtime, State};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut};
 use tauri_plugin_store::StoreExt;
 
@@ -22,23 +22,41 @@ use crate::store_ext::{SettingsExt, SETTINGS_STORE_PATH};
 pub const HOTKEY_ACTION_SCREENSHOT: &str = "screenshot";
 const DEFAULT_SCREENSHOT_HOTKEY: &str = "Ctrl+Home";
 
-pub const HOTKEY_ACTION_SCREENSHOT_ADD_TO_INVENTORY: &str = "screenshot_add_inventory";
-const DEFAULT_SCREENSHOT_ADD_TO_INVENTORY_HOTKEY: &str = "Ctrl+Shift+Home";
 pub const HOTKEY_ACTION_SCREENSHOT_ADD_TO_MASTERY: &str = "screenshot_add_mastery";
 const DEFAULT_SCREENSHOT_ADD_TO_MASTERY_HOTKEY: &str = "Ctrl+Alt+Home";
+const OVERLAY_ACTIONS: [(&str, &str); 9] = [
+    ("cycle", "Tab"),
+    ("cycle_back", "Shift+Tab"),
+    ("navigate_up", "W"),
+    ("navigate_left", "A"),
+    ("navigate_down", "S"),
+    ("navigate_right", "D"),
+    ("inventory_decrement", "Q"),
+    ("inventory_increment", "E"),
+    ("inventory_add_all", "R"),
+];
 
 /// All known actions and their default shortcuts.
-const HOTKEY_DEFINITIONS: [(&str, &str); 3] = [
+const HOTKEY_DEFINITIONS: [(&str, &str); 11] = [
     (HOTKEY_ACTION_SCREENSHOT, DEFAULT_SCREENSHOT_HOTKEY),
-    (
-        HOTKEY_ACTION_SCREENSHOT_ADD_TO_INVENTORY,
-        DEFAULT_SCREENSHOT_ADD_TO_INVENTORY_HOTKEY,
-    ),
     (
         HOTKEY_ACTION_SCREENSHOT_ADD_TO_MASTERY,
         DEFAULT_SCREENSHOT_ADD_TO_MASTERY_HOTKEY,
     ),
+    OVERLAY_ACTIONS[0],
+    OVERLAY_ACTIONS[1],
+    OVERLAY_ACTIONS[2],
+    OVERLAY_ACTIONS[3],
+    OVERLAY_ACTIONS[4],
+    OVERLAY_ACTIONS[5],
+    OVERLAY_ACTIONS[6],
+    OVERLAY_ACTIONS[7],
+    OVERLAY_ACTIONS[8],
 ];
+
+fn is_overlay_action(action: &str) -> bool {
+    OVERLAY_ACTIONS.iter().any(|(known, _)| *known == action)
+}
 
 const HOTKEYS_STORE_KEY: &str = "hotkeys";
 
@@ -80,6 +98,11 @@ pub fn set_hotkey<R: Runtime>(
     ensure_known_action(&action_key)?;
 
     let normalized = normalize_hotkey(&hotkey)?;
+    if normalized == "Escape" {
+        return Err(AppError::msg(
+            "Escape is reserved for dismissing the overlay",
+        ));
+    }
 
     // Read current state and prepare the update
     let (current_shortcut, mut next_hotkeys) = {
@@ -111,7 +134,9 @@ pub fn set_hotkey<R: Runtime>(
         (current, updated)
     };
 
-    let is_focused = state.warframe_focused.load(Ordering::Acquire);
+    let is_focused = state.warframe_focused.load(Ordering::Acquire)
+        && (!is_overlay_action(&action_key)
+            || state.overlay_controls_active.load(Ordering::Acquire));
 
     // Register the new shortcut and unregister the old one (only while focused)
     if is_focused {
@@ -169,6 +194,9 @@ pub fn register_initial<R: Runtime>(app: &AppHandle<R>) -> AppResult<()> {
 /// Registers all hotkeys with the OS. Called when Warframe gains focus.
 pub fn register_all<R: Runtime>(app: &AppHandle<R>) {
     with_hotkey_entries(app, |action, shortcut| {
+        if is_overlay_action(action) {
+            return;
+        }
         if let Err(err) = app.global_shortcut().register(shortcut) {
             error!("register '{shortcut}' for '{action}' failed: {err}");
         }
@@ -177,6 +205,7 @@ pub fn register_all<R: Runtime>(app: &AppHandle<R>) {
 
 /// Unregisters all hotkeys from the OS. Called when Warframe loses focus.
 pub fn unregister_all<R: Runtime>(app: &AppHandle<R>) {
+    let _ = app.emit("overlay_hotkey_reset", ());
     with_hotkey_entries(app, |action, shortcut| {
         if let Err(err) = app.global_shortcut().unregister(shortcut) {
             error!("unregister '{shortcut}' for '{action}' failed: {err}");
@@ -184,18 +213,55 @@ pub fn unregister_all<R: Runtime>(app: &AppHandle<R>) {
     });
 }
 
-/// Dispatches a pressed shortcut to the appropriate handler.
-pub fn on_pressed<R: Runtime>(app: &AppHandle<R>, shortcut: &Shortcut) {
+pub fn register_overlay_hotkeys<R: Runtime>(app: &AppHandle<R>) {
+    app.state::<AppState>()
+        .overlay_controls_active
+        .store(true, Ordering::Release);
+    if !app
+        .state::<AppState>()
+        .warframe_focused
+        .load(Ordering::Acquire)
+    {
+        return;
+    }
+    with_hotkey_entries(app, |action, shortcut| {
+        if is_overlay_action(action) && !app.global_shortcut().is_registered(shortcut) {
+            if let Err(err) = app.global_shortcut().register(shortcut) {
+                error!("register overlay '{shortcut}' for '{action}' failed: {err}");
+            }
+        }
+    });
+}
+
+pub fn unregister_overlay_hotkeys<R: Runtime>(app: &AppHandle<R>) {
+    let _ = app.emit("overlay_hotkey_reset", ());
+    app.state::<AppState>()
+        .overlay_controls_active
+        .store(false, Ordering::Release);
+    with_hotkey_entries(app, |action, shortcut| {
+        if is_overlay_action(action) && app.global_shortcut().is_registered(shortcut) {
+            let _ = app.global_shortcut().unregister(shortcut);
+        }
+    });
+}
+
+/// Dispatches shortcut presses and forwards overlay press/release state.
+pub fn on_shortcut<R: Runtime>(
+    app: &AppHandle<R>,
+    shortcut: &Shortcut,
+    shortcut_state: tauri_plugin_global_shortcut::ShortcutState,
+) {
     let pressed = shortcut.into_string();
 
     if pressed == "Escape" {
-        let handle = app.clone();
-        tauri::async_runtime::spawn_blocking(move || {
-            let _ = ocr::hide_overlay(&handle);
-        });
+        if shortcut_state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
+            let handle = app.clone();
+            tauri::async_runtime::spawn_blocking(move || {
+                let _ = ocr::hide_overlay(&handle);
+            });
+        }
         return;
     }
-
 
     let action = app.state::<AppState>().hotkeys.lock().ok().and_then(|hk| {
         hk.iter()
@@ -204,12 +270,31 @@ pub fn on_pressed<R: Runtime>(app: &AppHandle<R>, shortcut: &Shortcut) {
     });
 
     match action.as_deref() {
-        Some(HOTKEY_ACTION_SCREENSHOT) => trigger_screenshot(app),
-        Some(HOTKEY_ACTION_SCREENSHOT_ADD_TO_INVENTORY) => {
-            spawn_ocr_task(app, ocr::capture_active_window_inventory);
+        Some(HOTKEY_ACTION_SCREENSHOT) => {
+            if shortcut_state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
+                trigger_screenshot(app);
+            }
         }
         Some(HOTKEY_ACTION_SCREENSHOT_ADD_TO_MASTERY) => {
-            spawn_ocr_task(app, ocr::capture_active_window_mastery);
+            if shortcut_state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
+                spawn_ocr_task(app, ocr::capture_active_window_mastery);
+            }
+        }
+        Some(action) if is_overlay_action(action) => {
+            if app
+                .state::<AppState>()
+                .overlay_controls_active
+                .load(Ordering::Acquire)
+                && app
+                    .state::<AppState>()
+                    .warframe_focused
+                    .load(Ordering::Acquire)
+            {
+                let _ = app.emit("overlay_hotkey", serde_json::json!({
+                    "action": action,
+                    "pressed": shortcut_state == tauri_plugin_global_shortcut::ShortcutState::Pressed,
+                }));
+            }
         }
         Some(unknown) => error!("no handler for action '{unknown}'"),
         None => {}

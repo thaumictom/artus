@@ -12,17 +12,17 @@ use xcap::Window;
 
 use super::{
     apply_morphology, binary_target_filter, gray_to_png_bytes, group_words,
-    map_mastery_words_to_dictionary, map_words_to_dictionary,
-    resolve_tessdata, OcrDebugImagePayload, OcrPayload, OcrTextPayload, OcrWord,
+    map_mastery_words_to_dictionary, map_words_to_dictionary, resolve_tessdata,
+    OcrDebugImagePayload, OcrPayload, OcrTextPayload, OcrWord,
     DEFAULT_MASTERY_DICTIONARY_MATCH_THRESHOLD, DEFAULT_OCR_DICTIONARY_MAPPING_ENABLED,
-    DEFAULT_OCR_DICTIONARY_MATCH_THRESHOLD,
-    DEFAULT_OCR_TARGET_RGB, DEFAULT_OVERLAY_DURATION_SECS, ENABLE_OCR_DICTIONARY_MAPPING,
-    MAX_OCR_DICTIONARY_MATCH_THRESHOLD, MIN_OCR_DICTIONARY_MATCH_THRESHOLD, OCR_WHITELIST,
-    PASS_IMAGE_TO_FRONTEND, PASS_TEXT_TO_FRONTEND,
+    DEFAULT_OCR_DICTIONARY_MATCH_THRESHOLD, DEFAULT_OCR_TARGET_RGB, DEFAULT_OVERLAY_DURATION_SECS,
+    ENABLE_OCR_DICTIONARY_MAPPING, MAX_OCR_DICTIONARY_MATCH_THRESHOLD,
+    MIN_OCR_DICTIONARY_MATCH_THRESHOLD, OCR_WHITELIST, PASS_IMAGE_TO_FRONTEND,
+    PASS_TEXT_TO_FRONTEND,
 };
 use crate::error::{AppError, AppResult};
-use crate::ocr::preprocessing::CheckmarkMatch;
 use crate::layer_shell;
+use crate::ocr::preprocessing::CheckmarkMatch;
 use crate::state::AppState;
 use crate::store_ext::SettingsExt;
 
@@ -41,15 +41,11 @@ struct CapturedWindow {
 // ── Public API ────────────────────────────────────────────────────────────────
 
 pub fn capture_active_window<R: Runtime>(app: &AppHandle<R>) -> AppResult<()> {
-    capture_active_window_with_mode(app, true, true, None, false)
-}
-
-pub fn capture_active_window_inventory<R: Runtime>(app: &AppHandle<R>) -> AppResult<()> {
-    capture_active_window_with_mode(app, true, true, None, true)
+    capture_active_window_with_mode(app, true, true, None)
 }
 
 pub fn capture_active_window_mastery<R: Runtime>(app: &AppHandle<R>) -> AppResult<()> {
-    capture_active_window_with_mode_inner(app, true, true, None, false, true)
+    capture_active_window_with_mode_inner(app, true, true, None, true)
 }
 
 /// Toggles the overlay: if visible, hides it; otherwise captures and shows it.
@@ -68,7 +64,7 @@ pub fn toggle_overlay_hotkey<R: Runtime>(app: &AppHandle<R>) -> AppResult<()> {
     }
 
     // Not visible → capture and show without auto-hide (toggle mode)
-    capture_active_window_with_mode(app, false, true, None, false)
+    capture_active_window_with_mode(app, false, true, None)
 }
 
 pub fn capture_active_window_with_mode<R: Runtime>(
@@ -76,9 +72,14 @@ pub fn capture_active_window_with_mode<R: Runtime>(
     should_auto_hide: bool,
     is_manual: bool,
     provided_sequence: Option<u64>,
-    is_inventory_add: bool,
 ) -> AppResult<()> {
-    capture_active_window_with_mode_inner(app, should_auto_hide, is_manual, provided_sequence, is_inventory_add, false)
+    capture_active_window_with_mode_inner(
+        app,
+        should_auto_hide,
+        is_manual,
+        provided_sequence,
+        false,
+    )
 }
 
 fn capture_active_window_with_mode_inner<R: Runtime>(
@@ -86,7 +87,6 @@ fn capture_active_window_with_mode_inner<R: Runtime>(
     should_auto_hide: bool,
     is_manual: bool,
     provided_sequence: Option<u64>,
-    is_inventory_add: bool,
     is_mastery_add: bool,
 ) -> AppResult<()> {
     let total = Instant::now();
@@ -106,7 +106,11 @@ fn capture_active_window_with_mode_inner<R: Runtime>(
     } else {
         read_checkmark_quantities(app, &filtered, upscale_factor, &checkmarks)
     };
-    info!("checkmarks: {}, quantities read: {}", checkmarks.len(), quantities.len());
+    info!(
+        "checkmarks: {}, quantities read: {}",
+        checkmarks.len(),
+        quantities.len()
+    );
     let words = run_tesseract(app, &filtered, upscale_factor)?;
     let grouped = group_words(app, words);
     let mut blocks = postprocess_words(app, &grouped, &capture, is_manual, is_mastery_add);
@@ -137,7 +141,7 @@ fn capture_active_window_with_mode_inner<R: Runtime>(
         return Ok(());
     }
 
-    show_overlay(app, &capture, &blocks, is_inventory_add, is_mastery_add)?;
+    show_overlay(app, &capture, &blocks, is_mastery_add)?;
 
     if should_auto_hide {
         schedule_auto_hide(app, run_sequence)?;
@@ -232,7 +236,7 @@ fn preprocess_capture<R: Runtime>(
     apply_morphology(&mut filtered);
 
     let upscale_factor = 2;
-    
+
     let src_width = filtered.width();
     let src_height = filtered.height();
     let dst_width = src_width * upscale_factor;
@@ -240,9 +244,10 @@ fn preprocess_capture<R: Runtime>(
     let src_raw = filtered.as_raw();
 
     let mut dst_raw = vec![0u8; (dst_width * dst_height) as usize];
-    
+
     use rayon::prelude::*;
-    dst_raw.par_chunks_exact_mut(dst_width as usize)
+    dst_raw
+        .par_chunks_exact_mut(dst_width as usize)
         .enumerate()
         .for_each(|(y, row)| {
             let src_y = (y as u32) / upscale_factor;
@@ -267,7 +272,11 @@ fn preprocess_capture<R: Runtime>(
 // ── Step 3: Debug image ───────────────────────────────────────────────────────
 
 /// Optionally encodes and emits the filtered image to the dashboard for debugging.
-fn emit_debug_image<R: Runtime>(app: &AppHandle<R>, filtered: &image::GrayImage, upscale_amount: u32) {
+fn emit_debug_image<R: Runtime>(
+    app: &AppHandle<R>,
+    filtered: &image::GrayImage,
+    upscale_amount: u32,
+) {
     if !PASS_IMAGE_TO_FRONTEND {
         return;
     }
@@ -547,7 +556,11 @@ fn postprocess_words<R: Runtime>(
         mapped,
         dropped,
         is_mastery_add || (ENABLE_OCR_DICTIONARY_MAPPING && mapping_enabled),
-        if is_mastery_add { mastery_mapping_threshold } else { mapping_threshold },
+        if is_mastery_add {
+            mastery_mapping_threshold
+        } else {
+            mapping_threshold
+        },
     );
 
     // Optionally emit plain text to the dashboard
@@ -577,7 +590,8 @@ fn set_overlay_owner<R: Runtime>(app: &AppHandle<R>, capture: &CapturedWindow) {
         if !use_window_ownership {
             let _ = overlay.set_always_on_top(true);
             if let Ok(hwnd) = overlay.hwnd() {
-                let overlay_hwnd = windows::Win32::Foundation::HWND(hwnd.0 as *mut core::ffi::c_void);
+                let overlay_hwnd =
+                    windows::Win32::Foundation::HWND(hwnd.0 as *mut core::ffi::c_void);
                 unsafe {
                     windows::Win32::UI::WindowsAndMessaging::SetWindowLongPtrW(
                         overlay_hwnd,
@@ -684,6 +698,7 @@ fn show_overlay_processing<R: Runtime>(
     app: &AppHandle<R>,
     capture: &CapturedWindow,
 ) -> AppResult<()> {
+    crate::hotkeys::unregister_overlay_hotkeys(app);
     position_and_show_overlay(app, capture)?;
 
     app.emit("ocr_processing", ())
@@ -698,7 +713,6 @@ fn show_overlay<R: Runtime>(
     app: &AppHandle<R>,
     capture: &CapturedWindow,
     words: &[OcrWord],
-    is_inventory_add: bool,
     is_mastery_add: bool,
 ) -> AppResult<()> {
     let t = Instant::now();
@@ -737,11 +751,14 @@ fn show_overlay<R: Runtime>(
         OcrPayload {
             words: words.to_vec(),
             show_ocr_bounding_boxes: show_bounding_boxes,
-            is_inventory_add,
             is_mastery_add,
         },
     )
     .map_err(|err| AppError::msg(format!("failed to emit OCR result: {err}")))?;
+
+    if !words.is_empty() {
+        crate::hotkeys::register_overlay_hotkeys(app);
+    }
 
     info!("overlay show + emit: {:?}", t.elapsed());
     Ok(())
@@ -798,6 +815,7 @@ pub fn hide_overlay<R: Runtime>(app: &AppHandle<R>) -> AppResult<()> {
 
     if let Some(overlay) = app.get_webview_window("overlay") {
         let _ = app.emit("ocr_clear", ());
+        crate::hotkeys::unregister_overlay_hotkeys(app);
         crate::hotkeys::unregister_escape_hotkey(app);
 
         tauri::async_runtime::spawn(async move {

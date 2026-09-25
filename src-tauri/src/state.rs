@@ -23,6 +23,8 @@ pub struct AppState {
 
     /// Prevents overlapping toggle-overlay hotkey invocations.
     pub overlay_toggle_in_flight: AtomicBool,
+    /// Overlay navigation shortcuts are active only after OCR results are shown.
+    pub overlay_controls_active: AtomicBool,
 
     /// True if the current or pending overlay capture was triggered by relic rewards.
     pub overlay_is_relic_mode: AtomicBool,
@@ -66,6 +68,7 @@ impl Default for AppState {
             hotkeys: Mutex::new(HashMap::new()),
             overlay_sequence: Mutex::new(0),
             overlay_toggle_in_flight: AtomicBool::new(false),
+            overlay_controls_active: AtomicBool::new(false),
             overlay_is_relic_mode: AtomicBool::new(false),
             overlay_was_visible: AtomicBool::new(false),
             ocr_theme_colors: Mutex::new(HashMap::new()),

@@ -29,7 +29,7 @@ mod worldstate;
 use std::env;
 
 use state::AppState;
-use tauri_plugin_global_shortcut::{Builder as GlobalShortcutBuilder, ShortcutState};
+use tauri_plugin_global_shortcut::Builder as GlobalShortcutBuilder;
 
 fn main() {
     // Initialize logging before anything else
@@ -48,9 +48,7 @@ fn main() {
         .plugin(
             GlobalShortcutBuilder::new()
                 .with_handler(|app, shortcut, event| {
-                    if event.state == ShortcutState::Pressed {
-                        hotkeys::on_pressed(app, shortcut);
-                    }
+                    hotkeys::on_shortcut(app, shortcut, event.state);
                 })
                 .build(),
         )

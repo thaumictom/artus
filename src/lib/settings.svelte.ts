@@ -80,8 +80,16 @@ type Config = {
 export const config = $state({
 	hotkeys: {
 		screenshot: 'control+Home',
-		screenshot_add_inventory: 'shift+control+Home',
 		screenshot_add_mastery: 'alt+control+Home',
+		cycle: 'tab',
+		cycle_back: 'shift+tab',
+		navigate_up: 'w',
+		navigate_left: 'a',
+		navigate_down: 's',
+		navigate_right: 'd',
+		inventory_decrement: 'q',
+		inventory_increment: 'e',
+		inventory_add_all: 'r',
 	},
 
 	// Warframe settings
@@ -137,7 +145,19 @@ export function loadSettings() {
 				config[key] = val;
 			}
 		}
-		config.hotkeys = { ...config.hotkeys, screenshot_add_mastery: config.hotkeys.screenshot_add_mastery ?? 'alt+control+Home' };
+		config.hotkeys = {
+			screenshot: config.hotkeys?.screenshot ?? 'control+Home',
+			screenshot_add_mastery: config.hotkeys?.screenshot_add_mastery ?? 'alt+control+Home',
+			cycle: config.hotkeys?.cycle ?? 'tab',
+			cycle_back: config.hotkeys?.cycle_back ?? 'shift+tab',
+			navigate_up: config.hotkeys?.navigate_up ?? 'w',
+			navigate_left: config.hotkeys?.navigate_left ?? 'a',
+			navigate_down: config.hotkeys?.navigate_down ?? 's',
+			navigate_right: config.hotkeys?.navigate_right ?? 'd',
+			inventory_decrement: config.hotkeys?.inventory_decrement ?? 'q',
+			inventory_increment: config.hotkeys?.inventory_increment ?? 'e',
+			inventory_add_all: config.hotkeys?.inventory_add_all ?? 'r',
+		};
 
 		// Merge nested notification defaults so new rule fields remain available to
 		// installations that already have an older settings.json.
@@ -164,11 +184,13 @@ export function loadSettings() {
 
 // Overlay windows have their own state; keep these display toggles in sync.
 export function watchOverlayPriceSettings() {
-	return store.onChange<boolean>((key, value) => {
+	return store.onChange<unknown>((key, value) => {
 		if (key === 'show_set_prices' || key === 'show_max_rank_prices') {
 			config[key] = typeof value === 'boolean' ? value : true;
 		} else if (key === 'show_max_rank_mod_prices') {
 			config[key] = typeof value === 'boolean' ? value : false;
+		} else if (key === 'hotkeys' && value && typeof value === 'object') {
+			config.hotkeys = { ...config.hotkeys, ...(value as typeof config.hotkeys) };
 		}
 	});
 }

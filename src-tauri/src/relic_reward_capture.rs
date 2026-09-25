@@ -85,7 +85,7 @@ pub fn trigger<R: Runtime>(
 
         tauri::async_runtime::spawn_blocking(move || {
             if let Err(err) =
-                ocr::capture_active_window_with_mode(&handle, false, false, Some(sequence), false)
+                ocr::capture_active_window_with_mode(&handle, false, false, Some(sequence))
             {
                 error!("relic reward OCR failed: {err}");
                 let _ = ocr::hide_overlay(&handle);

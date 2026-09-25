@@ -105,3 +105,6 @@
 		{/if}
 	</div>
 </Button.Root>
+{#if status}
+	<p class="mt-1 text-xs" class:text-danger={status !== 'Saved'} role={status === 'Saved' ? 'status' : 'alert'}>{status}</p>
+{/if}

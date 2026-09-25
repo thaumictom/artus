@@ -15,8 +15,7 @@ pub mod preprocessing;
 // ── Public API (explicit re-exports) ──────────────────────────────────────────
 
 pub use capture::{
-    bump_overlay_sequence, capture_active_window, capture_active_window_inventory,
-    capture_active_window_mastery,
+    bump_overlay_sequence, capture_active_window, capture_active_window_mastery,
     capture_active_window_with_mode, hide_overlay, toggle_overlay_hotkey,
 };
 pub use dictionary::{
@@ -178,7 +177,6 @@ impl OcrWord {
 pub struct OcrPayload {
     pub words: Vec<OcrWord>,
     pub show_ocr_bounding_boxes: bool,
-    pub is_inventory_add: bool,
     pub is_mastery_add: bool,
 }
 

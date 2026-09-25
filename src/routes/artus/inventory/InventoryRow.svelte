@@ -47,7 +47,7 @@
 			{#if isNew}
 				<span
 					class="bg-accent rounded-full size-2 shrink-0"
-					title="Newly added by inventory hotkey"
+					title="Newly added to inventory"
 					aria-label="Newly added"
 				></span>
 			{/if}

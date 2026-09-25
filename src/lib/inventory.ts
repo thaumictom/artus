@@ -13,7 +13,6 @@ export type InventoryItem = {
 
 export type InventoryOcrWord = {
 	slug?: string;
-	quantity?: number;
 	is_custom?: boolean;
 	text: string;
 	market_median?: number;
@@ -34,8 +33,12 @@ export function inventoryMarketSlug(item: InventoryItem) {
 
 let latestSave: Promise<void> = Promise.resolve();
 
-export function addOcrWordsToInventory(words: InventoryOcrWord[]) {
-	latestSave = latestSave.catch(() => undefined).then(async () => {
+export function changeOcrItemQuantities(changes: { word: InventoryOcrWord; delta: number }[]) {
+	const save = latestSave.catch(() => undefined).then(async () => {
+		const applied = new Map<string, number>();
+		if (!changes.some(({ word, delta }) => word.slug && Number.isSafeInteger(delta) && delta !== 0)) {
+			return applied;
+		}
 		const store = new LazyStore('inventory.json');
 		const [savedItems, savedSlugs] = await Promise.all([
 			store.get<InventoryItem[]>('items'),
@@ -43,47 +46,53 @@ export function addOcrWordsToInventory(words: InventoryOcrWord[]) {
 		]);
 		const items = savedItems ?? [];
 		const newSlugs = Array.isArray(savedSlugs) ? savedSlugs : [];
-		let changed = false;
-		for (const word of words) {
-			if (!word.slug) continue;
-			const quantity =
-				word.quantity != null && Number.isSafeInteger(word.quantity) && word.quantity > 0
-					? word.quantity
-					: 1;
-			if (!newSlugs.includes(word.slug)) newSlugs.push(word.slug);
+		for (const { word, delta } of changes) {
+			if (!word.slug || !Number.isSafeInteger(delta) || delta === 0) continue;
 			const existing = items.find((item) =>
 				item.slug
 					? item.slug === word.slug
 					: inventoryNameKey(item.name) === inventoryNameKey(word.text),
 			);
+			const previous = existing?.quantity ?? 0;
+			const next = Math.max(0, previous + delta);
+			const actual = next - previous;
+			if (actual === 0) continue;
 			if (existing) {
-				existing.quantity += quantity;
-				existing.slug ??= word.slug;
-				existing.isCustom ??= word.is_custom;
-				if (word.market_median != null) {
-					existing.marketMedian = word.market_median;
-					existing.marketMedianUsesOfferFallback = word.market_median_from_current_offers;
+				if (next === 0) {
+					items.splice(items.indexOf(existing), 1);
+					const newSlugIndex = newSlugs.indexOf(word.slug);
+					if (newSlugIndex !== -1) newSlugs.splice(newSlugIndex, 1);
+				} else {
+					existing.quantity = next;
+					existing.slug ??= word.slug;
+					if (actual > 0 && word.market_median != null) {
+						existing.marketMedian = word.market_median;
+						existing.marketMedianUsesOfferFallback = word.market_median_from_current_offers;
+					}
+					existing.ducats ??= word.ducats;
 				}
-				existing.ducats ??= word.ducats;
 			} else {
+				if (!newSlugs.includes(word.slug)) newSlugs.push(word.slug);
 				items.push({
 					name: word.text,
 					slug: word.slug,
 					isCustom: word.is_custom,
-					quantity,
+					quantity: next,
 					marketMedian: word.market_median,
 					marketMedianUsesOfferFallback: word.market_median_from_current_offers,
 					ducats: word.ducats,
 				});
 			}
-			changed = true;
+			applied.set(word.slug, (applied.get(word.slug) ?? 0) + actual);
 		}
-		if (!changed) return;
+		if (applied.size === 0) return applied;
 		await store.set('items', items);
 		await store.set('newSlugs', newSlugs);
 		await store.save();
+		return applied;
 	});
-	return latestSave;
+	latestSave = save.then(() => undefined);
+	return save;
 }
 
 export function trackInventorySave(save: Promise<void>) {
