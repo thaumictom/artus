@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Button, Tabs } from 'bits-ui';
+	import { Button, Tabs, Tooltip } from 'bits-ui';
 	import Icon from '@iconify/svelte';
 	import type { Sections } from '$lib/types';
 	import { marketAccount } from '$lib/market-account.svelte';
@@ -14,6 +14,22 @@
 	let mouseover = $state(false);
 </script>
 
+{#snippet navLabel(section: Sections[string])}
+	<div class="flex items-center h-full">
+		<Icon icon={section.icon} class="size-6" />
+		<span
+			aria-hidden={!isSidebarOpen}
+			class={{
+				'overflow-hidden text-sm whitespace-nowrap transition-all duration-300 ease-in-out text-left': true,
+				'opacity-100 w-32': isSidebarOpen,
+				'opacity-0 w-0': !isSidebarOpen,
+			}}
+		>
+			<span class="pr-1 pl-2">{section.label}</span>
+		</span>
+	</div>
+{/snippet}
+
 <Tabs.List
 	class="flex flex-col justify-between bg-surface px-2 pb-1 h-full text-surface-foreground"
 	onmouseenter={() => (mouseover = true)}
@@ -21,23 +37,36 @@
 >
 	<div class="flex flex-col">
 		{#each Object.entries(sections) as [id, section]}
-			<Tabs.Trigger value={id} disabled={id === 'listings' && !marketAccount.session} title={id === 'listings' && !marketAccount.session ? 'Log in to warframe.market to view listings' : undefined} class="data-[state=active]:bg-elevated disabled:opacity-40 disabled:cursor-not-allowed p-1 rounded">
-				<div class="flex items-center h-full">
-					<Icon icon={section.icon} class="size-6" />
-					<span
-						aria-hidden={!isSidebarOpen}
-						class={{
-							'overflow-hidden text-sm whitespace-nowrap transition-all duration-300 ease-in-out text-left': true,
-							'opacity-100 w-32': isSidebarOpen,
-							'opacity-0 w-0': !isSidebarOpen,
-						}}
-					>
-						<span class="pr-1 pl-2">
-							{section.label}
-						</span>
-					</span>
-				</div>
-			</Tabs.Trigger>
+			{#if id === 'listings' && !marketAccount.session}
+				<Tooltip.Provider delayDuration={200}>
+					<Tooltip.Root>
+						<Tooltip.Trigger>
+							{#snippet child({ props })}
+								<span {...props} class="block rounded cursor-not-allowed" aria-label="Listings unavailable. Log in to warframe.market first.">
+									<Tabs.Trigger value={id} disabled class="p-1 rounded opacity-40 pointer-events-none">
+										{@render navLabel(section)}
+									</Tabs.Trigger>
+								</span>
+							{/snippet}
+						</Tooltip.Trigger>
+						<Tooltip.Portal>
+							<Tooltip.Content
+								side="right"
+								sideOffset={8}
+								collisionPadding={12}
+								class="z-100 bg-surface p-3 border border-border max-w-64 text-surface-foreground text-sm shadow-xl"
+							>
+								Log in to warframe.market first to view your listings.
+								<Tooltip.Arrow class="text-surface" />
+							</Tooltip.Content>
+						</Tooltip.Portal>
+					</Tooltip.Root>
+				</Tooltip.Provider>
+			{:else}
+				<Tabs.Trigger value={id} class="data-[state=active]:bg-elevated p-1 rounded">
+					{@render navLabel(section)}
+				</Tabs.Trigger>
+			{/if}
 		{/each}
 	</div>
 	<div class={{ transition: true, 'opacity-100': mouseover, 'opacity-0': !mouseover }}>

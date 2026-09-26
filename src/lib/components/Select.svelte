@@ -3,9 +3,10 @@
 	import { Select, type WithoutChildren } from 'bits-ui';
 	import cn from 'clsx';
 
+	type SelectItem = { value: string; label: string; disabled?: boolean; swatchColors?: [string, string] };
 	type Props = WithoutChildren<Select.RootProps> & {
 		placeholder?: string;
-		items: { value: string; label: string; disabled?: boolean }[];
+		items: SelectItem[];
 		triggerProps?: WithoutChildren<Select.TriggerProps>;
 		contentProps?: WithoutChildren<Select.ContentProps>;
 		// any other specific component props if needed
@@ -19,7 +20,15 @@
 		placeholder,
 		...restProps
 	}: Props = $props();
+	const selectedItem = $derived((items as SelectItem[]).find((item) => item.value === value));
 </script>
+
+{#snippet colorPill(colors: [string, string])}
+	<span class="inline-flex overflow-hidden rounded-full border border-border-secondary w-8 h-3 shrink-0" aria-hidden="true">
+		<span class="w-1/2 h-full" style:background-color={colors[0]}></span>
+		<span class="w-1/2 h-full" style:background-color={colors[1]}></span>
+	</span>
+{/snippet}
 
 <!--
 TypeScript Discriminated Unions + destructing (required for "bindable") do not
@@ -35,7 +44,10 @@ from the perspective of the consumer of this component, it will be typed appropr
 		)}
 		aria-label={placeholder}
 	>
-		<Select.Value {placeholder} />
+		<span class="flex items-center gap-2 min-w-0">
+			{#if selectedItem?.swatchColors}{@render colorPill(selectedItem.swatchColors)}{/if}
+			<Select.Value {placeholder} />
+		</span>
 		<Icon icon="material-symbols:unfold-more-rounded" class="size-5" />
 	</Select.Trigger>
 	<Select.Portal>
@@ -49,7 +61,7 @@ from the perspective of the consumer of this component, it will be typed appropr
 		>
 			<!-- <Select.ScrollUpButton>up</Select.ScrollUpButton> -->
 			<Select.Viewport>
-				{#each items as { value, label, disabled } (value)}
+				{#each items as { value, label, disabled, swatchColors } (value)}
 					<Select.Item
 						{value}
 						{label}
@@ -57,7 +69,10 @@ from the perspective of the consumer of this component, it will be typed appropr
 						class="flex justify-between items-center hover:bg-elevated p-2 cursor-pointer"
 					>
 						{#snippet children({ selected })}
-							<span>{label}</span>
+							<span class="flex items-center gap-2">
+								{#if swatchColors}{@render colorPill(swatchColors)}{/if}
+								{label}
+							</span>
 							{#if selected}
 								<Icon icon="material-symbols:check" class="size-5" />
 							{/if}

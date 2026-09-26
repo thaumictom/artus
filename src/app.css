@@ -5,8 +5,14 @@
 
 @custom-variant dark (&: is(.dark *));
 
+:root {
+	--ease-dialog-shell: cubic-bezier(0.19, 1, 0.22, 1);
+	--ease-alert-transition: cubic-bezier(0.81, 0, 0.78, 0);
+}
+
 html,
 body {
+	/* Important for overlay window */
 	background-color: transparent !important;
 	overflow: hidden;
 	margin: 0;
@@ -102,14 +108,44 @@ body {
 }
 
 .artus-app-shell {
-	--dialog-ease: cubic-bezier(0.19, 1, 0.22, 1);
 	transition:
-		transform 600ms var(--dialog-ease),
-		border-radius 600ms var(--dialog-ease);
+		transform 600ms var(--ease-dialog-shell),
+		border-radius 600ms var(--ease-dialog-shell);
 }
 
-body:has(.artus-modal-overlay[data-state='open']) {
+body:has(.artus-app-shell) {
 	background-color: var(--color-background) !important;
+	background-image: none;
+}
+
+body:has(.artus-alert-dialog-overlay[data-state='open']) {
+	background-image: linear-gradient(to bottom, var(--color-red-800), var(--color-red-950));
+	background-size: 100% 200%;
+	animation: alert-dialog-background-drift 4s ease-in-out infinite alternate;
+}
+
+@keyframes alert-dialog-background-drift {
+	from {
+		background-position: 0 0;
+	}
+	to {
+		background-position: 0 100%;
+	}
+}
+
+.alert-dialog-content {
+	border-color: var(--color-border);
+	transition:
+		border-color 500ms var(--ease-alert-transition),
+		box-shadow 500ms var(--ease-alert-transition);
+}
+
+.alert-dialog-content.alert-outside-attempt {
+	border-color: var(--color-red-500);
+	box-shadow:
+		0 0 0 1px var(--color-red-500),
+		0 0 22px var(--color-red-900);
+	transition-duration: 0ms;
 }
 
 body:has(.artus-modal-overlay[data-state='open']) .artus-app-shell {

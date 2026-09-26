@@ -82,18 +82,18 @@
 	onclick={toggleRecording}
 	disabled={isSaving}
 	tabindex={-1}
-	class="group flex justify-between items-center gap-1 p-0.5 border outline-0 min-w-80 cursor-pointer"
+	class="group flex justify-between items-center gap-1 p-0.5 border outline-0 w-full min-w-0 cursor-pointer"
 >
-	<div class="p-1.5">
+	<div class="flex-1 min-w-0 p-1.5">
 		{#if config.hotkeys[tauriHotkey]}
-			<span class="font-condensed font-medium">
+			<span class="block truncate font-condensed font-medium">
 				{formatKeybindForDisplay(config.hotkeys[tauriHotkey])}
 			</span>
 		{:else}
 			<span class="text-muted-foreground">No keybind set</span>
 		{/if}
 	</div>
-	<div class="bg-surface group-hover:bg-muted px-3 py-1.5 transition">
+	<div class="bg-surface group-hover:bg-muted px-3 py-1.5 shrink-0 transition">
 		{#if isSaving}
 			Saving...
 		{:else if !isRecording && !config.hotkeys[tauriHotkey]}

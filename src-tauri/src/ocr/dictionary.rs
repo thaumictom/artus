@@ -51,6 +51,8 @@ pub struct TradeablePriceEntry {
 struct ThemeColorsToml {
     #[serde(default)]
     primary: BTreeMap<String, [u8; 3]>,
+    #[serde(default)]
+    highlight: BTreeMap<String, [u8; 3]>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -167,8 +169,17 @@ pub fn load_primary_theme_options<R: Runtime>(
     let themes: Vec<OcrThemeOption> = parsed
         .primary
         .into_iter()
-        .map(|(name, rgb)| OcrThemeOption { name, rgb })
-        .collect();
+        .map(|(name, rgb)| {
+            let highlight_rgb = parsed.highlight.get(&name).copied().ok_or_else(|| {
+                AppError::msg(format!("missing highlight color for theme '{name}'"))
+            })?;
+            Ok(OcrThemeOption {
+                name,
+                rgb,
+                highlight_rgb,
+            })
+        })
+        .collect::<AppResult<_>>()?;
 
     if themes.is_empty() {
         return Err(AppError::msg(

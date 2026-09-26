@@ -33,6 +33,20 @@
 	</CommonSetting>
 {/if}
 
+{#if isWindows}
+	<CommonSetting
+		title="Add selected relic reward to inventory"
+		description="Automatically add the selected reward when the relic screen closes."
+		disabled={!config.relic_reward_detection}
+	>
+		<Switch
+			id="relic-reward-auto-add-toggle"
+			onCheckedChange={() => updateSetting('relic_reward_auto_add')}
+			bind:checked={config.relic_reward_auto_add}
+		/>
+	</CommonSetting>
+{/if}
+
 <CommonSetting
 	title="Visual relic detection (experimental)"
 	description="Continuously checks the Warframe reward area for a stable row of recognized relic rewards."

@@ -5,6 +5,7 @@ export type Sections = Record<string, { label: string; icon: string; component: 
 export type OcrThemeOption = {
 	name: string;
 	rgb: [number, number, number];
+	highlight_rgb: [number, number, number];
 };
 
 export type OcrThemeSettingsPayload = {

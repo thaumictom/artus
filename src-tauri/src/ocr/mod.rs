@@ -178,6 +178,7 @@ pub struct OcrPayload {
     pub words: Vec<OcrWord>,
     pub show_ocr_bounding_boxes: bool,
     pub is_mastery_add: bool,
+    pub controls_enabled: bool,
 }
 
 /// Debug image sent to the dashboard for visual inspection.
@@ -200,6 +201,7 @@ pub struct OcrTextPayload {
 pub struct OcrThemeOption {
     pub name: String,
     pub rgb: [u8; 3],
+    pub highlight_rgb: [u8; 3],
 }
 
 // ── Tauri commands ────────────────────────────────────────────────────────────

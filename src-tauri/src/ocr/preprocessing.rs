@@ -26,6 +26,15 @@ pub struct CheckmarkMatch {
 /// Produces a binary (black/white) image where pixels matching any of the `target_rgbs`
 /// become black (foreground) and everything else becomes white (background).
 pub fn binary_target_filter(source: &image::RgbaImage, target_rgbs: &[[u8; 3]]) -> GrayImage {
+    binary_target_filter_with_tolerance(source, target_rgbs, BINARY_FILTER_SPILL_THRESHOLD)
+}
+
+/// Binary filter with a caller-specific per-channel tolerance for noisy UI colors.
+pub fn binary_target_filter_with_tolerance(
+    source: &image::RgbaImage,
+    target_rgbs: &[[u8; 3]],
+    tolerance: u8,
+) -> GrayImage {
     let width = source.width();
     let height = source.height();
     let raw = source.as_raw();
@@ -34,14 +43,10 @@ pub fn binary_target_filter(source: &image::RgbaImage, target_rgbs: &[[u8; 3]]) 
     for (i, pixel) in raw.chunks_exact(4).enumerate() {
         let mut matched = false;
         for target_rgb in target_rgbs {
-            if matches_target_color(
-                pixel[0],
-                pixel[1],
-                pixel[2],
-                target_rgb[0],
-                target_rgb[1],
-                target_rgb[2],
-            ) {
+            if pixel[0].abs_diff(target_rgb[0]) <= tolerance
+                && pixel[1].abs_diff(target_rgb[1]) <= tolerance
+                && pixel[2].abs_diff(target_rgb[2]) <= tolerance
+            {
                 matched = true;
                 break;
             }

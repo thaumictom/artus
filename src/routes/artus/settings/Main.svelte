@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { Separator } from 'bits-ui';
 	import WarframeSettings from './categories/WarframeSettings.svelte';
-	import Hotkeys from './categories/Hotkeys.svelte';
 	import MetaInformation from './categories/MetaInformation.svelte';
 	import OverlaySettings from './categories/OverlaySettings.svelte';
 	import OverlayBehaviour from './categories/OverlayBehaviour.svelte';
@@ -14,10 +13,9 @@
 	import { kebabCase } from 'change-case';
 
 	let components = [
-		{ name: 'Hotkeys', component: Hotkeys },
-		{ name: 'Warframe Settings', component: WarframeSettings },
-		{ name: 'Notifications', component: NotificationSettings },
 		{ name: 'App Behaviour', component: AppBehaviour },
+		{ name: 'Notifications', component: NotificationSettings },
+		{ name: 'Warframe Settings', component: WarframeSettings },
 		{ name: 'Overlay Settings', component: OverlaySettings },
 		{ name: 'Overlay Behaviour', component: OverlayBehaviour },
 		{ name: 'Maintenance', component: Maintenance },

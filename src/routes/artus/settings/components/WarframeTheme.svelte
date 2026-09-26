@@ -10,11 +10,16 @@
 	let availableThemes = $state<OcrThemeOption[]>();
 
 	let selectItems = $derived(
-		availableThemes?.map(({ name }) => ({
+		availableThemes?.map(({ name, rgb, highlight_rgb }) => ({
 			label: capitalCase(name),
 			value: name,
+			swatchColors: [toCssRgb(rgb), toCssRgb(highlight_rgb)] as [string, string],
 		})) ?? [],
 	);
+
+	function toCssRgb(rgb: [number, number, number]) {
+		return `rgb(${rgb.join(', ')})`;
+	}
 
 	onMount(() => {
 		invoke<OcrThemeOption[]>('get_ocr_themes')

@@ -6,7 +6,7 @@
 use std::time::{Duration, Instant};
 
 use log::{error, info, warn};
-use tauri::{AppHandle, Runtime};
+use tauri::{AppHandle, Manager, Runtime};
 
 use crate::ocr;
 use crate::relic_reward_capture;
@@ -38,14 +38,28 @@ fn process_debug_message<R: Runtime>(app: &AppHandle<R>, message: &str) {
 
     if message.contains(SCREEN_SHUTDOWN_MARKER) {
         info!("detected relic reward screen shutdown via DBWIN, hiding overlay");
+        let added = crate::relic_auto_add::finish(app);
         let _ = ocr::hide_overlay(app);
+        if let Some(name) = added {
+            crate::relic_auto_add::show_added_feedback(app, name);
+        }
     } else if message.contains(GOT_REWARDS_MARKER) {
         trigger_relic_capture(app);
     }
 }
 
 fn trigger_relic_capture<R: Runtime>(app: &AppHandle<R>) {
-    relic_reward_capture::trigger(app, "relic_reward_detection", "DBWIN", REWARD_CAPTURE_DELAY);
+    if relic_reward_capture::trigger(app, "relic_reward_detection", "DBWIN", REWARD_CAPTURE_DELAY) {
+        if app.get_setting_bool("relic_reward_auto_add", true) {
+            if let Ok(sequence) = app
+                .state::<crate::state::AppState>()
+                .overlay_sequence
+                .lock()
+            {
+                crate::relic_auto_add::begin(app, *sequence);
+            }
+        }
+    }
 }
 
 mod windows_debug_output {

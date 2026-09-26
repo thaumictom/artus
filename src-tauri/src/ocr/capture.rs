@@ -116,6 +116,14 @@ fn capture_active_window_with_mode_inner<R: Runtime>(
     let mut blocks = postprocess_words(app, &grouped, &capture, is_manual, is_mastery_add);
     assign_quantities(&mut blocks, &quantities);
 
+    #[cfg(target_os = "windows")]
+    if !is_manual && !is_mastery_add {
+        crate::relic_auto_add::record_rewards(
+            run_sequence, capture.x, capture.y, capture.width, capture.height,
+            capture.image.width(), &blocks,
+        );
+    }
+
     let current_sequence = app
         .state::<AppState>()
         .overlay_sequence
@@ -141,7 +149,7 @@ fn capture_active_window_with_mode_inner<R: Runtime>(
         return Ok(());
     }
 
-    show_overlay(app, &capture, &blocks, is_mastery_add)?;
+    show_overlay(app, &capture, &blocks, is_mastery_add, is_manual)?;
 
     if should_auto_hide {
         schedule_auto_hide(app, run_sequence)?;
@@ -714,6 +722,7 @@ fn show_overlay<R: Runtime>(
     capture: &CapturedWindow,
     words: &[OcrWord],
     is_mastery_add: bool,
+    controls_enabled: bool,
 ) -> AppResult<()> {
     let t = Instant::now();
 
@@ -752,11 +761,12 @@ fn show_overlay<R: Runtime>(
             words: words.to_vec(),
             show_ocr_bounding_boxes: show_bounding_boxes,
             is_mastery_add,
+            controls_enabled,
         },
     )
     .map_err(|err| AppError::msg(format!("failed to emit OCR result: {err}")))?;
 
-    if !words.is_empty() {
+    if controls_enabled && !words.is_empty() {
         crate::hotkeys::register_overlay_hotkeys(app);
     }
 
@@ -818,11 +828,35 @@ pub fn hide_overlay<R: Runtime>(app: &AppHandle<R>) -> AppResult<()> {
         crate::hotkeys::unregister_overlay_hotkeys(app);
         crate::hotkeys::unregister_escape_hotkey(app);
 
+        let sequence = app.state::<AppState>()
+            .overlay_sequence.lock().map(|value| *value).unwrap_or(0);
+        let handle = app.clone();
         tauri::async_runtime::spawn(async move {
             tokio::time::sleep(Duration::from_millis(100)).await;
-            let _ = overlay.hide();
+            let current = handle.state::<AppState>()
+                .overlay_sequence.lock().map(|value| *value).unwrap_or(0);
+            if current == sequence { let _ = overlay.hide(); }
         });
     }
 
+    Ok(())
+}
+
+/// Display saved-reward feedback in the existing clickthrough window.
+#[tauri::command]
+pub fn show_relic_add_toast<R: Runtime>(app: AppHandle<R>) -> AppResult<()> {
+    let overlay = app.get_webview_window("overlay")
+        .ok_or_else(|| AppError::WindowNotFound("overlay".into()))?;
+    let sequence = bump_overlay_sequence(&app)?;
+    overlay.show().map_err(|err| AppError::msg(format!("failed to show relic confirmation: {err}")))?;
+    let _ = overlay.set_ignore_cursor_events(true);
+    let _ = overlay.set_focusable(false);
+    tauri::async_runtime::spawn(async move {
+        // Leave time for the frontend's ten-second message and exit fade.
+        tokio::time::sleep(Duration::from_secs(11)).await;
+        let current = app.state::<AppState>()
+            .overlay_sequence.lock().map(|value| *value).unwrap_or(0);
+        if current == sequence { let _ = hide_overlay(&app); }
+    });
     Ok(())
 }

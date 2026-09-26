@@ -40,6 +40,7 @@ type Config = {
 	};
 
 	relic_reward_detection: boolean;
+	relic_reward_auto_add: boolean;
 	visual_relic_reward_detection: boolean;
 	relic_reward_sound: boolean;
 	dashboard_view_favorites: string[];
@@ -95,6 +96,7 @@ export const config = $state({
 	// Warframe settings
 	ocr_theme: 'EQUINOX',
 	relic_reward_detection: false as boolean,
+	relic_reward_auto_add: true as boolean,
 	visual_relic_reward_detection: false as boolean,
 	relic_reward_sound: false as boolean,
 	dashboard_view_favorites: [] as string[],

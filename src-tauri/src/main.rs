@@ -14,6 +14,8 @@ mod ocr;
 mod relic_reward_capture;
 #[cfg(target_os = "windows")]
 mod relic_rewards;
+#[cfg(target_os = "windows")]
+mod relic_auto_add;
 #[cfg(any(target_os = "windows", target_os = "linux"))]
 mod relic_visual_detection;
 mod setup;
@@ -62,6 +64,9 @@ fn main() {
             hotkeys::get_hotkey,
             hotkeys::set_hotkey,
             ocr::get_ocr_themes,
+            ocr::capture::show_relic_add_toast,
+            #[cfg(target_os = "windows")]
+            relic_auto_add::get_relic_selection_debug_image,
             updater::check_for_update,
             updater::download_and_relaunch_update,
             market::get_market_item,

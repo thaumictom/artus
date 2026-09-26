@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
 	import { listen } from '@tauri-apps/api/event';
+	import { invoke } from '@tauri-apps/api/core';
 	import { LazyStore } from '@tauri-apps/plugin-store';
 	import { onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
@@ -40,9 +41,12 @@
 	let words: OcrWord[] = $state([]);
 	let showBoundingBoxes = $state(false);
 	let processing = $state(false);
+	let controlsEnabled = $state(false);
 	let selectedIndex = $state<number | null>(null);
 	let sessionDeltaBySlug = $state(new Map<string, number>());
 	let overlaySession = 0;
+	let relicFeedback = $state<string | null>(null);
+	let relicFeedbackGeneration = 0;
 	let masteredSlugs = $state(new Set<string>());
 	let ownedBySlug = $state(new Map<string, number>());
 	let ownedByName = $state(new Map<string, number>());
@@ -74,6 +78,7 @@
 	}
 
 	function onHotkeyEvent(action: string, pressed: boolean) {
+		if (!controlsEnabled) return;
 		if (!pressed) {
 			stopHotkey(action);
 			return;
@@ -128,7 +133,7 @@
 	}
 
 	function handleOverlayHotkey(action: string) {
-		if (processing || words.length === 0) return;
+		if (!controlsEnabled || processing || words.length === 0) return;
 		if (action === 'cycle' || action === 'cycle_back') {
 			const position = selectedIndex === null ? -1 : cycleOrder.indexOf(selectedIndex);
 			selectedIndex = action === 'cycle_back'
@@ -228,6 +233,7 @@
 		relicDetectionSound.preload = 'auto';
 		const cleanups: Array<() => void> = [];
 		let disposed = false;
+		let relicFeedbackTimer: ReturnType<typeof setTimeout> | undefined;
 		const registerCleanup = (cleanup: () => void) => {
 			if (disposed) cleanup();
 			else cleanups.push(cleanup);
@@ -245,22 +251,27 @@
 			.then(registerCleanup);
 
 		listen('ocr_processing', () => {
+			relicFeedbackGeneration++;
+			clearTimeout(relicFeedbackTimer);
+			relicFeedback = null;
 			stopAllHotkeys();
 			overlaySession++;
 			sessionDeltaBySlug = new Map();
 			masteryReadSequence++;
 			words = [];
 			processing = true;
+			controlsEnabled = false;
 			selectedIndex = null;
 		}).then(registerCleanup);
 
-		listen<{ words: OcrWord[]; show_ocr_bounding_boxes: boolean }>(
+		listen<{ words: OcrWord[]; show_ocr_bounding_boxes: boolean; controls_enabled: boolean }>(
 			'ocr_result',
 			(event) => {
 				stopAllHotkeys();
 				overlaySession++;
 				sessionDeltaBySlug = new Map();
 				processing = false;
+				controlsEnabled = event.payload?.controls_enabled ?? false;
 				words = event.payload?.words ?? [];
 				selectedIndex = null;
 				// One small store lookup replaces a full catalog load and relationship scan.
@@ -280,6 +291,7 @@
 			inventoryReadSequence++;
 			words = [];
 			processing = false;
+			controlsEnabled = false;
 			selectedIndex = null;
 		}).then(registerCleanup);
 
@@ -295,8 +307,24 @@
 			});
 		}).then(registerCleanup);
 
+		listen<{ name: string }>('relic_reward_added', ({ payload }) => {
+			const generation = ++relicFeedbackGeneration;
+			clearTimeout(relicFeedbackTimer);
+			relicFeedback = `Added +1 ${payload.name}`;
+			void invoke('show_relic_add_toast').then(() => {
+				if (generation !== relicFeedbackGeneration) return;
+				relicFeedbackTimer = setTimeout(() => {
+					if (generation === relicFeedbackGeneration) relicFeedback = null;
+				}, 10000);
+			}).catch((error) => {
+				if (generation === relicFeedbackGeneration) relicFeedback = null;
+				console.error('Could not show relic inventory confirmation:', error);
+			});
+		}).then(registerCleanup);
+
 		return () => {
 			disposed = true;
+			clearTimeout(relicFeedbackTimer);
 			stopAllHotkeys();
 			masteryReadSequence++;
 			inventoryReadSequence++;
@@ -367,6 +395,17 @@
 {/snippet}
 
 <main class="relative w-screen h-screen pointer-events-none">
+	{#if relicFeedback}
+		<div class="absolute bottom-4 left-1/2 -translate-x-1/2">
+			<div
+				in:flyAndScale={{ y: 28, duration: 400 }}
+				out:fade={{ duration: 450 }}
+				class="bg-background/95 px-4 py-2 border border-accent text-foreground text-sm shadow-lg whitespace-nowrap"
+			>
+				{relicFeedback}
+			</div>
+		</div>
+	{/if}
 	{#if processing}
 		<div
 			in:flyAndScale={{ y: 24 }}
@@ -557,7 +596,7 @@
 			{/if}
 		</div>
 	{/each}
-	{#if !processing && words.length > 0}
+	{#if controlsEnabled && !processing && words.length > 0}
 		<aside
 			aria-label="Overlay keyboard shortcuts"
 			class="absolute right-4 bottom-4 bg-background/95 px-3 py-2 border border-border-secondary text-foreground text-xs shadow-lg whitespace-nowrap"
