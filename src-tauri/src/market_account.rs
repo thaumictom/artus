@@ -372,6 +372,7 @@ pub async fn market_my_orders(state: State<'_, AppState>) -> AppResult<Value> {
 pub struct ListingItemDetails {
     name: String,
     slug: String,
+    icon: Option<String>,
 }
 
 #[tauri::command]
@@ -382,6 +383,7 @@ pub async fn market_item_details(state: State<'_, AppState>) -> AppResult<std::c
         Some((item["id"].as_str()?.to_owned(), ListingItemDetails {
             name: item.pointer("/i18n/en/name").and_then(Value::as_str).unwrap_or_else(|| item["slug"].as_str().unwrap_or("Item")).to_owned(),
             slug: item["slug"].as_str()?.to_owned(),
+            icon: item.pointer("/i18n/en/icon").and_then(Value::as_str).map(str::to_owned),
         }))
     }).collect())
 }

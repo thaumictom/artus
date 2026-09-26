@@ -21,6 +21,8 @@ Early-alpha Warframe desktop companion for Windows and Linux. Tauri 2/Rust 2021 
 - Preserve optional price fields, moving-average/current-offer distinctions and relic refinement fallback flags. Missing prices must not silently become real zero prices.
 - Preserve overlay transparency, clickthrough, non-activation, geometry/DPI conversion, focus handling and sequence-based timer cancellation. Keep Windows-specific code and Linux Wayland feature gates intact. EE.log remains read-only; do not modify game files or inject into the game.
 - Register new commands in `main.rs`; check window labels and `src-tauri/capabilities/` when changing desktop permissions. Regenerate mastery data instead of hand-editing it; do not edit build output or generated Tauri/Svelte files.
+- Do not add migration code, compatibility shims, or automatic cleanup for old settings, stored data, or application behavior. Assume this app has a single user; update current defaults and code directly.
+- Do not create regression tests. Use the existing validation commands and focused manual checks when verification is needed.
 
 ## Commands and validation
 

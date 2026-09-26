@@ -248,6 +248,8 @@
 				<MasteryMain onOpenMarket={openMarket} />
 			{:else if activeSection === 'inventory'}
 				<InventoryTab onOpenMarket={openMarket} />
+			{:else if activeSection === 'listings'}
+				<Listings onOpenMarket={openMarket} />
 			{:else}
 				<CurrentComponent />
 			{/if}

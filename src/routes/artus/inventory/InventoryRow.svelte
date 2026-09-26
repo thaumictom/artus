@@ -4,6 +4,7 @@
 	import { inventoryMarketSlug, type InventoryItem } from '$lib/inventory';
 	import { marketAccount } from '$lib/market-account.svelte';
 	import ActionPopover from '$lib/components/ActionPopover.svelte';
+	import QuantityControl from '$lib/components/QuantityControl.svelte';
 
 	let {
 		item,
@@ -55,19 +56,7 @@
 		{#if item.category}<div class="mt-0.5 text-muted-foreground text-xs font-normal">{item.category}</div>{/if}
 	</td>
 	<td class="px-3 py-3.5 text-right tabular-nums">
-		<div class="inline-flex items-center gap-2">
-			<button
-				class="flex items-center justify-center border border-border-secondary size-6 hover:bg-surface cursor-pointer"
-				aria-label={`Remove one ${item.name}`}
-				onclick={() => onChangeQuantity(item, -1)}
-			><Icon icon="lucide:minus" class="size-3.5" /></button>
-			<span class="min-w-6 text-center">{item.quantity}</span>
-			<button
-				class="flex items-center justify-center border border-border-secondary size-6 hover:bg-surface cursor-pointer"
-				aria-label={`Add one ${item.name}`}
-				onclick={() => onChangeQuantity(item, 1)}
-			><Icon icon="lucide:plus" class="size-3.5" /></button>
-		</div>
+		<QuantityControl value={item.quantity} label={item.name} onChange={(delta) => onChangeQuantity(item, delta)} />
 	</td>
 	<td class="px-3 py-3.5 text-right tabular-nums">
 		{#if item.marketMedian != null}

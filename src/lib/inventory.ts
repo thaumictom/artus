@@ -96,6 +96,11 @@ export function changeOcrItemQuantities(changes: { word: InventoryOcrWord; delta
 }
 
 export function removeOneMarketInventoryItem(slug: string | undefined, name: string) {
+	return changeMarketInventoryQuantity(slug, name, -1);
+}
+
+export function changeMarketInventoryQuantity(slug: string | undefined, name: string, delta: number) {
+	if (!Number.isSafeInteger(delta) || delta === 0) return Promise.resolve();
 	const save = latestSave.catch(() => undefined).then(async () => {
 		const store = new LazyStore('inventory.json');
 		const [savedItems, savedSlugs] = await Promise.all([
@@ -103,20 +108,35 @@ export function removeOneMarketInventoryItem(slug: string | undefined, name: str
 			store.get<string[]>('newSlugs'),
 		]);
 		const items = savedItems ?? [];
-		const item = items.find((candidate) =>
-			!candidate.isCustom && candidate.quantity > 0 &&
+		const matches = (candidate: InventoryItem) =>
+			!candidate.isCustom &&
 			(slug && inventoryMarketSlug(candidate) === slug ||
-				!candidate.slug && inventoryNameKey(candidate.name) === inventoryNameKey(name)),
-		);
-		if (!item) throw new Error(`No ${name} remains in inventory`);
-		item.quantity -= 1;
-		if (item.quantity === 0) {
-			items.splice(items.indexOf(item), 1);
-			if (item.slug) {
-				await store.set('newSlugs', (Array.isArray(savedSlugs) ? savedSlugs : []).filter((savedSlug) => savedSlug !== item.slug));
+				!candidate.slug && inventoryNameKey(candidate.name) === inventoryNameKey(name));
+		let item = items.find((candidate) => matches(candidate) && (delta > 0 || candidate.quantity > 0));
+		const newSlugs = Array.isArray(savedSlugs) ? savedSlugs : [];
+		if (!item && delta < 0) throw new Error(`No ${name} remains in inventory`);
+		if (!item) {
+			if (!slug) throw new Error(`Cannot add ${name} to inventory without a market item`);
+			item = { name, slug, quantity: delta };
+			items.push(item);
+			if (!newSlugs.includes(slug)) newSlugs.push(slug);
+		} else {
+			const next = item.quantity + delta;
+			if (next < 0) throw new Error(`No ${name} remains in inventory`);
+			item.quantity = next;
+			if (next === 0) {
+				items.splice(items.indexOf(item), 1);
+				if (item.slug) {
+					const stillOwned = items.some((candidate) => !candidate.isCustom && inventoryMarketSlug(candidate) === slug && candidate.quantity > 0);
+					if (!stillOwned) {
+						const slugIndex = newSlugs.indexOf(item.slug);
+						if (slugIndex !== -1) newSlugs.splice(slugIndex, 1);
+					}
+				}
 			}
 		}
 		await store.set('items', items);
+		await store.set('newSlugs', newSlugs);
 		await store.save();
 	});
 	latestSave = save.then(() => undefined);
