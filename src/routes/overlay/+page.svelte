@@ -62,7 +62,12 @@
 	};
 	const heldHotkeys = new Map<string, HeldHotkey>();
 	const repeatableActions = new Set([
-		'cycle', 'cycle_back', 'navigate_up', 'navigate_left', 'navigate_down', 'navigate_right',
+		'cycle',
+		'cycle_back',
+		'navigate_up',
+		'navigate_left',
+		'navigate_down',
+		'navigate_right',
 	]);
 
 	function stopHotkey(action: string) {
@@ -99,11 +104,13 @@
 		if (items.length === 0) return [];
 		const heights = items.map((item) => item.height).sort((a, b) => a - b);
 		const rowTolerance = Math.max(8, heights[Math.floor(heights.length / 2)] * 0.75);
-		const positioned = items.map((item, index) => ({
-			index,
-			x: item.x + item.width / 2,
-			y: item.y + item.height / 2,
-		})).sort((a, b) => a.y - b.y || a.x - b.x);
+		const positioned = items
+			.map((item, index) => ({
+				index,
+				x: item.x + item.width / 2,
+				y: item.y + item.height / 2,
+			}))
+			.sort((a, b) => a.y - b.y || a.x - b.x);
 		const rows: { center: number; members: typeof positioned }[] = [];
 		for (const item of positioned) {
 			const row = rows.find((candidate) => Math.abs(candidate.center - item.y) <= rowTolerance);
@@ -136,13 +143,21 @@
 		if (!controlsEnabled || processing || words.length === 0) return;
 		if (action === 'cycle' || action === 'cycle_back') {
 			const position = selectedIndex === null ? -1 : cycleOrder.indexOf(selectedIndex);
-			selectedIndex = action === 'cycle_back'
-				? cycleOrder[position < 0 ? cycleOrder.length - 1 : (position - 1 + cycleOrder.length) % cycleOrder.length]
-				: cycleOrder[(position + 1) % cycleOrder.length];
+			selectedIndex =
+				action === 'cycle_back'
+					? cycleOrder[
+							position < 0
+								? cycleOrder.length - 1
+								: (position - 1 + cycleOrder.length) % cycleOrder.length
+						]
+					: cycleOrder[(position + 1) % cycleOrder.length];
 			return;
 		}
 		if (action.startsWith('navigate_')) {
-			if (selectedIndex === null) { selectedIndex = cycleOrder[0]; return; }
+			if (selectedIndex === null) {
+				selectedIndex = cycleOrder[0];
+				return;
+			}
 			const current = words[selectedIndex];
 			const x = current.x + current.width / 2;
 			const y = current.y + current.height / 2;
@@ -159,12 +174,16 @@
 				});
 				return;
 			}
-			const candidates = words.map((word, index) => ({
-				index,
-				dx: word.x + word.width / 2 - x,
-				dy: word.y + word.height / 2 - y,
-			})).filter((item) => item.index !== selectedIndex);
-			const ahead = candidates.filter((item) => direction === 'left' ? item.dx < -1 : item.dx > 1);
+			const candidates = words
+				.map((word, index) => ({
+					index,
+					dx: word.x + word.width / 2 - x,
+					dy: word.y + word.height / 2 - y,
+				}))
+				.filter((item) => item.index !== selectedIndex);
+			const ahead = candidates.filter((item) =>
+				direction === 'left' ? item.dx < -1 : item.dx > 1,
+			);
 			if (ahead.length === 0) return;
 			ahead.sort((a, b) => {
 				const score = (item: typeof a) => {
@@ -176,19 +195,25 @@
 			return;
 		}
 		if (action === 'inventory_add_all') {
-			void applyInventoryChanges(words.map((word) => ({
-				word,
-				delta: word.quantity != null && Number.isSafeInteger(word.quantity) && word.quantity > 0
-					? word.quantity : 1,
-			})));
+			void applyInventoryChanges(
+				words.map((word) => ({
+					word,
+					delta:
+						word.quantity != null && Number.isSafeInteger(word.quantity) && word.quantity > 0
+							? word.quantity
+							: 1,
+				})),
+			);
 			return;
 		}
 		if (selectedIndex === null) return;
 		if (action === 'inventory_increment' || action === 'inventory_decrement') {
-			void applyInventoryChanges([{
-				word: words[selectedIndex],
-				delta: action === 'inventory_increment' ? 1 : -1,
-			}]);
+			void applyInventoryChanges([
+				{
+					word: words[selectedIndex],
+					delta: action === 'inventory_increment' ? 1 : -1,
+				},
+			]);
 		}
 	}
 
@@ -296,8 +321,8 @@
 		}).then(registerCleanup);
 
 		listen<{ action: string; pressed: boolean }>('overlay_hotkey', ({ payload }) =>
-			onHotkeyEvent(payload.action, payload.pressed))
-			.then(registerCleanup);
+			onHotkeyEvent(payload.action, payload.pressed),
+		).then(registerCleanup);
 		listen('overlay_hotkey_reset', stopAllHotkeys).then(registerCleanup);
 
 		listen('relic_reward_detected', () => {
@@ -311,15 +336,17 @@
 			const generation = ++relicFeedbackGeneration;
 			clearTimeout(relicFeedbackTimer);
 			relicFeedback = `Added +1 ${payload.name}`;
-			void invoke('show_relic_add_toast').then(() => {
-				if (generation !== relicFeedbackGeneration) return;
-				relicFeedbackTimer = setTimeout(() => {
+			void invoke('show_relic_add_toast')
+				.then(() => {
+					if (generation !== relicFeedbackGeneration) return;
+					relicFeedbackTimer = setTimeout(() => {
+						if (generation === relicFeedbackGeneration) relicFeedback = null;
+					}, 10000);
+				})
+				.catch((error) => {
 					if (generation === relicFeedbackGeneration) relicFeedback = null;
-				}, 10000);
-			}).catch((error) => {
-				if (generation === relicFeedbackGeneration) relicFeedback = null;
-				console.error('Could not show relic inventory confirmation:', error);
-			});
+					console.error('Could not show relic inventory confirmation:', error);
+				});
 		}).then(registerCleanup);
 
 		return () => {
@@ -389,18 +416,20 @@
 </script>
 
 {#snippet keycap(value: string)}
-	<kbd class="inline-flex justify-center items-center bg-surface/90 px-1.5 border border-border-secondary min-w-5 h-5 font-mono font-semibold text-[10px] text-foreground tracking-wide">
+	<kbd
+		class="inline-flex justify-center items-center bg-surface/90 px-1.5 border border-border-secondary min-w-5 h-5 font-mono font-semibold text-[10px] text-foreground tracking-wide"
+	>
 		{value}
 	</kbd>
 {/snippet}
 
 <main class="relative w-screen h-screen pointer-events-none">
 	{#if relicFeedback}
-		<div class="absolute bottom-4 left-1/2 -translate-x-1/2">
+		<div class="bottom-4 left-1/2 absolute -translate-x-1/2">
 			<div
 				in:flyAndScale={{ y: 28, duration: 400 }}
 				out:fade={{ duration: 450 }}
-				class="bg-background/95 px-4 py-2 border border-accent text-foreground text-sm shadow-lg whitespace-nowrap"
+				class="bg-background/95 shadow-lg px-4 py-2 border border-accent text-foreground text-sm whitespace-nowrap"
 			>
 				{relicFeedback}
 			</div>
@@ -452,6 +481,7 @@
 			ownedByName.get(inventoryNameKey(word.text)) ??
 			0}
 		{@const sessionDelta = word.slug ? (sessionDeltaBySlug.get(word.slug) ?? 0) : 0}
+		{@const showOwnership = !isCustom || ownedCount > 0 || sessionDelta !== 0}
 		<!-- Bounding box for debugging -->
 		{#if showBoundingBoxes}
 			<div
@@ -497,15 +527,26 @@
 						<Icon icon="hugeicons:laurel-wreath-right-03" class="inline size-3.5 text-orange-300" />
 					{/if}
 				</div>
-				<div class="font-medium text-[10px] text-muted-foreground">
-					{#if word.vaulted}
-						<span class="text-amber-500">vaulted</span><span class="mx-0.5">•</span>
-					{/if}
-					{ownedCount} owned
-					<span class="ml-0.5" class:text-accent={sessionDelta > 0} class:text-red-400={sessionDelta < 0}>
-						({sessionDelta >= 0 ? '+' : ''}{sessionDelta})
-					</span>
-				</div>
+				{#if word.vaulted || showOwnership}
+					<div class="font-medium text-[10px] text-muted-foreground">
+						{#if word.vaulted}
+							<span class="text-amber-500">vaulted</span>
+							{#if showOwnership}<span class="mx-0.5">•</span>{/if}
+						{/if}
+						{#if showOwnership}
+							{ownedCount} owned
+							{#if sessionDelta !== 0}
+								<span
+									class="ml-0.5"
+									class:text-accent={sessionDelta > 0}
+									class:text-red-400={sessionDelta < 0}
+								>
+									({sessionDelta > 0 ? '+' : ''}{sessionDelta})
+								</span>
+							{/if}
+						{/if}
+					</div>
+				{/if}
 			</div>
 			{#if displayPrice !== undefined || ducats !== undefined || trades24h !== undefined}
 				<div class="flex flex-col items-center px-2 py-1 font-medium">
@@ -599,18 +640,28 @@
 	{#if controlsEnabled && !processing && words.length > 0}
 		<aside
 			aria-label="Overlay keyboard shortcuts"
-			class="absolute right-4 bottom-4 bg-background/95 px-3 py-2 border border-border-secondary text-foreground text-xs shadow-lg whitespace-nowrap"
+			class="right-4 bottom-4 absolute bg-background/95 shadow-lg px-3 py-2 border border-border-secondary text-foreground text-xs whitespace-nowrap"
 		>
 			<div class="flex items-center gap-3">
 				<div class="flex items-center gap-1.5">
-					<Icon icon="material-symbols:autorenew-rounded" class="size-4 text-accent" aria-hidden="true" />
+					<Icon
+						icon="material-symbols:autorenew-rounded"
+						class="size-4 text-accent"
+						aria-hidden="true"
+					/>
 					<span class="text-muted-foreground">Cycle</span>
-					{@render keycap(shortcut('cycle'))}<span>next</span>
-					{@render keycap(shortcut('cycle_back'))}<span>back</span>
+					{@render keycap(shortcut('cycle'))}
+					<span>next</span>
+					{@render keycap(shortcut('cycle_back'))}
+					<span>back</span>
 				</div>
 
-				<div class="flex items-center gap-1 border-l border-border-secondary pl-3">
-					<Icon icon="material-symbols:open-with-rounded" class="size-4 text-accent" aria-hidden="true" />
+				<div class="flex items-center gap-1 pl-3 border-border-secondary border-l">
+					<Icon
+						icon="material-symbols:open-with-rounded"
+						class="size-4 text-accent"
+						aria-hidden="true"
+					/>
 					<span class="mr-0.5 text-muted-foreground">Navigate</span>
 					{@render keycap(shortcut('navigate_up'))}
 					{@render keycap(shortcut('navigate_left'))}
@@ -618,16 +669,27 @@
 					{@render keycap(shortcut('navigate_right'))}
 				</div>
 
-				<div class="flex items-center gap-1.5 border-l border-border-secondary pl-3">
-					<Icon icon="material-symbols:inventory-2-outline-rounded" class="size-4 text-accent" aria-hidden="true" />
+				<div class="flex items-center gap-1.5 pl-3 border-border-secondary border-l">
+					<Icon
+						icon="material-symbols:inventory-2-outline-rounded"
+						class="size-4 text-accent"
+						aria-hidden="true"
+					/>
 					<span class="text-muted-foreground">Inventory</span>
-					{@render keycap(shortcut('inventory_decrement'))}<span>−1</span>
-					{@render keycap(shortcut('inventory_increment'))}<span>+1</span>
-					{@render keycap(shortcut('inventory_add_all'))}<span>all</span>
+					{@render keycap(shortcut('inventory_decrement'))}
+					<span>−1</span>
+					{@render keycap(shortcut('inventory_increment'))}
+					<span>+1</span>
+					{@render keycap(shortcut('inventory_add_all'))}
+					<span>all</span>
 				</div>
 
-				<div class="flex items-center gap-1.5 border-l border-border-secondary pl-3">
-					<Icon icon="material-symbols:close-rounded" class="size-4 text-accent" aria-hidden="true" />
+				<div class="flex items-center gap-1.5 pl-3 border-border-secondary border-l">
+					<Icon
+						icon="material-symbols:close-rounded"
+						class="size-4 text-accent"
+						aria-hidden="true"
+					/>
 					<span class="text-muted-foreground">Dismiss</span>
 					{@render keycap('ESC')}
 				</div>
@@ -644,24 +706,33 @@
 		border: 2px solid transparent;
 		pointer-events: none;
 		background: repeating-linear-gradient(
-			90deg,
-			var(--color-cyan-400) 0%,
-			var(--color-accent) 25%,
-			var(--color-cyan-400) 50%
-		) border-box;
+				90deg,
+				var(--color-cyan-400) 0%,
+				var(--color-accent) 25%,
+				var(--color-cyan-400) 50%
+			)
+			border-box;
 		background-size: 200% 100%;
-		mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+		mask:
+			linear-gradient(#fff 0 0) padding-box,
+			linear-gradient(#fff 0 0);
 		mask-composite: exclude;
-		-webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+		-webkit-mask:
+			linear-gradient(#fff 0 0) padding-box,
+			linear-gradient(#fff 0 0);
 		-webkit-mask-composite: xor;
 		animation: selection-border-flow 2s linear infinite;
 	}
 
 	@keyframes selection-border-flow {
-		to { background-position: 100% 0; }
+		to {
+			background-position: 100% 0;
+		}
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.selection-ring::after { animation: none; }
+		.selection-ring::after {
+			animation: none;
+		}
 	}
 </style>
