@@ -44,8 +44,8 @@
 		])
 			.then(([response, itemResponse, prices]) => {
 				if (current !== requestId) return;
-				sell = response.data.sell.slice(0, 5).map((order) => order.platinum);
-				buy = response.data.buy.slice(0, 5).map((order) => order.platinum);
+				sell = response.data.sell.map((order) => order.platinum);
+				buy = response.data.buy.map((order) => order.platinum);
 				marketMedian = Number.isFinite(prices[slug]?.median) ? prices[slug].median : null;
 				medianUsesOfferFallback = prices[slug]?.from_current_offers ?? false;
 				price = sell[0] ?? 1;
@@ -87,12 +87,12 @@
 		{#if loading}<p class="text-muted-foreground text-sm">Loading current orders...</p>{:else}
 			<div class="grid grid-cols-2 gap-4">
 				<div class="bg-card/50 p-3 border border-border-secondary">
-					<h3 class="mb-2 font-semibold text-sm">Top sell orders</h3>
+					<h3 class="mb-2 font-semibold text-sm">Cheapest in-game sell orders</h3>
 					{#each sell as value}<div class="py-0.5 tabular-nums text-sm">{value} platinum</div>{:else}<p class="text-muted-foreground text-sm">No sell orders</p>{/each}
 					<div class="mt-2 pt-2 border-t border-border-secondary font-semibold text-sm" title={medianUsesOfferFallback ? 'Current offer median; no recent trade median' : 'Recent trade median'}>Market median: {marketMedian === null ? '—' : `${medianUsesOfferFallback ? '~' : ''}${marketMedian} platinum`}</div>
 				</div>
 				<div class="bg-card/50 p-3 border border-border-secondary">
-					<h3 class="mb-2 font-semibold text-sm">Top buy orders</h3>
+					<h3 class="mb-2 font-semibold text-sm">Highest in-game buy orders</h3>
 					{#each buy as value}<div class="py-0.5 tabular-nums text-sm">{value} platinum</div>{:else}<p class="text-muted-foreground text-sm">No buy orders</p>{/each}
 				</div>
 			</div>

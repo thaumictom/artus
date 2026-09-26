@@ -43,7 +43,7 @@
 			invoke('get_market_item', { slug }),
 		]).then(([topResponse, itemResponse]) => {
 			if (current !== requestId) return;
-			orders = TopOrdersSchema.parse(topResponse).data.sell.slice(0, 5);
+			orders = TopOrdersSchema.parse(topResponse).data.sell;
 			const details = GetItemResponseSchema.parse(itemResponse).data;
 			itemName = details.i18n?.en?.name ?? name;
 			bulkTradable = details.bulkTradable ?? false;
@@ -62,7 +62,7 @@
 <Dialog bind:open={() => open, (value) => { if (!value) item = null; }} {title} {description} {dialogClose}
 	contentProps={{ class: 'h-auto max-h-[calc(100vh-2rem)]' }}>
 	<div class="px-6 overflow-y-auto">
-		<h3 class="mb-3 font-semibold text-sm">Top sell orders</h3>
+		<h3 class="mb-3 font-semibold text-sm">Cheapest in-game sell orders</h3>
 		{#if loading}
 			<p class="text-muted-foreground text-sm">Loading current orders...</p>
 		{:else if error}

@@ -179,8 +179,8 @@
 				).catch((): Record<string, { median: number; from_current_offers: boolean }> => ({})),
 			]);
 			if (requestId !== editPricesRequestId) return;
-			editSellPrices = response.data.sell.slice(0, 5).map((entry) => entry.platinum);
-			editBuyPrices = response.data.buy.slice(0, 5).map((entry) => entry.platinum);
+			editSellPrices = response.data.sell.map((entry) => entry.platinum);
+			editBuyPrices = response.data.buy.map((entry) => entry.platinum);
 			editMarketMedian = Number.isFinite(prices[slug]?.median) ? prices[slug].median : null;
 			editMedianUsesOfferFallback = prices[slug]?.from_current_offers ?? false;
 		} catch (cause) {
@@ -414,7 +414,7 @@
 		{:else}
 			<div class="col-span-2 grid grid-cols-2 gap-4">
 				<div class="bg-card/50 p-3 border border-border-secondary">
-					<h3 class="mb-2 font-semibold text-sm">Top sell orders</h3>
+					<h3 class="mb-2 font-semibold text-sm">Cheapest in-game sell orders</h3>
 					{#each editSellPrices as value}<div class="py-0.5 tabular-nums text-sm">{value} platinum</div>{:else}<p class="text-muted-foreground text-sm">No sell orders</p>{/each}
 					{#if editing?.type === 'sell'}
 						<div class="mt-2 pt-2 border-t border-border-secondary font-semibold text-sm" title={editMedianUsesOfferFallback ? 'Current offer median; no recent trade median' : 'Recent trade median'}>
@@ -423,7 +423,7 @@
 					{/if}
 				</div>
 				<div class="bg-card/50 p-3 border border-border-secondary">
-					<h3 class="mb-2 font-semibold text-sm">Top buy orders</h3>
+					<h3 class="mb-2 font-semibold text-sm">Highest in-game buy orders</h3>
 					{#each editBuyPrices as value}<div class="py-0.5 tabular-nums text-sm">{value} platinum</div>{:else}<p class="text-muted-foreground text-sm">No buy orders</p>{/each}
 				</div>
 			</div>

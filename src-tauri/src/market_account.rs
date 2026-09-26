@@ -333,7 +333,20 @@ pub fn exit_app(app: AppHandle, restart: bool) {
 #[tauri::command]
 pub async fn market_top_orders(state: State<'_, AppState>, slug: String) -> AppResult<Value> {
     if !valid_slug(&slug) { return Err(AppError::msg("Invalid item slug")); }
-    response_json(state.http_client.get(format!("{API}/v2/orders/item/{slug}/top"))).await
+    let mut response = response_json(state.http_client.get(format!("{API}/v2/orders/item/{slug}"))).await?;
+    let orders = response.get_mut("data").and_then(Value::as_array_mut)
+        .ok_or_else(|| AppError::msg("Invalid item orders response"))?;
+    let (mut sell, mut buy): (Vec<Value>, Vec<Value>) = std::mem::take(orders).into_iter()
+        .filter(|order| order.pointer("/user/status").and_then(Value::as_str) == Some("ingame")
+            && order.get("platinum").and_then(Value::as_i64).is_some())
+        .partition(|order| order.get("type").and_then(Value::as_str) == Some("sell"));
+    buy.retain(|order| order.get("type").and_then(Value::as_str) == Some("buy"));
+    sell.sort_by_key(|order| order.get("platinum").and_then(Value::as_i64).unwrap_or(i64::MAX));
+    buy.sort_by_key(|order| std::cmp::Reverse(order.get("platinum").and_then(Value::as_i64).unwrap_or(0)));
+    sell.truncate(10);
+    buy.truncate(10);
+    response["data"] = json!({ "sell": sell, "buy": buy });
+    Ok(response)
 }
 
 fn valid_slug(value: &str) -> bool { !value.is_empty() && value.bytes().all(|c| c.is_ascii_alphanumeric() || c == b'_' || c == b'-') }
