@@ -42,8 +42,16 @@
 					<Tooltip.Root>
 						<Tooltip.Trigger>
 							{#snippet child({ props })}
-								<span {...props} class="block rounded cursor-not-allowed" aria-label="Listings unavailable. Log in to warframe.market first.">
-									<Tabs.Trigger value={id} disabled class="p-1 rounded opacity-40 pointer-events-none">
+								<span
+									{...props}
+									class="block rounded cursor-not-allowed"
+									aria-label="Listings unavailable. Log in to warframe.market first."
+								>
+									<Tabs.Trigger
+										value={id}
+										disabled
+										class="opacity-40 p-1 rounded pointer-events-none"
+									>
 										{@render navLabel(section)}
 									</Tabs.Trigger>
 								</span>
@@ -54,10 +62,10 @@
 								side="right"
 								sideOffset={8}
 								collisionPadding={12}
-								class="z-100 bg-surface p-3 border border-border max-w-64 text-surface-foreground text-sm shadow-xl"
+								class="z-100 bg-surface shadow-xl p-3 border border-border max-w-64 text-surface-foreground text-sm"
 							>
 								Log in to warframe.market first to view your listings.
-								<Tooltip.Arrow class="text-surface" />
+								<Tooltip.Arrow class="text-border" />
 							</Tooltip.Content>
 						</Tooltip.Portal>
 					</Tooltip.Root>

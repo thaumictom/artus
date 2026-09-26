@@ -67,7 +67,7 @@
 			delay: setTimeout(() => {
 				if (heldHotkeys.get(action) !== held) return;
 				held.interval = setInterval(() => handleOverlayHotkey(action), 85);
-			}, 320),
+			}, 200),
 		};
 		heldHotkeys.set(action, held);
 		if (!repeatableActions.has(action)) clearTimeout(held.delay);
@@ -101,14 +101,17 @@
 		const session = overlaySession;
 		inventoryChangeQueue = inventoryChangeQueue
 			.catch(() => undefined)
-			.then(() => session === overlaySession ? change(session) : undefined);
+			.then(() => (session === overlaySession ? change(session) : undefined));
 	}
 
 	function applyInventoryChanges(changes: { word: OcrWord; delta: number }[]) {
 		queueInventoryChange((session) => saveInventoryChanges(changes, session));
 	}
 
-	async function saveInventoryChanges(changes: { word: OcrWord; delta: number }[], session: number) {
+	async function saveInventoryChanges(
+		changes: { word: OcrWord; delta: number }[],
+		session: number,
+	) {
 		try {
 			const applied = await changeOcrItemQuantities(changes);
 			if (session !== overlaySession) return;
@@ -124,7 +127,9 @@
 
 	function resetSessionInventory() {
 		queueInventoryChange(async (session) => {
-			const wordsBySlug = new Map(words.filter((word) => word.slug).map((word) => [word.slug!, word]));
+			const wordsBySlug = new Map(
+				words.filter((word) => word.slug).map((word) => [word.slug!, word]),
+			);
 			const changes = [...sessionDeltaBySlug]
 				.filter(([slug, delta]) => delta !== 0 && wordsBySlug.has(slug))
 				.map(([slug, delta]) => ({ word: wordsBySlug.get(slug)!, delta: -delta }));

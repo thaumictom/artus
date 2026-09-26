@@ -1,0 +1,11 @@
+- fixing the few mastered items missing
+- auto sell
+- mastery recommendations where it tells you whats the next easiest thing to master
+- relic info ingame/inapp
+- images/thumbnails
+- lucrum improvements and archive
+- global search incl inventory improvements
+- ducanator and maybe riven search
+- linux testing + screen scaling and ocr improvements
+- automatic price changing features
+- respect 100 warframe market orders limit (test it out) - add option for patreons to set it to unlimited
