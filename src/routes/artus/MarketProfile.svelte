@@ -13,7 +13,6 @@
 		logoutMarket,
 		marketAccount,
 		marketProfileUrl,
-		rememberedMarketLogin,
 		scheduleMarketInvisible,
 		setMarketInvisibleOnExit,
 		setMarketStatus,
@@ -79,18 +78,8 @@
 	};
 	const statusOptions: MarketStatus[] = ['invisible', 'online', 'ingame'];
 
-	async function showLogin() {
+	function showLogin() {
 		error = null;
-		try {
-			const saved = await rememberedMarketLogin();
-			if (saved) {
-				email = saved.email;
-				password = saved.password;
-				remember = true;
-			}
-		} catch (cause) {
-			console.error('Could not load remembered market login:', cause);
-		}
 		loginOpen = true;
 	}
 
@@ -286,8 +275,7 @@
 			<label for="remember-market-login" class="cursor-pointer">Remember me</label>
 		</div>
 		{#if remember}<p class="text-muted-foreground text-xs">
-				Your email and password will be stored in Artus's local app data without encryption. Use
-				this only on a device you trust.
+				Artus stores only your authorization token in local app data without encryption. Anyone with the token can access your account until it expires or is revoked.
 			</p>{/if}
 		<Button
 			variant="primary"

@@ -24,7 +24,7 @@ const DEFAULT_SCREENSHOT_HOTKEY: &str = "Ctrl+Home";
 
 pub const HOTKEY_ACTION_SCREENSHOT_ADD_TO_MASTERY: &str = "screenshot_add_mastery";
 const DEFAULT_SCREENSHOT_ADD_TO_MASTERY_HOTKEY: &str = "Ctrl+Alt+Home";
-const OVERLAY_ACTIONS: [(&str, &str); 9] = [
+const OVERLAY_ACTIONS: [(&str, &str); 10] = [
     ("cycle", "Tab"),
     ("cycle_back", "Shift+Tab"),
     ("navigate_up", "W"),
@@ -33,11 +33,12 @@ const OVERLAY_ACTIONS: [(&str, &str); 9] = [
     ("navigate_right", "D"),
     ("inventory_decrement", "Q"),
     ("inventory_increment", "E"),
-    ("inventory_add_all", "R"),
+    ("inventory_add_all", "X"),
+    ("inventory_reset_session", "Shift+X"),
 ];
 
 /// All known actions and their default shortcuts.
-const HOTKEY_DEFINITIONS: [(&str, &str); 11] = [
+const HOTKEY_DEFINITIONS: [(&str, &str); 12] = [
     (HOTKEY_ACTION_SCREENSHOT, DEFAULT_SCREENSHOT_HOTKEY),
     (
         HOTKEY_ACTION_SCREENSHOT_ADD_TO_MASTERY,
@@ -52,6 +53,7 @@ const HOTKEY_DEFINITIONS: [(&str, &str); 11] = [
     OVERLAY_ACTIONS[6],
     OVERLAY_ACTIONS[7],
     OVERLAY_ACTIONS[8],
+    OVERLAY_ACTIONS[9],
 ];
 
 fn is_overlay_action(action: &str) -> bool {

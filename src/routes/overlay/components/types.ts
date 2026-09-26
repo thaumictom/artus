@@ -1,0 +1,28 @@
+export type OcrWord = {
+		text: string;
+		quantity?: number;
+		slug?: string;
+		x: number;
+		y: number;
+		width: number;
+		height: number;
+		market_median?: number;
+		market_median_from_current_offers?: boolean;
+		maxed_arcane_price?: number;
+		maxed_arcane_trades_24h?: number;
+		maxed_arcane_price_from_current_offers?: boolean;
+		prime_set_price?: number;
+		prime_set_trades_24h?: number;
+		prime_set_price_from_current_offers?: boolean;
+		prime_set_ducats?: number;
+		relic_price_is_fallback?: boolean;
+		ducats?: number;
+		vaulted?: boolean;
+		is_custom?: boolean;
+		is_relic?: boolean;
+		is_mod?: boolean;
+		subtype?: string;
+		trades_24h?: number;
+		moving_avg?: number;
+		mod_type?: 'gold' | 'silver' | 'bronze' | 'archon' | 'special';
+	};

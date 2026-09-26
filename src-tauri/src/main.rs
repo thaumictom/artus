@@ -86,6 +86,8 @@ fn main() {
             market_account::market_item_details,
             market_account::market_create_listing,
             market_account::market_update_listing,
+            market_account::market_set_listing_visibility,
+            market_account::market_close_listing_one,
             market_account::market_delete_listing,
             market_notifications::start_market_notification_socket,
             market_notifications::stop_market_notification_socket,

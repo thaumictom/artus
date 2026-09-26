@@ -7,10 +7,12 @@
 	import ListingQuantityWarning from '$lib/components/ListingQuantityWarning.svelte';
 	type ListingItemDetails = { maxRank?: number; maxCharges?: number; maxAmberStars?: number; maxCyanStars?: number; subtypes?: string[]; bulkTradable?: boolean };
 
-	let { item = $bindable<InventoryItem | null>(null), mastered = false }: { item: InventoryItem | null; mastered?: boolean } = $props();
+	let { item = $bindable<InventoryItem | null>(null), mastered = false, onCreated = () => {} }: { item: InventoryItem | null; mastered?: boolean; onCreated?: () => void } = $props();
 	let open = $derived(item !== null);
 	let sell = $state<number[]>([]);
 	let buy = $state<number[]>([]);
+	let marketMedian = $state<number | null>(null);
+	let medianUsesOfferFallback = $state(false);
 	let loading = $state(false);
 	let busy = $state(false);
 	let error = $state<string | null>(null);
@@ -29,27 +31,23 @@
 		(!details?.maxAmberStars || (Number.isSafeInteger(amberStars) && amberStars >= 0 && amberStars <= details.maxAmberStars)) &&
 		(!details?.maxCyanStars || (Number.isSafeInteger(cyanStars) && cyanStars >= 0 && cyanStars <= details.maxCyanStars)) &&
 		(!details?.subtypes?.length || details.subtypes.includes(subtype)));
-	const median = $derived.by(() => {
-		if (!sell.length) return null;
-		const values = [...sell].sort((a, b) => a - b);
-		const middle = Math.floor(values.length / 2);
-		return values.length % 2 ? values[middle] : (values[middle - 1] + values[middle]) / 2;
-	});
-
 	$effect(() => {
 		if (!item?.slug) return;
 		const slug = item.slug;
 		quantity = Math.min(Math.max(item.quantity, 1), 9999);
-		price = 1; sell = []; buy = []; details = null; error = null; loading = true;
+		price = 1; sell = []; buy = []; marketMedian = null; details = null; error = null; loading = true;
 		const current = ++requestId;
 		void Promise.all([
 			invoke<{ data: { sell: { platinum: number }[]; buy: { platinum: number }[] } }>('market_top_orders', { slug }),
 			invoke<{ data: ListingItemDetails }>('get_market_item', { slug }),
+			invoke<Record<string, { median: number; from_current_offers: boolean }>>('get_mastery_tradeable_prices').catch((): Record<string, { median: number; from_current_offers: boolean }> => ({})),
 		])
-			.then(([response, itemResponse]) => {
+			.then(([response, itemResponse, prices]) => {
 				if (current !== requestId) return;
 				sell = response.data.sell.slice(0, 5).map((order) => order.platinum);
 				buy = response.data.buy.slice(0, 5).map((order) => order.platinum);
+				marketMedian = Number.isFinite(prices[slug]?.median) ? prices[slug].median : null;
+				medianUsesOfferFallback = prices[slug]?.from_current_offers ?? false;
 				price = sell[0] ?? 1;
 				details = itemResponse.data;
 				rank = 0; charges = 0; amberStars = 0; cyanStars = 0;
@@ -59,11 +57,11 @@
 			.finally(() => { if (current === requestId) loading = false; });
 	});
 
-	async function create() {
+	async function create(visible: boolean) {
 		if (!item?.slug || !valid || busy) return;
 		busy = true; error = null;
 		try {
-			await invoke('market_create_listing', { slug: item.slug, platinum: price, quantity, variant: {
+			await invoke('market_create_listing', { slug: item.slug, platinum: price, quantity, visible, variant: {
 				rank: details?.maxRank ? rank : null,
 				charges: details?.maxCharges ? charges : null,
 				amberStars: details?.maxAmberStars ? amberStars : null,
@@ -71,6 +69,7 @@
 				subtype: details?.subtypes?.length ? subtype : null,
 			} });
 			item = null;
+			onCreated();
 		} catch (cause) { error = String(cause); }
 		finally { busy = false; }
 	}
@@ -79,7 +78,10 @@
 {#snippet title()}Create sell listing{/snippet}
 {#snippet description()}<ListingItemInfo name={item?.name ?? ''} {mastered} ownedCount={item?.quantity ?? 0} />{/snippet}
 {#snippet dialogClose()}<Button>Cancel</Button>{/snippet}
-{#snippet dialogActions()}<Button variant="primary" disabled={!valid || busy || loading} onclick={create}>{busy ? 'Creating...' : 'Create listing'}</Button>{/snippet}
+{#snippet dialogActions()}
+	<Button disabled={!valid || busy || loading} onclick={() => create(false)}>Create a hidden listing</Button>
+	<Button variant="primary" disabled={!valid || busy || loading} onclick={() => create(true)}>{busy ? 'Creating...' : 'Create listing'}</Button>
+{/snippet}
 <Dialog bind:open={() => open, (value) => { if (!value) item = null; }} {title} {description} {dialogClose} {dialogActions} contentProps={{ class: 'h-auto max-h-[calc(100vh-2rem)]' }}>
 	<div class="flex flex-col gap-4 px-6 overflow-y-auto">
 		{#if loading}<p class="text-muted-foreground text-sm">Loading current orders...</p>{:else}
@@ -87,7 +89,7 @@
 				<div class="bg-card/50 p-3 border border-border-secondary">
 					<h3 class="mb-2 font-semibold text-sm">Top sell orders</h3>
 					{#each sell as value}<div class="py-0.5 tabular-nums text-sm">{value} platinum</div>{:else}<p class="text-muted-foreground text-sm">No sell orders</p>{/each}
-					<div class="mt-2 pt-2 border-t border-border-secondary font-semibold text-sm">Median: {median === null ? '—' : `${median} platinum`}</div>
+					<div class="mt-2 pt-2 border-t border-border-secondary font-semibold text-sm" title={medianUsesOfferFallback ? 'Current offer median; no recent trade median' : 'Recent trade median'}>Market median: {marketMedian === null ? '—' : `${medianUsesOfferFallback ? '~' : ''}${marketMedian} platinum`}</div>
 				</div>
 				<div class="bg-card/50 p-3 border border-border-secondary">
 					<h3 class="mb-2 font-semibold text-sm">Top buy orders</h3>

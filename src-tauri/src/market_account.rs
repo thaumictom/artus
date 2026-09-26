@@ -16,6 +16,7 @@ const API: &str = "https://api.warframe.market";
 const USER_AGENT: &str = concat!("Artus/", env!("CARGO_PKG_VERSION"), " (+https://github.com/thaumictom/artus)");
 const ACCOUNT_STORE_PATH: &str = "market-account.json";
 const EXIT_INVISIBLE_KEY: &str = "invisible_on_exit";
+const REMEMBERED_TOKEN_KEY: &str = "auth_token";
 static NEXT_TIMER_ID: AtomicU64 = AtomicU64::new(1);
 static EXIT_IN_PROGRESS: AtomicBool = AtomicBool::new(false);
 
@@ -138,13 +139,66 @@ async fn socket_actor(jwt: String, mut rx: mpsc::Receiver<StatusCommand>, ready:
     let _ = socket.close(None).await;
 }
 
-#[tauri::command]
-pub fn market_session(state: State<'_, AppState>) -> AppResult<Option<SessionView>> {
-    Ok(state.market_session.lock()?.as_ref().filter(|session| !session.socket.is_closed()).map(view))
+fn update_remembered_token(app: &AppHandle, jwt: Option<&str>) -> AppResult<()> {
+    let store = app.store(ACCOUNT_STORE_PATH).map_err(AppError::msg)?;
+    if let Some(jwt) = jwt { store.set(REMEMBERED_TOKEN_KEY, json!(jwt)); }
+    else { store.delete(REMEMBERED_TOKEN_KEY); }
+    store.save().map_err(AppError::msg)
+}
+
+async fn session_from_token(state: &AppState, jwt: String) -> AppResult<Option<MarketSession>> {
+    let response = state.http_client.get(format!("{API}/v2/me"))
+        .bearer_auth(&jwt)
+        .header("Language", "en").header("Platform", "pc")
+        .header("Crossplay", "true").header(reqwest::header::USER_AGENT, USER_AGENT)
+        .timeout(Duration::from_secs(20)).send().await?;
+    if matches!(response.status(), reqwest::StatusCode::UNAUTHORIZED | reqwest::StatusCode::FORBIDDEN) {
+        return Ok(None);
+    }
+    if !response.status().is_success() {
+        return Err(AppError::msg(format!("Could not validate warframe.market session ({})", response.status())));
+    }
+    let me: Value = response.json().await?;
+    let ingame_name = me.pointer("/data/ingameName").and_then(Value::as_str)
+        .unwrap_or("warframe.market account").to_owned();
+    let slug = me.pointer("/data/slug").and_then(Value::as_str)
+        .ok_or_else(|| AppError::msg("warframe.market did not return a profile slug"))?.to_owned();
+    let (sender, receiver) = mpsc::channel(4);
+    let (ready_sender, ready_receiver) = oneshot::channel();
+    tokio::spawn(socket_actor(jwt.clone(), receiver, ready_sender));
+    tokio::time::timeout(Duration::from_secs(15), ready_receiver).await
+        .map_err(|_| AppError::msg("Timed out connecting to warframe.market status"))?.map_err(AppError::msg)??;
+    let (reply, confirmation) = oneshot::channel();
+    sender.send(StatusCommand { status: "invisible".into(), reply }).await.map_err(AppError::msg)?;
+    tokio::time::timeout(Duration::from_secs(15), confirmation).await
+        .map_err(|_| AppError::msg("Timed out setting invisible status"))?.map_err(AppError::msg)??;
+    Ok(Some(MarketSession { token: jwt, ingame_name, slug, status: "invisible".into(), invisible_at: None, timer_id: 0, socket: sender }))
 }
 
 #[tauri::command]
-pub async fn market_login(state: State<'_, AppState>, email: String, password: String) -> AppResult<SessionView> {
+pub async fn market_session(app: AppHandle, state: State<'_, AppState>) -> AppResult<Option<SessionView>> {
+    let store = app.store(ACCOUNT_STORE_PATH).map_err(AppError::msg)?;
+    if let Some(active) = state.market_session.lock()?.as_ref().filter(|session| !session.socket.is_closed()) {
+        return Ok(Some(view(active)));
+    }
+    let Some(jwt) = store.get(REMEMBERED_TOKEN_KEY).and_then(|value| value.as_str().map(str::to_owned)) else {
+        return Ok(None);
+    };
+    match session_from_token(&state, jwt).await? {
+        Some(session) => {
+            let result = view(&session);
+            *state.market_session.lock()? = Some(session);
+            Ok(Some(result))
+        }
+        None => {
+            update_remembered_token(&app, None)?;
+            Ok(None)
+        }
+    }
+}
+
+#[tauri::command]
+pub async fn market_login(app: AppHandle, state: State<'_, AppState>, email: String, password: String, remember: bool) -> AppResult<SessionView> {
     if email.trim().is_empty() || password.is_empty() { return Err(AppError::msg("Email and password are required")); }
     let response = state.http_client.post(format!("{API}/v1/auth/signin"))
         .header(reqwest::header::USER_AGENT, USER_AGENT)
@@ -158,27 +212,17 @@ pub async fn market_login(state: State<'_, AppState>, email: String, password: S
         .and_then(|header| header.split_once(' ').map(|(_, token)| token.to_owned()))
         .filter(|token| !token.is_empty())
         .ok_or_else(|| AppError::msg("warframe.market did not return a session token"))?;
-    let me = response_json(state.http_client.get(format!("{API}/v2/me")).bearer_auth(&jwt)).await?;
-    let ingame_name = me.pointer("/data/ingameName").and_then(Value::as_str)
-        .unwrap_or("warframe.market account").to_owned();
-    let slug = me.pointer("/data/slug").and_then(Value::as_str)
-        .ok_or_else(|| AppError::msg("warframe.market did not return a profile slug"))?.to_owned();
-    let (sender, receiver) = mpsc::channel(4);
-    let (ready_sender, ready_receiver) = oneshot::channel();
-    tokio::spawn(socket_actor(jwt.clone(), receiver, ready_sender));
-    tokio::time::timeout(std::time::Duration::from_secs(15), ready_receiver).await
-        .map_err(|_| AppError::msg("Timed out connecting to warframe.market status"))?.map_err(AppError::msg)??;
-    let (reply, confirmation) = oneshot::channel();
-    sender.send(StatusCommand { status: "invisible".into(), reply }).await.map_err(AppError::msg)?;
-    tokio::time::timeout(std::time::Duration::from_secs(15), confirmation).await
-        .map_err(|_| AppError::msg("Timed out setting invisible status"))?.map_err(AppError::msg)??;
+    let session = session_from_token(&state, jwt.clone()).await?
+        .ok_or_else(|| AppError::msg("warframe.market rejected the session token"))?;
+    update_remembered_token(&app, remember.then_some(jwt.as_str()))?;
     let mut guard = state.market_session.lock()?;
-    *guard = Some(MarketSession { token: jwt, ingame_name, slug, status: "invisible".into(), invisible_at: None, timer_id: 0, socket: sender });
+    *guard = Some(session);
     Ok(view(guard.as_ref().unwrap()))
 }
 
 #[tauri::command]
-pub fn market_logout(state: State<'_, AppState>) -> AppResult<()> {
+pub fn market_logout(app: AppHandle, state: State<'_, AppState>) -> AppResult<()> {
+    update_remembered_token(&app, None)?;
     *state.market_session.lock()? = None;
     Ok(())
 }
@@ -343,12 +387,12 @@ pub async fn market_item_details(state: State<'_, AppState>) -> AppResult<std::c
 }
 
 #[tauri::command]
-pub async fn market_create_listing(state: State<'_, AppState>, slug: String, platinum: i64, quantity: i64, variant: ListingVariant) -> AppResult<Value> {
+pub async fn market_create_listing(state: State<'_, AppState>, slug: String, platinum: i64, quantity: i64, visible: bool, variant: ListingVariant) -> AppResult<Value> {
     if !valid_slug(&slug) || !valid_order(platinum, quantity) { return Err(AppError::msg("Invalid listing details")); }
     let item = response_json(state.http_client.get(format!("{API}/v2/item/{slug}"))).await?;
     let data = &item["data"];
     let item_id = data["id"].as_str().ok_or_else(|| AppError::msg("Item ID unavailable"))?;
-    let mut body = json!({"itemId":item_id,"type":"sell","platinum":platinum,"quantity":quantity,"visible":true});
+    let mut body = json!({"itemId":item_id,"type":"sell","platinum":platinum,"quantity":quantity,"visible":visible});
     if data["bulkTradable"].as_bool() == Some(true) { body["perTrade"] = json!(1); }
     insert_level(&mut body, data, "rank", "maxRank", variant.rank)?;
     insert_level(&mut body, data, "charges", "maxCharges", variant.charges)?;
@@ -368,6 +412,18 @@ pub async fn market_create_listing(state: State<'_, AppState>, slug: String, pla
 pub async fn market_update_listing(state: State<'_, AppState>, id: String, platinum: i64, quantity: i64) -> AppResult<Value> {
     if !valid_id(&id) || !valid_order(platinum, quantity) { return Err(AppError::msg("Invalid listing details")); }
     authenticated(&state, reqwest::Method::PATCH, &format!("order/{id}"), Some(json!({"platinum":platinum,"quantity":quantity}))).await
+}
+
+#[tauri::command]
+pub async fn market_set_listing_visibility(state: State<'_, AppState>, id: String, visible: bool) -> AppResult<Value> {
+    if !valid_id(&id) { return Err(AppError::msg("Invalid listing ID")); }
+    authenticated(&state, reqwest::Method::PATCH, &format!("order/{id}"), Some(json!({"visible":visible}))).await
+}
+
+#[tauri::command]
+pub async fn market_close_listing_one(state: State<'_, AppState>, id: String) -> AppResult<Value> {
+    if !valid_id(&id) { return Err(AppError::msg("Invalid listing ID")); }
+    authenticated(&state, reqwest::Method::POST, &format!("order/{id}/close"), Some(json!({"quantity":1}))).await
 }
 
 #[tauri::command]

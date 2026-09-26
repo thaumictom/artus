@@ -91,7 +91,8 @@ export const config = $state({
 		navigate_right: 'd',
 		inventory_decrement: 'q',
 		inventory_increment: 'e',
-		inventory_add_all: 'r',
+		inventory_add_all: 'x',
+		inventory_reset_session: 'shift+x',
 	},
 
 	// Warframe settings
@@ -160,28 +161,10 @@ export function loadSettings() {
 			navigate_right: config.hotkeys?.navigate_right ?? 'd',
 			inventory_decrement: config.hotkeys?.inventory_decrement ?? 'q',
 			inventory_increment: config.hotkeys?.inventory_increment ?? 'e',
-			inventory_add_all: config.hotkeys?.inventory_add_all ?? 'r',
+			inventory_add_all: config.hotkeys?.inventory_add_all ?? 'x',
+			inventory_reset_session: config.hotkeys?.inventory_reset_session ?? 'shift+x',
 		};
 
-		// Merge nested notification defaults so new rule fields remain available to
-		// installations that already have an older settings.json.
-		const savedRules = config.notification_rules;
-		const defaults = defaultNotificationRules();
-		config.notification_rules = {
-			...defaults,
-			...(savedRules && typeof savedRules === 'object' ? savedRules : {}),
-			fissures: {
-				...defaults.fissures,
-				...(savedRules?.fissures && typeof savedRules.fissures === 'object'
-					? savedRules.fissures
-					: {}),
-			},
-		};
-
-		// Remove the obsolete EE.log fallback setting from existing installations.
-		if (await store.delete('warframe_log_path')) {
-			await store.save();
-		}
 	})();
 	return settingsLoadPromise;
 }

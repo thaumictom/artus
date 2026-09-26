@@ -95,6 +95,34 @@ export function changeOcrItemQuantities(changes: { word: InventoryOcrWord; delta
 	return save;
 }
 
+export function removeOneMarketInventoryItem(slug: string | undefined, name: string) {
+	const save = latestSave.catch(() => undefined).then(async () => {
+		const store = new LazyStore('inventory.json');
+		const [savedItems, savedSlugs] = await Promise.all([
+			store.get<InventoryItem[]>('items'),
+			store.get<string[]>('newSlugs'),
+		]);
+		const items = savedItems ?? [];
+		const item = items.find((candidate) =>
+			!candidate.isCustom && candidate.quantity > 0 &&
+			(slug && inventoryMarketSlug(candidate) === slug ||
+				!candidate.slug && inventoryNameKey(candidate.name) === inventoryNameKey(name)),
+		);
+		if (!item) throw new Error(`No ${name} remains in inventory`);
+		item.quantity -= 1;
+		if (item.quantity === 0) {
+			items.splice(items.indexOf(item), 1);
+			if (item.slug) {
+				await store.set('newSlugs', (Array.isArray(savedSlugs) ? savedSlugs : []).filter((savedSlug) => savedSlug !== item.slug));
+			}
+		}
+		await store.set('items', items);
+		await store.save();
+	});
+	latestSave = save.then(() => undefined);
+	return save;
+}
+
 export function trackInventorySave(save: Promise<void>) {
 	latestSave = save;
 }

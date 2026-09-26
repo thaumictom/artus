@@ -29,6 +29,7 @@
 				['inventory_decrement', 'Remove one'],
 				['inventory_increment', 'Add one'],
 				['inventory_add_all', 'Add all visible items'],
+				['inventory_reset_session', 'Reset session inventory changes'],
 			],
 		},
 	];

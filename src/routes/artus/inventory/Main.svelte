@@ -185,7 +185,6 @@
 				if (disposed) return;
 				data = items ?? [];
 				newSlugs = Array.isArray(savedNewSlugs) ? savedNewSlugs : [];
-				if (data.some((item) => !item.slug)) void restoreLegacySlugs(() => disposed);
 			} catch (error) {
 				console.error('Could not load inventory:', error);
 			} finally {
@@ -197,28 +196,6 @@
 			unlisten?.();
 		};
 	});
-
-	async function restoreLegacySlugs(isDisposed: () => boolean) {
-		try {
-			const dictionary = DictionarySchema.parse(await invoke('get_market_dictionary'));
-			if (isDisposed()) return;
-			const slugsByName = new Map(
-				dictionary.items.map((item) => [inventoryNameKey(item.name), item.slug]),
-			);
-			let changed = false;
-			for (const item of data) {
-				if (item.slug) continue;
-				const name = item.name.replace(/ \[(Exceptional|Flawless|Radiant)\]$/, '');
-				const slug = slugsByName.get(inventoryNameKey(name));
-				if (!slug) continue;
-				item.slug = slug;
-				changed = true;
-			}
-			if (changed) saveInventory();
-		} catch (error) {
-			console.error('Could not match older inventory items to market listings:', error);
-		}
-	}
 
 	function saveInventory() {
 		const items = $state.snapshot(data);

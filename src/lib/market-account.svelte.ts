@@ -30,16 +30,9 @@ export async function loadMarketSession() {
 	}
 }
 
-export async function rememberedMarketLogin() {
-	return (await credentials.get<{ email: string; password: string }>('login')) ?? null;
-}
-
 export async function loginMarket(email: string, password: string, remember: boolean) {
-	const session = await invoke<MarketSession>('market_login', { email, password });
+	const session = await invoke<MarketSession>('market_login', { email, password, remember });
 	marketAccount.session = session;
-	if (remember) await credentials.set('login', { email, password });
-	else await credentials.delete('login');
-	await credentials.save();
 }
 
 export async function logoutMarket() {
