@@ -91,8 +91,6 @@ export const config = $state({
 		navigate_right: 'd',
 		inventory_decrement: 'q',
 		inventory_increment: 'e',
-		inventory_add_all: 'x',
-		inventory_reset_session: 'shift+x',
 	},
 
 	// Warframe settings
@@ -161,8 +159,6 @@ export function loadSettings() {
 			navigate_right: config.hotkeys?.navigate_right ?? 'd',
 			inventory_decrement: config.hotkeys?.inventory_decrement ?? 'q',
 			inventory_increment: config.hotkeys?.inventory_increment ?? 'e',
-			inventory_add_all: config.hotkeys?.inventory_add_all ?? 'x',
-			inventory_reset_session: config.hotkeys?.inventory_reset_session ?? 'shift+x',
 		};
 
 	})();

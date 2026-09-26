@@ -4,7 +4,7 @@
 	import { LazyStore } from '@tauri-apps/plugin-store';
 	import { onMount } from 'svelte';
 	import { loadSettings, watchOverlayPriceSettings } from '$lib/settings.svelte';
-	import { changeOcrItemQuantities, inventoryNameKey, type InventoryItem } from '$lib/inventory';
+	import { changeOcrItemQuantities, inventoryNameKey, setOcrItemQuantities, type InventoryItem } from '$lib/inventory';
 	import OverlayItem from './components/OverlayItem.svelte';
 	import OverlayShortcuts from './components/OverlayShortcuts.svelte';
 	import OverlayStatus from './components/OverlayStatus.svelte';
@@ -108,6 +108,26 @@
 		queueInventoryChange((session) => saveInventoryChanges(changes, session));
 	}
 
+	function syncScannedQuantities(scannedWords: OcrWord[]) {
+		const quantities = new Map<string, { word: OcrWord; quantity: number }>();
+		for (const word of scannedWords) {
+			if (!word.slug) continue;
+			const quantity = word.quantity ?? 1;
+			if (!Number.isSafeInteger(quantity) || quantity <= 0) continue;
+			quantities.set(word.slug, { word, quantity });
+		}
+		if (quantities.size === 0) return;
+		queueInventoryChange(async (session) => {
+			try {
+				const applied = await setOcrItemQuantities([...quantities.values()]);
+				if (session !== overlaySession) return;
+				sessionDeltaBySlug = new Map(applied);
+			} catch (error) {
+				console.error('Could not sync scanned inventory quantities:', error);
+			}
+		});
+	}
+
 	async function saveInventoryChanges(
 		changes: { word: OcrWord; delta: number }[],
 		session: number,
@@ -123,18 +143,6 @@
 		} catch (error) {
 			console.error('Could not update inventory from overlay:', error);
 		}
-	}
-
-	function resetSessionInventory() {
-		queueInventoryChange(async (session) => {
-			const wordsBySlug = new Map(
-				words.filter((word) => word.slug).map((word) => [word.slug!, word]),
-			);
-			const changes = [...sessionDeltaBySlug]
-				.filter(([slug, delta]) => delta !== 0 && wordsBySlug.has(slug))
-				.map(([slug, delta]) => ({ word: wordsBySlug.get(slug)!, delta: -delta }));
-			if (changes.length > 0) await saveInventoryChanges(changes, session);
-		});
 	}
 
 	function handleOverlayHotkey(action: string) {
@@ -190,22 +198,6 @@
 				return score(a) - score(b);
 			});
 			selectedIndex = ahead[0].index;
-			return;
-		}
-		if (action === 'inventory_add_all') {
-			applyInventoryChanges(
-				words.map((word) => ({
-					word,
-					delta:
-						word.quantity != null && Number.isSafeInteger(word.quantity) && word.quantity > 0
-							? word.quantity
-							: 1,
-				})),
-			);
-			return;
-		}
-		if (action === 'inventory_reset_session') {
-			resetSessionInventory();
 			return;
 		}
 		if (selectedIndex === null) return;
@@ -296,6 +288,7 @@
 				processing = false;
 				controlsEnabled = event.payload?.controls_enabled ?? false;
 				words = event.payload?.words ?? [];
+				if (controlsEnabled) syncScannedQuantities(words);
 				selectedIndex = null;
 				// One small store lookup replaces a full catalog load and relationship scan.
 				void refreshMasteredSlugs(++masteryReadSequence);

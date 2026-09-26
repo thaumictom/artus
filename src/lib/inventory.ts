@@ -33,10 +33,23 @@ export function inventoryMarketSlug(item: InventoryItem) {
 
 let latestSave: Promise<void> = Promise.resolve();
 
+type OcrQuantityChange = { word: InventoryOcrWord; delta: number } | { word: InventoryOcrWord; quantity: number };
+
 export function changeOcrItemQuantities(changes: { word: InventoryOcrWord; delta: number }[]) {
+	return saveOcrItemQuantities(changes);
+}
+
+export function setOcrItemQuantities(changes: { word: InventoryOcrWord; quantity: number }[]) {
+	return saveOcrItemQuantities(changes);
+}
+
+function saveOcrItemQuantities(changes: OcrQuantityChange[]) {
 	const save = latestSave.catch(() => undefined).then(async () => {
 		const applied = new Map<string, number>();
-		if (!changes.some(({ word, delta }) => word.slug && Number.isSafeInteger(delta) && delta !== 0)) {
+		if (!changes.some((change) => change.word.slug &&
+			('delta' in change
+				? Number.isSafeInteger(change.delta) && change.delta !== 0
+				: Number.isSafeInteger(change.quantity) && change.quantity > 0))) {
 			return applied;
 		}
 		const store = new LazyStore('inventory.json');
@@ -46,15 +59,18 @@ export function changeOcrItemQuantities(changes: { word: InventoryOcrWord; delta
 		]);
 		const items = savedItems ?? [];
 		const newSlugs = Array.isArray(savedSlugs) ? savedSlugs : [];
-		for (const { word, delta } of changes) {
-			if (!word.slug || !Number.isSafeInteger(delta) || delta === 0) continue;
+		for (const change of changes) {
+			const { word } = change;
+			if (!word.slug) continue;
+			if ('delta' in change && (!Number.isSafeInteger(change.delta) || change.delta === 0)) continue;
+			if ('quantity' in change && (!Number.isSafeInteger(change.quantity) || change.quantity <= 0)) continue;
 			const existing = items.find((item) =>
 				item.slug
 					? item.slug === word.slug
 					: inventoryNameKey(item.name) === inventoryNameKey(word.text),
 			);
 			const previous = existing?.quantity ?? 0;
-			const next = Math.max(0, previous + delta);
+			const next = 'quantity' in change ? change.quantity : Math.max(0, previous + change.delta);
 			const actual = next - previous;
 			if (actual === 0) continue;
 			if (existing) {

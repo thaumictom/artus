@@ -46,10 +46,6 @@
 				<span>−1</span>
 				<Keybind value={config.hotkeys.inventory_increment ?? ''} />
 				<span>+1</span>
-				<Keybind value={config.hotkeys.inventory_add_all ?? ''} />
-				<span>auto</span>
-				<Keybind value={config.hotkeys.inventory_reset_session ?? ''} />
-				<span>reset</span>
 			</div>
 
 			<div class="flex items-center gap-1.5 pl-3 border-border-secondary border-l">

@@ -9,3 +9,4 @@
 - linux testing + screen scaling and ocr improvements
 - automatic price changing features
 - respect 100 warframe market orders limit (test it out) - add option for patreons to set it to unlimited
+- weekly (customizable) todo list
