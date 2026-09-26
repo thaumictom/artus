@@ -4,8 +4,11 @@
 	import { platform } from '@tauri-apps/plugin-os';
 	import { onMount } from 'svelte';
 	import { ocrDebug } from '$lib/ocr-debug.svelte';
+	import { config, updateSetting } from '$lib/settings.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
 	import Button from '$lib/components/Button.svelte';
+	import Switch from '$lib/components/Switch.svelte';
+	import CommonSetting from '$lib/components/ui/CommonSetting.svelte';
 	import DictionarySettings from '../components/DictionarySettings.svelte';
 	import OcrBoundingBoxesSetting from '../components/OcrBoundingBoxesSetting.svelte';
 	import OcrGroupingSettings from '../components/OcrGroupingSettings.svelte';
@@ -176,4 +179,15 @@
 			{/if}
 		</div>
 	{/if}
+	<CommonSetting
+		title="Hide donate button"
+		description="Hide the Donate button in the app header."
+		labelProps={{ for: 'hide_donate_button' }}
+	>
+		<Switch
+			id="hide_donate_button"
+			onCheckedChange={() => updateSetting('hide_donate_button')}
+			bind:checked={config.hide_donate_button}
+		/>
+	</CommonSetting>
 </div>

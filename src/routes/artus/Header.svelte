@@ -3,6 +3,8 @@
 	import { getCurrentWindow } from '@tauri-apps/api/window';
 	import { Button } from 'bits-ui';
 	import { appNavigation, navigateBack, navigateForward } from '$lib/app-navigation.svelte';
+	import { config } from '$lib/settings.svelte';
+	import { windowDrag } from '$lib/window-drag';
 	import NotificationCenter from './NotificationCenter.svelte';
 	import MarketProfile from './MarketProfile.svelte';
 
@@ -39,7 +41,7 @@
 	}: { title?: string; onOpenNotificationSettings?: () => void } = $props();
 </script>
 
-<header class="flex justify-between items-center w-full" data-tauri-drag-region>
+<header class="flex justify-between items-center w-full" use:windowDrag>
 	<!-- Left title -->
 	<div class="flex items-center select-none">
 		<div class="flex w-44 shrink-0 items-center">
@@ -70,14 +72,16 @@
 	</div>
 	<!-- Right controls -->
 	<div class="flex items-center gap-2">
-		<Button.Root
-			href="https://ko-fi.com/thaumictom"
-			target="_blank"
-			class="flex items-center gap-2 hover:bg-elevated px-2 py-1 border text-sm"
-		>
-			<Icon icon="simple-icons:kofi" class="size-4" />
-			Donate
-		</Button.Root>
+		{#if !config.hide_donate_button}
+			<Button.Root
+				href="https://ko-fi.com/thaumictom"
+				target="_blank"
+				class="flex items-center gap-2 hover:bg-elevated px-2 py-1 border text-sm"
+			>
+				<Icon icon="simple-icons:kofi" class="size-4" />
+				Donate
+			</Button.Root>
+		{/if}
 		<NotificationCenter {onOpenNotificationSettings} />
 		<MarketProfile />
 		<div class="flex *:hover:bg-elevated *:px-4 *:h-10 overflow-hidden *:cursor-pointer">

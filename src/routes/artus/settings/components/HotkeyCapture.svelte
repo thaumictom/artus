@@ -2,6 +2,7 @@
 	import { invoke } from '@tauri-apps/api/core';
 	import { Button } from 'bits-ui';
 	import { config } from '$lib/settings.svelte';
+	import Keybind from '$lib/components/Keybind.svelte';
 
 	let isRecording = $state(false);
 	let isSaving = $state(false);
@@ -12,13 +13,6 @@
 	function normalizeCapturedKey(key: string): string {
 		if (key === ' ') return 'space';
 		return key;
-	}
-
-	function formatKeybindForDisplay(value: string): string {
-		return value
-			.split('+')
-			.map((segment) => segment.trim().toUpperCase())
-			.join(' + ');
 	}
 
 	function buildKeybind(event: KeyboardEvent): string | null {
@@ -86,9 +80,7 @@
 >
 	<div class="flex-1 min-w-0 p-1.5">
 		{#if config.hotkeys[tauriHotkey]}
-			<span class="block truncate font-condensed font-medium">
-				{formatKeybindForDisplay(config.hotkeys[tauriHotkey])}
-			</span>
+			<Keybind value={config.hotkeys[tauriHotkey]} />
 		{:else}
 			<span class="text-muted-foreground">No keybind set</span>
 		{/if}

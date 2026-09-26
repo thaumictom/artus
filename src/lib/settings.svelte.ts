@@ -46,6 +46,7 @@ type Config = {
 	dashboard_view_favorites: string[];
 	desktop_notifications_enabled: boolean;
 	hide_to_tray_on_close: boolean;
+	hide_donate_button: boolean;
 	notification_sound: boolean;
 	notification_rules: NotificationRules;
 
@@ -102,6 +103,7 @@ export const config = $state({
 	dashboard_view_favorites: [] as string[],
 	desktop_notifications_enabled: true as boolean,
 	hide_to_tray_on_close: true as boolean,
+	hide_donate_button: false as boolean,
 	notification_sound: false as boolean,
 	notification_rules: defaultNotificationRules(),
 

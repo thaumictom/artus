@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
+	import Keybind from '$lib/components/Keybind.svelte';
 	import { Combobox, type WithoutChildrenOrChild, mergeProps } from 'bits-ui';
 	import * as fuzzball from 'fuzzball';
 
@@ -183,19 +184,19 @@
 				class="flex items-center gap-3 px-3 py-2 border-t text-muted-foreground text-xs shrink-0"
 			>
 				<span class="inline-flex items-center gap-1 whitespace-nowrap">
-					<kbd aria-label="Up arrow" class="inline-flex items-center p-0.5 border">
+					<Keybind aria-label="Up arrow" class="p-0.5">
 						<Icon icon="material-symbols:arrow-upward-rounded" class="size-3" />
-					</kbd>
-					<kbd aria-label="Down arrow" class="inline-flex items-center p-0.5 border">
+					</Keybind>
+					<Keybind aria-label="Down arrow" class="p-0.5">
 						<Icon icon="material-symbols:arrow-downward-rounded" class="size-3" />
-					</kbd>
+					</Keybind>
 					Navigate
 				</span>
 				<span class="flex-1 bg-surface min-w-2 h-px" aria-hidden="true"></span>
 				<span class="inline-flex items-center gap-1 whitespace-nowrap">
-					<kbd aria-label="Enter" class="inline-flex items-center p-0.5 border">
+					<Keybind aria-label="Enter" class="p-0.5">
 						<Icon icon="material-symbols:keyboard-return-rounded" class="size-3" />
-					</kbd>
+					</Keybind>
 					Search
 				</span>
 			</div>

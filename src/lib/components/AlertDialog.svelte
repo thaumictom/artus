@@ -2,6 +2,7 @@
 	import { onDestroy } from 'svelte';
 	import type { Snippet } from 'svelte';
 	import { AlertDialog, type WithoutChild } from 'bits-ui';
+	import { windowDrag } from '$lib/window-drag';
 	import Button from './Button.svelte';
 	import { cn } from '$lib/utils';
 
@@ -30,12 +31,20 @@
 	let outsideAttemptTimer: ReturnType<typeof setTimeout> | undefined;
 	let outsideAttemptFrame: number | undefined;
 
-	function notifyOutsideAttempt() {
+	function clearOutsideAttempt() {
 		outsideAttempt = false;
-		if (outsideAttemptTimer) clearTimeout(outsideAttemptTimer);
+		if (outsideAttemptTimer !== undefined) clearTimeout(outsideAttemptTimer);
 		if (outsideAttemptFrame !== undefined) cancelAnimationFrame(outsideAttemptFrame);
+		outsideAttemptTimer = undefined;
+		outsideAttemptFrame = undefined;
+	}
+
+	function notifyOutsideAttempt() {
+		if (!open) return;
+		clearOutsideAttempt();
 		outsideAttemptFrame = requestAnimationFrame(() => {
 			outsideAttemptFrame = undefined;
+			if (!open) return;
 			outsideAttempt = true;
 			outsideAttemptTimer = setTimeout(() => {
 				outsideAttempt = false;
@@ -46,14 +55,16 @@
 
 	function dismissOnEscape(event: KeyboardEvent) {
 		contentProps?.onEscapeKeydown?.(event);
+		clearOutsideAttempt();
 		open = false;
 		event.preventDefault();
 	}
 
-	onDestroy(() => {
-		if (outsideAttemptTimer) clearTimeout(outsideAttemptTimer);
-		if (outsideAttemptFrame !== undefined) cancelAnimationFrame(outsideAttemptFrame);
+	$effect(() => {
+		if (!open) clearOutsideAttempt();
 	});
+
+	onDestroy(clearOutsideAttempt);
 </script>
 
 <AlertDialog.Root bind:open {...restProps}>
@@ -69,7 +80,7 @@
 			onpointerdown={notifyOutsideAttempt}
 			class={cn(
 				'z-50 fixed inset-0 bg-black/50 data-[state=open]:backdrop-blur-xs data-[state=closed]:animate-out data-[state=open]:animate-in artus-modal-overlay artus-alert-dialog-overlay data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
-				outsideAttempt && 'alert-outside-attempt',
+				open && outsideAttempt && 'alert-outside-attempt',
 			)}
 		/>
 		<AlertDialog.Content
@@ -77,16 +88,18 @@
 			onEscapeKeydown={dismissOnEscape}
 			class={cn(
 				'top-1/2 left-1/2 z-50 fixed gap-2 grid bg-background p-7 border outline-hidden max-w-lg -translate-x-1/2 -translate-y-1/2 data-[state=closed]:animate-out data-[state=open]:animate-in alert-dialog-content data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
-				outsideAttempt && 'alert-outside-attempt',
+				open && outsideAttempt && 'alert-outside-attempt',
 				contentProps?.class,
 			)}
 		>
-			<AlertDialog.Title class="font-expanded font-bold text-lg">
-				{@render title()}
-			</AlertDialog.Title>
-			<AlertDialog.Description>
-				{@render description()}
-			</AlertDialog.Description>
+			<div class="grid gap-2 select-none" use:windowDrag>
+				<AlertDialog.Title class="font-expanded font-bold text-lg">
+					{@render title()}
+				</AlertDialog.Title>
+				<AlertDialog.Description>
+					{@render description()}
+				</AlertDialog.Description>
+			</div>
 			{@render children?.()}
 			<div class="flex justify-end gap-2 mt-6">
 				<AlertDialog.Cancel children={dialogCancel} />

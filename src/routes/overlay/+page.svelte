@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
+	import Keybind from '$lib/components/Keybind.svelte';
 	import { listen } from '@tauri-apps/api/event';
 	import { invoke } from '@tauri-apps/api/core';
 	import { LazyStore } from '@tauri-apps/plugin-store';
@@ -217,10 +218,6 @@
 		}
 	}
 
-	function shortcut(action: keyof typeof config.hotkeys) {
-		return (config.hotkeys[action] ?? '').toUpperCase();
-	}
-
 	async function refreshMasteredSlugs(sequence: number) {
 		try {
 			const slugs = await masteryStore.get<string[]>('masteredSlugs');
@@ -414,14 +411,6 @@
 		return ItemColor.HOLD;
 	}
 </script>
-
-{#snippet keycap(value: string)}
-	<kbd
-		class="inline-flex justify-center items-center bg-surface/90 px-1.5 border border-border-secondary min-w-5 h-5 font-mono font-semibold text-[10px] text-foreground tracking-wide"
-	>
-		{value}
-	</kbd>
-{/snippet}
 
 <main class="relative w-screen h-screen pointer-events-none">
 	{#if relicFeedback}
@@ -650,9 +639,9 @@
 						aria-hidden="true"
 					/>
 					<span class="text-muted-foreground">Cycle</span>
-					{@render keycap(shortcut('cycle'))}
+					<Keybind value={config.hotkeys.cycle ?? ''} />
 					<span>next</span>
-					{@render keycap(shortcut('cycle_back'))}
+					<Keybind value={config.hotkeys.cycle_back ?? ''} />
 					<span>back</span>
 				</div>
 
@@ -663,10 +652,10 @@
 						aria-hidden="true"
 					/>
 					<span class="mr-0.5 text-muted-foreground">Navigate</span>
-					{@render keycap(shortcut('navigate_up'))}
-					{@render keycap(shortcut('navigate_left'))}
-					{@render keycap(shortcut('navigate_down'))}
-					{@render keycap(shortcut('navigate_right'))}
+					<Keybind value={config.hotkeys.navigate_up ?? ''} />
+					<Keybind value={config.hotkeys.navigate_left ?? ''} />
+					<Keybind value={config.hotkeys.navigate_down ?? ''} />
+					<Keybind value={config.hotkeys.navigate_right ?? ''} />
 				</div>
 
 				<div class="flex items-center gap-1.5 pl-3 border-border-secondary border-l">
@@ -676,12 +665,12 @@
 						aria-hidden="true"
 					/>
 					<span class="text-muted-foreground">Inventory</span>
-					{@render keycap(shortcut('inventory_decrement'))}
+					<Keybind value={config.hotkeys.inventory_decrement ?? ''} />
 					<span>−1</span>
-					{@render keycap(shortcut('inventory_increment'))}
+					<Keybind value={config.hotkeys.inventory_increment ?? ''} />
 					<span>+1</span>
-					{@render keycap(shortcut('inventory_add_all'))}
-					<span>all</span>
+					<Keybind value={config.hotkeys.inventory_add_all ?? ''} />
+					<span>auto</span>
 				</div>
 
 				<div class="flex items-center gap-1.5 pl-3 border-border-secondary border-l">
@@ -691,7 +680,7 @@
 						aria-hidden="true"
 					/>
 					<span class="text-muted-foreground">Dismiss</span>
-					{@render keycap('ESC')}
+					<Keybind value="Esc" />
 				</div>
 			</div>
 		</aside>

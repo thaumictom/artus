@@ -2,6 +2,7 @@
 	import type { Snippet } from 'svelte';
 	import { Dialog as BitsDialog, type WithoutChild } from 'bits-ui';
 	import { cn } from '$lib/utils';
+	import { windowDrag } from '$lib/window-drag';
 
 	type Props = BitsDialog.RootProps & {
 		trigger?: Snippet;
@@ -42,7 +43,7 @@
 				contentProps?.class,
 			)}
 		>
-			<div class="px-6">
+			<div class="px-6 select-none" use:windowDrag>
 				<BitsDialog.Title class="font-expanded font-bold text-lg">
 					{@render title()}
 				</BitsDialog.Title>
