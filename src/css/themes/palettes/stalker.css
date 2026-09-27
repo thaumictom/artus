@@ -1,0 +1,25 @@
+/* STALKER: dittotones Tailwind v4 ramps. */
+@theme static {
+	--color-wf-stalker-primary-50: oklch(0.9738 0.0116 24.94);
+	--color-wf-stalker-primary-100: oklch(0.9415 0.028 24.94);
+	--color-wf-stalker-primary-200: oklch(0.8894 0.0559 24.94);
+	--color-wf-stalker-primary-300: oklch(0.8161 0.1019 24.94);
+	--color-wf-stalker-primary-400: oklch(0.7169 0.1682 24.94);
+	--color-wf-stalker-primary-500: oklch(0.6568 0.209 24.94);
+	--color-wf-stalker-primary-600: color-mix(in oklch, oklch(0.5966 0.2189 24.94), black var(--theme-darken-600));
+	--color-wf-stalker-primary-700: color-mix(in oklch, oklch(0.5168 0.1913 24.94), black var(--theme-darken-700));
+	--color-wf-stalker-primary-800: color-mix(in oklch, oklch(0.4477 0.1575 24.94), black var(--theme-darken-800));
+	--color-wf-stalker-primary-900: color-mix(in oklch, oklch(0.3956 0.1246 24.94), black var(--theme-darken-900));
+	--color-wf-stalker-primary-950: color-mix(in oklch, oklch(0.2578 0.0811 24.94), black var(--theme-darken-950));
+	--color-wf-stalker-highlight-50: oklch(0.9717 0.0131 28.39);
+	--color-wf-stalker-highlight-100: oklch(0.9403 0.03 28.43);
+	--color-wf-stalker-highlight-200: oklch(0.8913 0.0571 28.6);
+	--color-wf-stalker-highlight-300: oklch(0.813 0.1059 28.7);
+	--color-wf-stalker-highlight-400: oklch(0.7137 0.1797 28.46);
+	--color-wf-stalker-highlight-500: oklch(0.656 0.2304 28.39);
+	--color-wf-stalker-highlight-600: color-mix(in oklch, oklch(0.5948 0.2377 28.39), black var(--theme-darken-600));
+	--color-wf-stalker-highlight-700: color-mix(in oklch, oklch(0.5209 0.2071 28.39), black var(--theme-darken-700));
+	--color-wf-stalker-highlight-800: color-mix(in oklch, oklch(0.459 0.1728 28.39), black var(--theme-darken-800));
+	--color-wf-stalker-highlight-900: color-mix(in oklch, oklch(0.4107 0.14 28.39), black var(--theme-darken-900));
+	--color-wf-stalker-highlight-950: color-mix(in oklch, oklch(0.2688 0.0919 28.39), black var(--theme-darken-950));
+}

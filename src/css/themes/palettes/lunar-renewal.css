@@ -1,0 +1,25 @@
+/* LUNAR_RENEWAL: dittotones Tailwind v4 ramps. */
+@theme static {
+	--color-wf-lunar-renewal-primary-50: oklch(0.9758 0.0118 21.92);
+	--color-wf-lunar-renewal-primary-100: oklch(0.9449 0.0275 22.06);
+	--color-wf-lunar-renewal-primary-200: oklch(0.8935 0.0556 22.01);
+	--color-wf-lunar-renewal-primary-300: oklch(0.822 0.0995 21.93);
+	--color-wf-lunar-renewal-primary-400: oklch(0.73 0.1663 21.87);
+	--color-wf-lunar-renewal-primary-500: oklch(0.6766 0.2078 21.92);
+	--color-wf-lunar-renewal-primary-600: color-mix(in oklch, oklch(0.6186 0.2181 21.92), black var(--theme-darken-600));
+	--color-wf-lunar-renewal-primary-700: color-mix(in oklch, oklch(0.539 0.191 21.92), black var(--theme-darken-700));
+	--color-wf-lunar-renewal-primary-800: color-mix(in oklch, oklch(0.4696 0.1566 21.92), black var(--theme-darken-800));
+	--color-wf-lunar-renewal-primary-900: color-mix(in oklch, oklch(0.4136 0.1236 21.92), black var(--theme-darken-900));
+	--color-wf-lunar-renewal-primary-950: color-mix(in oklch, oklch(0.2695 0.0803 21.92), black var(--theme-darken-950));
+	--color-wf-lunar-renewal-highlight-50: oklch(0.9807 0.0153 82.36);
+	--color-wf-lunar-renewal-highlight-100: oklch(0.9525 0.0383 82.36);
+	--color-wf-lunar-renewal-highlight-200: oklch(0.9 0.0766 82.36);
+	--color-wf-lunar-renewal-highlight-300: oklch(0.8369 0.1195 82.36);
+	--color-wf-lunar-renewal-highlight-400: oklch(0.7635 0.1551 82.36);
+	--color-wf-lunar-renewal-highlight-500: oklch(0.7164 0.1491 78.51);
+	--color-wf-lunar-renewal-highlight-600: color-mix(in oklch, oklch(0.6437 0.1341 78.11), black var(--theme-darken-600));
+	--color-wf-lunar-renewal-highlight-700: color-mix(in oklch, oklch(0.5462 0.1141 77.33), black var(--theme-darken-700));
+	--color-wf-lunar-renewal-highlight-800: color-mix(in oklch, oklch(0.4649 0.0975 76.44), black var(--theme-darken-800));
+	--color-wf-lunar-renewal-highlight-900: color-mix(in oklch, oklch(0.4049 0.0852 75.57), black var(--theme-darken-900));
+	--color-wf-lunar-renewal-highlight-950: color-mix(in oklch, oklch(0.2671 0.0562 75.53), black var(--theme-darken-950));
+}

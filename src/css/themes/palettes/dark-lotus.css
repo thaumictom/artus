@@ -1,0 +1,25 @@
+/* DARK_LOTUS: dittotones Tailwind v4 ramps. */
+@theme static {
+	--color-wf-dark-lotus-primary-50: oklch(0.9866 0.0023 317.63);
+	--color-wf-dark-lotus-primary-100: oklch(0.9705 0.0045 317.63);
+	--color-wf-dark-lotus-primary-200: oklch(0.9319 0.0113 317.63);
+	--color-wf-dark-lotus-primary-300: oklch(0.8849 0.0178 317.63);
+	--color-wf-dark-lotus-primary-400: oklch(0.7367 0.0415 317.63);
+	--color-wf-dark-lotus-primary-500: oklch(0.5984 0.0484 317.63);
+	--color-wf-dark-lotus-primary-600: color-mix(in oklch, oklch(0.4817 0.0514 317.63), black var(--theme-darken-600));
+	--color-wf-dark-lotus-primary-700: color-mix(in oklch, oklch(0.4031 0.0516 317.63), black var(--theme-darken-700));
+	--color-wf-dark-lotus-primary-800: color-mix(in oklch, oklch(0.2994 0.0435 317.63), black var(--theme-darken-800));
+	--color-wf-dark-lotus-primary-900: color-mix(in oklch, oklch(0.2279 0.045 317.63), black var(--theme-darken-900));
+	--color-wf-dark-lotus-primary-950: color-mix(in oklch, oklch(0.1472 0.037 317.63), black var(--theme-darken-950));
+	--color-wf-dark-lotus-highlight-50: oklch(0.9676 0.0132 305.04);
+	--color-wf-dark-lotus-highlight-100: oklch(0.9344 0.0269 305.04);
+	--color-wf-dark-lotus-highlight-200: oklch(0.8793 0.0521 305.04);
+	--color-wf-dark-lotus-highlight-300: oklch(0.7857 0.1001 305.04);
+	--color-wf-dark-lotus-highlight-400: oklch(0.6793 0.1677 305.04);
+	--color-wf-dark-lotus-highlight-500: oklch(0.5908 0.2246 305.04);
+	--color-wf-dark-lotus-highlight-600: color-mix(in oklch, oklch(0.5267 0.2491 305.04), black var(--theme-darken-600));
+	--color-wf-dark-lotus-highlight-700: color-mix(in oklch, oklch(0.4737 0.2349 305.04), black var(--theme-darken-700));
+	--color-wf-dark-lotus-highlight-800: color-mix(in oklch, oklch(0.4175 0.1979 305.04), black var(--theme-darken-800));
+	--color-wf-dark-lotus-highlight-900: color-mix(in oklch, oklch(0.3654 0.1606 305.04), black var(--theme-darken-900));
+	--color-wf-dark-lotus-highlight-950: color-mix(in oklch, oklch(0.2752 0.1264 305.04), black var(--theme-darken-950));
+}

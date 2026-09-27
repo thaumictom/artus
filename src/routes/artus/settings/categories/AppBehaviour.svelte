@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { mode } from 'mode-watcher';
 	import { OverlayScrollbarsComponent } from 'overlayscrollbars-svelte';
 	import CommonSetting from '$lib/components/ui/CommonSetting.svelte';
 	import Button from '$lib/components/Button.svelte';
@@ -7,12 +6,14 @@
 	import Switch from '$lib/components/Switch.svelte';
 	import { config, updateSetting } from '$lib/settings.svelte';
 	import Hotkeys from './Hotkeys.svelte';
+	import AppThemeSetting from '../components/AppThemeSetting.svelte';
 
 	let keybindDialogOpen = $state(false);
-	let scrollbarTheme = $derived(mode.current === 'light' ? 'os-theme-dark' : 'os-theme-light');
+	const scrollbarTheme = 'os-theme-light';
 </script>
 
 <div class="flex flex-col gap-8">
+	<AppThemeSetting />
 	<CommonSetting
 		title="Keybinds"
 		description="Configure screenshot, navigation, and inventory shortcuts."

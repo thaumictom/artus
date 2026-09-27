@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { tick } from 'svelte';
 	import Icon from '@iconify/svelte';
-	import { mode } from 'mode-watcher';
 	import {
 		OverlayScrollbarsComponent,
 		type OverlayScrollbarsComponentRef,
@@ -25,7 +24,7 @@
 	);
 	let favorites = $derived(new Set(orderedFavorites.map((view) => view.value)));
 	let availableViews = $derived(dashboardViews.filter((view) => !favorites.has(view.value)));
-	let scrollbarTheme = $derived(mode.current === 'light' ? 'os-theme-dark' : 'os-theme-light');
+	const scrollbarTheme = 'os-theme-light';
 	let saveQueue = Promise.resolve();
 
 	function saveFavorites(values: DashboardView[]) {

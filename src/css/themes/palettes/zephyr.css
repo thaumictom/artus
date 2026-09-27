@@ -1,0 +1,25 @@
+/* ZEPHYR: dittotones Tailwind v4 ramps. */
+@theme static {
+	--color-wf-zephyr-primary-50: oklch(0.9772 0.0141 60.66);
+	--color-wf-zephyr-primary-100: oklch(0.9471 0.0334 60.8);
+	--color-wf-zephyr-primary-200: oklch(0.8899 0.0703 58.23);
+	--color-wf-zephyr-primary-300: oklch(0.8198 0.1207 57.41);
+	--color-wf-zephyr-primary-400: oklch(0.7353 0.1815 55.08);
+	--color-wf-zephyr-primary-500: oklch(0.6931 0.1836 49.86);
+	--color-wf-zephyr-primary-600: color-mix(in oklch, oklch(0.6352 0.1693 49.43), black var(--theme-darken-600));
+	--color-wf-zephyr-primary-700: color-mix(in oklch, oklch(0.544 0.1469 48.55), black var(--theme-darken-700));
+	--color-wf-zephyr-primary-800: color-mix(in oklch, oklch(0.4626 0.1269 47.54), black var(--theme-darken-800));
+	--color-wf-zephyr-primary-900: color-mix(in oklch, oklch(0.4018 0.1121 46.49), black var(--theme-darken-900));
+	--color-wf-zephyr-primary-950: color-mix(in oklch, oklch(0.2619 0.0724 47.04), black var(--theme-darken-950));
+	--color-wf-zephyr-highlight-50: oklch(0.971 0.0137 32.88);
+	--color-wf-zephyr-highlight-100: oklch(0.9389 0.0312 32.96);
+	--color-wf-zephyr-highlight-200: oklch(0.8887 0.0593 33.19);
+	--color-wf-zephyr-highlight-300: oklch(0.8082 0.1102 33.4);
+	--color-wf-zephyr-highlight-400: oklch(0.7065 0.1871 33.1);
+	--color-wf-zephyr-highlight-500: oklch(0.6477 0.2398 32.88);
+	--color-wf-zephyr-highlight-600: color-mix(in oklch, oklch(0.5908 0.2424 29.23), black var(--theme-darken-600));
+	--color-wf-zephyr-highlight-700: color-mix(in oklch, oklch(0.5167 0.212 29.23), black var(--theme-darken-700));
+	--color-wf-zephyr-highlight-800: color-mix(in oklch, oklch(0.4539 0.1785 30.68), black var(--theme-darken-800));
+	--color-wf-zephyr-highlight-900: color-mix(in oklch, oklch(0.4056 0.1459 32.88), black var(--theme-darken-900));
+	--color-wf-zephyr-highlight-950: color-mix(in oklch, oklch(0.2655 0.0957 32.88), black var(--theme-darken-950));
+}

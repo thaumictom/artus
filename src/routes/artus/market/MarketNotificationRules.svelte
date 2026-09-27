@@ -1,6 +1,5 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
-	import { mode } from 'mode-watcher';
 	import { OverlayScrollbarsComponent } from 'overlayscrollbars-svelte';
 	import Button from '$lib/components/Button.svelte';
 	import Combobox from '$lib/components/Combobox.svelte';
@@ -32,7 +31,7 @@
 	let notifyOnce = $state(true);
 	let saving = $state(false);
 	let saveError = $state<string | null>(null);
-	let scrollbarTheme = $derived(mode.current === 'light' ? 'os-theme-dark' : 'os-theme-light');
+	const scrollbarTheme = 'os-theme-light';
 	let availableItems = $derived.by(() => {
 		if (
 			!currentItem ||

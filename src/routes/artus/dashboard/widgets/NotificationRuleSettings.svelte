@@ -1,6 +1,5 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
-	import { mode } from 'mode-watcher';
 	import { OverlayScrollbarsComponent } from 'overlayscrollbars-svelte';
 	import type { WorldState } from 'warframe-worldstate-parser';
 	import Button from '$lib/components/Button.svelte';
@@ -28,7 +27,7 @@
 	} = $props();
 	let saveError = $state<string | null>(null);
 	let saveQueue = Promise.resolve();
-	let scrollbarTheme = $derived(mode.current === 'light' ? 'os-theme-dark' : 'os-theme-light');
+	const scrollbarTheme = 'os-theme-light';
 	let fissures = $derived(world?.fissures ?? []);
 
 	const standardEras = ['Lith', 'Meso', 'Neo', 'Axi', 'Requiem', 'Omnia'];

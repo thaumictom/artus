@@ -1,0 +1,25 @@
+/* VITRUVIAN: dittotones Tailwind v4 ramps. */
+@theme static {
+	--color-wf-vitruvian-primary-50: oklch(0.9745 0.079 103.97);
+	--color-wf-vitruvian-primary-100: oklch(0.9628 0.0841 100.58);
+	--color-wf-vitruvian-primary-200: oklch(0.9328 0.0867 92.58);
+	--color-wf-vitruvian-primary-300: oklch(0.8836 0.0871 92.58);
+	--color-wf-vitruvian-primary-400: oklch(0.7381 0.0901 92.58);
+	--color-wf-vitruvian-primary-500: oklch(0.5755 0.0911 92.58);
+	--color-wf-vitruvian-primary-600: color-mix(in oklch, oklch(0.4637 0.0918 92.58), black var(--theme-darken-600));
+	--color-wf-vitruvian-primary-700: color-mix(in oklch, oklch(0.3908 0.0799 88.77), black var(--theme-darken-700));
+	--color-wf-vitruvian-primary-800: color-mix(in oklch, oklch(0.2856 0.0585 85.73), black var(--theme-darken-800));
+	--color-wf-vitruvian-primary-900: color-mix(in oklch, oklch(0.2241 0.046 83.76), black var(--theme-darken-900));
+	--color-wf-vitruvian-primary-950: color-mix(in oklch, oklch(0.1471 0.0306 79.04), black var(--theme-darken-950));
+	--color-wf-vitruvian-highlight-50: oklch(0.9842 0.0143 91.82);
+	--color-wf-vitruvian-highlight-100: oklch(0.9607 0.0361 91.82);
+	--color-wf-vitruvian-highlight-200: oklch(0.9174 0.0722 91.82);
+	--color-wf-vitruvian-highlight-300: oklch(0.8605 0.1115 91.82);
+	--color-wf-vitruvian-highlight-400: oklch(0.7872 0.1424 91.82);
+	--color-wf-vitruvian-highlight-500: oklch(0.737 0.1507 90.78);
+	--color-wf-vitruvian-highlight-600: color-mix(in oklch, oklch(0.6611 0.1351 88.82), black var(--theme-darken-600));
+	--color-wf-vitruvian-highlight-700: color-mix(in oklch, oklch(0.5601 0.1145 88.25), black var(--theme-darken-700));
+	--color-wf-vitruvian-highlight-800: color-mix(in oklch, oklch(0.4768 0.0975 87.63), black var(--theme-darken-800));
+	--color-wf-vitruvian-highlight-900: color-mix(in oklch, oklch(0.4146 0.0847 89.51), black var(--theme-darken-900));
+	--color-wf-vitruvian-highlight-950: color-mix(in oklch, oklch(0.2739 0.056 89.59), black var(--theme-darken-950));
+}

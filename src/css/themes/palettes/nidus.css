@@ -1,0 +1,25 @@
+/* NIDUS: dittotones Tailwind v4 ramps. */
+@theme static {
+	--color-wf-nidus-primary-50: oklch(0.972 0.0132 352.25);
+	--color-wf-nidus-primary-100: oklch(0.9484 0.0263 352.25);
+	--color-wf-nidus-primary-200: oklch(0.9024 0.0548 352.25);
+	--color-wf-nidus-primary-300: oklch(0.8287 0.1093 352.25);
+	--color-wf-nidus-primary-400: oklch(0.733 0.1835 352.25);
+	--color-wf-nidus-primary-500: oklch(0.6728 0.2253 352.25);
+	--color-wf-nidus-primary-600: color-mix(in oklch, oklch(0.6148 0.234 352.25), black var(--theme-darken-600));
+	--color-wf-nidus-primary-700: color-mix(in oklch, oklch(0.5499 0.2087 352.25), black var(--theme-darken-700));
+	--color-wf-nidus-primary-800: color-mix(in oklch, oklch(0.4908 0.1762 352.25), black var(--theme-darken-800));
+	--color-wf-nidus-primary-900: color-mix(in oklch, oklch(0.4454 0.1465 352.25), black var(--theme-darken-900));
+	--color-wf-nidus-primary-950: color-mix(in oklch, oklch(0.3033 0.101 352.25), black var(--theme-darken-950));
+	--color-wf-nidus-highlight-50: oklch(0.9712 0.0121 18.67);
+	--color-wf-nidus-highlight-100: oklch(0.941 0.0266 18.67);
+	--color-wf-nidus-highlight-200: oklch(0.893 0.0514 18.67);
+	--color-wf-nidus-highlight-300: oklch(0.8166 0.0992 18.67);
+	--color-wf-nidus-highlight-400: oklch(0.7198 0.1652 18.67);
+	--color-wf-nidus-highlight-500: oklch(0.6554 0.2072 18.67);
+	--color-wf-nidus-highlight-600: color-mix(in oklch, oklch(0.5946 0.2135 18.67), black var(--theme-darken-600));
+	--color-wf-nidus-highlight-700: color-mix(in oklch, oklch(0.521 0.1864 18.67), black var(--theme-darken-700));
+	--color-wf-nidus-highlight-800: color-mix(in oklch, oklch(0.4597 0.1561 18.67), black var(--theme-darken-800));
+	--color-wf-nidus-highlight-900: color-mix(in oklch, oklch(0.4122 0.1281 18.67), black var(--theme-darken-900));
+	--color-wf-nidus-highlight-950: color-mix(in oklch, oklch(0.2706 0.0843 18.67), black var(--theme-darken-950));
+}

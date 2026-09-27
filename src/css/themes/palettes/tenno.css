@@ -1,0 +1,25 @@
+/* TENNO: dittotones Tailwind v4 ramps. */
+@theme static {
+	--color-wf-tenno-primary-50: oklch(0.982 0.0173 206.84);
+	--color-wf-tenno-primary-100: oklch(0.9517 0.0416 210.99);
+	--color-wf-tenno-primary-200: oklch(0.9123 0.0644 218.37);
+	--color-wf-tenno-primary-300: oklch(0.8599 0.0959 223.13);
+	--color-wf-tenno-primary-400: oklch(0.7831 0.1449 226.36);
+	--color-wf-tenno-primary-500: oklch(0.7185 0.1498 233.71);
+	--color-wf-tenno-primary-600: color-mix(in oklch, oklch(0.6141 0.1298 234.76), black var(--theme-darken-600));
+	--color-wf-tenno-primary-700: color-mix(in oklch, oklch(0.5239 0.11 234.28), black var(--theme-darken-700));
+	--color-wf-tenno-primary-800: color-mix(in oklch, oklch(0.4514 0.0929 232.66), black var(--theme-darken-800));
+	--color-wf-tenno-primary-900: color-mix(in oklch, oklch(0.3991 0.0778 232.29), black var(--theme-darken-900));
+	--color-wf-tenno-primary-950: color-mix(in oklch, oklch(0.3029 0.0621 232.35), black var(--theme-darken-950));
+	--color-wf-tenno-highlight-50: oklch(0.9813 0.018 163.65);
+	--color-wf-tenno-highlight-100: oklch(0.9578 0.0444 163.65);
+	--color-wf-tenno-highlight-200: oklch(0.9185 0.0817 163.65);
+	--color-wf-tenno-highlight-300: oklch(0.864 0.1348 163.65);
+	--color-wf-tenno-highlight-400: oklch(0.7912 0.1716 162.75);
+	--color-wf-tenno-highlight-500: oklch(0.7309 0.1628 160.98);
+	--color-wf-tenno-highlight-600: color-mix(in oklch, oklch(0.6361 0.1417 160.99), black var(--theme-darken-600));
+	--color-wf-tenno-highlight-700: color-mix(in oklch, oklch(0.5422 0.1184 162.28), black var(--theme-darken-700));
+	--color-wf-tenno-highlight-800: color-mix(in oklch, oklch(0.4649 0.0976 163.65), black var(--theme-darken-800));
+	--color-wf-tenno-highlight-900: color-mix(in oklch, oklch(0.4073 0.0784 163.65), black var(--theme-darken-900));
+	--color-wf-tenno-highlight-950: color-mix(in oklch, oklch(0.279 0.0526 163.65), black var(--theme-darken-950));
+}

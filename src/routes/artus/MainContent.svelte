@@ -1,11 +1,8 @@
 <script lang="ts">
 	import { OverlayScrollbarsComponent } from 'overlayscrollbars-svelte';
 	import type { Snippet } from 'svelte';
-	import { mode } from 'mode-watcher';
 
-	let scrollbarTheme = $derived.by(() =>
-		mode.current === 'light' ? 'os-theme-dark' : 'os-theme-light',
-	);
+	const scrollbarTheme = 'os-theme-light';
 
 	let { children }: { children: Snippet } = $props();
 </script>

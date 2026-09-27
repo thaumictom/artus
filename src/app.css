@@ -1,14 +1,12 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
+@import './css/themes/darkening.css';
+@import './css/themes/palettes.css';
+@import './css/themes/variants.css';
 @import '@fontsource-variable/archivo';
 @import '@fontsource-variable/archivo/wdth.css';
 
 @custom-variant dark (&: is(.dark *));
-
-:root {
-	--ease-dialog-shell: cubic-bezier(0.19, 1, 0.22, 1);
-	--ease-alert-transition: cubic-bezier(0.81, 0, 0.78, 0);
-}
 
 html,
 body {
@@ -26,21 +24,21 @@ body {
 	--font-heading: 'Archivo Variable', sans-serif;
 
 	/* Text and backgrounds */
-	--color-background: var(--color-mist-900);
-	--color-foreground: var(--color-mist-50);
+	--color-background: var(--theme-background);
+	--color-foreground: var(--theme-foreground);
 
-	--color-surface: var(--color-mist-800);
-	--color-surface-foreground: var(--color-mist-100);
+	--color-surface: var(--theme-surface);
+	--color-surface-foreground: var(--theme-surface-foreground);
 
-	--color-elevated: var(--color-mist-700);
-	--color-elevated-foreground: var(--color-mist-200);
+	--color-elevated: var(--theme-elevated);
+	--color-elevated-foreground: var(--theme-elevated-foreground);
 
-	--color-muted: var(--color-mist-600);
-	--color-muted-foreground: var(--color-mist-400);
+	--color-muted: var(--theme-muted);
+	--color-muted-foreground: var(--theme-muted-foreground);
 
 	/* Colors */
-	--color-accent: var(--color-emerald-500);
-	--color-accent-foreground: var(--color-background);
+	--color-accent: var(--theme-accent);
+	--color-accent-foreground: var(--theme-accent-foreground);
 
 	--color-danger: var(--color-red-500);
 	--color-danger-foreground: var(--color-foreground);
@@ -60,6 +58,20 @@ body {
 }
 
 @layer base {
+	:root {
+		--ease-dialog-shell: cubic-bezier(0.19, 1, 0.22, 1);
+		--ease-alert-transition: cubic-bezier(0.81, 0, 0.78, 0);
+		--theme-background: var(--color-mist-900);
+		--theme-foreground: var(--color-mist-50);
+		--theme-surface: var(--color-mist-800);
+		--theme-surface-foreground: var(--color-mist-100);
+		--theme-elevated: var(--color-mist-700);
+		--theme-elevated-foreground: var(--color-mist-200);
+		--theme-muted: var(--color-mist-600);
+		--theme-muted-foreground: var(--color-mist-400);
+		--theme-accent: var(--color-emerald-500);
+		--theme-accent-foreground: var(--theme-background);
+	}
 	* {
 		@apply border-border outline-ring/50;
 	}
@@ -89,7 +101,7 @@ body {
 	}
 }
 
-@utility font-expaned {
+@utility font-expanded {
 	font-variation-settings: 'wdth' 125;
 }
 

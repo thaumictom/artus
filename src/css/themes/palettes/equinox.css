@@ -1,0 +1,25 @@
+/* EQUINOX: dittotones Tailwind v4 ramps. */
+@theme static {
+	--color-wf-equinox-primary-50: oklch(0.9839 0.0076 277.43);
+	--color-wf-equinox-primary-100: oklch(0.9696 0.0116 280.39);
+	--color-wf-equinox-primary-200: oklch(0.921 0.0116 280.39);
+	--color-wf-equinox-primary-300: oklch(0.8683 0.0116 280.39);
+	--color-wf-equinox-primary-400: oklch(0.7042 0.0116 280.39);
+	--color-wf-equinox-primary-500: oklch(0.553 0.0116 280.39);
+	--color-wf-equinox-primary-600: color-mix(in oklch, oklch(0.4366 0.0116 280.39), black var(--theme-darken-600));
+	--color-wf-equinox-primary-700: color-mix(in oklch, oklch(0.369 0.0116 280.39), black var(--theme-darken-700));
+	--color-wf-equinox-primary-800: color-mix(in oklch, oklch(0.2676 0.0116 280.39), black var(--theme-darken-800));
+	--color-wf-equinox-primary-900: color-mix(in oklch, oklch(0.2039 0.0116 280.39), black var(--theme-darken-900));
+	--color-wf-equinox-primary-950: color-mix(in oklch, oklch(0.1442 0.0116 280.39), black var(--theme-darken-950));
+	--color-wf-equinox-highlight-50: oklch(0.9846 0.0054 17.26);
+	--color-wf-equinox-highlight-100: oklch(0.9691 0.0054 17.26);
+	--color-wf-equinox-highlight-200: oklch(0.9197 0.0054 17.26);
+	--color-wf-equinox-highlight-300: oklch(0.8679 0.0054 17.26);
+	--color-wf-equinox-highlight-400: oklch(0.7063 0.0054 17.26);
+	--color-wf-equinox-highlight-500: oklch(0.5546 0.0054 17.26);
+	--color-wf-equinox-highlight-600: color-mix(in oklch, oklch(0.4379 0.0054 17.26), black var(--theme-darken-600));
+	--color-wf-equinox-highlight-700: color-mix(in oklch, oklch(0.3701 0.0054 17.26), black var(--theme-darken-700));
+	--color-wf-equinox-highlight-800: color-mix(in oklch, oklch(0.2683 0.0054 17.26), black var(--theme-darken-800));
+	--color-wf-equinox-highlight-900: color-mix(in oklch, oklch(0.2045 0.0054 17.26), black var(--theme-darken-900));
+	--color-wf-equinox-highlight-950: color-mix(in oklch, oklch(0.1446 0.0054 17.26), black var(--theme-darken-950));
+}

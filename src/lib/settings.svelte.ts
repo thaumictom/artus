@@ -1,5 +1,6 @@
 // src/lib/settings.svelte.ts
 import { LazyStore } from '@tauri-apps/plugin-store';
+import { isAppTheme, type AppTheme } from '$lib/app-themes';
 
 const store = new LazyStore('settings.json');
 let settingsLoadPromise: Promise<void> | null = null;
@@ -35,6 +36,7 @@ export const defaultNotificationRules = (): NotificationRules => ({
 });
 
 type Config = {
+	app_theme: AppTheme;
 	hotkeys: {
 		[action: string]: string;
 	};
@@ -80,6 +82,7 @@ type Config = {
 
 // 1. Define the reactive state globally
 export const config = $state({
+	app_theme: 'default' as AppTheme,
 	hotkeys: {
 		screenshot: 'control+Home',
 		screenshot_add_mastery: 'alt+control+Home',
@@ -146,6 +149,7 @@ export function loadSettings() {
 		const savedEntries = await store.entries();
 		for (const [key, val] of savedEntries) {
 			if (key in config) {
+				if (key === 'app_theme' && !isAppTheme(val)) continue;
 				// @ts-ignore
 				config[key] = val;
 			}
@@ -167,6 +171,12 @@ export function loadSettings() {
 
 	})();
 	return settingsLoadPromise;
+}
+
+export function watchAppTheme() {
+	return store.onChange<unknown>((key, value) => {
+		if (key === 'app_theme' && isAppTheme(value)) config.app_theme = value;
+	});
 }
 
 // Overlay windows have their own state; keep these display toggles in sync.

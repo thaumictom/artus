@@ -1,0 +1,10 @@
+@layer base {
+	:root {
+		/* Adjust these percentages to darken the generated primary and highlight ramps. */
+		--theme-darken-600: 20%;
+		--theme-darken-700: 25%;
+		--theme-darken-800: 30%;
+		--theme-darken-900: 40%;
+		--theme-darken-950: 35%;
+	}
+}
