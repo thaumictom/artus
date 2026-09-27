@@ -198,6 +198,12 @@
 		if (!overlayMode || !open) return;
 		// The game shortcut handles Escape while Warframe is focused; this covers DOM focus in the dialog.
 		const onKeyDown = (event: KeyboardEvent) => {
+			if (event.code === 'Space' && !event.repeat) {
+				event.preventDefault();
+				event.stopImmediatePropagation();
+				handleListingHotkey('listing_confirm');
+				return;
+			}
 			if (event.key !== 'Escape') return;
 			event.preventDefault();
 			event.stopImmediatePropagation();
@@ -330,11 +336,7 @@
 {#snippet dialogClose()}<Button class={selectedClass('cancel')}>Cancel</Button>{/snippet}
 {#snippet dialogActions()}
 	{#if isEditing}
-		<Button
-			class={selectedClass('visibility')}
-			disabled={actionBusy}
-			onclick={toggleVisibility}
-		>
+		<Button class={selectedClass('visibility')} disabled={actionBusy} onclick={toggleVisibility}>
 			{visibilityBusy ? 'Updating...' : currentVisible ? 'Hide listing' : 'Unhide listing'}
 		</Button>
 	{:else}
@@ -375,21 +377,23 @@
 {/snippet}
 {#snippet overlayControls()}
 	<div
-		class="flex flex-wrap justify-end items-center self-end gap-x-3 gap-y-1 bg-background px-3 py-2 border border-border-secondary max-w-full text-muted-foreground text-xs"
+		class="flex flex-wrap justify-end items-center self-center gap-y-1 bg-background px-3 py-2 *:last:pr-0 *:pr-2 *:first:pl-0 *:pl-2 border border-border-secondary divide-border-secondary divide-x max-w-full text-muted-foreground text-xs"
 		aria-label="Listing keyboard shortcuts"
 	>
 		<span class="flex items-center gap-1">
-			<Keybind value={config.hotkeys.cycle} /><Keybind value={config.hotkeys.navigate_right} /> next
+			<Keybind value={config.hotkeys.cycle} /> / <Keybind value={config.hotkeys.navigate_right} /> next
 		</span>
 		<span class="flex items-center gap-1">
-			<Keybind value={config.hotkeys.cycle_back} /><Keybind value={config.hotkeys.navigate_left} /> back
+			<Keybind value={config.hotkeys.cycle_back} /> / <Keybind
+				value={config.hotkeys.navigate_left}
+			/> back
 		</span>
 		<span class="flex items-center gap-1">
 			<Keybind value={config.hotkeys.navigate_up} /><Keybind value={config.hotkeys.navigate_down} />
 			adjust
 		</span>
 		<span class="flex items-center gap-1">
-			<Keybind value={config.hotkeys.listing_confirm} /> select
+			<Keybind value={config.hotkeys.listing_confirm} /> / <Keybind value="Space" /> select
 		</span>
 		<span class="flex items-center gap-1"><Keybind value="Esc" /> close</span>
 	</div>

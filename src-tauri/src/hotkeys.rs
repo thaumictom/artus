@@ -26,6 +26,7 @@ const DEFAULT_SCREENSHOT_HOTKEY: &str = "Ctrl+Home";
 pub const HOTKEY_ACTION_SCREENSHOT_ADD_TO_MASTERY: &str = "screenshot_add_mastery";
 const DEFAULT_SCREENSHOT_ADD_TO_MASTERY_HOTKEY: &str = "Ctrl+Alt+Home";
 const LISTING_CONFIRM_ACTION: &str = "listing_confirm";
+const LISTING_CONFIRM_SPACE_ALIAS: &str = "Space";
 const CREATE_SELL_LISTING_ACTION: &str = "create_sell_listing";
 const OVERLAY_ACTIONS: [(&str, &str); 10] = [
     ("cycle", "Tab"),
@@ -220,6 +221,7 @@ pub fn unregister_all<R: Runtime>(app: &AppHandle<R>) {
             error!("unregister '{shortcut}' for '{action}' failed: {err}");
         }
     });
+    unregister_listing_space_alias(app);
 }
 
 pub fn register_overlay_hotkeys<R: Runtime>(app: &AppHandle<R>) {
@@ -246,6 +248,34 @@ pub fn register_overlay_hotkeys<R: Runtime>(app: &AppHandle<R>) {
             }
         }
     });
+    register_listing_space_alias(app);
+}
+
+fn register_listing_space_alias<R: Runtime>(app: &AppHandle<R>) {
+    let state = app.state::<AppState>();
+    if !state.overlay_listing_dialog_open.load(Ordering::Acquire)
+        || !state.warframe_focused.load(Ordering::Acquire)
+        || app.global_shortcut().is_registered(LISTING_CONFIRM_SPACE_ALIAS)
+    {
+        return;
+    }
+    if let Err(err) = app.global_shortcut().register(LISTING_CONFIRM_SPACE_ALIAS) {
+        error!("register listing confirmation alias 'Space' failed: {err}");
+    }
+}
+
+fn unregister_listing_space_alias<R: Runtime>(app: &AppHandle<R>) {
+    let is_configured = app
+        .state::<AppState>()
+        .hotkeys
+        .lock()
+        .map(|hotkeys| hotkeys.values().any(|shortcut| shortcut == LISTING_CONFIRM_SPACE_ALIAS))
+        .unwrap_or(true);
+    if !is_configured && app.global_shortcut().is_registered(LISTING_CONFIRM_SPACE_ALIAS) {
+        if let Err(err) = app.global_shortcut().unregister(LISTING_CONFIRM_SPACE_ALIAS) {
+            error!("unregister listing confirmation alias 'Space' failed: {err}");
+        }
+    }
 }
 
 pub fn sync_sell_listing_hotkey<R: Runtime>(app: &AppHandle<R>) {
@@ -281,6 +311,7 @@ pub fn unregister_overlay_hotkeys<R: Runtime>(app: &AppHandle<R>) {
             let _ = app.global_shortcut().unregister(shortcut);
         }
     });
+    unregister_listing_space_alias(app);
 }
 
 /// Captures Enter for the nonfocusable overlay dialog and pauses its auto-hide timer.
@@ -303,6 +334,7 @@ pub fn set_overlay_listing_dialog_open<R: Runtime>(app: AppHandle<R>, open: bool
                 .map_err(|err| AppError::msg(format!("failed to register listing confirmation: {err}")))?;
         }
         state.overlay_listing_dialog_open.store(true, Ordering::Release);
+        register_listing_space_alias(&app);
         ocr::capture::bump_overlay_sequence(&app)?;
     } else {
         state.overlay_listing_dialog_open.store(false, Ordering::Release);
@@ -310,6 +342,7 @@ pub fn set_overlay_listing_dialog_open<R: Runtime>(app: AppHandle<R>, open: bool
             app.global_shortcut().unregister(shortcut.as_str())
                 .map_err(|err| AppError::msg(format!("failed to unregister listing confirmation: {err}")))?;
         }
+        unregister_listing_space_alias(&app);
         if state.overlay_controls_active.load(Ordering::Acquire)
             && !app.get_setting_bool("overlay_toggle_mode", false)
         {
@@ -327,6 +360,16 @@ pub fn on_shortcut<R: Runtime>(
     shortcut_state: tauri_plugin_global_shortcut::ShortcutState,
 ) {
     let pressed = shortcut.into_string();
+
+    if pressed == LISTING_CONFIRM_SPACE_ALIAS
+        && app.state::<AppState>().overlay_listing_dialog_open.load(Ordering::Acquire)
+    {
+        let _ = app.emit("overlay_hotkey", serde_json::json!({
+            "action": LISTING_CONFIRM_ACTION,
+            "pressed": shortcut_state == tauri_plugin_global_shortcut::ShortcutState::Pressed,
+        }));
+        return;
+    }
 
     if pressed == "Escape" {
         if shortcut_state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
