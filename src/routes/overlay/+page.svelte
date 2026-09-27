@@ -6,6 +6,7 @@
 	import { fade } from 'svelte/transition';
 	import { flyAndScale } from '$lib/transition';
 	import { loadSettings, watchOverlayPriceSettings } from '$lib/settings.svelte';
+	import { fetchMarketListings } from '$lib/market-listings';
 	import { changeOcrItemQuantities, inventoryMarketSlug, inventoryNameKey, setOcrItemQuantities, type InventoryItem } from '$lib/inventory';
 	import CreateListing from '../artus/inventory/CreateListing.svelte';
 	import type { EditableListing, Listing } from '../artus/listings/types';
@@ -39,6 +40,8 @@
 	let masteredSlugs = $state(new Set<string>());
 	let ownedBySlug = $state(new Map<string, number>());
 	let ownedByName = $state(new Map<string, number>());
+	let listingBySlug = $state(new Map<string, { status: 'active' | 'hidden'; platinum: number }>());
+	let activeListingReadSequence = 0;
 	const masteryStore = new LazyStore('mastery.json');
 	const inventoryStore = new LazyStore('inventory.json');
 	let masteryReadSequence = 0;
@@ -50,6 +53,48 @@
 		interval?: ReturnType<typeof setInterval>;
 	};
 	const heldHotkeys = new Map<string, HeldHotkey>();
+
+	async function refreshActiveListings(slugs: string[], sequence: number) {
+		listingBySlug = new Map();
+		if (!marketLoggedIn || slugs.length === 0) {
+			return;
+		}
+		try {
+			const orders = await fetchMarketListings();
+			if (sequence !== activeListingReadSequence) return;
+			const sellListingsByItemId = new Map<string, Listing[]>();
+			for (const order of orders) {
+				if (order.type !== 'sell') continue;
+				const listings = sellListingsByItemId.get(order.itemId) ?? [];
+				listings.push(order);
+				sellListingsByItemId.set(order.itemId, listings);
+			}
+			const itemListings = await Promise.all(slugs.map(async (slug) => {
+				const response = await invoke<{ data: { id: string; maxRank?: number } }>('get_market_item', { slug });
+				const item = response.data;
+				const word = words.find((candidate) => candidate.slug === slug);
+				const candidates = sellListingsByItemId.get(item.id) ?? [];
+				const matching = candidates.find((order) =>
+					(!word?.subtype || order.subtype?.toLowerCase() === word.subtype.toLowerCase()) &&
+					(!item.maxRank || (order.rank ?? 0) === 0),
+				) ?? candidates[0];
+				return matching
+					? [slug, { status: matching.visible ? 'active' : 'hidden', platinum: matching.platinum }] as const
+					: null;
+			}));
+			if (sequence === activeListingReadSequence) {
+				listingBySlug = new Map(itemListings.filter((entry): entry is readonly [string, { status: 'active' | 'hidden'; platinum: number }] => entry !== null));
+			}
+		} catch (error) {
+			if (sequence === activeListingReadSequence) console.error('Could not read active overlay listings:', error);
+		}
+	}
+
+	$effect(() => {
+		const sequence = ++activeListingReadSequence;
+		const slugs = [...new Set(words.flatMap((word) => word.slug ? [word.slug] : []))];
+		void refreshActiveListings(slugs, sequence);
+	});
 	const repeatableActions = new Set([
 		'cycle',
 		'cycle_back',
@@ -104,17 +149,17 @@
 		listingLookupLoading = true;
 		listingLookupStatus = 'Checking your listings…';
 		try {
-			const [itemResponse, ordersResponse] = await Promise.all([
+			const [itemResponse, orders] = await Promise.all([
 				invoke<{ data: { id: string; maxRank?: number; subtypes?: string[] } }>('get_market_item', { slug }),
-				invoke<{ data: Listing[] }>('market_my_orders'),
+				fetchMarketListings(),
 			]);
 			if (request !== listingLookupSequence) return;
 			const item = itemResponse.data;
-			if (typeof item?.id !== 'string' || !Array.isArray(ordersResponse.data)) {
+			if (typeof item?.id !== 'string') {
 				throw new Error('Could not read your market listings');
 			}
 			const subtype = word.subtype ?? item.subtypes?.[0];
-			const sellListings = ordersResponse.data.filter((order) =>
+			const sellListings = orders.filter((order) =>
 				order.type === 'sell' && order.itemId === item.id,
 			);
 			const existing = sellListings.find((order) =>
@@ -501,6 +546,7 @@
 				{ownedBySlug}
 				{ownedByName}
 				{sessionDeltaBySlug}
+				{listingBySlug}
 			/>
 		</div>
 	{/each}

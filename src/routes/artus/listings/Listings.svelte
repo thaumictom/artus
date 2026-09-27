@@ -13,6 +13,7 @@
 	} from '$lib/inventory';
 	import { mastery } from '$lib/mastery.svelte';
 	import { timeAgo } from '$lib/date';
+	import { fetchMarketListings } from '$lib/market-listings';
 	import { isMarketItemMastered, masteredMarketItems } from '$lib/listing-context';
 	import CreateListing from '../inventory/CreateListing.svelte';
 	import CreateListingPicker from './CreateListingPicker.svelte';
@@ -116,13 +117,13 @@
 		loading = true;
 		error = null;
 		try {
-			const [ordersResponse, items] = await Promise.all([
-				invoke<{ data: Listing[] }>('market_my_orders'),
+			const [fetchedOrders, items] = await Promise.all([
+				fetchMarketListings(),
 				Object.keys(itemDetails).length
 					? Promise.resolve(itemDetails)
 					: invoke<Record<string, ListingItem>>('market_item_details'),
 			]);
-			orders = ordersResponse.data;
+			orders = fetchedOrders;
 			itemDetails = items;
 			lastFetchedAt = new Date();
 		} catch (cause) {

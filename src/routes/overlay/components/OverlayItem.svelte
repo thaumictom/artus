@@ -13,6 +13,7 @@
 		ownedBySlug,
 		ownedByName,
 		sessionDeltaBySlug,
+		listingBySlug,
 	}: {
 		word: OcrWord;
 		selected: boolean;
@@ -21,6 +22,7 @@
 		ownedBySlug: Map<string, number>;
 		ownedByName: Map<string, number>;
 		sessionDeltaBySlug: Map<string, number>;
+		listingBySlug: Map<string, { status: 'active' | 'hidden'; platinum: number }>;
 	} = $props();
 
 	const medianFormatter = new Intl.NumberFormat(undefined, {
@@ -114,6 +116,7 @@
 		0}
 	{@const sessionDelta = word.slug ? (sessionDeltaBySlug.get(word.slug) ?? 0) : 0}
 	{@const showOwnership = !isCustom || ownedCount > 0 || sessionDelta !== 0}
+	{@const listing = word.slug ? listingBySlug.get(word.slug) : undefined}
 	<!-- Bounding box for debugging -->
 	{#if showBoundingBoxes}
 		<div
@@ -157,23 +160,35 @@
 					<Icon icon="hugeicons:laurel-wreath-right-03" class="inline size-3.5 text-orange-300" />
 				{/if}
 			</div>
-			{#if word.vaulted || showOwnership}
-				<div class="font-medium text-[10px] text-muted-foreground">
+			{#if word.vaulted || showOwnership || listing}
+				<div class="font-bold text-[10px] text-muted-foreground">
 					{#if word.vaulted}
 						<span class="text-amber-500">vaulted</span>
-						{#if showOwnership}<span class="mx-0.5">•</span>{/if}
+						{#if showOwnership || listing}
+							<span class="mx-0.5">•</span>
+						{/if}
 					{/if}
 					{#if showOwnership}
-						{ownedCount} owned
-						{#if sessionDelta !== 0}
+						{#if showOwnership}{ownedCount} owned{/if}
+						{#if showOwnership && sessionDelta !== 0}
 							<span
 								class="ml-0.5"
-								class:text-accent={sessionDelta > 0}
-								class:text-red-400={sessionDelta < 0}
+								class:text-emerald-500={sessionDelta > 0}
+								class:text-red-500={sessionDelta < 0}
 							>
 								({sessionDelta > 0 ? '+' : ''}{sessionDelta})
 							</span>
 						{/if}
+						{#if listing}
+							<span class="mx-0.5">•</span>
+						{/if}
+					{/if}
+					{#if listing}
+						<span class="text-accent">
+							<Icon icon="material-symbols:sell-outline" class="inline size-3" />
+							{countFormatter.format(listing.platinum)}p
+						</span>
+						{#if listing.status === 'hidden'}(hidden){/if}
 					{/if}
 				</div>
 			{/if}
@@ -214,7 +229,7 @@
 		{/if}
 		{#if config.show_max_rank_prices && (!word.is_mod || config.show_max_rank_mod_prices) && maxedArcanePrice !== undefined}
 			<div class="flex flex-col items-center px-2 py-1 border-t font-medium">
-				<div class="text-[10px] text-muted-foreground">maxed</div>
+				<div class="font-bold text-[10px] text-muted-foreground">maxed</div>
 				<div class="flex justify-center items-center gap-1">
 					<div>
 						{word.maxed_arcane_price_from_current_offers ? '~' : ''}{medianFormatter.format(
@@ -230,7 +245,7 @@
 		{/if}
 		{#if config.show_set_prices && primeSetPrice !== undefined}
 			<div class="flex flex-col items-center px-2 py-1 border-t font-medium">
-				<div class="text-[10px] text-muted-foreground">set</div>
+				<div class="font-bold text-[10px] text-muted-foreground">set</div>
 				<div class="flex justify-around gap-1 w-full">
 					<div class="flex justify-center items-center gap-1">
 						<div>
