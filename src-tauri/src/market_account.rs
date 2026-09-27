@@ -11,6 +11,7 @@ use tokio::sync::{mpsc, oneshot};
 use tokio_tungstenite::tungstenite::{client::IntoClientRequest, Message};
 
 use crate::{error::{AppError, AppResult}, state::AppState};
+use crate::hotkeys;
 
 const API: &str = "https://api.warframe.market";
 const USER_AGENT: &str = concat!("Artus/", env!("CARGO_PKG_VERSION"), " (+https://github.com/thaumictom/artus)");
@@ -46,6 +47,20 @@ pub struct SessionView {
 
 fn view(session: &MarketSession) -> SessionView {
     SessionView { ingame_name: session.ingame_name.clone(), slug: session.slug.clone(), status: session.status.clone(), invisible_at: session.invisible_at }
+}
+
+pub fn is_logged_in(state: &AppState) -> bool {
+    state.market_session.lock().map(|session| session.is_some()).unwrap_or(false)
+}
+
+#[tauri::command]
+pub fn market_authenticated(state: State<'_, AppState>) -> bool {
+    is_logged_in(&state)
+}
+
+fn notify_auth_changed(app: &AppHandle) {
+    hotkeys::sync_sell_listing_hotkey(app);
+    let _ = app.emit("market_auth_changed", is_logged_in(&app.state::<AppState>()));
 }
 
 fn token(state: &AppState) -> AppResult<String> {
@@ -188,10 +203,13 @@ pub async fn market_session(app: AppHandle, state: State<'_, AppState>) -> AppRe
         Some(session) => {
             let result = view(&session);
             *state.market_session.lock()? = Some(session);
+            notify_auth_changed(&app);
             Ok(Some(result))
         }
         None => {
             update_remembered_token(&app, None)?;
+            *state.market_session.lock()? = None;
+            notify_auth_changed(&app);
             Ok(None)
         }
     }
@@ -217,13 +235,17 @@ pub async fn market_login(app: AppHandle, state: State<'_, AppState>, email: Str
     update_remembered_token(&app, remember.then_some(jwt.as_str()))?;
     let mut guard = state.market_session.lock()?;
     *guard = Some(session);
-    Ok(view(guard.as_ref().unwrap()))
+    let result = view(guard.as_ref().unwrap());
+    drop(guard);
+    notify_auth_changed(&app);
+    Ok(result)
 }
 
 #[tauri::command]
 pub fn market_logout(app: AppHandle, state: State<'_, AppState>) -> AppResult<()> {
     update_remembered_token(&app, None)?;
     *state.market_session.lock()? = None;
+    notify_auth_changed(&app);
     Ok(())
 }
 

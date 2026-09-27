@@ -2,6 +2,7 @@
 	import Icon from '@iconify/svelte';
 	import Keybind from '$lib/components/Keybind.svelte';
 	import { config } from '$lib/settings.svelte';
+	let { marketLoggedIn }: { marketLoggedIn: boolean } = $props();
 </script>
 
 	<aside
@@ -46,6 +47,10 @@
 				<span>−1</span>
 				<Keybind value={config.hotkeys.inventory_increment ?? ''} />
 				<span>+1</span>
+				{#if marketLoggedIn}
+					<Keybind value={config.hotkeys.create_sell_listing ?? ''} />
+					<span>create sell listing</span>
+				{/if}
 			</div>
 
 			<div class="flex items-center gap-1.5 pl-3 border-border-secondary border-l">

@@ -3,8 +3,11 @@
 	import { invoke } from '@tauri-apps/api/core';
 	import { LazyStore } from '@tauri-apps/plugin-store';
 	import { onMount } from 'svelte';
+	import { fade } from 'svelte/transition';
+	import { flyAndScale } from '$lib/transition';
 	import { loadSettings, watchOverlayPriceSettings } from '$lib/settings.svelte';
-	import { changeOcrItemQuantities, inventoryNameKey, setOcrItemQuantities, type InventoryItem } from '$lib/inventory';
+	import { changeOcrItemQuantities, inventoryMarketSlug, inventoryNameKey, setOcrItemQuantities, type InventoryItem } from '$lib/inventory';
+	import CreateListing from '../artus/inventory/CreateListing.svelte';
 	import OverlayItem from './components/OverlayItem.svelte';
 	import OverlayShortcuts from './components/OverlayShortcuts.svelte';
 	import OverlayStatus from './components/OverlayStatus.svelte';
@@ -15,6 +18,14 @@
 	let processing = $state(false);
 	let controlsEnabled = $state(false);
 	let selectedIndex = $state<number | null>(null);
+	let listingItem = $state<InventoryItem | null>(null);
+	let listingSubtype = $state<string | undefined>(undefined);
+	let listingHotkey = $state<{ action: string; sequence: number } | null>(null);
+	let listingHotkeySequence = 0;
+	let listingDialogRegistered = false;
+	let listingDialogQueue: Promise<void> = Promise.resolve();
+	let marketLoggedIn = $state(false);
+	let marketAuthRevision = 0;
 	let sessionDeltaBySlug = $state(new Map<string, number>());
 	let overlaySession = 0;
 	let inventoryChangeQueue: Promise<void> = Promise.resolve();
@@ -43,6 +54,22 @@
 		'navigate_right',
 	]);
 
+	$effect(() => {
+		const open = listingItem !== null;
+		if (open === listingDialogRegistered) return;
+		listingDialogRegistered = open;
+		// Keep backend shortcut state in the same order as rapid open/close changes.
+		listingDialogQueue = listingDialogQueue.then(async () => {
+			if (open && listingItem === null) return;
+			try {
+				await invoke('set_overlay_listing_dialog_open', { open });
+			} catch (error) {
+				console.error('Could not update overlay listing shortcuts:', error);
+				if (open) listingItem = null;
+			}
+		});
+	});
+
 	function stopHotkey(action: string) {
 		const held = heldHotkeys.get(action);
 		if (!held) return;
@@ -56,17 +83,21 @@
 	}
 
 	function onHotkeyEvent(action: string, pressed: boolean) {
+		if (action === 'listing_cancel' && pressed && listingItem) {
+			dispatchHotkey(action);
+			return;
+		}
 		if (!controlsEnabled) return;
 		if (!pressed) {
 			stopHotkey(action);
 			return;
 		}
 		if (heldHotkeys.has(action)) return;
-		handleOverlayHotkey(action);
+		dispatchHotkey(action);
 		const held: HeldHotkey = {
 			delay: setTimeout(() => {
 				if (heldHotkeys.get(action) !== held) return;
-				held.interval = setInterval(() => handleOverlayHotkey(action), 85);
+				held.interval = setInterval(() => dispatchHotkey(action), 85);
 			}, 200),
 		};
 		heldHotkeys.set(action, held);
@@ -108,6 +139,20 @@
 		queueInventoryChange((session) => saveInventoryChanges(changes, session));
 	}
 
+	function dispatchHotkey(action: string) {
+		if (action === 'listing_cancel') {
+			listingItem = null;
+			listingHotkey = null;
+			stopAllHotkeys();
+			return;
+		}
+		if (listingItem) {
+			listingHotkey = { action, sequence: ++listingHotkeySequence };
+			return;
+		}
+		handleOverlayHotkey(action);
+	}
+
 	function syncScannedQuantities(scannedWords: OcrWord[]) {
 		const quantities = new Map<string, { word: OcrWord; quantity: number }>();
 		for (const word of scannedWords) {
@@ -147,6 +192,22 @@
 
 	function handleOverlayHotkey(action: string) {
 		if (!controlsEnabled || processing || words.length === 0) return;
+		if (action === 'create_sell_listing') {
+			if (!marketLoggedIn) return;
+			if (selectedIndex === null) return;
+			const word = words[selectedIndex];
+			if (!word.slug || word.is_custom) return;
+			const slug = inventoryMarketSlug({ name: word.text, slug: word.slug, quantity: 0 });
+			if (!slug) return;
+			listingSubtype = word.subtype;
+			listingHotkey = null;
+			listingItem = {
+				name: word.text,
+				slug,
+				quantity: ownedBySlug.get(word.slug) ?? ownedByName.get(inventoryNameKey(word.text)) ?? word.quantity ?? 0,
+			};
+			return;
+		}
 		if (action === 'cycle' || action === 'cycle_back') {
 			const position = selectedIndex === null ? -1 : cycleOrder.indexOf(selectedIndex);
 			selectedIndex =
@@ -254,6 +315,19 @@
 			else cleanups.push(cleanup);
 		};
 		watchOverlayPriceSettings().then(registerCleanup);
+		listen<boolean>('market_auth_changed', ({ payload }) => {
+			marketAuthRevision++;
+			marketLoggedIn = payload;
+			if (!payload) listingItem = null;
+		}).then((cleanup) => {
+			registerCleanup(cleanup);
+			const authRevision = marketAuthRevision;
+			void invoke<boolean>('market_authenticated')
+				.then((authenticated) => {
+					if (!disposed && authRevision === marketAuthRevision) marketLoggedIn = authenticated;
+				})
+				.catch((error) => console.error('Could not read market session state:', error));
+		});
 		void refreshMasteredSlugs(masteryReadSequence);
 		void refreshInventory(inventoryReadSequence);
 		inventoryStore
@@ -266,6 +340,7 @@
 			.then(registerCleanup);
 
 		listen('ocr_processing', () => {
+			listingItem = null;
 			relicFeedbackGeneration++;
 			clearTimeout(relicFeedbackTimer);
 			relicFeedback = null;
@@ -282,6 +357,7 @@
 		listen<{ words: OcrWord[]; show_ocr_bounding_boxes: boolean; controls_enabled: boolean }>(
 			'ocr_result',
 			(event) => {
+				listingItem = null;
 				stopAllHotkeys();
 				overlaySession++;
 				sessionDeltaBySlug = new Map();
@@ -300,6 +376,7 @@
 		).then(registerCleanup);
 
 		listen('ocr_clear', () => {
+			listingItem = null;
 			stopAllHotkeys();
 			overlaySession++;
 			sessionDeltaBySlug = new Map();
@@ -341,6 +418,9 @@
 		}).then(registerCleanup);
 
 		return () => {
+			if (listingDialogRegistered) {
+				void listingDialogQueue.then(() => invoke('set_overlay_listing_dialog_open', { open: false }));
+			}
 			disposed = true;
 			clearTimeout(relicFeedbackTimer);
 			stopAllHotkeys();
@@ -354,17 +434,20 @@
 <main class="relative w-screen h-screen pointer-events-none">
 	<OverlayStatus {relicFeedback} {processing} />
 	{#each words as word, index (`${word.text}-${word.x}-${word.y}-${word.width}-${word.height}`)}
-		<OverlayItem
-			{word}
-			selected={selectedIndex === index}
-			{showBoundingBoxes}
-			{masteredSlugs}
-			{ownedBySlug}
-			{ownedByName}
-			{sessionDeltaBySlug}
-		/>
+		<div class="absolute inset-0" in:flyAndScale={{ y: 24 }} out:fade={{ duration: 100 }}>
+			<OverlayItem
+				{word}
+				selected={selectedIndex === index}
+				{showBoundingBoxes}
+				{masteredSlugs}
+				{ownedBySlug}
+				{ownedByName}
+				{sessionDeltaBySlug}
+			/>
+		</div>
 	{/each}
-	{#if controlsEnabled && !processing && words.length > 0}
-		<OverlayShortcuts />
+	{#if controlsEnabled && !processing && words.length > 0 && !listingItem}
+		<OverlayShortcuts {marketLoggedIn} />
 	{/if}
+	<CreateListing bind:item={listingItem} overlayMode overlayHotkey={listingHotkey} initialSubtype={listingSubtype} />
 </main>

@@ -7,6 +7,7 @@
 	import { openMarketNotificationTarget } from '$lib/market-navigation.svelte';
 	import {
 		clearNotificationHistory,
+		dismissNotification,
 		markAllNotificationsRead,
 		notificationCenter,
 		type NotificationSource,
@@ -179,35 +180,46 @@
 			</div>
 			<div class="max-h-[28rem] overflow-y-auto">
 				{#each notificationCenter.entries as entry (entry.id)}
-					<svelte:element
-						this={entry.market ? 'button' : 'article'}
-						type={entry.market ? 'button' : undefined}
-						role={entry.market ? 'button' : undefined}
-						onclick={entry.market ? () => openMarketNotification(entry) : undefined}
-						class="flex gap-3 px-4 py-3 border-b last:border-b-0 w-full text-left"
-						class:hover:bg-elevated={Boolean(entry.market)}
-						class:cursor-pointer={Boolean(entry.market)}
-						title={entry.market ? 'Open item in Market' : undefined}
-					>
-						<div class="flex justify-center items-center bg-surface mt-0.5 size-8 shrink-0">
-							<Icon icon={sourceIcon(entry.source)} class="size-4" />
-						</div>
-						<div class="flex-1 min-w-0">
-							<div class="flex items-center gap-1.5">
-								{#if entry.era}
-									<span class={eraLabelClass(entry.era)}>{entry.era}</span>
-								{/if}
-								<h3 class="font-medium text-sm">{entry.title}</h3>
+					<article class="flex items-start gap-2 px-4 py-3 border-b last:border-b-0 w-full">
+						<svelte:element
+							this={entry.market ? 'button' : 'div'}
+							type={entry.market ? 'button' : undefined}
+							role={entry.market ? 'button' : undefined}
+							onclick={entry.market ? () => openMarketNotification(entry) : undefined}
+							class="flex flex-1 gap-3 min-w-0 text-left"
+							class:hover:bg-elevated={Boolean(entry.market)}
+							class:cursor-pointer={Boolean(entry.market)}
+							title={entry.market ? 'Open item in Market' : undefined}
+						>
+							<div class="flex justify-center items-center bg-surface mt-0.5 size-8 shrink-0">
+								<Icon icon={sourceIcon(entry.source)} class="size-4" />
 							</div>
-							<p class="mt-0.5 text-muted-foreground text-xs">{entry.body}</p>
-							<time class="block mt-1.5 text-muted-foreground text-[11px]" datetime={new Date(entry.createdAt).toISOString()}>
-								{formatCreatedAt(entry.createdAt)}
-							</time>
-						</div>
-						{#if entry.market}
-							<Icon icon="material-symbols:arrow-forward-rounded" class="self-center size-4 shrink-0" />
-						{/if}
-					</svelte:element>
+							<div class="flex-1 min-w-0">
+								<div class="flex items-center gap-1.5">
+									{#if entry.era}
+										<span class={eraLabelClass(entry.era)}>{entry.era}</span>
+									{/if}
+									<h3 class="font-medium text-sm">{entry.title}</h3>
+								</div>
+								<p class="mt-0.5 text-muted-foreground text-xs">{entry.body}</p>
+								<time class="block mt-1.5 text-muted-foreground text-[11px]" datetime={new Date(entry.createdAt).toISOString()}>
+									{formatCreatedAt(entry.createdAt)}
+								</time>
+							</div>
+							{#if entry.market}
+								<Icon icon="material-symbols:arrow-forward-rounded" class="self-center size-4 shrink-0" />
+							{/if}
+						</svelte:element>
+						<button
+							type="button"
+							onclick={() => void dismissNotification(entry.id)}
+							aria-label={`Dismiss ${entry.title} notification`}
+							title="Dismiss notification"
+							class="flex justify-center items-center hover:bg-elevated text-muted-foreground hover:text-foreground size-7 shrink-0 cursor-pointer"
+						>
+							<Icon icon="material-symbols:close-rounded" class="size-4" />
+						</button>
+					</article>
 				{:else}
 					<div class="flex flex-col items-center px-6 py-10 text-center">
 						<Icon icon="material-symbols:notifications-off-outline-rounded" class="mb-3 size-8 text-muted-foreground" />

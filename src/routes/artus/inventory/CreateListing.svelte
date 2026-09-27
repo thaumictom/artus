@@ -1,18 +1,75 @@
 <script lang="ts">
 	import { invoke } from '@tauri-apps/api/core';
+	import { untrack } from 'svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
 	import Button from '$lib/components/Button.svelte';
 	import type { InventoryItem } from '$lib/inventory';
+	import { GetOrdersResponseSchema } from '$lib/schemas';
+	import { config } from '$lib/settings.svelte';
+	import Keybind from '$lib/components/Keybind.svelte';
 	import ListingItemInfo from '$lib/components/ListingItemInfo.svelte';
 	import ListingQuantityWarning from '$lib/components/ListingQuantityWarning.svelte';
-	type ListingItemDetails = { maxRank?: number; maxCharges?: number; maxAmberStars?: number; maxCyanStars?: number; subtypes?: string[]; bulkTradable?: boolean };
+	type ListingItemDetails = {
+		maxRank?: number;
+		maxCharges?: number;
+		maxAmberStars?: number;
+		maxCyanStars?: number;
+		subtypes?: string[];
+		bulkTradable?: boolean;
+	};
+	type OrderSide = 'sell' | 'buy';
+	type ListingControl = 'price' | 'quantity' | 'rank' | 'charges' | 'amberStars' | 'cyanStars' | 'subtype' | 'cancel' | 'hidden' | 'visible';
+	type OrderPreview = { id: string; platinum: number; quantity: number };
+	type TodayStatistics = {
+		median: number | null;
+		weightedAverage: number | null;
+		volume: number | null;
+	};
+	const priceFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
+	const volumeFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
 
-	let { item = $bindable<InventoryItem | null>(null), mastered = false, onCreated = () => {} }: { item: InventoryItem | null; mastered?: boolean; onCreated?: () => void } = $props();
+	function selectTopOrders(
+		orders: (OrderPreview & { type: OrderSide; user: { status: string } })[],
+		side: OrderSide,
+	): OrderPreview[] {
+		return orders
+			.filter(
+				(order) =>
+					order.type === side &&
+					order.user.status === 'ingame' &&
+					Number.isSafeInteger(order.platinum) &&
+					order.platinum > 0 &&
+					order.quantity > 0,
+			)
+			.map(({ id, platinum, quantity }) => ({ id, platinum, quantity }))
+			.sort((a, b) => (side === 'sell' ? a.platinum - b.platinum : b.platinum - a.platinum))
+			.slice(0, 10);
+	}
+
+	let {
+		item = $bindable<InventoryItem | null>(null),
+		mastered = false,
+		onCreated = () => {},
+		overlayMode = false,
+		overlayHotkey = null,
+		initialSubtype,
+	}: {
+		item: InventoryItem | null;
+		mastered?: boolean;
+		onCreated?: () => void;
+		overlayMode?: boolean;
+		overlayHotkey?: { action: string; sequence: number } | null;
+		initialSubtype?: string;
+	} = $props();
 	let open = $derived(item !== null);
-	let sell = $state<number[]>([]);
-	let buy = $state<number[]>([]);
-	let marketMedian = $state<number | null>(null);
-	let medianUsesOfferFallback = $state(false);
+	let sellOrders = $state<OrderPreview[]>([]);
+	let buyOrders = $state<OrderPreview[]>([]);
+	let lowestSell = $derived(sellOrders[0]?.platinum ?? null);
+	let highestBuy = $derived(buyOrders[0]?.platinum ?? null);
+	let spread = $derived(
+		lowestSell !== null && highestBuy !== null ? lowestSell - highestBuy : null,
+	);
+	let todayStatistics = $state<TodayStatistics | null>(null);
 	let loading = $state(false);
 	let busy = $state(false);
 	let error = $state<string | null>(null);
@@ -25,95 +82,359 @@
 	let cyanStars = $state(0);
 	let subtype = $state('');
 	let requestId = 0;
-	const valid = $derived(Number.isSafeInteger(price) && price >= 1 && price <= 900000 && Number.isSafeInteger(quantity) && quantity >= 1 && quantity <= 9999 &&
-		(!details?.maxRank || (Number.isSafeInteger(rank) && rank >= 0 && rank <= details.maxRank)) &&
-		(!details?.maxCharges || (Number.isSafeInteger(charges) && charges >= 0 && charges <= details.maxCharges)) &&
-		(!details?.maxAmberStars || (Number.isSafeInteger(amberStars) && amberStars >= 0 && amberStars <= details.maxAmberStars)) &&
-		(!details?.maxCyanStars || (Number.isSafeInteger(cyanStars) && cyanStars >= 0 && cyanStars <= details.maxCyanStars)) &&
-		(!details?.subtypes?.length || details.subtypes.includes(subtype)));
+	let focusedControl = $state<ListingControl>('price');
+	const listingControls = $derived<ListingControl[]>([
+		'price', 'quantity',
+		...(details?.maxRank ? ['rank' as const] : []),
+		...(details?.maxCharges ? ['charges' as const] : []),
+		...(details?.maxAmberStars ? ['amberStars' as const] : []),
+		...(details?.maxCyanStars ? ['cyanStars' as const] : []),
+		...(details?.subtypes?.length ? ['subtype' as const] : []),
+		'cancel', 'hidden', 'visible',
+	]);
+	const selectedClass = (control: ListingControl) =>
+		overlayMode && focusedControl === control ? 'overlay-control-selected' : '';
+
+	function cycleListingControl(direction: 1 | -1) {
+		const index = listingControls.indexOf(focusedControl);
+		focusedControl = listingControls[(index + direction + listingControls.length) % listingControls.length];
+	}
+
+	function adjustListingControl(direction: 1 | -1) {
+		switch (focusedControl) {
+			case 'price': price = Math.min(900000, Math.max(1, price + direction)); break;
+			case 'quantity': quantity = Math.min(9999, Math.max(1, quantity + direction)); break;
+			case 'rank': rank = Math.min(details?.maxRank ?? 0, Math.max(0, rank + direction)); break;
+			case 'charges': charges = Math.min(details?.maxCharges ?? 0, Math.max(0, charges + direction)); break;
+			case 'amberStars': amberStars = Math.min(details?.maxAmberStars ?? 0, Math.max(0, amberStars + direction)); break;
+			case 'cyanStars': cyanStars = Math.min(details?.maxCyanStars ?? 0, Math.max(0, cyanStars + direction)); break;
+			case 'subtype': {
+				const options = details?.subtypes ?? [];
+				if (options.length > 0) {
+					const index = options.indexOf(subtype);
+					subtype = options[(index + direction + options.length) % options.length];
+				}
+				break;
+			}
+		}
+	}
+
+	function handleListingHotkey(action: string) {
+		if (action === 'listing_cancel') { item = null; return; }
+		if (action === 'cycle' || action === 'navigate_right') { cycleListingControl(1); return; }
+		if (action === 'cycle_back' || action === 'navigate_left') { cycleListingControl(-1); return; }
+		if (action === 'navigate_up') { adjustListingControl(1); return; }
+		if (action === 'navigate_down') { adjustListingControl(-1); return; }
+		if (action !== 'listing_confirm') return;
+		if (focusedControl === 'cancel') item = null;
+		else if (focusedControl === 'hidden') void create(false);
+		else if (focusedControl === 'visible') void create(true);
+		else cycleListingControl(1);
+	}
+
+	$effect(() => {
+		const hotkey = overlayHotkey;
+		if (overlayMode && item && hotkey) untrack(() => handleListingHotkey(hotkey.action));
+	});
+	$effect(() => {
+		if (!overlayMode || !open) return;
+		// The game shortcut handles Escape while Warframe is focused; this covers DOM focus in the dialog.
+		const onKeyDown = (event: KeyboardEvent) => {
+			if (event.key !== 'Escape') return;
+			event.preventDefault();
+			event.stopImmediatePropagation();
+			item = null;
+		};
+		window.addEventListener('keydown', onKeyDown, true);
+		return () => window.removeEventListener('keydown', onKeyDown, true);
+	});
+	const valid = $derived(
+		Number.isSafeInteger(price) &&
+			price >= 1 &&
+			price <= 900000 &&
+			Number.isSafeInteger(quantity) &&
+			quantity >= 1 &&
+			quantity <= 9999 &&
+			(!details?.maxRank || (Number.isSafeInteger(rank) && rank >= 0 && rank <= details.maxRank)) &&
+			(!details?.maxCharges ||
+				(Number.isSafeInteger(charges) && charges >= 0 && charges <= details.maxCharges)) &&
+			(!details?.maxAmberStars ||
+				(Number.isSafeInteger(amberStars) &&
+					amberStars >= 0 &&
+					amberStars <= details.maxAmberStars)) &&
+			(!details?.maxCyanStars ||
+				(Number.isSafeInteger(cyanStars) && cyanStars >= 0 && cyanStars <= details.maxCyanStars)) &&
+			(!details?.subtypes?.length || details.subtypes.includes(subtype)),
+	);
 	$effect(() => {
 		if (!item?.slug) return;
 		const slug = item.slug;
 		quantity = Math.min(Math.max(item.quantity, 1), 9999);
-		price = 1; sell = []; buy = []; marketMedian = null; details = null; error = null; loading = true;
+		price = 1;
+		focusedControl = 'price';
+		sellOrders = [];
+		buyOrders = [];
+		todayStatistics = null;
+		details = null;
+		error = null;
+		loading = true;
 		const current = ++requestId;
 		void Promise.all([
-			invoke<{ data: { sell: { platinum: number }[]; buy: { platinum: number }[] } }>('market_top_orders', { slug }),
+			invoke('get_market_orders', { slug }),
 			invoke<{ data: ListingItemDetails }>('get_market_item', { slug }),
-			invoke<Record<string, { median: number; from_current_offers: boolean }>>('get_mastery_tradeable_prices').catch((): Record<string, { median: number; from_current_offers: boolean }> => ({})),
+			invoke<TodayStatistics | null>('get_tradeable_today_statistics', { slug }),
 		])
-			.then(([response, itemResponse, prices]) => {
+			.then(([response, itemResponse, statistics]) => {
 				if (current !== requestId) return;
-				sell = response.data.sell.map((order) => order.platinum);
-				buy = response.data.buy.map((order) => order.platinum);
-				marketMedian = Number.isFinite(prices[slug]?.median) ? prices[slug].median : null;
-				medianUsesOfferFallback = prices[slug]?.from_current_offers ?? false;
-				price = sell[0] ?? 1;
+				const orders = GetOrdersResponseSchema.parse(response).data;
+				sellOrders = selectTopOrders(orders, 'sell');
+				buyOrders = selectTopOrders(orders, 'buy');
+				todayStatistics = statistics;
+				price = sellOrders[0]?.platinum ?? 1;
 				details = itemResponse.data;
-				rank = 0; charges = 0; amberStars = 0; cyanStars = 0;
-				subtype = itemResponse.data?.subtypes?.[0] ?? '';
+				rank = 0;
+				charges = 0;
+				amberStars = 0;
+				cyanStars = 0;
+				subtype = itemResponse.data?.subtypes?.find((option) => option.toLowerCase() === initialSubtype?.toLowerCase()) ?? itemResponse.data?.subtypes?.[0] ?? '';
 			})
-			.catch((cause) => { if (current === requestId) error = String(cause); })
-			.finally(() => { if (current === requestId) loading = false; });
+			.catch((cause) => {
+				if (current === requestId) error = String(cause);
+			})
+			.finally(() => {
+				if (current === requestId) loading = false;
+			});
 	});
 
 	async function create(visible: boolean) {
 		if (!item?.slug || !valid || busy) return;
-		busy = true; error = null;
+		busy = true;
+		error = null;
 		try {
-			await invoke('market_create_listing', { slug: item.slug, platinum: price, quantity, visible, variant: {
-				rank: details?.maxRank ? rank : null,
-				charges: details?.maxCharges ? charges : null,
-				amberStars: details?.maxAmberStars ? amberStars : null,
-				cyanStars: details?.maxCyanStars ? cyanStars : null,
-				subtype: details?.subtypes?.length ? subtype : null,
-			} });
+			await invoke('market_create_listing', {
+				slug: item.slug,
+				platinum: price,
+				quantity,
+				visible,
+				variant: {
+					rank: details?.maxRank ? rank : null,
+					charges: details?.maxCharges ? charges : null,
+					amberStars: details?.maxAmberStars ? amberStars : null,
+					cyanStars: details?.maxCyanStars ? cyanStars : null,
+					subtype: details?.subtypes?.length ? subtype : null,
+				},
+			});
 			item = null;
 			onCreated();
-		} catch (cause) { error = String(cause); }
-		finally { busy = false; }
+		} catch (cause) {
+			error = String(cause);
+		} finally {
+			busy = false;
+		}
 	}
 </script>
 
 {#snippet title()}Create sell listing{/snippet}
-{#snippet description()}<ListingItemInfo name={item?.name ?? ''} {mastered} ownedCount={item?.quantity ?? 0} />{/snippet}
-{#snippet dialogClose()}<Button>Cancel</Button>{/snippet}
+{#snippet description()}<ListingItemInfo
+		name={item?.name ?? ''}
+		{mastered}
+		ownedCount={item?.quantity ?? 0}
+	/>{/snippet}
+{#snippet dialogClose()}<Button class={selectedClass('cancel')}>Cancel</Button>{/snippet}
 {#snippet dialogActions()}
-	<Button disabled={!valid || busy || loading} onclick={() => create(false)}>Create a hidden listing</Button>
-	<Button variant="primary" disabled={!valid || busy || loading} onclick={() => create(true)}>{busy ? 'Creating...' : 'Create listing'}</Button>
+	<Button class={selectedClass('hidden')} disabled={!valid || busy || loading} onclick={() => create(false)}>
+		Create a hidden listing
+	</Button>
+	<Button class={selectedClass('visible')} variant="primary" disabled={!valid || busy || loading} onclick={() => create(true)}>
+		{busy ? 'Creating...' : 'Create listing'}
+	</Button>
 {/snippet}
-<Dialog bind:open={() => open, (value) => { if (!value) item = null; }} {title} {description} {dialogClose} {dialogActions} contentProps={{ class: 'h-auto max-h-[calc(100vh-2rem)]' }}>
-	<div class="flex flex-col gap-4 px-6 overflow-y-auto">
+{#snippet orderPrices(title: string, orders: OrderPreview[], showQuantity: boolean)}
+	<section class="bg-card/50 p-3 border border-border-secondary min-w-0">
+		<h3 class="mb-2 font-semibold text-sm">{title}</h3>
+		{#each orders as order (order.id)}
+			<div class="flex justify-between items-center gap-2 py-0.5 tabular-nums text-sm">
+				<span class="flex items-center gap-1">
+					{priceFormatter.format(order.platinum)}
+					<img src="/icons/platinum.png" alt="platinum" class="size-3.5" />
+				</span>
+				{#if showQuantity}<span class="text-muted-foreground">
+						×{volumeFormatter.format(order.quantity)}
+					</span>{/if}
+			</div>
+		{:else}
+			<p class="text-muted-foreground text-sm">No in-game orders</p>
+		{/each}
+	</section>
+{/snippet}
+{#snippet overlayControls()}
+	<div class="self-end flex flex-wrap justify-end items-center gap-x-3 gap-y-1 bg-background px-3 py-2 border border-border-secondary max-w-full text-muted-foreground text-xs" aria-label="Listing keyboard shortcuts">
+		<span class="flex items-center gap-1"><Keybind value={config.hotkeys.cycle} /><Keybind value={config.hotkeys.navigate_right} /> next</span>
+		<span class="flex items-center gap-1"><Keybind value={config.hotkeys.cycle_back} /><Keybind value={config.hotkeys.navigate_left} /> back</span>
+		<span class="flex items-center gap-1"><Keybind value={config.hotkeys.navigate_up} /><Keybind value={config.hotkeys.navigate_down} /> adjust</span>
+		<span class="flex items-center gap-1"><Keybind value={config.hotkeys.listing_confirm} /> select</span>
+		<span class="flex items-center gap-1"><Keybind value="Esc" /> close</span>
+	</div>
+{/snippet}
+<Dialog
+	bind:open={
+		() => open,
+		(value) => {
+			if (!value) item = null;
+		}
+	}
+	{title}
+	{description}
+	{dialogClose}
+	{dialogActions}
+	belowContent={overlayMode ? overlayControls : undefined}
+	blurBackdrop={!overlayMode}
+	strongBackdrop={overlayMode}
+	contentProps={{ class: `w-[min(42rem,calc(100vw-2rem))] h-auto max-h-[calc(100vh-2rem)] ${overlayMode ? 'overlay-listing-dialog' : ''}` }}
+>
+	<div class="flex flex-col gap-4 px-6 py-1 overflow-y-auto">
 		{#if loading}<p class="text-muted-foreground text-sm">Loading current orders...</p>{:else}
-			<div class="grid grid-cols-2 gap-4">
-				<div class="bg-card/50 p-3 border border-border-secondary">
-					<h3 class="mb-2 font-semibold text-sm">Cheapest in-game sell orders</h3>
-					{#each sell as value}<div class="py-0.5 tabular-nums text-sm">{value} platinum</div>{:else}<p class="text-muted-foreground text-sm">No sell orders</p>{/each}
-					<div class="mt-2 pt-2 border-t border-border-secondary font-semibold text-sm" title={medianUsesOfferFallback ? 'Current offer median; no recent trade median' : 'Recent trade median'}>Market median: {marketMedian === null ? '—' : `${medianUsesOfferFallback ? '~' : ''}${marketMedian} platinum`}</div>
+			<div class="bg-card/50 p-3 border border-border-secondary text-center">
+				<div
+					class="grid grid-cols-3 divide-border-secondary divide-x"
+					title="Today's completed trades"
+				>
+					<div class="px-2">
+						<div class="text-muted-foreground text-xs">Median</div>
+						<div class="font-semibold tabular-nums text-sm">
+							{todayStatistics?.median == null
+								? '—'
+								: `${priceFormatter.format(todayStatistics.median)}p`}
+						</div>
+					</div>
+					<div class="px-2">
+						<div class="text-muted-foreground text-xs">Weighted avg</div>
+						<div class="font-semibold tabular-nums text-sm">
+							{todayStatistics?.weightedAverage == null
+								? '—'
+								: `${priceFormatter.format(todayStatistics.weightedAverage)}p`}
+						</div>
+					</div>
+					<div class="px-2">
+						<div class="text-muted-foreground text-xs">Volume</div>
+						<div class="font-semibold tabular-nums text-sm">
+							{todayStatistics?.volume == null
+								? '—'
+								: volumeFormatter.format(todayStatistics.volume)}
+						</div>
+					</div>
 				</div>
-				<div class="bg-card/50 p-3 border border-border-secondary">
-					<h3 class="mb-2 font-semibold text-sm">Highest in-game buy orders</h3>
-					{#each buy as value}<div class="py-0.5 tabular-nums text-sm">{value} platinum</div>{:else}<p class="text-muted-foreground text-sm">No buy orders</p>{/each}
-				</div>
+			</div>
+			<div class="gap-4 grid grid-cols-1 sm:grid-cols-2">
+				{@render orderPrices('Cheapest in-game sell orders', sellOrders, true)}
+				{@render orderPrices('Highest in-game buy orders', buyOrders, false)}
 			</div>
 			{#if details?.maxRank || details?.maxCharges || details?.subtypes?.length || details?.maxAmberStars || details?.maxCyanStars}
-				<p class="text-muted-foreground text-xs">Top order prices may include other ranks or variants. Check the variant fields below before posting.</p>
+				<p class="text-muted-foreground text-xs">
+					Top order prices may include other ranks or variants. Check the variant fields below
+					before posting.
+				</p>
 			{/if}
 		{/if}
-		<div class="grid grid-cols-2 gap-4">
-			<label class="flex flex-col gap-1 text-sm">Price (platinum)<input type="number" min="1" max="900000" step="1" bind:value={price} class="bg-background p-2 border border-border-secondary focus-visible:border-accent outline-none text-foreground" /></label>
-			<label class="flex flex-col gap-1 text-sm">Quantity<input type="number" min="1" max="9999" step="1" bind:value={quantity} class="bg-background p-2 border border-border-secondary focus-visible:border-accent outline-none text-foreground" /></label>
+		<div class="gap-4 grid grid-cols-2">
+			<label class="flex flex-col gap-1 text-sm">
+				Price (platinum)
+				<input
+					type="number"
+					min="1"
+					max="900000"
+					step="1"
+					bind:value={price}
+					class={`bg-background p-2 border border-border-secondary focus-visible:border-accent outline-none text-foreground ${selectedClass('price')}`}
+				/>
+			</label>
+			<div class="flex flex-col gap-2">
+				<label class="flex flex-col gap-1 text-sm">
+					Quantity
+					<input
+						type="number"
+						min="1"
+						max="9999"
+						step="1"
+						bind:value={quantity}
+						class={`bg-background p-2 border border-border-secondary focus-visible:border-accent outline-none text-foreground ${selectedClass('quantity')}`}
+					/>
+				</label>
+				<ListingQuantityWarning {quantity} ownedCount={item?.quantity ?? 0} />
+			</div>
 		</div>
 		{#if details?.maxRank || details?.maxCharges || details?.maxAmberStars || details?.maxCyanStars || details?.subtypes?.length}
-			<div class="grid grid-cols-2 gap-3 border-t border-border-secondary pt-3">
-				{#if details.maxRank}<label class="flex flex-col gap-1 text-sm">Rank (0–{details.maxRank})<input type="number" min="0" max={details.maxRank} step="1" bind:value={rank} class="bg-background p-2 border border-border-secondary focus-visible:border-accent outline-none text-foreground" /></label>{/if}
-				{#if details.maxCharges}<label class="flex flex-col gap-1 text-sm">Charges (0–{details.maxCharges})<input type="number" min="0" max={details.maxCharges} step="1" bind:value={charges} class="bg-background p-2 border border-border-secondary focus-visible:border-accent outline-none text-foreground" /></label>{/if}
-				{#if details.maxAmberStars}<label class="flex flex-col gap-1 text-sm">Amber stars (0–{details.maxAmberStars})<input type="number" min="0" max={details.maxAmberStars} step="1" bind:value={amberStars} class="bg-background p-2 border border-border-secondary focus-visible:border-accent outline-none text-foreground" /></label>{/if}
-				{#if details.maxCyanStars}<label class="flex flex-col gap-1 text-sm">Cyan stars (0–{details.maxCyanStars})<input type="number" min="0" max={details.maxCyanStars} step="1" bind:value={cyanStars} class="bg-background p-2 border border-border-secondary focus-visible:border-accent outline-none text-foreground" /></label>{/if}
-				{#if details.subtypes?.length}<label class="flex flex-col gap-1 text-sm">Subtype<select bind:value={subtype} class="bg-background p-2 border border-border-secondary focus-visible:border-accent outline-none text-foreground">{#each details.subtypes as option}<option value={option}>{option}</option>{/each}</select></label>{/if}
+			<div class="gap-3 grid grid-cols-2 pt-3 border-border-secondary border-t">
+				{#if details.maxRank}<label class="flex flex-col gap-1 text-sm">
+						Rank (0–{details.maxRank})
+						<input
+							type="number"
+							min="0"
+							max={details.maxRank}
+							step="1"
+							bind:value={rank}
+							class={`bg-background p-2 border border-border-secondary focus-visible:border-accent outline-none text-foreground ${selectedClass('rank')}`}
+						/>
+					</label>{/if}
+				{#if details.maxCharges}<label class="flex flex-col gap-1 text-sm">
+						Charges (0–{details.maxCharges})
+						<input
+							type="number"
+							min="0"
+							max={details.maxCharges}
+							step="1"
+							bind:value={charges}
+							class={`bg-background p-2 border border-border-secondary focus-visible:border-accent outline-none text-foreground ${selectedClass('charges')}`}
+						/>
+					</label>{/if}
+				{#if details.maxAmberStars}<label class="flex flex-col gap-1 text-sm">
+						Amber stars (0–{details.maxAmberStars})
+						<input
+							type="number"
+							min="0"
+							max={details.maxAmberStars}
+							step="1"
+							bind:value={amberStars}
+							class={`bg-background p-2 border border-border-secondary focus-visible:border-accent outline-none text-foreground ${selectedClass('amberStars')}`}
+						/>
+					</label>{/if}
+				{#if details.maxCyanStars}<label class="flex flex-col gap-1 text-sm">
+						Cyan stars (0–{details.maxCyanStars})
+						<input
+							type="number"
+							min="0"
+							max={details.maxCyanStars}
+							step="1"
+							bind:value={cyanStars}
+							class={`bg-background p-2 border border-border-secondary focus-visible:border-accent outline-none text-foreground ${selectedClass('cyanStars')}`}
+						/>
+					</label>{/if}
+				{#if details.subtypes?.length}<label class="flex flex-col gap-1 text-sm">
+						Subtype
+						<select
+							bind:value={subtype}
+							class={`bg-background p-2 border border-border-secondary focus-visible:border-accent outline-none text-foreground ${selectedClass('subtype')}`}
+						>
+							{#each details.subtypes as option}<option value={option}>{option}</option>{/each}
+						</select>
+					</label>{/if}
 			</div>
 		{/if}
-		<ListingQuantityWarning {quantity} ownedCount={item?.quantity ?? 0} />
 		{#if error}<p role="alert" class="text-danger text-sm">{error}</p>{/if}
 	</div>
 </Dialog>
+
+<style>
+	:global(.overlay-listing-dialog .overlay-control-selected) {
+		outline: 2px solid var(--color-accent);
+		outline-offset: 2px;
+	}
+
+	:global(.overlay-listing-dialog :is(input, select, button):focus-visible:not(.overlay-control-selected)) {
+		outline: none;
+	}
+
+	:global(.overlay-listing-dialog :is(input, select):focus-visible) {
+		border-color: var(--color-border-secondary);
+	}
+</style>

@@ -91,6 +91,8 @@ export const config = $state({
 		navigate_right: 'd',
 		inventory_decrement: 'q',
 		inventory_increment: 'e',
+		create_sell_listing: 'r',
+		listing_confirm: 'enter',
 	},
 
 	// Warframe settings
@@ -159,6 +161,8 @@ export function loadSettings() {
 			navigate_right: config.hotkeys?.navigate_right ?? 'd',
 			inventory_decrement: config.hotkeys?.inventory_decrement ?? 'q',
 			inventory_increment: config.hotkeys?.inventory_increment ?? 'e',
+			create_sell_listing: config.hotkeys?.create_sell_listing ?? 'r',
+			listing_confirm: config.hotkeys?.listing_confirm ?? 'enter',
 		};
 
 	})();

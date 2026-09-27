@@ -101,6 +101,12 @@ export async function clearNotificationHistory() {
 	await persistHistory();
 }
 
+export async function dismissNotification(id: string) {
+	if (!notificationCenter.entries.some((entry) => entry.id === id)) return;
+	notificationCenter.entries = notificationCenter.entries.filter((entry) => entry.id !== id);
+	await persistHistory();
+}
+
 export async function publishNotification(
 	notification: Omit<ArtusNotification, 'id' | 'createdAt' | 'read'>,
 ) {

@@ -207,6 +207,28 @@ pub fn get_mastery_tradeable_prices(
         .collect())
 }
 
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TradeableTodayStatistics {
+    median: Option<f64>,
+    weighted_average: Option<f64>,
+    volume: Option<f64>,
+}
+
+/// Returns the cached trade statistics for today's trades, without offer fallbacks.
+#[tauri::command]
+pub fn get_tradeable_today_statistics(
+    state: State<'_, AppState>,
+    slug: String,
+) -> AppResult<Option<TradeableTodayStatistics>> {
+    let prices = state.ocr_tradeable_prices.lock()?;
+    Ok(prices.get(&slug).map(|price| TradeableTodayStatistics {
+        median: price.today_median,
+        weighted_average: price.weighted_avg,
+        volume: price.today_volume,
+    }))
+}
+
 /// Fetches item details from warframe.market.
 #[tauri::command]
 pub async fn get_market_item(state: State<'_, AppState>, slug: String) -> AppResult<Value> {

@@ -13,6 +13,7 @@ use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut}
 use tauri_plugin_store::StoreExt;
 
 use crate::error::{AppError, AppResult};
+use crate::market_account;
 use crate::ocr;
 use crate::state::AppState;
 use crate::store_ext::{SettingsExt, SETTINGS_STORE_PATH};
@@ -24,7 +25,9 @@ const DEFAULT_SCREENSHOT_HOTKEY: &str = "Ctrl+Home";
 
 pub const HOTKEY_ACTION_SCREENSHOT_ADD_TO_MASTERY: &str = "screenshot_add_mastery";
 const DEFAULT_SCREENSHOT_ADD_TO_MASTERY_HOTKEY: &str = "Ctrl+Alt+Home";
-const OVERLAY_ACTIONS: [(&str, &str); 8] = [
+const LISTING_CONFIRM_ACTION: &str = "listing_confirm";
+const CREATE_SELL_LISTING_ACTION: &str = "create_sell_listing";
+const OVERLAY_ACTIONS: [(&str, &str); 10] = [
     ("cycle", "Tab"),
     ("cycle_back", "Shift+Tab"),
     ("navigate_up", "W"),
@@ -33,10 +36,12 @@ const OVERLAY_ACTIONS: [(&str, &str); 8] = [
     ("navigate_right", "D"),
     ("inventory_decrement", "Q"),
     ("inventory_increment", "E"),
+    (CREATE_SELL_LISTING_ACTION, "R"),
+    (LISTING_CONFIRM_ACTION, "Enter"),
 ];
 
 /// All known actions and their default shortcuts.
-const HOTKEY_DEFINITIONS: [(&str, &str); 10] = [
+const HOTKEY_DEFINITIONS: [(&str, &str); 12] = [
     (HOTKEY_ACTION_SCREENSHOT, DEFAULT_SCREENSHOT_HOTKEY),
     (
         HOTKEY_ACTION_SCREENSHOT_ADD_TO_MASTERY,
@@ -50,6 +55,8 @@ const HOTKEY_DEFINITIONS: [(&str, &str); 10] = [
     OVERLAY_ACTIONS[5],
     OVERLAY_ACTIONS[6],
     OVERLAY_ACTIONS[7],
+    OVERLAY_ACTIONS[8],
+    OVERLAY_ACTIONS[9],
 ];
 
 fn is_overlay_action(action: &str) -> bool {
@@ -134,7 +141,11 @@ pub fn set_hotkey<R: Runtime>(
 
     let is_focused = state.warframe_focused.load(Ordering::Acquire)
         && (!is_overlay_action(&action_key)
-            || state.overlay_controls_active.load(Ordering::Acquire));
+            || state.overlay_controls_active.load(Ordering::Acquire)
+                && (action_key != LISTING_CONFIRM_ACTION
+                    || state.overlay_listing_dialog_open.load(Ordering::Acquire))
+                && (action_key != CREATE_SELL_LISTING_ACTION
+                    || market_account::is_logged_in(&state)));
 
     // Register the new shortcut and unregister the old one (only while focused)
     if is_focused {
@@ -223,7 +234,13 @@ pub fn register_overlay_hotkeys<R: Runtime>(app: &AppHandle<R>) {
         return;
     }
     with_hotkey_entries(app, |action, shortcut| {
-        if is_overlay_action(action) && !app.global_shortcut().is_registered(shortcut) {
+        if is_overlay_action(action)
+            && (action != LISTING_CONFIRM_ACTION
+                || app.state::<AppState>().overlay_listing_dialog_open.load(Ordering::Acquire))
+            && (action != CREATE_SELL_LISTING_ACTION
+                || market_account::is_logged_in(&app.state::<AppState>()))
+            && !app.global_shortcut().is_registered(shortcut)
+        {
             if let Err(err) = app.global_shortcut().register(shortcut) {
                 error!("register overlay '{shortcut}' for '{action}' failed: {err}");
             }
@@ -231,16 +248,76 @@ pub fn register_overlay_hotkeys<R: Runtime>(app: &AppHandle<R>) {
     });
 }
 
+pub fn sync_sell_listing_hotkey<R: Runtime>(app: &AppHandle<R>) {
+    let state = app.state::<AppState>();
+    let shortcut = state.hotkeys.lock().ok().and_then(|hotkeys| {
+        hotkeys.get(CREATE_SELL_LISTING_ACTION).cloned()
+    });
+    let Some(shortcut) = shortcut else { return };
+    let should_register = market_account::is_logged_in(&state)
+        && state.overlay_controls_active.load(Ordering::Acquire)
+        && state.warframe_focused.load(Ordering::Acquire);
+    if should_register && !app.global_shortcut().is_registered(shortcut.as_str()) {
+        if let Err(err) = app.global_shortcut().register(shortcut.as_str()) {
+            error!("register sell listing '{shortcut}' failed: {err}");
+        }
+    } else if !should_register && app.global_shortcut().is_registered(shortcut.as_str()) {
+        if let Err(err) = app.global_shortcut().unregister(shortcut.as_str()) {
+            error!("unregister sell listing '{shortcut}' failed: {err}");
+        }
+    }
+}
+
 pub fn unregister_overlay_hotkeys<R: Runtime>(app: &AppHandle<R>) {
     let _ = app.emit("overlay_hotkey_reset", ());
     app.state::<AppState>()
         .overlay_controls_active
+        .store(false, Ordering::Release);
+    app.state::<AppState>()
+        .overlay_listing_dialog_open
         .store(false, Ordering::Release);
     with_hotkey_entries(app, |action, shortcut| {
         if is_overlay_action(action) && app.global_shortcut().is_registered(shortcut) {
             let _ = app.global_shortcut().unregister(shortcut);
         }
     });
+}
+
+/// Captures Enter for the nonfocusable overlay dialog and pauses its auto-hide timer.
+#[tauri::command]
+pub fn set_overlay_listing_dialog_open<R: Runtime>(app: AppHandle<R>, open: bool) -> AppResult<()> {
+    let state = app.state::<AppState>();
+    let shortcut = state.hotkeys.lock()?
+        .get(LISTING_CONFIRM_ACTION)
+        .cloned()
+        .unwrap_or_else(|| "Enter".to_string());
+
+    if open {
+        if !state.overlay_controls_active.load(Ordering::Acquire) {
+            return Err(AppError::msg("Overlay controls are not active"));
+        }
+        if state.warframe_focused.load(Ordering::Acquire)
+            && !app.global_shortcut().is_registered(shortcut.as_str())
+        {
+            app.global_shortcut().register(shortcut.as_str())
+                .map_err(|err| AppError::msg(format!("failed to register listing confirmation: {err}")))?;
+        }
+        state.overlay_listing_dialog_open.store(true, Ordering::Release);
+        ocr::capture::bump_overlay_sequence(&app)?;
+    } else {
+        state.overlay_listing_dialog_open.store(false, Ordering::Release);
+        if app.global_shortcut().is_registered(shortcut.as_str()) {
+            app.global_shortcut().unregister(shortcut.as_str())
+                .map_err(|err| AppError::msg(format!("failed to unregister listing confirmation: {err}")))?;
+        }
+        if state.overlay_controls_active.load(Ordering::Acquire)
+            && !app.get_setting_bool("overlay_toggle_mode", false)
+        {
+            let sequence = ocr::capture::bump_overlay_sequence(&app)?;
+            ocr::capture::schedule_auto_hide(&app, sequence)?;
+        }
+    }
+    Ok(())
 }
 
 /// Dispatches shortcut presses and forwards overlay press/release state.
@@ -253,10 +330,16 @@ pub fn on_shortcut<R: Runtime>(
 
     if pressed == "Escape" {
         if shortcut_state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
-            let handle = app.clone();
-            tauri::async_runtime::spawn_blocking(move || {
-                let _ = ocr::hide_overlay(&handle);
-            });
+            if app.state::<AppState>().overlay_listing_dialog_open.load(Ordering::Acquire) {
+                let _ = app.emit("overlay_hotkey", serde_json::json!({
+                    "action": "listing_cancel", "pressed": true,
+                }));
+            } else {
+                let handle = app.clone();
+                tauri::async_runtime::spawn_blocking(move || {
+                    let _ = ocr::hide_overlay(&handle);
+                });
+            }
         }
         return;
     }
@@ -274,7 +357,9 @@ pub fn on_shortcut<R: Runtime>(
             }
         }
         Some(HOTKEY_ACTION_SCREENSHOT_ADD_TO_MASTERY) => {
-            if shortcut_state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
+            if shortcut_state == tauri_plugin_global_shortcut::ShortcutState::Pressed
+                && !app.state::<AppState>().overlay_listing_dialog_open.load(Ordering::Acquire)
+            {
                 spawn_ocr_task(app, ocr::capture_active_window_mastery);
             }
         }
@@ -283,6 +368,10 @@ pub fn on_shortcut<R: Runtime>(
                 .state::<AppState>()
                 .overlay_controls_active
                 .load(Ordering::Acquire)
+                && (action != LISTING_CONFIRM_ACTION
+                    || app.state::<AppState>().overlay_listing_dialog_open.load(Ordering::Acquire))
+                && (action != CREATE_SELL_LISTING_ACTION
+                    || market_account::is_logged_in(&app.state::<AppState>()))
                 && app
                     .state::<AppState>()
                     .warframe_focused
@@ -320,6 +409,9 @@ pub fn unregister_escape_hotkey<R: Runtime>(app: &AppHandle<R>) {
 /// Triggers an OCR screenshot, respecting the overlay toggle mode setting.
 fn trigger_screenshot<R: Runtime>(app: &AppHandle<R>) {
     let state = app.state::<AppState>();
+    if state.overlay_listing_dialog_open.load(Ordering::Acquire) {
+        return;
+    }
     let toggle_mode = app.get_setting_bool("overlay_toggle_mode", false);
 
     if toggle_mode {

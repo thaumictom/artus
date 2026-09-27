@@ -28,6 +28,8 @@
 			keybinds: [
 				['inventory_decrement', 'Remove one'],
 				['inventory_increment', 'Add one'],
+				['create_sell_listing', 'Create sell listing for selected item'],
+				['listing_confirm', 'Activate selected listing control'],
 			],
 		},
 	];

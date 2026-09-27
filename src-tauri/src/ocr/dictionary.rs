@@ -38,6 +38,9 @@ pub struct OcrDictionaryEntry {
 
 pub struct TradeablePriceEntry {
     pub median: f64,
+    pub today_median: Option<f64>,
+    pub weighted_avg: Option<f64>,
+    pub today_volume: Option<f64>,
     pub used_current_offer_fallback: bool,
     pub relic_price_is_fallback: bool,
     pub trades_24h: Option<f64>,
@@ -86,7 +89,7 @@ struct TradeableItemsApiResponse {
 #[derive(Debug, Deserialize)]
 struct TradeableItemApiItem {
     slug: String,
-    #[serde(default, deserialize_with = "deserialize_statistics")]
+    #[serde(default, alias = "statistics_Today", deserialize_with = "deserialize_statistics")]
     statistics_today: Vec<TradeableItemStats>,
     #[serde(default, deserialize_with = "deserialize_statistics")]
     statistics_live: Vec<TradeableItemStats>,
@@ -97,6 +100,7 @@ struct TradeableItemApiItem {
 #[derive(Debug, Deserialize)]
 struct TradeableItemStats {
     median: Option<f64>,
+    wa_price: Option<f64>,
     volume: Option<f64>,
     moving_avg: Option<f64>,
     #[serde(default)]
@@ -132,6 +136,9 @@ fn resolve_price(
         })?;
     Some(TradeablePriceEntry {
         median,
+        today_median: stats.and_then(|s| s.median).filter(|v| v.is_finite()),
+        weighted_avg: stats.and_then(|s| s.wa_price).filter(|v| v.is_finite()),
+        today_volume: stats.and_then(|s| s.volume).filter(|v| v.is_finite()),
         used_current_offer_fallback,
         relic_price_is_fallback: false,
         trades_24h: stats.and_then(|s| s.volume).filter(|v| v.is_finite()),
@@ -397,6 +404,9 @@ fn build_tradeable_prices(
                     format!("{}_intact", slug),
                     TradeablePriceEntry {
                         median,
+                        today_median: intact_stats.and_then(|s| s.median).filter(|v| v.is_finite()),
+                        weighted_avg: intact_stats.and_then(|s| s.wa_price).filter(|v| v.is_finite()),
+                        today_volume: intact_stats.and_then(|s| s.volume).filter(|v| v.is_finite()),
                         used_current_offer_fallback: used_offer,
                         relic_price_is_fallback: used_subtype,
                         trades_24h: source_stat.and_then(|s| s.volume).filter(|v| v.is_finite()),
@@ -442,6 +452,9 @@ fn build_tradeable_prices(
                     format!("{}_radiant", slug),
                     TradeablePriceEntry {
                         median,
+                        today_median: radiant_stats.and_then(|s| s.median).filter(|v| v.is_finite()),
+                        weighted_avg: radiant_stats.and_then(|s| s.wa_price).filter(|v| v.is_finite()),
+                        today_volume: radiant_stats.and_then(|s| s.volume).filter(|v| v.is_finite()),
                         used_current_offer_fallback: used_offer,
                         relic_price_is_fallback: used_subtype,
                         trades_24h: source_stat.and_then(|s| s.volume).filter(|v| v.is_finite()),
@@ -498,6 +511,9 @@ fn build_tradeable_prices(
                 slug.to_string(),
                 TradeablePriceEntry {
                     median,
+                    today_median: stats_today.and_then(|s| s.median).filter(|v| v.is_finite()),
+                    weighted_avg: stats_today.and_then(|s| s.wa_price).filter(|v| v.is_finite()),
+                    today_volume: stats_today.and_then(|s| s.volume).filter(|v| v.is_finite()),
                     used_current_offer_fallback: used_fallback,
                     relic_price_is_fallback: false,
                     trades_24h: stats_today.and_then(|s| s.volume).filter(|v| v.is_finite()),

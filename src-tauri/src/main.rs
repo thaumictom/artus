@@ -63,6 +63,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             hotkeys::get_hotkey,
             hotkeys::set_hotkey,
+            hotkeys::set_overlay_listing_dialog_open,
             ocr::get_ocr_themes,
             ocr::capture::show_relic_add_toast,
             #[cfg(target_os = "windows")]
@@ -73,12 +74,14 @@ fn main() {
             market::get_market_dictionary,
             market::get_most_traded_items,
             market::get_mastery_tradeable_prices,
+            market::get_tradeable_today_statistics,
             market::get_cached_market_items,
             market::get_market_orders,
             market::get_market_statistics,
             market_account::market_login,
             market_account::market_logout,
             market_account::market_session,
+            market_account::market_authenticated,
             market_account::market_set_status,
             market_account::market_schedule_invisible,
             market_account::market_top_orders,

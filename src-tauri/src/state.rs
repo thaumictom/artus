@@ -25,6 +25,8 @@ pub struct AppState {
     pub overlay_toggle_in_flight: AtomicBool,
     /// Overlay navigation shortcuts are active only after OCR results are shown.
     pub overlay_controls_active: AtomicBool,
+    /// Routes Escape and Enter to the keyboard-only listing dialog while it is open.
+    pub overlay_listing_dialog_open: AtomicBool,
 
     /// True if the current or pending overlay capture was triggered by relic rewards.
     pub overlay_is_relic_mode: AtomicBool,
@@ -69,6 +71,7 @@ impl Default for AppState {
             overlay_sequence: Mutex::new(0),
             overlay_toggle_in_flight: AtomicBool::new(false),
             overlay_controls_active: AtomicBool::new(false),
+            overlay_listing_dialog_open: AtomicBool::new(false),
             overlay_is_relic_mode: AtomicBool::new(false),
             overlay_was_visible: AtomicBool::new(false),
             ocr_theme_colors: Mutex::new(HashMap::new()),

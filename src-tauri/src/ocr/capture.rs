@@ -779,7 +779,7 @@ fn show_overlay<R: Runtime>(
 /// Bumps the overlay sequence counter and schedules hiding after the configured
 /// duration. If another capture occurs before the timer fires, the stale
 /// sequence number prevents the hide.
-fn schedule_auto_hide<R: Runtime>(app: &AppHandle<R>, sequence: u64) -> AppResult<()> {
+pub(crate) fn schedule_auto_hide<R: Runtime>(app: &AppHandle<R>, sequence: u64) -> AppResult<()> {
     let duration_secs = app.get_setting_u64("overlay_duration_secs", DEFAULT_OVERLAY_DURATION_SECS);
     let app_clone = app.clone();
 

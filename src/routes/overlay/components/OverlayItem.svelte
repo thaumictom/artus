@@ -1,7 +1,6 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
 	import { fade } from 'svelte/transition';
-	import { flyAndScale } from '$lib/transition';
 	import { config } from '$lib/settings.svelte';
 	import { inventoryNameKey } from '$lib/inventory';
 	import type { OcrWord } from './types';
@@ -116,8 +115,6 @@
 		></div>
 	{/if}
 	<div
-		in:flyAndScale={{ y: 24 }}
-		out:fade={{ duration: 100 }}
 		class={{
 			'absolute flex flex-col bg-background/90 border text-foreground text-sm -translate-x-1/2 -translate-y-full': true,
 			'selection-ring': selected,
