@@ -73,10 +73,10 @@
 
 {#if word}
 	{@const marketMedian = normalizeOverlayNumber(word.market_median)}
-	{@const movingAvg = normalizeOverlayNumber(word.moving_avg)}
+	{@const weightedAverage = normalizeOverlayNumber(word.wa_price)}
 	{@const displayPrice = word.market_median_from_current_offers
 		? marketMedian
-		: (movingAvg ?? marketMedian)}
+		: (weightedAverage ?? marketMedian)}
 	{@const pricePrefix = word.market_median_from_current_offers ? '~' : ''}
 	{@const trades24h = normalizeOverlayNumber(word.trades_24h)}
 	{@const ducats = normalizeOverlayNumber(word.ducats)}

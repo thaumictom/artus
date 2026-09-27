@@ -153,7 +153,7 @@ pub struct OcrWord {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub trades_24h: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub moving_avg: Option<f64>,
+    pub wa_price: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub mod_type: Option<ModType>,
 }

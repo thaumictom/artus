@@ -673,7 +673,7 @@ fn match_single_word(
                 mapped.ducats = price.ducats;
             }
             mapped.trades_24h = price.trades_24h;
-            mapped.moving_avg = price.moving_avg;
+            mapped.wa_price = price.weighted_avg;
         }
         if let Some(price) = candidate
             .max_rank

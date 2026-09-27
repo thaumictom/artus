@@ -23,6 +23,6 @@ export type OcrWord = {
 		is_mod?: boolean;
 		subtype?: string;
 		trades_24h?: number;
-		moving_avg?: number;
+		wa_price?: number;
 		mod_type?: 'gold' | 'silver' | 'bronze' | 'archon' | 'special';
 	};
