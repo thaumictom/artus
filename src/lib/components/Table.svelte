@@ -1,25 +1,24 @@
-<script lang="ts">
+<script lang="ts" generics="Row">
 	import Icon from '@iconify/svelte';
 	import type { Snippet } from 'svelte';
-
-	export type TableColumn = {
-		key: string;
-		label: string;
-		sortable?: boolean;
-		align?: 'left' | 'right';
-		class?: string;
-	};
+	import type { TableColumn } from './table-types';
 
 	let {
 		columns,
-		children,
+		rows,
+		renderRow,
+		rowKey,
+		emptyMessage = 'No items to show.',
 		sortColumn,
 		sortDirection = 'asc',
 		onSort = () => {},
 		minWidth = '640px',
 	}: {
 		columns: TableColumn[];
-		children: Snippet;
+		rows: Row[];
+		renderRow: Snippet<[row: Row]>;
+		rowKey: (row: Row) => string;
+		emptyMessage?: string;
 		sortColumn?: string;
 		sortDirection?: 'asc' | 'desc';
 		onSort?: (key: string) => void;
@@ -63,6 +62,16 @@
 				{/each}
 			</tr>
 		</thead>
-		<tbody>{@render children()}</tbody>
+		<tbody>
+			{#each rows as row (rowKey(row))}
+				{@render renderRow(row)}
+			{:else}
+				<tr>
+					<td colspan={columns.length} class="px-4 py-10 text-muted-foreground text-center">
+						{emptyMessage}
+					</td>
+				</tr>
+			{/each}
+		</tbody>
 	</table>
 </div>

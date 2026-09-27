@@ -3,7 +3,8 @@
 	import { invoke } from '@tauri-apps/api/core';
 	import { onMount } from 'svelte';
 	import Icon from '@iconify/svelte';
-	import Table, { type TableColumn } from '$lib/components/Table.svelte';
+	import Table from '$lib/components/Table.svelte';
+	import type { TableColumn } from '$lib/components/table-types';
 	import Button from '$lib/components/Button.svelte';
 	import Combobox from '$lib/components/Combobox.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
@@ -30,7 +31,7 @@
 		{ key: 'ducats', label: 'Ducats', sortable: true, align: 'right', class: 'w-24' },
 		{ key: 'totalPrice', label: 'Total P.', align: 'right', class: 'w-28' },
 		{ key: 'totalDucats', label: 'Total d.', align: 'right', class: 'w-28' },
-		{ key: 'links', label: 'Actions', align: 'right', class: 'w-20' },
+		{ key: 'links', label: '', align: 'right', class: 'w-0' },
 	];
 	type SortColumn = 'name' | 'quantity' | 'median' | 'ducats';
 	let data = $state<InventoryItem[]>([]);
@@ -285,29 +286,33 @@
 					</Button>
 				</div>
 			</div>
-			<Table {columns} {sortColumn} {sortDirection} onSort={setSort} minWidth="920px">
-				{#each sorted as item (item.slug ?? item.name)}
-					<InventoryRow
-						{item}
-						mastered={isMastered(item)}
-						isNew={!!item.slug && newSlugs.includes(item.slug)}
-						onChangeQuantity={updateQuantity}
-						{onOpenMarket}
-						onCreateListing={(item) => (listingItem = item)}
-					/>
-				{:else}
-					<tr>
-						<td colspan={columns.length} class="px-4 py-10 text-muted-foreground text-center">
-							{#if data.length === 0}
-								Your inventory is empty.
-							{:else}
-								No inventory items match this search.
-							{/if}
-						</td>
-					</tr>
-				{/each}
-			</Table>
-			<CreateListing bind:item={listingItem} mastered={listingItem ? isMastered(listingItem) : false} />
+			{#snippet inventoryRow(item: InventoryItem)}
+				<InventoryRow
+					{item}
+					mastered={isMastered(item)}
+					isNew={!!item.slug && newSlugs.includes(item.slug)}
+					onChangeQuantity={updateQuantity}
+					{onOpenMarket}
+					onCreateListing={(item) => (listingItem = item)}
+				/>
+			{/snippet}
+			<Table
+				{columns}
+				rows={sorted}
+				rowKey={(item) => item.slug ?? item.name}
+				renderRow={inventoryRow}
+				emptyMessage={data.length === 0
+					? 'Your inventory is empty.'
+					: 'No inventory items match this search.'}
+				{sortColumn}
+				{sortDirection}
+				onSort={setSort}
+				minWidth="920px"
+			/>
+			<CreateListing
+				bind:item={listingItem}
+				mastered={listingItem ? isMastered(listingItem) : false}
+			/>
 			<p class="text-muted-foreground text-sm">Showing {sorted.length} of {data.length} items</p>
 			{#snippet addTitle()}Add inventory item{/snippet}
 			{#snippet addDescription()}Search the market item list and add it to your inventory.{/snippet}

@@ -1,5 +1,6 @@
 <script lang="ts">
-	import Table, { type TableColumn } from '$lib/components/Table.svelte';
+	import Table from '$lib/components/Table.svelte';
+	import type { TableColumn } from '$lib/components/table-types';
 	import type { MasteryItem } from '$lib/mastery.svelte';
 	import MasteryRow from './MasteryRow.svelte';
 
@@ -37,41 +38,42 @@
 		{ key: 'name', label: 'Item', sortable: true },
 		{ key: 'median', label: 'Median', sortable: true, align: 'right', class: 'w-28' },
 		{ key: 'ducats', label: 'Ducats', sortable: true, align: 'right', class: 'w-28' },
-		{ key: 'actions', label: 'Actions', align: 'right', class: 'w-20' },
+		{ key: 'actions', label: '', align: 'right', class: 'w-0' },
 	];
+	type MasteryTableRow = { item: MasteryItem; parentName?: string };
+	const rows = $derived(
+		items.flatMap((item): MasteryTableRow[] => [
+			{ item },
+			...(expanded.includes(item.key)
+				? item.components.map((component) => ({ item: component, parentName: item.name }))
+				: []),
+		]),
+	);
 </script>
 
-<Table {columns} {sortColumn} {sortDirection} onSort={(key) => onSort(key as SortColumn)}>
-			{#each items as item (item.key)}
-				<MasteryRow
-					{item}
-					checked={checked.has(item.key)}
-					completedComponents={completedComponentCount(item)}
-					automatic={automatic.has(item.key) ||
-						item.components.some((part) => automatic.has(part.key))}
-					expanded={expanded.includes(item.key)}
-					onToggle={() => onToggle(item.key)}
-					{onOpenMarket}
-					{onBuy}
-				/>
-				{#if expanded.includes(item.key)}
-					{#each item.components as component (component.key)}
-						<MasteryRow
-							item={component}
-							parentName={item.name}
-							ownedCount={ownedComponentCount(component, item.name)}
-							checked={checked.has(component.key)}
-							automatic={automatic.has(component.key)}
-							{onOpenMarket}
-							{onBuy}
-						/>
-					{/each}
-				{/if}
-			{:else}
-				<tr>
-					<td colspan="5" class="px-4 py-10 text-muted-foreground text-center">
-						No mastery items match these filters.
-					</td>
-				</tr>
-			{/each}
-</Table>
+{#snippet masteryRow({ item, parentName }: MasteryTableRow)}
+	<MasteryRow
+		{item}
+		{parentName}
+		ownedCount={parentName ? ownedComponentCount(item, parentName) : 0}
+		checked={checked.has(item.key)}
+		completedComponents={parentName ? 0 : completedComponentCount(item)}
+		automatic={automatic.has(item.key) ||
+			(!parentName && item.components.some((part) => automatic.has(part.key)))}
+		expanded={!parentName && expanded.includes(item.key)}
+		onToggle={() => onToggle(item.key)}
+		{onOpenMarket}
+		{onBuy}
+	/>
+{/snippet}
+
+<Table
+	{columns}
+	{rows}
+	rowKey={({ item }) => item.key}
+	renderRow={masteryRow}
+	emptyMessage="No mastery items match these filters."
+	{sortColumn}
+	{sortDirection}
+	onSort={(key) => onSort(key as SortColumn)}
+/>
