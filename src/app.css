@@ -103,6 +103,11 @@ body {
 	}
 }
 
+@utility trim-text {
+  text-box-trim: trim-both;
+  text-box-edge: cap alphabetic;
+}
+
 [data-overlayscrollbars-viewport] {
 	scroll-behavior: smooth;
 }

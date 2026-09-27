@@ -39,7 +39,11 @@
 		const rest = String(seconds % 60).padStart(2, '0');
 		return hours ? `${hours}:${String(minutes).padStart(2, '0')}:${rest}` : `${minutes}:${rest}`;
 	});
-	const expiryFormat = new Intl.DateTimeFormat(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' });
+	const expiryFormat = new Intl.DateTimeFormat(undefined, {
+		weekday: 'short',
+		hour: 'numeric',
+		minute: '2-digit',
+	});
 	const invisibleDelays = [
 		{ minutes: 30, label: '30 min' },
 		{ minutes: 60, label: '60 min' },
@@ -51,13 +55,24 @@
 		let disposed = false;
 		let unlistenSession: (() => void) | undefined;
 		let unlistenError: (() => void) | undefined;
-		const clock = setInterval(() => { now = Date.now(); }, 1000);
+		const clock = setInterval(() => {
+			now = Date.now();
+		}, 1000);
 		void listen<MarketSession>('market_session_changed', ({ payload }) => {
 			marketAccount.session = payload;
-		}).then((unlisten) => { if (disposed) unlisten(); else unlistenSession = unlisten; })
+		})
+			.then((unlisten) => {
+				if (disposed) unlisten();
+				else unlistenSession = unlisten;
+			})
 			.catch((cause) => console.error('Could not listen for market status:', cause));
-		void listen<string>('market_invisible_timer_error', ({ payload }) => { error = payload; })
-			.then((unlisten) => { if (disposed) unlisten(); else unlistenError = unlisten; })
+		void listen<string>('market_invisible_timer_error', ({ payload }) => {
+			error = payload;
+		})
+			.then((unlisten) => {
+				if (disposed) unlisten();
+				else unlistenError = unlisten;
+			})
 			.catch((cause) => console.error('Could not listen for invisible timer errors:', cause));
 		return () => {
 			disposed = true;
@@ -73,8 +88,8 @@
 	};
 	const dotColor: Record<MarketStatus, string> = {
 		invisible: 'bg-muted-foreground',
-		online: 'bg-amber-400',
-		ingame: 'bg-green-500 animate-pulse',
+		online: 'bg-emerald-500',
+		ingame: 'bg-purple-400',
 	};
 	const statusOptions: MarketStatus[] = ['invisible', 'online', 'ingame'];
 
@@ -151,101 +166,165 @@
 		triggerAriaLabel={`warframe.market profile, ${statusLabel[marketAccount.session.status]}`}
 	>
 		{#snippet trigger()}
-			<span class="flex items-center gap-1.5 hover:bg-elevated px-2 py-1 border text-sm">
+			<Button class="flex items-center gap-1 hover:bg-elevated" size="small">
 				<Icon icon="material-symbols:account-circle-outline-rounded" class="size-5" />
 				<span
-					class={`rounded-full size-2  ${dotColor[marketAccount.session?.status ?? 'invisible']}`}
+					class={`rounded-full size-2 ${dotColor[marketAccount.session?.status ?? 'invisible']} ${marketAccount.session?.status === 'ingame' ? 'animate-pulse' : ''}`}
 				></span>
 				<span>{statusLabel[marketAccount.session?.status ?? 'invisible']}</span>
-			</span>
+			</Button>
 		{/snippet}
-		<a
-			href={marketProfileUrl(marketAccount.session)}
-			target="_blank"
-			rel="noopener noreferrer"
-			onclick={() => (profileOpen = false)}
-			class="flex justify-between items-center gap-2 hover:bg-elevated p-2 font-semibold text-sm"
-		>
-			<span class="truncate">{marketAccount.session.ingameName}</span>
-			<Icon icon="lucide:external-link" class="size-3.5 shrink-0" />
-		</a>
-		<div class="my-1 border-border-secondary border-t"></div>
-		<p class="px-2 py-1 text-muted-foreground text-xs uppercase tracking-wider">Activity</p>
-		{#each statusOptions as status}
-			<button
-				type="button"
-				disabled={busy}
-				onclick={() => changeStatus(status)}
-				class="flex items-center gap-2 hover:bg-elevated disabled:opacity-50 px-2 py-1.5 w-full text-sm text-left cursor-pointer"
+		<div class="flex flex-col text-sm">
+			<Button
+				variant="ghost"
+				href={marketProfileUrl(marketAccount.session)}
+				target="_blank"
+				rel="noopener noreferrer"
+				onclick={() => (profileOpen = false)}
+				class="flex justify-between items-center"
 			>
-				<span class={`rounded-full mx-1 size-2 ${dotColor[status]}`}></span>
-				<span class="flex-1">{statusLabel[status]}</span>
-				{#if marketAccount.session.status === status}<Icon
-						icon="lucide:check"
-						class="size-4 text-accent"
-					/>{/if}
-			</button>
-		{/each}
-		<div class="my-1 border-border-secondary border-t"></div>
-		<Collapsible bind:open={automationOpen} triggerClass="w-full text-left cursor-pointer hover:bg-elevated px-2 py-2">
-			{#snippet button(open)}
-				<span class="flex items-center gap-2 w-full text-sm">
-					<Icon icon="lucide:timer" class="size-4 shrink-0" />
-					<span class="flex-1">Automatic invisibility</span>
-					{#if marketAccount.session?.invisibleAt != null}<span class="text-accent text-[10px]">Timer active</span>{/if}
-					<Icon icon="lucide:chevron-down" class={`size-4 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
-				</span>
-			{/snippet}
-			{#snippet content(open)}
-				{@const deadline = marketAccount.session?.invisibleAt}
-				{#if open}
-					<div transition:slide={{ duration: 180 }} class="pb-1">
-						{#if deadline != null}
-							<div class="px-2 py-1.5 text-xs">
-								<div class="flex items-center justify-between gap-2">
-									<span class="text-muted-foreground">Invisible in <span class="text-foreground tabular-nums">{remaining}</span></span>
-									<button type="button" disabled={busy} onclick={() => scheduleInvisible(0)} class="text-accent hover:underline disabled:opacity-50 cursor-pointer">Cancel</button>
-								</div>
-								<time datetime={new Date(deadline).toISOString()} class="text-muted-foreground">At {expiryFormat.format(deadline)}</time>
-							</div>
-						{/if}
-						<p class="px-2 py-1 text-muted-foreground text-xs uppercase tracking-wider">Go invisible after</p>
-						<div class="grid grid-cols-2 gap-1 px-2 pb-2">
-							{#each invisibleDelays as delay}
-								<button type="button" disabled={busy || marketAccount.session?.status === 'invisible'} onclick={() => scheduleInvisible(delay.minutes)} class="hover:bg-elevated disabled:opacity-40 px-2 py-1.5 border border-border-secondary text-xs cursor-pointer disabled:cursor-not-allowed">{delay.label}</button>
-							{/each}
-						</div>
-						<div class="my-1 border-border-secondary border-t"></div>
-						<div class="flex items-start gap-2 px-2 py-2 text-xs">
-							<Checkbox id="market-invisible-on-exit" checked={marketAccount.invisibleOnExit} disabled={savingPreference} onCheckedChange={(checked) => changeInvisibleOnExit(checked === true)} />
-							<label for="market-invisible-on-exit" class="cursor-pointer">Always go invisible after closing the app</label>
-						</div>
+				<span class="truncate">{marketAccount.session.ingameName}</span>
+				<Icon icon="material-symbols:arrow-outward-rounded" class="size-4 shrink-0" />
+			</Button>
+			<div class="my-1 bg-border-secondary h-px"></div>
+			<p class="px-3 py-1 text-muted-foreground text-xs uppercase tracking-widest">Status</p>
+			{#each statusOptions as status}
+				<Button
+					variant="ghost"
+					type="button"
+					disabled={busy}
+					onclick={() => changeStatus(status)}
+					class="flex justify-between items-center"
+				>
+					<div class="flex items-center gap-3 trim-text">
+						<div class={`size-2 rounded-full ${dotColor[status]}`}></div>
+						<span class="flex-1">{statusLabel[status]}</span>
 					</div>
-				{/if}
-			{/snippet}
-		</Collapsible>
-		<div class="my-1 border-border-secondary border-t"></div>
-		<button
-			type="button"
-			disabled={busy}
-			onclick={logout}
-			class="flex items-center gap-2 hover:bg-elevated disabled:opacity-50 px-2 py-1.5 w-full text-sm text-left cursor-pointer"
-		>
-			<Icon icon="lucide:log-out" class="size-4" /> Log out
-		</button>
-		{#if error}<p role="alert" class="px-2 py-1 text-danger text-xs">{error}</p>{/if}
+					{#if marketAccount.session.status === status}<Icon
+							icon="material-symbols:check-rounded"
+							class="size-4 text-accent"
+						/>{/if}
+				</Button>
+			{/each}
+			<div class="my-1 bg-border-secondary h-px"></div>
+			<Collapsible bind:open={automationOpen} triggerClass="w-full">
+				{#snippet button(open)}
+					<Button
+						variant="ghost"
+						type="button"
+						class="flex justify-between items-center pl-1 w-full"
+					>
+						<div class="flex items-center gap-1 trim-text">
+							{#if marketAccount.session?.invisibleAt != null}
+								<Icon
+									icon="material-symbols:timer-rounded"
+									class="mx-1 size-4 animate-pulse shrink-0"
+								/>
+							{:else}
+								<Icon icon="material-symbols:timer-outline-rounded" class="mx-1 size-4 shrink-0" />
+							{/if}
+							<span class="flex-1">Status timer</span>
+							{#if marketAccount.session?.invisibleAt != null}
+								<span class="font-medium text-muted-foreground text-xs">(active)</span>
+							{/if}
+						</div>
+
+						<Icon
+							icon="material-symbols:keyboard-arrow-down-rounded"
+							class={`size-4 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`}
+						/>
+					</Button>
+				{/snippet}
+				{#snippet content(open)}
+					{@const deadline = marketAccount.session?.invisibleAt}
+					{#if open}
+						<div transition:slide={{ duration: 180 }}>
+							<div class="flex flex-col gap-1 px-3 py-2">
+								<p class="text-muted-foreground text-xs uppercase tracking-widest">
+									Go invisible after
+								</p>
+								<div class="gap-1 grid grid-cols-2">
+									{#each invisibleDelays as delay}
+										<Button
+											type="button"
+											disabled={busy || marketAccount.session?.status === 'invisible'}
+											onclick={() => scheduleInvisible(delay.minutes)}
+											class="py-1 text-xs"
+										>
+											{delay.label}
+										</Button>
+									{/each}
+								</div>
+								{#if deadline != null}
+									<div class="text-xs">
+										<div class="flex justify-between items-center gap-2">
+											<span class="text-muted-foreground">
+												going invisible in <span class="tabular-nums text-foreground">
+													{remaining}
+												</span>
+											</span>
+											<Button
+												variant="link"
+												size="none"
+												type="button"
+												disabled={busy}
+												onclick={() => scheduleInvisible(0)}
+												class="disabled:opacity-50 text-accent hover:underline cursor-pointer"
+											>
+												cancel
+											</Button>
+										</div>
+									</div>
+								{/if}
+							</div>
+							<div class="my-1 bg-border-secondary h-px"></div>
+							<div class="flex items-center gap-2 px-2 py-2 text-sm">
+								<Checkbox
+									id="market-invisible-on-exit"
+									class="size-4"
+									checked={marketAccount.invisibleOnExit}
+									disabled={savingPreference}
+									onCheckedChange={(checked) => changeInvisibleOnExit(checked === true)}
+								/>
+								<label for="market-invisible-on-exit" class="cursor-pointer trim-text">
+									Go invisible when Artus exits
+								</label>
+							</div>
+						</div>
+					{/if}
+				{/snippet}
+			</Collapsible>
+			<div class="my-1 bg-border-secondary h-px"></div>
+			<Button
+				variant="ghost"
+				type="button"
+				class="flex items-center gap-1 pl-1 w-full trim-text"
+				disabled={busy}
+				onclick={logout}
+			>
+				<Icon icon="lucide:log-out" class="mx-1 size-4" />
+				<span>Sign out</span>
+			</Button>
+
+			{#if error}
+				<div class="my-1 bg-border-secondary h-px"></div>
+				<p role="alert" class="px-3 py-1 font-bold text-danger text-xs">
+					error: {error}
+				</p>
+			{/if}
+		</div>
 	</ActionPopover>
 {:else}
-	<button
+	<Button
 		type="button"
 		onclick={showLogin}
-		class="flex items-center gap-1.5 hover:bg-elevated px-2 py-1 border text-sm cursor-pointer"
+		class="flex items-center gap-1 hover:bg-elevated"
+		size="small"
 		aria-label="warframe.market profile, logged out"
 	>
-		<Icon icon="material-symbols:account-circle-outline-rounded" class="size-5" />
-		<!-- <span class="bg-muted-foreground/50 rounded-full size-2"></span> -->
+		<Icon icon="material-symbols:account-circle-outline-rounded" class="size-4" />
 		<span>Sign in</span>
-	</button>
+	</Button>
 {/if}
 
 {#snippet title()}Log in to warframe.market{/snippet}
@@ -275,7 +354,8 @@
 			<label for="remember-market-login" class="cursor-pointer">Remember me</label>
 		</div>
 		{#if remember}<p class="text-muted-foreground text-xs">
-				Artus stores only your authorization token in local app data without encryption. Anyone with the token can access your account until it expires or is revoked.
+				Artus stores only your authorization token in local app data without encryption. Anyone with
+				the token can access your account until it expires or is revoked.
 			</p>{/if}
 		<Button
 			variant="primary"

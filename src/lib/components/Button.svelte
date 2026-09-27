@@ -5,16 +5,21 @@
 	import { type VariantProps, tv } from 'tailwind-variants';
 
 	export const buttonVariants = tv({
-		base: 'border transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed',
+		base: 'border cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed',
 		variants: {
 			variant: {
-				default: 'bg-background text-foreground hover:bg-surface',
+				default: 'bg-transparent text-foreground hover:bg-surface',
 				primary: 'bg-accent text-accent-foreground hover:bg-accent/80 border-accent',
+				ghost:
+					'bg-transparent hover:bg-surface hover:border-border text-foreground border-transparent',
+				link: 'bg-transparent underline-offset-2 hover:underline text-accent hover:bg-transparent border-transparent',
 				surface: 'bg-surface text-foreground hover:bg-elevated border-surface',
 			},
 			size: {
 				default: 'px-3 py-1.5',
+				small: 'px-2 py-1 text-sm',
 				icon: 'p-2',
+				none: 'p-0',
 			},
 		},
 		defaultVariants: {

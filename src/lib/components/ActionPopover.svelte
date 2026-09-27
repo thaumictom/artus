@@ -30,7 +30,10 @@
 		<Popover.Content
 			{align}
 			sideOffset={8}
-			class={cn('z-50 bg-background shadow-xl border border-border-secondary p-1 min-w-44 outline-none', contentClass)}
+			class={cn(
+				'z-50 bg-background shadow-xl p-1 border border-border-secondary outline-none min-w-44',
+				contentClass,
+			)}
 		>
 			{@render children()}
 		</Popover.Content>

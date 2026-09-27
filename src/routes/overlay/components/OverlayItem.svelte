@@ -5,7 +5,15 @@
 	import { inventoryNameKey } from '$lib/inventory';
 	import type { OcrWord } from './types';
 
-	let { word, selected, showBoundingBoxes, masteredSlugs, ownedBySlug, ownedByName, sessionDeltaBySlug }: {
+	let {
+		word,
+		selected,
+		showBoundingBoxes,
+		masteredSlugs,
+		ownedBySlug,
+		ownedByName,
+		sessionDeltaBySlug,
+	}: {
 		word: OcrWord;
 		selected: boolean;
 		showBoundingBoxes: boolean;
@@ -139,7 +147,7 @@
 				{#if word.slug && masteredSlugs.has(word.slug)}
 					<Icon icon="hugeicons:laurel-wreath-left-03" class="inline size-3.5 text-orange-300" />
 				{/if}
-				<span class="[text-box-trim:trim-both] [text-box-edge:cap_alphabetic]">
+				<span class="trim-text">
 					{displayText}
 				</span>
 				{#if word.quantity != null}
