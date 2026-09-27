@@ -9,6 +9,7 @@ use std::time::{Duration, Instant};
 use image::imageops::{crop_imm, resize, FilterType};
 use kreuzberg_tesseract::{TessPageIteratorLevel, TessPageSegMode, TesseractAPI};
 use log::{error, info, warn};
+use sysinfo::System;
 use tauri::{AppHandle, Manager, Runtime};
 use xcap::Window;
 
@@ -20,6 +21,7 @@ use crate::ocr::{
 use crate::relic_reward_capture;
 use crate::state::AppState;
 use crate::store_ext::SettingsExt;
+use crate::window_watcher::is_warframe_process;
 
 const SETTING_KEY: &str = "visual_relic_reward_detection";
 const SCAN_INTERVAL: Duration = Duration::from_millis(300);
@@ -202,13 +204,14 @@ fn detect_reward_row<R: Runtime>(
 }
 
 fn capture_warframe_window() -> AppResult<image::RgbaImage> {
+    let mut sys = System::new();
+    sys.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
+
     let window = Window::all()
         .map_err(|err| AppError::msg(format!("failed to list windows: {err}")))?
         .into_iter()
         .find(|window| {
-            let app_name = window.app_name().unwrap_or_default().to_lowercase();
-            let title = window.title().unwrap_or_default().to_lowercase();
-            (app_name.contains("warframe") || title.contains("warframe"))
+            window.pid().is_ok_and(|pid| is_warframe_process(&sys, pid))
                 && !window.is_minimized().unwrap_or(false)
         })
         .ok_or_else(|| AppError::msg("no non-minimized Warframe window found"))?;

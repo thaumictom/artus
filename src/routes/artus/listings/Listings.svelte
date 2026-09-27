@@ -12,6 +12,7 @@
 		type InventoryItem,
 	} from '$lib/inventory';
 	import { mastery } from '$lib/mastery.svelte';
+	import { timeAgo } from '$lib/date';
 	import { isMarketItemMastered, masteredMarketItems } from '$lib/listing-context';
 	import CreateListing from '../inventory/CreateListing.svelte';
 	import CreateListingPicker from './CreateListingPicker.svelte';
@@ -36,6 +37,8 @@
 	let sortDirection = $state<'asc' | 'desc'>('asc');
 	let loadedFor = $state<string | null>(null);
 	let lastFetchedAt = $state<Date | null>(null);
+	let now = $state(Date.now());
+	let fetchedAgo = $derived(lastFetchedAt === null ? '' : timeAgo(lastFetchedAt.getTime(), now));
 	let menuOpenFor = $state<string | null>(null);
 	let createPickerOpen = $state(false);
 	let activeItem = $state<InventoryItem | null>(null);
@@ -78,14 +81,12 @@
 			return direction * (comparison || byName || a.id.localeCompare(b.id));
 		});
 	});
-	const fetchedAtFormatter = new Intl.DateTimeFormat(undefined, {
-		dateStyle: 'short',
-		timeStyle: 'medium',
-	});
-
 	onMount(() => {
 		let disposed = false;
 		let unlisten: (() => void) | undefined;
+		const timer = setInterval(() => {
+			now = Date.now();
+		}, 1000);
 		void inventoryStore
 			.onChange<unknown>((key, value) => {
 				if (key === 'items' && Array.isArray(value)) inventoryItems = value as InventoryItem[];
@@ -104,6 +105,7 @@
 			.catch((cause) => console.error('Could not load inventory for listings:', cause));
 		return () => {
 			disposed = true;
+			clearInterval(timer);
 			unlisten?.();
 		};
 	});
@@ -218,35 +220,33 @@
 </script>
 
 <div class="mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full max-w-7xl">
-	<div class="flex flex-col gap-6">
-		<header class="flex flex-wrap justify-between items-start gap-5">
-			<div>
-				<h1 class="font-bold text-3xl tracking-tight">My Listings</h1>
-				<p class="mt-1 text-muted-foreground text-sm">
-					Manage your marketplace listings, track prices, and take action.
-				</p>
-			</div>
+	<div class="flex flex-col gap-4">
+		<header class="flex flex-wrap justify-between items-center gap-4 w-full">
+			<ListingSummary {orders} />
 			<div class="flex flex-wrap items-center gap-2">
+				{#if lastFetchedAt}<time
+						datetime={lastFetchedAt.toISOString()}
+						class="text-muted-foreground text-xs"
+					>
+						refreshed {fetchedAgo}
+					</time>{/if}
+				<Button disabled={loading} onclick={refresh} class="h-full" size="icon">
+					<Icon icon="lucide:refresh-cw" class={`size-4 ${loading ? 'animate-spin' : ''}`} />
+				</Button>
 				<Button
 					href={marketAccount.session ? marketProfileUrl(marketAccount.session) : undefined}
 					target="_blank"
 					rel="noopener noreferrer"
-					class="inline-flex items-center gap-2 px-4 h-10 text-sm"
+					class="text-sm"
 				>
-					View marketplace <Icon icon="lucide:external-link" class="size-4" />
+					View profile <Icon icon="material-symbols:arrow-outward-rounded" class="inline size-4" />
 				</Button>
-				<Button
-					variant="primary"
-					onclick={() => (createPickerOpen = true)}
-					class="inline-flex items-center gap-2 px-4 h-10 font-semibold text-sm"
-				>
-					<Icon icon="lucide:plus" class="size-4" /> Create listing
+				<Button variant="primary" onclick={() => (createPickerOpen = true)} class="text-sm">
+					<Icon icon="lucide:plus" class="inline size-4" /> Create listing
 				</Button>
 			</div>
 		</header>
-
-		<ListingSummary {orders} />
-
+		<div class="bg-surface my-1 w-full h-px"></div>
 		{#if loading && orders.length === 0}
 			<div
 				class="bg-card/50 p-10 border border-border-secondary text-muted-foreground text-sm text-center"
@@ -306,27 +306,10 @@
 						{onOpenMarket}
 					/>
 				{/if}
-				<div
-					class="flex flex-wrap justify-between items-center gap-3 bg-card/30 px-4 py-3 border border-border-secondary"
-				>
+				<div class="flex flex-wrap justify-between items-center gap-3 bg-card/30">
 					<p class="text-muted-foreground text-sm">
 						Showing {sortedOrders.length} of {orders.length} listings
 					</p>
-					<div class="flex flex-wrap items-center gap-3">
-						{#if lastFetchedAt}<time
-								datetime={lastFetchedAt.toISOString()}
-								class="text-muted-foreground text-xs"
-							>
-								Last refreshed: {fetchedAtFormatter.format(lastFetchedAt)}
-							</time>{/if}
-						<Button
-							disabled={loading}
-							onclick={refresh}
-							class="inline-flex items-center gap-2 text-xs"
-						>
-							<Icon icon="lucide:refresh-cw" class={`size-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
-						</Button>
-					</div>
 				</div>
 			</div>
 		{/if}

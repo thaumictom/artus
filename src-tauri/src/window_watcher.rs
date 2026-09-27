@@ -9,7 +9,7 @@ use std::time::Duration;
 
 use active_win_pos_rs::get_active_window;
 use log::info;
-use sysinfo::System;
+use sysinfo::{Pid, System};
 use tauri::{AppHandle, Manager};
 
 use crate::hotkeys;
@@ -156,11 +156,23 @@ pub fn spawn_window_watcher(app_handle: AppHandle) {
 fn is_warframe_focused() -> bool {
     get_active_window()
         .map(|w| {
-            let name = w.app_name.to_lowercase();
-            let title = w.title.to_lowercase();
-            name.contains("warframe") || title.contains("warframe")
+            w.process_path.file_name().is_some_and(|name| {
+                WARFRAME_PROCESS_NAMES
+                    .iter()
+                    .any(|expected| name.eq_ignore_ascii_case(expected))
+            })
         })
         .unwrap_or(false)
+}
+
+/// Checks the executable behind a captured window, independent of its title.
+pub(crate) fn is_warframe_process(sys: &System, process_id: u32) -> bool {
+    sys.process(Pid::from_u32(process_id))
+        .is_some_and(|process| {
+            WARFRAME_PROCESS_NAMES
+                .iter()
+                .any(|name| process.name().eq_ignore_ascii_case(name))
+        })
 }
 
 /// Checks if any Warframe process is present in the system process list.

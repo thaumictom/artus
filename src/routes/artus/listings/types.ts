@@ -10,6 +10,6 @@ export type Listing = {
 	subtype?: string;
 };
 
-export type ListingItem = { name: string; slug: string; icon?: string | null };
+export type ListingItem = { name: string; slug: string };
 
 export type EditableListing = Pick<Listing, 'id' | 'type' | 'platinum' | 'quantity' | 'visible'>;

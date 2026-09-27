@@ -7,6 +7,7 @@ use std::time::{Duration, Instant};
 
 use kreuzberg_tesseract::{TessPageIteratorLevel, TessPageSegMode, TesseractAPI};
 use log::{error, info};
+use sysinfo::System;
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, Position, Runtime, Size};
 use xcap::Window;
 
@@ -25,6 +26,7 @@ use crate::layer_shell;
 use crate::ocr::preprocessing::CheckmarkMatch;
 use crate::state::AppState;
 use crate::store_ext::SettingsExt;
+use crate::window_watcher::is_warframe_process;
 
 // ── Captured window metadata ──────────────────────────────────────────────────
 
@@ -165,13 +167,15 @@ fn capture_active_window_with_mode_inner<R: Runtime>(
 fn capture_warframe_window() -> AppResult<CapturedWindow> {
     let t = Instant::now();
 
+    let mut sys = System::new();
+    sys.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
+
     let window = Window::all()
         .map_err(|err| AppError::msg(format!("failed to list windows: {err}")))?
         .into_iter()
         .find(|w| {
-            let name = w.app_name().unwrap_or_default().to_lowercase();
-            let title = w.title().unwrap_or_default().to_lowercase();
-            (name.contains("warframe") || title.contains("warframe"))
+            w.pid()
+                .is_ok_and(|pid| is_warframe_process(&sys, pid))
                 && !w.is_minimized().unwrap_or(false)
         })
         .ok_or_else(|| AppError::msg("no non-minimized Warframe window found"))?;
