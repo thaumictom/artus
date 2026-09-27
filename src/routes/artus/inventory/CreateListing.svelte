@@ -9,6 +9,7 @@
 	import Keybind from '$lib/components/Keybind.svelte';
 	import ListingItemInfo from '$lib/components/ListingItemInfo.svelte';
 	import ListingQuantityWarning from '$lib/components/ListingQuantityWarning.svelte';
+	import type { EditableListing } from '../listings/types';
 	type ListingItemDetails = {
 		maxRank?: number;
 		maxCharges?: number;
@@ -18,7 +19,17 @@
 		bulkTradable?: boolean;
 	};
 	type OrderSide = 'sell' | 'buy';
-	type ListingControl = 'price' | 'quantity' | 'rank' | 'charges' | 'amberStars' | 'cyanStars' | 'subtype' | 'cancel' | 'hidden' | 'visible';
+	type ListingControl =
+		| 'price'
+		| 'quantity'
+		| 'rank'
+		| 'charges'
+		| 'amberStars'
+		| 'cyanStars'
+		| 'subtype'
+		| 'cancel'
+		| 'hidden'
+		| 'visible';
 	type OrderPreview = { id: string; platinum: number; quantity: number };
 	type TodayStatistics = {
 		median: number | null;
@@ -49,19 +60,29 @@
 	let {
 		item = $bindable<InventoryItem | null>(null),
 		mastered = false,
-		onCreated = () => {},
+		onSaved = () => {},
+		editing = null,
 		overlayMode = false,
 		overlayHotkey = null,
 		initialSubtype,
 	}: {
 		item: InventoryItem | null;
 		mastered?: boolean;
-		onCreated?: () => void;
+		onSaved?: () => void;
+		editing?: EditableListing | null;
 		overlayMode?: boolean;
 		overlayHotkey?: { action: string; sequence: number } | null;
 		initialSubtype?: string;
 	} = $props();
 	let open = $derived(item !== null);
+	let isEditing = $derived(editing !== null);
+	let dialogTitle = $derived(
+		editing?.type === 'sell'
+			? 'Edit sell listing'
+			: editing?.type === 'buy'
+				? 'Edit buy order'
+				: 'Create sell listing',
+	);
 	let sellOrders = $state<OrderPreview[]>([]);
 	let buyOrders = $state<OrderPreview[]>([]);
 	let lowestSell = $derived(sellOrders[0]?.platinum ?? null);
@@ -84,30 +105,46 @@
 	let requestId = 0;
 	let focusedControl = $state<ListingControl>('price');
 	const listingControls = $derived<ListingControl[]>([
-		'price', 'quantity',
-		...(details?.maxRank ? ['rank' as const] : []),
-		...(details?.maxCharges ? ['charges' as const] : []),
-		...(details?.maxAmberStars ? ['amberStars' as const] : []),
-		...(details?.maxCyanStars ? ['cyanStars' as const] : []),
-		...(details?.subtypes?.length ? ['subtype' as const] : []),
-		'cancel', 'hidden', 'visible',
+		'price',
+		'quantity',
+		...(!isEditing && details?.maxRank ? ['rank' as const] : []),
+		...(!isEditing && details?.maxCharges ? ['charges' as const] : []),
+		...(!isEditing && details?.maxAmberStars ? ['amberStars' as const] : []),
+		...(!isEditing && details?.maxCyanStars ? ['cyanStars' as const] : []),
+		...(!isEditing && details?.subtypes?.length ? ['subtype' as const] : []),
+		'cancel',
+		...(!isEditing ? ['hidden' as const] : []),
+		'visible',
 	]);
 	const selectedClass = (control: ListingControl) =>
 		overlayMode && focusedControl === control ? 'overlay-control-selected' : '';
 
 	function cycleListingControl(direction: 1 | -1) {
 		const index = listingControls.indexOf(focusedControl);
-		focusedControl = listingControls[(index + direction + listingControls.length) % listingControls.length];
+		focusedControl =
+			listingControls[(index + direction + listingControls.length) % listingControls.length];
 	}
 
 	function adjustListingControl(direction: 1 | -1) {
 		switch (focusedControl) {
-			case 'price': price = Math.min(900000, Math.max(1, price + direction)); break;
-			case 'quantity': quantity = Math.min(9999, Math.max(1, quantity + direction)); break;
-			case 'rank': rank = Math.min(details?.maxRank ?? 0, Math.max(0, rank + direction)); break;
-			case 'charges': charges = Math.min(details?.maxCharges ?? 0, Math.max(0, charges + direction)); break;
-			case 'amberStars': amberStars = Math.min(details?.maxAmberStars ?? 0, Math.max(0, amberStars + direction)); break;
-			case 'cyanStars': cyanStars = Math.min(details?.maxCyanStars ?? 0, Math.max(0, cyanStars + direction)); break;
+			case 'price':
+				price = Math.min(900000, Math.max(1, price + direction));
+				break;
+			case 'quantity':
+				quantity = Math.min(9999, Math.max(1, quantity + direction));
+				break;
+			case 'rank':
+				rank = Math.min(details?.maxRank ?? 0, Math.max(0, rank + direction));
+				break;
+			case 'charges':
+				charges = Math.min(details?.maxCharges ?? 0, Math.max(0, charges + direction));
+				break;
+			case 'amberStars':
+				amberStars = Math.min(details?.maxAmberStars ?? 0, Math.max(0, amberStars + direction));
+				break;
+			case 'cyanStars':
+				cyanStars = Math.min(details?.maxCyanStars ?? 0, Math.max(0, cyanStars + direction));
+				break;
 			case 'subtype': {
 				const options = details?.subtypes ?? [];
 				if (options.length > 0) {
@@ -120,15 +157,30 @@
 	}
 
 	function handleListingHotkey(action: string) {
-		if (action === 'listing_cancel') { item = null; return; }
-		if (action === 'cycle' || action === 'navigate_right') { cycleListingControl(1); return; }
-		if (action === 'cycle_back' || action === 'navigate_left') { cycleListingControl(-1); return; }
-		if (action === 'navigate_up') { adjustListingControl(1); return; }
-		if (action === 'navigate_down') { adjustListingControl(-1); return; }
+		if (action === 'listing_cancel') {
+			item = null;
+			return;
+		}
+		if (action === 'cycle' || action === 'navigate_right') {
+			cycleListingControl(1);
+			return;
+		}
+		if (action === 'cycle_back' || action === 'navigate_left') {
+			cycleListingControl(-1);
+			return;
+		}
+		if (action === 'navigate_up') {
+			adjustListingControl(1);
+			return;
+		}
+		if (action === 'navigate_down') {
+			adjustListingControl(-1);
+			return;
+		}
 		if (action !== 'listing_confirm') return;
 		if (focusedControl === 'cancel') item = null;
-		else if (focusedControl === 'hidden') void create(false);
-		else if (focusedControl === 'visible') void create(true);
+		else if (focusedControl === 'hidden') void save(false);
+		else if (focusedControl === 'visible') void save(true);
 		else cycleListingControl(1);
 	}
 
@@ -148,14 +200,8 @@
 		window.addEventListener('keydown', onKeyDown, true);
 		return () => window.removeEventListener('keydown', onKeyDown, true);
 	});
-	const valid = $derived(
-		Number.isSafeInteger(price) &&
-			price >= 1 &&
-			price <= 900000 &&
-			Number.isSafeInteger(quantity) &&
-			quantity >= 1 &&
-			quantity <= 9999 &&
-			(!details?.maxRank || (Number.isSafeInteger(rank) && rank >= 0 && rank <= details.maxRank)) &&
+	const variantValid = $derived(
+		(!details?.maxRank || (Number.isSafeInteger(rank) && rank >= 0 && rank <= details.maxRank)) &&
 			(!details?.maxCharges ||
 				(Number.isSafeInteger(charges) && charges >= 0 && charges <= details.maxCharges)) &&
 			(!details?.maxAmberStars ||
@@ -166,11 +212,20 @@
 				(Number.isSafeInteger(cyanStars) && cyanStars >= 0 && cyanStars <= details.maxCyanStars)) &&
 			(!details?.subtypes?.length || details.subtypes.includes(subtype)),
 	);
+	const valid = $derived(
+		Number.isSafeInteger(price) &&
+			price >= 1 &&
+			price <= 900000 &&
+			Number.isSafeInteger(quantity) &&
+			quantity >= 1 &&
+			quantity <= 9999 &&
+			(isEditing || variantValid),
+	);
 	$effect(() => {
 		if (!item?.slug) return;
 		const slug = item.slug;
-		quantity = Math.min(Math.max(item.quantity, 1), 9999);
-		price = 1;
+		quantity = editing?.quantity ?? Math.min(Math.max(item.quantity, 1), 9999);
+		price = editing?.platinum ?? 1;
 		focusedControl = 'price';
 		sellOrders = [];
 		buyOrders = [];
@@ -190,13 +245,18 @@
 				sellOrders = selectTopOrders(orders, 'sell');
 				buyOrders = selectTopOrders(orders, 'buy');
 				todayStatistics = statistics;
-				price = sellOrders[0]?.platinum ?? 1;
+				if (!editing) price = sellOrders[0]?.platinum ?? 1;
 				details = itemResponse.data;
 				rank = 0;
 				charges = 0;
 				amberStars = 0;
 				cyanStars = 0;
-				subtype = itemResponse.data?.subtypes?.find((option) => option.toLowerCase() === initialSubtype?.toLowerCase()) ?? itemResponse.data?.subtypes?.[0] ?? '';
+				subtype =
+					itemResponse.data?.subtypes?.find(
+						(option) => option.toLowerCase() === initialSubtype?.toLowerCase(),
+					) ??
+					itemResponse.data?.subtypes?.[0] ??
+					'';
 			})
 			.catch((cause) => {
 				if (current === requestId) error = String(cause);
@@ -206,26 +266,30 @@
 			});
 	});
 
-	async function create(visible: boolean) {
+	async function save(visible: boolean) {
 		if (!item?.slug || !valid || busy) return;
 		busy = true;
 		error = null;
 		try {
-			await invoke('market_create_listing', {
-				slug: item.slug,
-				platinum: price,
-				quantity,
-				visible,
-				variant: {
-					rank: details?.maxRank ? rank : null,
-					charges: details?.maxCharges ? charges : null,
-					amberStars: details?.maxAmberStars ? amberStars : null,
-					cyanStars: details?.maxCyanStars ? cyanStars : null,
-					subtype: details?.subtypes?.length ? subtype : null,
-				},
-			});
+			if (editing) {
+				await invoke('market_update_listing', { id: editing.id, platinum: price, quantity });
+			} else {
+				await invoke('market_create_listing', {
+					slug: item.slug,
+					platinum: price,
+					quantity,
+					visible,
+					variant: {
+						rank: details?.maxRank ? rank : null,
+						charges: details?.maxCharges ? charges : null,
+						amberStars: details?.maxAmberStars ? amberStars : null,
+						cyanStars: details?.maxCyanStars ? cyanStars : null,
+						subtype: details?.subtypes?.length ? subtype : null,
+					},
+				});
+			}
 			item = null;
-			onCreated();
+			onSaved();
 		} catch (cause) {
 			error = String(cause);
 		} finally {
@@ -234,7 +298,7 @@
 	}
 </script>
 
-{#snippet title()}Create sell listing{/snippet}
+{#snippet title()}{dialogTitle}{/snippet}
 {#snippet description()}<ListingItemInfo
 		name={item?.name ?? ''}
 		{mastered}
@@ -242,11 +306,22 @@
 	/>{/snippet}
 {#snippet dialogClose()}<Button class={selectedClass('cancel')}>Cancel</Button>{/snippet}
 {#snippet dialogActions()}
-	<Button class={selectedClass('hidden')} disabled={!valid || busy || loading} onclick={() => create(false)}>
-		Create a hidden listing
-	</Button>
-	<Button class={selectedClass('visible')} variant="primary" disabled={!valid || busy || loading} onclick={() => create(true)}>
-		{busy ? 'Creating...' : 'Create listing'}
+	{#if !isEditing}
+		<Button
+			class={selectedClass('hidden')}
+			disabled={!valid || busy || loading}
+			onclick={() => save(false)}
+		>
+			Create a hidden listing
+		</Button>
+	{/if}
+	<Button
+		class={selectedClass('visible')}
+		variant="primary"
+		disabled={!valid || busy || (!isEditing && loading)}
+		onclick={() => save(true)}
+	>
+		{busy ? 'Saving...' : isEditing ? 'Save changes' : 'Create listing'}
 	</Button>
 {/snippet}
 {#snippet orderPrices(title: string, orders: OrderPreview[], showQuantity: boolean)}
@@ -268,11 +343,23 @@
 	</section>
 {/snippet}
 {#snippet overlayControls()}
-	<div class="self-end flex flex-wrap justify-end items-center gap-x-3 gap-y-1 bg-background px-3 py-2 border border-border-secondary max-w-full text-muted-foreground text-xs" aria-label="Listing keyboard shortcuts">
-		<span class="flex items-center gap-1"><Keybind value={config.hotkeys.cycle} /><Keybind value={config.hotkeys.navigate_right} /> next</span>
-		<span class="flex items-center gap-1"><Keybind value={config.hotkeys.cycle_back} /><Keybind value={config.hotkeys.navigate_left} /> back</span>
-		<span class="flex items-center gap-1"><Keybind value={config.hotkeys.navigate_up} /><Keybind value={config.hotkeys.navigate_down} /> adjust</span>
-		<span class="flex items-center gap-1"><Keybind value={config.hotkeys.listing_confirm} /> select</span>
+	<div
+		class="flex flex-wrap justify-end items-center self-end gap-x-3 gap-y-1 bg-background px-3 py-2 border border-border-secondary max-w-full text-muted-foreground text-xs"
+		aria-label="Listing keyboard shortcuts"
+	>
+		<span class="flex items-center gap-1">
+			<Keybind value={config.hotkeys.cycle} /><Keybind value={config.hotkeys.navigate_right} /> next
+		</span>
+		<span class="flex items-center gap-1">
+			<Keybind value={config.hotkeys.cycle_back} /><Keybind value={config.hotkeys.navigate_left} /> back
+		</span>
+		<span class="flex items-center gap-1">
+			<Keybind value={config.hotkeys.navigate_up} /><Keybind value={config.hotkeys.navigate_down} />
+			adjust
+		</span>
+		<span class="flex items-center gap-1">
+			<Keybind value={config.hotkeys.listing_confirm} /> select
+		</span>
 		<span class="flex items-center gap-1"><Keybind value="Esc" /> close</span>
 	</div>
 {/snippet}
@@ -290,7 +377,9 @@
 	belowContent={overlayMode ? overlayControls : undefined}
 	blurBackdrop={!overlayMode}
 	strongBackdrop={overlayMode}
-	contentProps={{ class: `w-[min(42rem,calc(100vw-2rem))] h-auto max-h-[calc(100vh-2rem)] ${overlayMode ? 'overlay-listing-dialog' : ''}` }}
+	contentProps={{
+		class: `w-[min(42rem,calc(100vw-2rem))] h-auto max-h-[calc(100vh-2rem)] ${overlayMode ? 'overlay-listing-dialog' : ''}`,
+	}}
 >
 	<div class="flex flex-col gap-4 px-6 py-1 overflow-y-auto">
 		{#if loading}<p class="text-muted-foreground text-sm">Loading current orders...</p>{:else}
@@ -329,7 +418,7 @@
 				{@render orderPrices('Cheapest in-game sell orders', sellOrders, true)}
 				{@render orderPrices('Highest in-game buy orders', buyOrders, false)}
 			</div>
-			{#if details?.maxRank || details?.maxCharges || details?.subtypes?.length || details?.maxAmberStars || details?.maxCyanStars}
+			{#if !isEditing && (details?.maxRank || details?.maxCharges || details?.subtypes?.length || details?.maxAmberStars || details?.maxCyanStars)}
 				<p class="text-muted-foreground text-xs">
 					Top order prices may include other ranks or variants. Check the variant fields below
 					before posting.
@@ -360,10 +449,12 @@
 						class={`bg-background p-2 border border-border-secondary focus-visible:border-accent outline-none text-foreground ${selectedClass('quantity')}`}
 					/>
 				</label>
-				<ListingQuantityWarning {quantity} ownedCount={item?.quantity ?? 0} />
+				{#if !isEditing || editing?.type === 'sell'}
+					<ListingQuantityWarning {quantity} ownedCount={item?.quantity ?? 0} />
+				{/if}
 			</div>
 		</div>
-		{#if details?.maxRank || details?.maxCharges || details?.maxAmberStars || details?.maxCyanStars || details?.subtypes?.length}
+		{#if !isEditing && (details?.maxRank || details?.maxCharges || details?.maxAmberStars || details?.maxCyanStars || details?.subtypes?.length)}
 			<div class="gap-3 grid grid-cols-2 pt-3 border-border-secondary border-t">
 				{#if details.maxRank}<label class="flex flex-col gap-1 text-sm">
 						Rank (0–{details.maxRank})
@@ -430,7 +521,10 @@
 		outline-offset: 2px;
 	}
 
-	:global(.overlay-listing-dialog :is(input, select, button):focus-visible:not(.overlay-control-selected)) {
+	:global(
+			.overlay-listing-dialog
+				:is(input, select, button):focus-visible:not(.overlay-control-selected)
+		) {
 		outline: none;
 	}
 

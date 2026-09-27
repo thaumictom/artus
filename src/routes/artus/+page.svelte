@@ -12,7 +12,12 @@
 	import { ocrDebug } from '$lib/ocr-debug.svelte';
 	import { initializeMarketNotifications } from '$lib/market-notifications.svelte';
 	import { marketNavigation, openMarketNotificationTarget } from '$lib/market-navigation.svelte';
-	import { appNavigation, navigateBack, navigateForward, navigateTo } from '$lib/app-navigation.svelte';
+	import {
+		appNavigation,
+		navigateBack,
+		navigateForward,
+		navigateTo,
+	} from '$lib/app-navigation.svelte';
 	import { initializeMastery, stopMasteryListener } from '$lib/mastery.svelte';
 	// import ArtusMainPage from './ArtusMainPage.svelte';
 	// import ArtusSidebar from './ArtusSidebar.svelte';
@@ -21,7 +26,7 @@
 	import DashboardMain from './dashboard/Main.svelte';
 	import InventoryTab from './inventory/Main.svelte';
 	import MarketMain from './market/Main.svelte';
-	import Listings from './market/Listings.svelte';
+	import Listings from './listings/Listings.svelte';
 	import { marketAccount } from '$lib/market-account.svelte';
 	import MasteryMain from './mastery/Main.svelte';
 
@@ -123,7 +128,9 @@
 		// page mount or fail independently while world state is still usable.
 		initializeWorldState();
 		void loadSettings().catch((error) => console.error('Could not load settings:', error));
-		void loadMarketSession().catch((error) => console.error('Could not load market session:', error));
+		void loadMarketSession().catch((error) =>
+			console.error('Could not load market session:', error),
+		);
 		void initializeNotificationCenter();
 		void initializeMarketNotifications();
 		void initializeMastery();
@@ -147,7 +154,8 @@
 	});
 
 	$effect(() => {
-		if (marketAccount.ready && !marketAccount.session && activeSection === 'listings') navigateTo('market');
+		if (marketAccount.ready && !marketAccount.session && activeSection === 'listings')
+			navigateTo('market');
 	});
 
 	$effect(() => {
@@ -198,7 +206,7 @@
 	}
 </script>
 
-<div class="artus-app-shell flex flex-col bg-surface h-full">
+<div class="flex flex-col bg-surface h-full artus-app-shell">
 	<Header
 		title={sections[activeSection].label}
 		onOpenNotificationSettings={openNotificationSettings}
@@ -239,7 +247,12 @@
 			</Button>
 		{/snippet}
 	</AlertDialog>
-	<Tabs.Root class="flex flex-1 overflow-hidden" orientation="vertical" value={activeSection} onValueChange={(value) => navigateTo(value)}>
+	<Tabs.Root
+		class="flex flex-1 overflow-hidden"
+		orientation="vertical"
+		value={activeSection}
+		onValueChange={(value) => navigateTo(value)}
+	>
 		<div>
 			<Sidebar {sections}></Sidebar>
 		</div>
