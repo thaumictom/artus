@@ -12,4 +12,4 @@ export type Listing = {
 
 export type ListingItem = { name: string; slug: string; icon?: string | null };
 
-export type EditableListing = Pick<Listing, 'id' | 'type' | 'platinum' | 'quantity'>;
+export type EditableListing = Pick<Listing, 'id' | 'type' | 'platinum' | 'quantity' | 'visible'>;

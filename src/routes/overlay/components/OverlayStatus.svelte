@@ -3,7 +3,15 @@
 	import { fade } from 'svelte/transition';
 	import { flyAndScale } from '$lib/transition';
 
-	let { relicFeedback, processing }: { relicFeedback: string | null; processing: boolean } = $props();
+	let {
+		relicFeedback,
+		processing,
+		listingStatus,
+	}: {
+		relicFeedback: string | null;
+		processing: boolean;
+		listingStatus: string | null;
+	} = $props();
 </script>
 
 {#if relicFeedback}
@@ -17,15 +25,18 @@
 		</div>
 	</div>
 {/if}
-{#if processing}
+{#if processing || listingStatus}
 	<div
 		in:flyAndScale={{ y: 24 }}
 		out:fade={{ duration: 100 }}
 		class="absolute inset-0 flex justify-center items-center"
 	>
-		<div class="flex items-center gap-4 bg-background/90 p-4 border">
-			<Icon icon="material-symbols:progress-activity" class="size-5 animate-spin" />
-			<span class="text-foreground text-sm">Processing…</span>
+		<div class="flex items-center gap-4 bg-background/90 p-4 border max-w-[calc(100vw-2rem)]">
+			<Icon
+				icon={listingStatus?.startsWith('Could not') ? 'lucide:circle-alert' : 'material-symbols:progress-activity'}
+				class={`size-5 shrink-0 ${listingStatus?.startsWith('Could not') ? 'text-danger' : 'animate-spin'}`}
+			/>
+			<span class="text-foreground text-sm">{processing ? 'Processing…' : listingStatus}</span>
 		</div>
 	</div>
 {/if}

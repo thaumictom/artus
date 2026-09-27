@@ -28,6 +28,7 @@
 		| 'cyanStars'
 		| 'subtype'
 		| 'cancel'
+		| 'visibility'
 		| 'hidden'
 		| 'visible';
 	type OrderPreview = { id: string; platinum: number; quantity: number };
@@ -93,6 +94,9 @@
 	let todayStatistics = $state<TodayStatistics | null>(null);
 	let loading = $state(false);
 	let busy = $state(false);
+	let visibilityBusy = $state(false);
+	let currentVisible = $state(true);
+	let actionBusy = $derived(busy || visibilityBusy);
 	let error = $state<string | null>(null);
 	let price = $state(1);
 	let quantity = $state(1);
@@ -113,6 +117,7 @@
 		...(!isEditing && details?.maxCyanStars ? ['cyanStars' as const] : []),
 		...(!isEditing && details?.subtypes?.length ? ['subtype' as const] : []),
 		'cancel',
+		...(isEditing ? ['visibility' as const] : []),
 		...(!isEditing ? ['hidden' as const] : []),
 		'visible',
 	]);
@@ -179,6 +184,7 @@
 		}
 		if (action !== 'listing_confirm') return;
 		if (focusedControl === 'cancel') item = null;
+		else if (focusedControl === 'visibility') void toggleVisibility();
 		else if (focusedControl === 'hidden') void save(false);
 		else if (focusedControl === 'visible') void save(true);
 		else cycleListingControl(1);
@@ -226,6 +232,7 @@
 		const slug = item.slug;
 		quantity = editing?.quantity ?? Math.min(Math.max(item.quantity, 1), 9999);
 		price = editing?.platinum ?? 1;
+		currentVisible = editing?.visible ?? true;
 		focusedControl = 'price';
 		sellOrders = [];
 		buyOrders = [];
@@ -267,7 +274,7 @@
 	});
 
 	async function save(visible: boolean) {
-		if (!item?.slug || !valid || busy) return;
+		if (!item?.slug || !valid || actionBusy) return;
 		busy = true;
 		error = null;
 		try {
@@ -296,6 +303,22 @@
 			busy = false;
 		}
 	}
+
+	async function toggleVisibility() {
+		if (!editing || actionBusy) return;
+		visibilityBusy = true;
+		error = null;
+		const visible = !currentVisible;
+		try {
+			await invoke('market_set_listing_visibility', { id: editing.id, visible });
+			currentVisible = visible;
+			onSaved();
+		} catch (cause) {
+			error = String(cause);
+		} finally {
+			visibilityBusy = false;
+		}
+	}
 </script>
 
 {#snippet title()}{dialogTitle}{/snippet}
@@ -306,10 +329,18 @@
 	/>{/snippet}
 {#snippet dialogClose()}<Button class={selectedClass('cancel')}>Cancel</Button>{/snippet}
 {#snippet dialogActions()}
-	{#if !isEditing}
+	{#if isEditing}
+		<Button
+			class={selectedClass('visibility')}
+			disabled={actionBusy}
+			onclick={toggleVisibility}
+		>
+			{visibilityBusy ? 'Updating...' : currentVisible ? 'Hide listing' : 'Unhide listing'}
+		</Button>
+	{:else}
 		<Button
 			class={selectedClass('hidden')}
-			disabled={!valid || busy || loading}
+			disabled={!valid || actionBusy || loading}
 			onclick={() => save(false)}
 		>
 			Create a hidden listing
@@ -318,7 +349,7 @@
 	<Button
 		class={selectedClass('visible')}
 		variant="primary"
-		disabled={!valid || busy || (!isEditing && loading)}
+		disabled={!valid || actionBusy || (!isEditing && loading)}
 		onclick={() => save(true)}
 	>
 		{busy ? 'Saving...' : isEditing ? 'Save changes' : 'Create listing'}

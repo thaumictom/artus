@@ -8,6 +8,7 @@
 	import { loadSettings, watchOverlayPriceSettings } from '$lib/settings.svelte';
 	import { changeOcrItemQuantities, inventoryMarketSlug, inventoryNameKey, setOcrItemQuantities, type InventoryItem } from '$lib/inventory';
 	import CreateListing from '../artus/inventory/CreateListing.svelte';
+	import type { EditableListing, Listing } from '../artus/listings/types';
 	import OverlayItem from './components/OverlayItem.svelte';
 	import OverlayShortcuts from './components/OverlayShortcuts.svelte';
 	import OverlayStatus from './components/OverlayStatus.svelte';
@@ -19,7 +20,11 @@
 	let controlsEnabled = $state(false);
 	let selectedIndex = $state<number | null>(null);
 	let listingItem = $state<InventoryItem | null>(null);
+	let listingEditing = $state<EditableListing | null>(null);
 	let listingSubtype = $state<string | undefined>(undefined);
+	let listingLookupStatus = $state<string | null>(null);
+	let listingLookupLoading = $state(false);
+	let listingLookupSequence = 0;
 	let listingHotkey = $state<{ action: string; sequence: number } | null>(null);
 	let listingHotkeySequence = 0;
 	let listingDialogRegistered = false;
@@ -82,6 +87,58 @@
 		for (const action of heldHotkeys.keys()) stopHotkey(action);
 	}
 
+	function closeListing() {
+		listingItem = null;
+		listingEditing = null;
+		listingHotkey = null;
+	}
+
+	function cancelListingLookup() {
+		listingLookupSequence++;
+		listingLookupLoading = false;
+		listingLookupStatus = null;
+	}
+
+	async function openListingFor(word: OcrWord, slug: string) {
+		const request = ++listingLookupSequence;
+		listingLookupLoading = true;
+		listingLookupStatus = 'Checking your listings…';
+		try {
+			const [itemResponse, ordersResponse] = await Promise.all([
+				invoke<{ data: { id: string; maxRank?: number; subtypes?: string[] } }>('get_market_item', { slug }),
+				invoke<{ data: Listing[] }>('market_my_orders'),
+			]);
+			if (request !== listingLookupSequence) return;
+			const item = itemResponse.data;
+			if (typeof item?.id !== 'string' || !Array.isArray(ordersResponse.data)) {
+				throw new Error('Could not read your market listings');
+			}
+			const subtype = word.subtype ?? item.subtypes?.[0];
+			const sellListings = ordersResponse.data.filter((order) =>
+				order.type === 'sell' && order.itemId === item.id,
+			);
+			const existing = sellListings.find((order) =>
+				(!subtype || order.subtype?.toLowerCase() === subtype.toLowerCase()) &&
+				(!item.maxRank || (order.rank ?? 0) === 0),
+			) ?? sellListings[0];
+			listingSubtype = subtype;
+			listingEditing = existing ?? null;
+			listingHotkey = null;
+			listingItem = {
+				name: word.text,
+				slug,
+				quantity: ownedBySlug.get(word.slug ?? '') ?? ownedByName.get(inventoryNameKey(word.text)) ?? word.quantity ?? 0,
+			};
+			listingLookupStatus = null;
+		} catch (error) {
+			if (request !== listingLookupSequence) return;
+			console.error('Could not check existing market listings:', error);
+			listingLookupStatus = `Could not check listings: ${String(error)}`;
+		} finally {
+			if (request === listingLookupSequence) listingLookupLoading = false;
+		}
+	}
+
 	function onHotkeyEvent(action: string, pressed: boolean) {
 		if (action === 'listing_cancel' && pressed && listingItem) {
 			dispatchHotkey(action);
@@ -141,8 +198,7 @@
 
 	function dispatchHotkey(action: string) {
 		if (action === 'listing_cancel') {
-			listingItem = null;
-			listingHotkey = null;
+			closeListing();
 			stopAllHotkeys();
 			return;
 		}
@@ -194,18 +250,13 @@
 		if (!controlsEnabled || processing || words.length === 0) return;
 		if (action === 'create_sell_listing') {
 			if (!marketLoggedIn) return;
+			if (listingLookupLoading) return;
 			if (selectedIndex === null) return;
 			const word = words[selectedIndex];
 			if (!word.slug || word.is_custom) return;
 			const slug = inventoryMarketSlug({ name: word.text, slug: word.slug, quantity: 0 });
 			if (!slug) return;
-			listingSubtype = word.subtype;
-			listingHotkey = null;
-			listingItem = {
-				name: word.text,
-				slug,
-				quantity: ownedBySlug.get(word.slug) ?? ownedByName.get(inventoryNameKey(word.text)) ?? word.quantity ?? 0,
-			};
+			void openListingFor(word, slug);
 			return;
 		}
 		if (action === 'cycle' || action === 'cycle_back') {
@@ -318,7 +369,10 @@
 		listen<boolean>('market_auth_changed', ({ payload }) => {
 			marketAuthRevision++;
 			marketLoggedIn = payload;
-			if (!payload) listingItem = null;
+			if (!payload) {
+				cancelListingLookup();
+				closeListing();
+			}
 		}).then((cleanup) => {
 			registerCleanup(cleanup);
 			const authRevision = marketAuthRevision;
@@ -340,7 +394,8 @@
 			.then(registerCleanup);
 
 		listen('ocr_processing', () => {
-			listingItem = null;
+			cancelListingLookup();
+			closeListing();
 			relicFeedbackGeneration++;
 			clearTimeout(relicFeedbackTimer);
 			relicFeedback = null;
@@ -357,7 +412,8 @@
 		listen<{ words: OcrWord[]; show_ocr_bounding_boxes: boolean; controls_enabled: boolean }>(
 			'ocr_result',
 			(event) => {
-				listingItem = null;
+				cancelListingLookup();
+				closeListing();
 				stopAllHotkeys();
 				overlaySession++;
 				sessionDeltaBySlug = new Map();
@@ -376,7 +432,8 @@
 		).then(registerCleanup);
 
 		listen('ocr_clear', () => {
-			listingItem = null;
+			cancelListingLookup();
+			closeListing();
 			stopAllHotkeys();
 			overlaySession++;
 			sessionDeltaBySlug = new Map();
@@ -418,6 +475,7 @@
 		}).then(registerCleanup);
 
 		return () => {
+			cancelListingLookup();
 			if (listingDialogRegistered) {
 				void listingDialogQueue.then(() => invoke('set_overlay_listing_dialog_open', { open: false }));
 			}
@@ -432,7 +490,7 @@
 </script>
 
 <main class="relative w-screen h-screen pointer-events-none">
-	<OverlayStatus {relicFeedback} {processing} />
+	<OverlayStatus {relicFeedback} {processing} listingStatus={listingLookupStatus} />
 	{#each words as word, index (`${word.text}-${word.x}-${word.y}-${word.width}-${word.height}`)}
 		<div class="absolute inset-0" in:flyAndScale={{ y: 24 }} out:fade={{ duration: 100 }}>
 			<OverlayItem
@@ -449,5 +507,11 @@
 	{#if controlsEnabled && !processing && words.length > 0 && !listingItem}
 		<OverlayShortcuts {marketLoggedIn} />
 	{/if}
-	<CreateListing bind:item={listingItem} overlayMode overlayHotkey={listingHotkey} initialSubtype={listingSubtype} />
+	<CreateListing
+		bind:item={() => listingItem, (value) => { listingItem = value; if (value === null) listingEditing = null; }}
+		editing={listingEditing}
+		overlayMode
+		overlayHotkey={listingHotkey}
+		initialSubtype={listingSubtype}
+	/>
 </main>
