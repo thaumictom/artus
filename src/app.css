@@ -71,20 +71,6 @@ body {
 	}
 }
 
-@layer utilities {
-	.font-expanded {
-		font-variation-settings: 'wdth' 125;
-	}
-
-	.font-condensed {
-		font-variation-settings: 'wdth' 85;
-	}
-
-	.font-extra-condensed {
-		font-variation-settings: 'wdth' 62;
-	}
-}
-
 @layer components {
 	.striped-gradient {
 		--stripe-color: currentColor;
@@ -103,15 +89,28 @@ body {
 	}
 }
 
+@utility font-expaned {
+	font-variation-settings: 'wdth' 125;
+}
+
+@utility font-condensed {
+	font-variation-settings: 'wdth' 85;
+}
+
+@utility font-extra-condensed {
+	font-variation-settings: 'wdth' 62;
+}
+
 @utility trim-text {
-  text-box-trim: trim-both;
-  text-box-edge: cap alphabetic;
+	text-box-trim: trim-both;
+	text-box-edge: cap alphabetic;
 }
 
 [data-overlayscrollbars-viewport] {
 	scroll-behavior: smooth;
 }
 
+/* Alerts */
 .artus-app-shell {
 	transition:
 		transform 600ms var(--ease-dialog-shell),
@@ -157,10 +156,4 @@ body:has(.artus-modal-overlay[data-state='open']) .artus-app-shell {
 	transform: scale(0.98);
 	border-radius: 16px;
 	overflow: hidden;
-}
-
-@media (prefers-reduced-motion: reduce) {
-	.artus-app-shell {
-		transition: none;
-	}
 }
