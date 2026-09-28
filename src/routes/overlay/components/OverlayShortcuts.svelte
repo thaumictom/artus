@@ -2,7 +2,7 @@
 	import Icon from '@iconify/svelte';
 	import Keybind from '$lib/components/Keybind.svelte';
 	import { config } from '$lib/settings.svelte';
-	let { marketLoggedIn }: { marketLoggedIn: boolean } = $props();
+	let { marketLoggedIn, quicklistAvailable }: { marketLoggedIn: boolean; quicklistAvailable: boolean } = $props();
 </script>
 
 	<aside
@@ -50,6 +50,10 @@
 				{#if marketLoggedIn}
 					<Keybind value={config.hotkeys.create_sell_listing ?? ''} />
 					<span>create sell listing</span>
+					{#if quicklistAvailable}
+						<Keybind value={config.hotkeys.quicklist ?? ''} />
+						<span>quicklist</span>
+					{/if}
 				{/if}
 			</div>
 

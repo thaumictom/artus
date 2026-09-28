@@ -5,7 +5,9 @@
 	import { onMount } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import { flyAndScale } from '$lib/transition';
-	import { loadSettings, watchOverlayPriceSettings } from '$lib/settings.svelte';
+	import { config, loadSettings, watchOverlayPriceSettings } from '$lib/settings.svelte';
+	import { quicklistPrice } from '$lib/quicklist';
+	import { GetOrdersResponseSchema } from '$lib/schemas';
 	import { fetchMarketListings } from '$lib/market-listings';
 	import { changeOcrItemQuantities, inventoryMarketSlug, inventoryNameKey, setOcrItemQuantities, type InventoryItem } from '$lib/inventory';
 	import CreateListing from '../artus/inventory/CreateListing.svelte';
@@ -42,6 +44,11 @@
 	let ownedByName = $state(new Map<string, number>());
 	let listingBySlug = $state(new Map<string, { status: 'active' | 'hidden'; platinum: number }>());
 	let activeListingReadSequence = 0;
+	let activeListingsReady = $state(false);
+	let quicklistBusy = $state(false);
+	let quicklistFeedback = $state<{ message: string; error: boolean } | null>(null);
+	let quicklistFeedbackTimer: ReturnType<typeof setTimeout> | undefined;
+	let quicklistRequest = 0;
 	const masteryStore = new LazyStore('mastery.json');
 	const inventoryStore = new LazyStore('inventory.json');
 	let masteryReadSequence = 0;
@@ -55,6 +62,7 @@
 	const heldHotkeys = new Map<string, HeldHotkey>();
 
 	async function refreshActiveListings(slugs: string[], sequence: number) {
+		activeListingsReady = false;
 		listingBySlug = new Map();
 		if (!marketLoggedIn || slugs.length === 0) {
 			return;
@@ -84,9 +92,64 @@
 			}));
 			if (sequence === activeListingReadSequence) {
 				listingBySlug = new Map(itemListings.filter((entry): entry is readonly [string, { status: 'active' | 'hidden'; platinum: number }] => entry !== null));
+				activeListingsReady = true;
 			}
 		} catch (error) {
 			if (sequence === activeListingReadSequence) console.error('Could not read active overlay listings:', error);
+		}
+	}
+
+	function showQuicklistFeedback(message: string, error = false) {
+		clearTimeout(quicklistFeedbackTimer);
+		quicklistFeedback = { message, error };
+		quicklistFeedbackTimer = setTimeout(() => quicklistFeedback = null, 4000);
+	}
+
+	async function createQuicklist(word: OcrWord, slug: string) {
+		if (quicklistBusy) return;
+		quicklistBusy = true;
+		const request = ++quicklistRequest;
+		const session = overlaySession;
+		const selected = selectedIndex;
+		try {
+			const [itemResponse, listings, ordersResponse, statistics] = await Promise.all([
+				invoke<{ data: { id: string; maxRank?: number; maxCharges?: number; maxAmberStars?: number; maxCyanStars?: number; subtypes?: string[] } }>('get_market_item', { slug }),
+				fetchMarketListings(),
+				invoke('get_market_orders', { slug }),
+				invoke<{ median: number | null } | null>('get_tradeable_today_statistics', { slug }),
+			]);
+			if (request !== quicklistRequest || session !== overlaySession || selected !== selectedIndex || !marketLoggedIn) return;
+			const item = itemResponse.data;
+			if (!item?.id) throw new Error('Could not read market item');
+			const subtype = item.subtypes?.find((option) => option.toLowerCase() === word.subtype?.toLowerCase()) ?? item.subtypes?.[0] ?? null;
+			if (listings.some((listing) => listing.type === 'sell' && listing.itemId === item.id &&
+				(!subtype || listing.subtype?.toLowerCase() === subtype.toLowerCase()) &&
+				(!item.maxRank || (listing.rank ?? 0) === 0))) {
+				throw new Error('This item already has a listing');
+			}
+			const offers = GetOrdersResponseSchema.parse(ordersResponse).data
+				.filter((order) => order.type === 'sell' && order.user.status === 'ingame' && order.quantity > 0 &&
+					(!subtype || order.subtype?.toLowerCase() === subtype.toLowerCase()) &&
+					(!item.maxRank || (order.rank ?? 0) === 0))
+				.map((order) => order.platinum);
+			const price = quicklistPrice(config.quicklist_price_strategy, statistics?.median ?? word.market_median ?? null, offers);
+			const quantity = Math.min(9999, Math.max(1, Math.floor(ownedBySlug.get(slug) ?? ownedByName.get(inventoryNameKey(word.text)) ?? word.quantity ?? 1)));
+			await invoke('market_create_listing', {
+				slug, platinum: price, quantity, visible: !config.quicklist_hide_first,
+				variant: {
+					rank: item.maxRank ? 0 : null, charges: item.maxCharges ? 0 : null,
+					amberStars: item.maxAmberStars ? 0 : null, cyanStars: item.maxCyanStars ? 0 : null,
+					subtype,
+				},
+			});
+			if (request === quicklistRequest && session === overlaySession) {
+				listingBySlug = new Map(listingBySlug).set(slug, { status: config.quicklist_hide_first ? 'hidden' : 'active', platinum: price });
+				showQuicklistFeedback(`Listing created for ${price} platinum${config.quicklist_hide_first ? ' (hidden)' : ''}`);
+			}
+		} catch (error) {
+			if (request === quicklistRequest && session === overlaySession) showQuicklistFeedback(`Could not quicklist: ${String(error)}`, true);
+		} finally {
+			quicklistBusy = false;
 		}
 	}
 
@@ -293,6 +356,14 @@
 
 	function handleOverlayHotkey(action: string) {
 		if (!controlsEnabled || processing || words.length === 0) return;
+		if (action === 'quicklist') {
+			if (!marketLoggedIn || !activeListingsReady || quicklistBusy || selectedIndex === null) return;
+			const word = words[selectedIndex];
+			if (!word.slug || word.is_custom || listingBySlug.has(word.slug)) return;
+			const slug = inventoryMarketSlug({ name: word.text, slug: word.slug, quantity: 0 });
+			if (slug) void createQuicklist(word, slug);
+			return;
+		}
 		if (action === 'create_sell_listing') {
 			if (!marketLoggedIn) return;
 			if (listingLookupLoading) return;
@@ -414,6 +485,7 @@
 		listen<boolean>('market_auth_changed', ({ payload }) => {
 			marketAuthRevision++;
 			marketLoggedIn = payload;
+			void refreshActiveListings([...new Set(words.flatMap((word) => word.slug ? [word.slug] : []))], ++activeListingReadSequence);
 			if (!payload) {
 				cancelListingLookup();
 				closeListing();
@@ -443,7 +515,9 @@
 			closeListing();
 			relicFeedbackGeneration++;
 			clearTimeout(relicFeedbackTimer);
+			clearTimeout(quicklistFeedbackTimer);
 			relicFeedback = null;
+			quicklistFeedback = null;
 			stopAllHotkeys();
 			overlaySession++;
 			sessionDeltaBySlug = new Map();
@@ -477,6 +551,8 @@
 		).then(registerCleanup);
 
 		listen('ocr_clear', () => {
+			clearTimeout(quicklistFeedbackTimer);
+			quicklistFeedback = null;
 			cancelListingLookup();
 			closeListing();
 			stopAllHotkeys();
@@ -535,7 +611,7 @@
 </script>
 
 <main class="relative w-screen h-screen pointer-events-none">
-	<OverlayStatus {relicFeedback} {processing} listingStatus={listingLookupStatus} />
+	<OverlayStatus {relicFeedback} {processing} {quicklistFeedback} listingStatus={listingLookupStatus} />
 	{#each words as word, index (`${word.text}-${word.x}-${word.y}-${word.width}-${word.height}`)}
 		<div class="absolute inset-0" in:flyAndScale={{ y: 24 }} out:fade={{ duration: 100 }}>
 			<OverlayItem
@@ -551,7 +627,7 @@
 		</div>
 	{/each}
 	{#if controlsEnabled && !processing && words.length > 0 && !listingItem}
-		<OverlayShortcuts {marketLoggedIn} />
+		<OverlayShortcuts {marketLoggedIn} quicklistAvailable={marketLoggedIn && activeListingsReady && selectedIndex !== null && !!words[selectedIndex]?.slug && !words[selectedIndex]?.is_custom && !listingBySlug.has(words[selectedIndex].slug!)} />
 	{/if}
 	<CreateListing
 		bind:item={() => listingItem, (value) => { listingItem = value; if (value === null) listingEditing = null; }}
@@ -559,5 +635,6 @@
 		overlayMode
 		overlayHotkey={listingHotkey}
 		initialSubtype={listingSubtype}
+		onSaved={() => void refreshActiveListings([...new Set(words.flatMap((word) => word.slug ? [word.slug] : []))], ++activeListingReadSequence)}
 	/>
 </main>

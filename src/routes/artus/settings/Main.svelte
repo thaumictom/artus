@@ -8,6 +8,7 @@
 	import Maintenance from './categories/Maintenance.svelte';
 	import NotificationSettings from './categories/NotificationSettings.svelte';
 	import AppBehaviour from './categories/AppBehaviour.svelte';
+	import Quicklist from './categories/Quicklist.svelte';
 	import { onMount } from 'svelte';
 	import { loadSettings } from '$lib/settings.svelte';
 	import { kebabCase } from 'change-case';
@@ -18,6 +19,7 @@
 		{ name: 'Warframe Settings', component: WarframeSettings },
 		{ name: 'Overlay Settings', component: OverlaySettings },
 		{ name: 'Overlay Behaviour', component: OverlayBehaviour },
+		{ name: 'Quicklist', component: Quicklist },
 		{ name: 'Maintenance', component: Maintenance },
 		{ name: 'Debug', component: DebugSettings },
 	];

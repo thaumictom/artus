@@ -28,7 +28,8 @@ const DEFAULT_SCREENSHOT_ADD_TO_MASTERY_HOTKEY: &str = "Ctrl+Alt+Home";
 const LISTING_CONFIRM_ACTION: &str = "listing_confirm";
 const LISTING_CONFIRM_SPACE_ALIAS: &str = "Space";
 const CREATE_SELL_LISTING_ACTION: &str = "create_sell_listing";
-const OVERLAY_ACTIONS: [(&str, &str); 10] = [
+const QUICKLIST_ACTION: &str = "quicklist";
+const OVERLAY_ACTIONS: [(&str, &str); 11] = [
     ("cycle", "Tab"),
     ("cycle_back", "Shift+Tab"),
     ("navigate_up", "W"),
@@ -38,11 +39,12 @@ const OVERLAY_ACTIONS: [(&str, &str); 10] = [
     ("inventory_decrement", "Q"),
     ("inventory_increment", "E"),
     (CREATE_SELL_LISTING_ACTION, "R"),
+    (QUICKLIST_ACTION, "F"),
     (LISTING_CONFIRM_ACTION, "Enter"),
 ];
 
 /// All known actions and their default shortcuts.
-const HOTKEY_DEFINITIONS: [(&str, &str); 12] = [
+const HOTKEY_DEFINITIONS: [(&str, &str); 13] = [
     (HOTKEY_ACTION_SCREENSHOT, DEFAULT_SCREENSHOT_HOTKEY),
     (
         HOTKEY_ACTION_SCREENSHOT_ADD_TO_MASTERY,
@@ -58,6 +60,7 @@ const HOTKEY_DEFINITIONS: [(&str, &str); 12] = [
     OVERLAY_ACTIONS[7],
     OVERLAY_ACTIONS[8],
     OVERLAY_ACTIONS[9],
+    OVERLAY_ACTIONS[10],
 ];
 
 fn is_overlay_action(action: &str) -> bool {
@@ -145,7 +148,7 @@ pub fn set_hotkey<R: Runtime>(
             || state.overlay_controls_active.load(Ordering::Acquire)
                 && (action_key != LISTING_CONFIRM_ACTION
                     || state.overlay_listing_dialog_open.load(Ordering::Acquire))
-                && (action_key != CREATE_SELL_LISTING_ACTION
+                && (action_key != CREATE_SELL_LISTING_ACTION && action_key != QUICKLIST_ACTION
                     || market_account::is_logged_in(&state)));
 
     // Register the new shortcut and unregister the old one (only while focused)
@@ -239,7 +242,7 @@ pub fn register_overlay_hotkeys<R: Runtime>(app: &AppHandle<R>) {
         if is_overlay_action(action)
             && (action != LISTING_CONFIRM_ACTION
                 || app.state::<AppState>().overlay_listing_dialog_open.load(Ordering::Acquire))
-            && (action != CREATE_SELL_LISTING_ACTION
+            && (action != CREATE_SELL_LISTING_ACTION && action != QUICKLIST_ACTION
                 || market_account::is_logged_in(&app.state::<AppState>()))
             && !app.global_shortcut().is_registered(shortcut)
         {
@@ -280,20 +283,22 @@ fn unregister_listing_space_alias<R: Runtime>(app: &AppHandle<R>) {
 
 pub fn sync_sell_listing_hotkey<R: Runtime>(app: &AppHandle<R>) {
     let state = app.state::<AppState>();
-    let shortcut = state.hotkeys.lock().ok().and_then(|hotkeys| {
-        hotkeys.get(CREATE_SELL_LISTING_ACTION).cloned()
-    });
-    let Some(shortcut) = shortcut else { return };
+    let shortcuts = state.hotkeys.lock().map(|hotkeys| {
+        [CREATE_SELL_LISTING_ACTION, QUICKLIST_ACTION]
+            .iter().filter_map(|action| hotkeys.get(*action).cloned()).collect::<Vec<_>>()
+    }).unwrap_or_default();
     let should_register = market_account::is_logged_in(&state)
         && state.overlay_controls_active.load(Ordering::Acquire)
         && state.warframe_focused.load(Ordering::Acquire);
-    if should_register && !app.global_shortcut().is_registered(shortcut.as_str()) {
-        if let Err(err) = app.global_shortcut().register(shortcut.as_str()) {
-            error!("register sell listing '{shortcut}' failed: {err}");
-        }
-    } else if !should_register && app.global_shortcut().is_registered(shortcut.as_str()) {
-        if let Err(err) = app.global_shortcut().unregister(shortcut.as_str()) {
-            error!("unregister sell listing '{shortcut}' failed: {err}");
+    for shortcut in shortcuts {
+        if should_register && !app.global_shortcut().is_registered(shortcut.as_str()) {
+            if let Err(err) = app.global_shortcut().register(shortcut.as_str()) {
+                error!("register listing '{shortcut}' failed: {err}");
+            }
+        } else if !should_register && app.global_shortcut().is_registered(shortcut.as_str()) {
+            if let Err(err) = app.global_shortcut().unregister(shortcut.as_str()) {
+                error!("unregister listing '{shortcut}' failed: {err}");
+            }
         }
     }
 }
@@ -413,7 +418,7 @@ pub fn on_shortcut<R: Runtime>(
                 .load(Ordering::Acquire)
                 && (action != LISTING_CONFIRM_ACTION
                     || app.state::<AppState>().overlay_listing_dialog_open.load(Ordering::Acquire))
-                && (action != CREATE_SELL_LISTING_ACTION
+                && (action != CREATE_SELL_LISTING_ACTION && action != QUICKLIST_ACTION
                     || market_account::is_logged_in(&app.state::<AppState>()))
                 && app
                     .state::<AppState>()

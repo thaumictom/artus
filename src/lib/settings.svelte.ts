@@ -1,6 +1,7 @@
 // src/lib/settings.svelte.ts
 import { LazyStore } from '@tauri-apps/plugin-store';
 import { isAppTheme, type AppTheme } from '$lib/app-themes';
+import { isQuicklistStrategy, type QuicklistStrategy } from '$lib/quicklist';
 
 const store = new LazyStore('settings.json');
 let settingsLoadPromise: Promise<void> | null = null;
@@ -58,6 +59,8 @@ type Config = {
 	show_set_prices: boolean;
 	show_max_rank_prices: boolean;
 	show_max_rank_mod_prices: boolean;
+	quicklist_hide_first: boolean;
+	quicklist_price_strategy: QuicklistStrategy;
 
 	show_ocr_bounding_boxes: boolean;
 	ocr_dictionary_mapping_enabled: boolean;
@@ -95,6 +98,7 @@ export const config = $state({
 		inventory_decrement: 'q',
 		inventory_increment: 'e',
 		create_sell_listing: 'r',
+		quicklist: 'f',
 		listing_confirm: 'enter',
 	},
 
@@ -120,6 +124,8 @@ export const config = $state({
 	show_set_prices: true as boolean,
 	show_max_rank_prices: true as boolean,
 	show_max_rank_mod_prices: false as boolean,
+	quicklist_hide_first: false as boolean,
+	quicklist_price_strategy: 'median' as QuicklistStrategy,
 	capture_mods: false,
 
 	// Debug settings
@@ -150,6 +156,7 @@ export function loadSettings() {
 		for (const [key, val] of savedEntries) {
 			if (key in config) {
 				if (key === 'app_theme' && !isAppTheme(val)) continue;
+				if (key === 'quicklist_price_strategy' && !isQuicklistStrategy(val)) continue;
 				// @ts-ignore
 				config[key] = val;
 			}
@@ -166,6 +173,7 @@ export function loadSettings() {
 			inventory_decrement: config.hotkeys?.inventory_decrement ?? 'q',
 			inventory_increment: config.hotkeys?.inventory_increment ?? 'e',
 			create_sell_listing: config.hotkeys?.create_sell_listing ?? 'r',
+			quicklist: config.hotkeys?.quicklist ?? 'f',
 			listing_confirm: config.hotkeys?.listing_confirm ?? 'enter',
 		};
 
@@ -188,6 +196,10 @@ export function watchOverlayPriceSettings() {
 			config[key] = typeof value === 'boolean' ? value : false;
 		} else if (key === 'hotkeys' && value && typeof value === 'object') {
 			config.hotkeys = { ...config.hotkeys, ...(value as typeof config.hotkeys) };
+		} else if (key === 'quicklist_hide_first' && typeof value === 'boolean') {
+			config.quicklist_hide_first = value;
+		} else if (key === 'quicklist_price_strategy' && isQuicklistStrategy(value)) {
+			config.quicklist_price_strategy = value;
 		}
 	});
 }

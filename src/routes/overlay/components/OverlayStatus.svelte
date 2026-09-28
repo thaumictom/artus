@@ -7,10 +7,12 @@
 		relicFeedback,
 		processing,
 		listingStatus,
+		quicklistFeedback,
 	}: {
 		relicFeedback: string | null;
 		processing: boolean;
 		listingStatus: string | null;
+		quicklistFeedback: { message: string; error: boolean } | null;
 	} = $props();
 </script>
 
@@ -22,6 +24,13 @@
 			class="bg-background/95 shadow-lg px-4 py-2 border border-accent text-foreground text-sm whitespace-nowrap"
 		>
 			{relicFeedback}
+		</div>
+	</div>
+{/if}
+{#if quicklistFeedback}
+	<div class="top-4 left-1/2 absolute -translate-x-1/2">
+		<div in:flyAndScale={{ y: -12 }} out:fade={{ duration: 150 }} class={`bg-background/95 shadow-lg px-3 py-2 border text-sm whitespace-nowrap ${quicklistFeedback.error ? 'border-danger text-danger' : 'border-accent text-foreground'}`} role="status">
+			{quicklistFeedback.message}
 		</div>
 	</div>
 {/if}

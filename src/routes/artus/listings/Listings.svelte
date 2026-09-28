@@ -220,7 +220,7 @@
 	}
 </script>
 
-<div class="mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full max-w-7xl">
+<div class="mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full max-w-5xl">
 	<div class="flex flex-col gap-4">
 		<header class="flex flex-wrap justify-between items-center gap-4 w-full">
 			<ListingSummary {orders} />

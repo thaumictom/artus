@@ -28,6 +28,7 @@
 		| 'cyanStars'
 		| 'subtype'
 		| 'cancel'
+		| 'delete'
 		| 'visibility'
 		| 'hidden'
 		| 'visible';
@@ -94,9 +95,10 @@
 	let todayStatistics = $state<TodayStatistics | null>(null);
 	let loading = $state(false);
 	let busy = $state(false);
+	let deleteBusy = $state(false);
 	let visibilityBusy = $state(false);
 	let currentVisible = $state(true);
-	let actionBusy = $derived(busy || visibilityBusy);
+	let actionBusy = $derived(busy || deleteBusy || visibilityBusy);
 	let error = $state<string | null>(null);
 	let price = $state(1);
 	let quantity = $state(1);
@@ -117,6 +119,7 @@
 		...(!isEditing && details?.maxCyanStars ? ['cyanStars' as const] : []),
 		...(!isEditing && details?.subtypes?.length ? ['subtype' as const] : []),
 		'cancel',
+		...(editing?.type === 'sell' ? ['delete' as const] : []),
 		...(isEditing ? ['visibility' as const] : []),
 		...(!isEditing ? ['hidden' as const] : []),
 		'visible',
@@ -184,6 +187,7 @@
 		}
 		if (action !== 'listing_confirm') return;
 		if (focusedControl === 'cancel') item = null;
+		else if (focusedControl === 'delete') void deleteListing();
 		else if (focusedControl === 'visibility') void toggleVisibility();
 		else if (focusedControl === 'hidden') void save(false);
 		else if (focusedControl === 'visible') void save(true);
@@ -325,6 +329,21 @@
 			visibilityBusy = false;
 		}
 	}
+
+	async function deleteListing() {
+		if (editing?.type !== 'sell' || actionBusy) return;
+		deleteBusy = true;
+		error = null;
+		try {
+			await invoke('market_delete_listing', { id: editing.id });
+			item = null;
+			onSaved();
+		} catch (cause) {
+			error = String(cause);
+		} finally {
+			deleteBusy = false;
+		}
+	}
 </script>
 
 {#snippet title()}{dialogTitle}{/snippet}
@@ -335,6 +354,11 @@
 	/>{/snippet}
 {#snippet dialogClose()}<Button class={selectedClass('cancel')}>Cancel</Button>{/snippet}
 {#snippet dialogActions()}
+	{#if editing?.type === 'sell'}
+		<Button class={`${selectedClass('delete')} border-danger text-danger hover:bg-danger/15`} disabled={actionBusy} onclick={deleteListing}>
+			{deleteBusy ? 'Deleting...' : 'Delete listing'}
+		</Button>
+	{/if}
 	{#if isEditing}
 		<Button class={selectedClass('visibility')} disabled={actionBusy} onclick={toggleVisibility}>
 			{visibilityBusy ? 'Updating...' : currentVisible ? 'Hide listing' : 'Unhide listing'}
