@@ -107,9 +107,10 @@
 		targetSlug: string,
 		targetHighlightSince: number | undefined,
 		isCurrent: () => boolean,
+		forceRefresh = false,
 	) => {
 		try {
-			const response = await invoke('get_market_orders', { slug: targetSlug });
+			const response = await invoke('get_market_orders', { slug: targetSlug, forceRefresh });
 			const { data } = GetOrdersResponseSchema.parse(response);
 			if (!isCurrent()) return;
 
@@ -170,6 +171,7 @@
 		if (!targetSlug) return;
 		let disposed = false;
 		let cooldownTimer: ReturnType<typeof setTimeout> | undefined;
+		let forceNextRefresh = false;
 
 		untrack(() => {
 			isRefreshing = false;
@@ -190,7 +192,9 @@
 				isRefreshing = true;
 				ordersError = null;
 				try {
-					await loadOrdersData(targetSlug, targetHighlightSince, () => !disposed);
+					const forceRefresh = forceNextRefresh;
+					forceNextRefresh = false;
+					await loadOrdersData(targetSlug, targetHighlightSince, () => !disposed, forceRefresh);
 				} finally {
 					if (!disposed) {
 						isRefreshing = false;
@@ -207,6 +211,7 @@
 			cooldownTimer = setTimeout(() => {
 				isReloadCoolingDown = false;
 			}, MANUAL_RELOAD_COOLDOWN_MS);
+			forceNextRefresh = true;
 			void focusedRefresh.refresh();
 		};
 		return () => {

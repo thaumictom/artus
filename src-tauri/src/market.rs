@@ -2,6 +2,7 @@
 
 use serde_json::Value;
 use std::collections::HashMap;
+use std::time::{Duration, Instant};
 use tauri::{AppHandle, Manager, State};
 
 use crate::api;
@@ -13,6 +14,44 @@ const MARKET_API_V2: &str = "https://api.warframe.market/v2";
 
 /// Base URL for warframe.market API v1 (statistics endpoint).
 const MARKET_API_V1: &str = "https://api.warframe.market/v1";
+const ORDER_CACHE_LIFETIME: Duration = Duration::from_secs(60);
+const STATISTICS_CACHE_LIFETIME: Duration = Duration::from_secs(10 * 60);
+
+struct CachedResponse {
+    fetched_at: Instant,
+    value: Value,
+}
+
+#[derive(Default)]
+pub struct MarketResponseCaches {
+    orders: HashMap<String, CachedResponse>,
+    orders_generation: u64,
+    statistics: HashMap<String, CachedResponse>,
+}
+
+fn fresh_response(
+    entries: &mut HashMap<String, CachedResponse>,
+    slug: &str,
+    lifetime: Duration,
+) -> Option<Value> {
+    entries.retain(|_, response| response.fetched_at.elapsed() < lifetime);
+    entries.get(slug).map(|response| response.value.clone())
+}
+
+pub(crate) fn invalidate_order_cache(state: &AppState) -> AppResult<()> {
+    let mut caches = state.market_responses.lock()?;
+    caches.orders.clear();
+    caches.orders_generation = caches.orders_generation.wrapping_add(1);
+    Ok(())
+}
+
+pub(crate) fn clear_response_caches(app: &AppHandle) -> AppResult<()> {
+    let state = app.state::<AppState>();
+    let mut caches = state.market_responses.lock()?;
+    caches.orders.clear();
+    caches.statistics.clear();
+    Ok(())
+}
 
 pub(crate) fn catalog_path(app: &AppHandle) -> AppResult<std::path::PathBuf> {
     Ok(app
@@ -248,27 +287,66 @@ pub fn get_ocr_market_items(state: State<'_, AppState>, slugs: Vec<String>) -> A
     Ok(Value::Object(items))
 }
 
-/// Fetches current buy/sell orders for an item.
+/// Returns recent buy/sell orders for an item. Manual reloads bypass the cache.
 #[tauri::command]
-pub async fn get_market_orders(state: State<'_, AppState>, slug: String) -> AppResult<Value> {
-    fetch_market_orders(&state, &slug).await
+pub async fn get_market_orders(
+    state: State<'_, AppState>,
+    slug: String,
+    force_refresh: Option<bool>,
+) -> AppResult<Value> {
+    fetch_market_orders(&state, &slug, force_refresh.unwrap_or(false)).await
 }
 
-pub(crate) async fn fetch_market_orders(state: &AppState, slug: &str) -> AppResult<Value> {
+pub(crate) async fn fetch_market_orders(state: &AppState, slug: &str, force_refresh: bool) -> AppResult<Value> {
+    let generation = {
+        let mut caches = state.market_responses.lock()?;
+        if !force_refresh {
+            if let Some(response) = fresh_response(&mut caches.orders, slug, ORDER_CACHE_LIFETIME) {
+                return Ok(response);
+            }
+        }
+        caches.orders_generation
+    };
     let url = format!("{MARKET_API_V2}/orders/item/{slug}");
-    fetch_json_request(
+    let response = fetch_json_request(
         state
             .http_client
             .get(&url)
             .header("Platform", "pc")
             .header("Crossplay", "true"),
     )
-    .await
+    .await?;
+    if !response.get("data").is_some_and(Value::is_array) {
+        return Err(AppError::msg("Invalid item orders response"));
+    }
+    let mut caches = state.market_responses.lock()?;
+    if caches.orders_generation == generation {
+        caches.orders.insert(slug.to_owned(), CachedResponse {
+            fetched_at: Instant::now(),
+            value: response.clone(),
+        });
+    }
+    Ok(response)
 }
 
-/// Fetches historical price statistics for an item.
+/// Returns historical price statistics cached for ten minutes per item.
 #[tauri::command]
 pub async fn get_market_statistics(state: State<'_, AppState>, slug: String) -> AppResult<Value> {
+    if let Some(response) = fresh_response(
+        &mut state.market_responses.lock()?.statistics,
+        &slug,
+        STATISTICS_CACHE_LIFETIME,
+    ) {
+        return Ok(response);
+    }
     let url = format!("{MARKET_API_V1}/items/{slug}/statistics");
-    fetch_json(&state.http_client, &url).await
+    let response = fetch_json(&state.http_client, &url).await?;
+    if !response.get("payload").is_some_and(Value::is_object) {
+        return Err(AppError::msg("Invalid item statistics response"));
+    }
+    state.market_responses.lock()?.statistics.insert(slug, CachedResponse {
+        fetched_at: Instant::now(),
+        value: response.clone(),
+    });
+    Ok(response)
 }

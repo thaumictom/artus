@@ -83,6 +83,7 @@ fn main() {
             market::get_cached_market_items,
             market::get_ocr_market_items,
             api::refresh_api_catalogs,
+            api::get_api_catalogs_last_fetched,
             market::get_market_orders,
             market::get_market_statistics,
             market_account::market_login,
@@ -103,8 +104,15 @@ fn main() {
             market_notifications::stop_market_notification_socket,
             worldstate::get_world_state
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app, event| {
+            if let tauri::RunEvent::Exit = event {
+                if let Err(error) = api::clear_session_caches(app) {
+                    log::warn!("could not clear session API caches on exit: {error}");
+                }
+            }
+        });
 }
 
 #[cfg(target_os = "linux")]

@@ -86,10 +86,17 @@ async fn response_json(request: reqwest::RequestBuilder) -> AppResult<Value> {
 
 async fn authenticated(state: &AppState, method: reqwest::Method, path: &str, body: Option<Value>) -> AppResult<Value> {
     let jwt = token(state)?;
+    let changes_orders = method != reqwest::Method::GET;
     let mut request = state.http_client.request(method, format!("{API}/v2/{path}"))
         .bearer_auth(jwt);
     if let Some(body) = body { request = request.json(&body); }
-    response_json(request).await
+    let response = response_json(request).await?;
+    if changes_orders {
+        if let Err(error) = crate::market::invalidate_order_cache(state) {
+            log::warn!("could not invalidate cached item orders: {error}");
+        }
+    }
+    Ok(response)
 }
 
 async fn socket_actor(jwt: String, mut rx: mpsc::Receiver<StatusCommand>, ready: oneshot::Sender<AppResult<()>>) {
@@ -355,7 +362,7 @@ pub fn exit_app(app: AppHandle, restart: bool) {
 #[tauri::command]
 pub async fn market_top_orders(state: State<'_, AppState>, slug: String) -> AppResult<Value> {
     if !valid_slug(&slug) { return Err(AppError::msg("Invalid item slug")); }
-    let mut response = crate::market::fetch_market_orders(&state, &slug).await?;
+    let mut response = crate::market::fetch_market_orders(&state, &slug, false).await?;
     let orders = response.get_mut("data").and_then(Value::as_array_mut)
         .ok_or_else(|| AppError::msg("Invalid item orders response"))?;
     let (mut sell, mut buy): (Vec<Value>, Vec<Value>) = std::mem::take(orders).into_iter()

@@ -1,10 +1,10 @@
 //! Shared catalog refreshes. UI commands read these snapshots or the local item file.
 
 use std::collections::HashMap;
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use serde_json::Value;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Manager};
 
 use crate::error::{AppError, AppResult};
 use crate::{market, ocr, state::AppState};
@@ -17,11 +17,23 @@ const REFRESH_INTERVAL: Duration = Duration::from_secs(30 * 60);
 
 #[derive(Default)]
 pub struct CatalogCache {
+    pub last_fetched_at: Option<u64>,
     pub wfm_items: Option<Value>,
     pub wfm_by_slug: HashMap<String, Value>,
     pub wfm_by_id: HashMap<String, Value>,
     pub tradeable_items: Option<Value>,
     pub market_by_slug: HashMap<String, Value>,
+}
+
+/// Drop all API data that must be fetched again in a new session.
+/// The ETag-backed Thaumictom /items file and its metadata remain on disk.
+pub fn clear_session_caches(app: &AppHandle) -> AppResult<()> {
+    let state = app.state::<AppState>();
+    *state.catalogs.lock()? = CatalogCache::default();
+    state.ocr_dictionary.lock()?.clear();
+    state.ocr_tradeable_prices.lock()?.clear();
+    state.mastery_dictionary.lock()?.clear();
+    market::clear_response_caches(app)
 }
 
 pub fn cached_wfm_item(state: &AppState, slug: &str) -> AppResult<Value> {
@@ -57,6 +69,7 @@ pub fn refresh_catalogs(app: &AppHandle) -> AppResult<()> {
         .timeout(Duration::from_secs(30))
         .build()?;
     let mut errors = Vec::new();
+    let mut fetched = false;
 
     match fetch(&client, WFM_ITEMS, "items") {
         Ok(value) => {
@@ -80,6 +93,7 @@ pub fn refresh_catalogs(app: &AppHandle) -> AppResult<()> {
                         cache.wfm_items = Some(value);
                         cache.wfm_by_slug = by_slug;
                         cache.wfm_by_id = by_id;
+                        fetched = true;
                         log::info!("loaded {count} OCR dictionary entries");
                     }
                     Err(error) => errors.push(format!("wfm-items: {error}")),
@@ -92,6 +106,7 @@ pub fn refresh_catalogs(app: &AppHandle) -> AppResult<()> {
         Ok(value) => match ocr::load_tradeable_item_prices(app, value.clone()) {
             Ok(count) => {
                 state.catalogs.lock()?.tradeable_items = Some(value);
+                fetched = true;
                 log::info!("loaded {count} tradeable prices");
             }
             Err(error) => errors.push(format!("tradeable-items: {error}")),
@@ -100,6 +115,7 @@ pub fn refresh_catalogs(app: &AppHandle) -> AppResult<()> {
     }
     match market::refresh_item_catalog(app) {
         Ok(count) => {
+            fetched = true;
             log::info!("loaded {count} catalog items");
             if let Err(error) = ocr::load_mastery_dictionary(app) {
                 errors.push(format!("mastery catalog: {error}"));
@@ -121,9 +137,19 @@ pub fn refresh_catalogs(app: &AppHandle) -> AppResult<()> {
             } else {
                 let mut cache = state.catalogs.lock()?;
                 cache.market_by_slug = by_slug;
+                fetched = true;
             }
         }
         Err(error) => errors.push(format!("market items: {error}")),
+    }
+
+    if fetched {
+        let timestamp = SystemTime::now().duration_since(UNIX_EPOCH)
+            .map_err(AppError::msg)?.as_millis() as u64;
+        state.catalogs.lock()?.last_fetched_at = Some(timestamp);
+        if let Err(error) = app.emit("api_catalogs_fetched", timestamp) {
+            log::warn!("could not notify windows of catalog fetch: {error}");
+        }
     }
 
     if errors.is_empty() { Ok(()) } else { Err(AppError::msg(errors.join("; "))) }
@@ -141,6 +167,11 @@ pub fn start_refresh_loop(app: AppHandle) {
             }
         }
     });
+}
+
+#[tauri::command]
+pub fn get_api_catalogs_last_fetched(app: AppHandle) -> AppResult<Option<u64>> {
+    Ok(app.state::<AppState>().catalogs.lock()?.last_fetched_at)
 }
 
 #[tauri::command]

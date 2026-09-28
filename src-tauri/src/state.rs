@@ -58,6 +58,8 @@ pub struct AppState {
 
     /// Shared HTTP client for all outgoing requests.
     pub http_client: reqwest::Client,
+    /// Short-lived warframe.market item orders and historical statistics.
+    pub market_responses: Mutex<crate::market::MarketResponseCaches>,
     /// warframe.market credentials are never kept here; only the active JWT and socket handle.
     pub market_session: Mutex<Option<crate::market_account::MarketSession>>,
     /// Serializes manual, scheduled, and exit-time market status changes.
@@ -87,6 +89,7 @@ impl Default for AppState {
                 .user_agent(crate::api::USER_AGENT)
                 .build()
                 .expect("shared HTTP client"),
+            market_responses: Mutex::new(crate::market::MarketResponseCaches::default()),
             market_session: Mutex::new(None),
             market_status_operation: tokio::sync::Mutex::new(()),
         }
