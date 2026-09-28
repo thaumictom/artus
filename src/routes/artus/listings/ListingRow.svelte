@@ -38,7 +38,7 @@
 </script>
 
 <tr
-	class="hover:bg-surface/70 border-border-secondary border-t transition-colors cursor-pointer"
+	class="hover:bg-surface/70 border-t transition-colors cursor-pointer"
 	onclick={handleRowClick}
 	onkeydown={(event) => {
 		if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
@@ -57,6 +57,9 @@
 			class="flex items-center gap-1 font-semibold text-foreground text-left"
 			onclick={() => onOpenMarket(listingSlug(order, itemDetails))}
 		>
+			{#if order.visible === false}
+				<Icon icon="material-symbols:visibility-off-outline-rounded" class="mr-0.5 size-3.5" />
+			{/if}
 			{name}
 			<Icon icon="material-symbols:arrow-outward-rounded" class="size-4" />
 		</Button>
