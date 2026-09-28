@@ -1,14 +1,13 @@
 <script lang="ts">
 	import Slider from '$lib/components/Slider.svelte';
-	import { timeAgo } from '$lib/date';
 	import { GetOrdersResponseSchema, type OrderWithUserSchema } from '$lib/schemas';
 	import { RadioGroup } from 'bits-ui';
 	import type z from 'zod';
 	import { invoke } from '@tauri-apps/api/core';
-	import { onMount, untrack } from 'svelte';
+	import { untrack } from 'svelte';
 	import Button from '$lib/components/Button.svelte';
 	import Icon from '@iconify/svelte';
-	import { createFocusedRefresh } from '$lib/focused-refresh';
+	import { MarketOrdersRefresh } from '$lib/market-orders-refresh.svelte';
 	import CopyTradeMessage from '$lib/components/CopyTradeMessage.svelte';
 
 	let {
@@ -26,8 +25,6 @@
 	} = $props();
 
 	const FILTER_PROPERTIES = ['rank', 'charges', 'subtype', 'amberStars', 'cyanStars'] as const;
-	const REFRESH_INTERVAL_MS = 60_000;
-	const MANUAL_RELOAD_COOLDOWN_MS = 3_000;
 	type FilterProp = (typeof FILTER_PROPERTIES)[number];
 	type Order = z.infer<typeof OrderWithUserSchema>;
 	const priceFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
@@ -71,20 +68,8 @@
 	let groupByProperty = $state<FilterProp | undefined>();
 	let maxFilterValue = $state(0);
 	let groupFilterRange = $state<[number, number]>([0, 0]);
-	let fetchTimestamp = $state<number | undefined>();
-	let now = $state(Date.now());
-	let fetchedAgo = $derived(fetchTimestamp === undefined ? '' : timeAgo(fetchTimestamp, now));
-
-	onMount(() => {
-		const timer = setInterval(() => {
-			now = Date.now();
-		}, 1000);
-		return () => clearInterval(timer);
-	});
-	let isRefreshing = $state(false);
-	let isReloadCoolingDown = $state(false);
+	const ordersRefresh = new MarketOrdersRefresh();
 	let ordersError = $state<string | null>(null);
-	let reloadOrders = () => {};
 
 	function updateFilterBounds(data: Order[]) {
 		const firstItem = data[0];
@@ -108,13 +93,12 @@
 		targetHighlightSince: number | undefined,
 		isCurrent: () => boolean,
 		forceRefresh = false,
-	) => {
+	): Promise<boolean> => {
 		try {
 			const response = await invoke('get_market_orders', { slug: targetSlug, forceRefresh });
 			const { data } = GetOrdersResponseSchema.parse(response);
-			if (!isCurrent()) return;
+			if (!isCurrent()) return false;
 
-			fetchTimestamp = Date.now();
 			newOrderIds =
 				previousOrderIds === null
 					? new Set(
@@ -132,10 +116,12 @@
 			ordersData = data;
 
 			updateFilterBounds(data);
+			return true;
 		} catch (err) {
-			if (!isCurrent()) return;
+			if (!isCurrent()) return false;
 			console.error('Failed to load orders:', err);
 			ordersError = 'Could not refresh orders. Please try again.';
+			return false;
 		}
 	};
 
@@ -170,54 +156,25 @@
 		const targetOrderType = initialOrderType;
 		if (!targetSlug) return;
 		let disposed = false;
-		let cooldownTimer: ReturnType<typeof setTimeout> | undefined;
-		let forceNextRefresh = false;
 
 		untrack(() => {
-			isRefreshing = false;
-			isReloadCoolingDown = false;
 			ordersError = null;
 			ordersData = [];
 			newOrderIds = new Set();
 			previousOrderIds = null;
 			orderType = targetOrderType ?? 'sell';
-			fetchTimestamp = undefined;
 			groupByProperty = undefined;
 			maxFilterValue = 0;
 			groupFilterRange = [0, 0];
 		});
 
-		const focusedRefresh = createFocusedRefresh(
-			async () => {
-				isRefreshing = true;
-				ordersError = null;
-				try {
-					const forceRefresh = forceNextRefresh;
-					forceNextRefresh = false;
-					await loadOrdersData(targetSlug, targetHighlightSince, () => !disposed, forceRefresh);
-				} finally {
-					if (!disposed) {
-						isRefreshing = false;
-					}
-				}
-			},
-			REFRESH_INTERVAL_MS,
-			{ immediate: true },
-		);
-
-		reloadOrders = () => {
-			if (disposed || isRefreshing || isReloadCoolingDown) return;
-			isReloadCoolingDown = true;
-			cooldownTimer = setTimeout(() => {
-				isReloadCoolingDown = false;
-			}, MANUAL_RELOAD_COOLDOWN_MS);
-			forceNextRefresh = true;
-			void focusedRefresh.refresh();
-		};
+		ordersRefresh.start((forceRefresh) => {
+			ordersError = null;
+			return loadOrdersData(targetSlug, targetHighlightSince, () => !disposed, forceRefresh);
+		});
 		return () => {
 			disposed = true;
-			clearTimeout(cooldownTimer);
-			focusedRefresh.destroy();
+			ordersRefresh.destroy();
 		};
 	});
 
@@ -262,19 +219,19 @@
 	</div>
 	<div class="flex flex-wrap justify-between items-center gap-2 text-muted-foreground">
 		<Button
-			onclick={() => reloadOrders()}
-			disabled={isRefreshing || isReloadCoolingDown}
+			onclick={() => ordersRefresh.reload()}
+			disabled={ordersRefresh.refreshing || ordersRefresh.coolingDown}
 			class="flex items-center gap-1 text-sm"
 		>
 			<Icon
 				icon="material-symbols:refresh"
-				class={isRefreshing ? 'size-4 animate-spin' : 'size-4'}
+				class={ordersRefresh.refreshing ? 'size-4 animate-spin' : 'size-4'}
 			/>
-			{isRefreshing ? 'Refreshing...' : 'Reload orders'}
+			{ordersRefresh.refreshing ? 'Refreshing...' : 'Reload orders'}
 		</Button>
-		{#if fetchTimestamp}
+		{#if ordersRefresh.fetchedAt !== null}
 			<div class="tabular-nums text-sm">
-				fetched {fetchedAgo}
+				fetched {ordersRefresh.fetchedAgo}
 			</div>
 		{/if}
 		<a
@@ -289,7 +246,7 @@
 	{#if ordersError}
 		<p role="alert" class="text-danger text-sm">{ordersError}</p>
 	{/if}
-	<table class="border-collapse" aria-busy={isRefreshing}>
+	<table class="border-collapse" aria-busy={ordersRefresh.refreshing}>
 		<thead>
 			<tr class="*:px-1 *:py-2">
 				<th scope="col" align="left">Name</th>

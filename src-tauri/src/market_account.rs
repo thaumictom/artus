@@ -360,9 +360,9 @@ pub fn exit_app(app: AppHandle, restart: bool) {
 }
 
 #[tauri::command]
-pub async fn market_top_orders(state: State<'_, AppState>, slug: String) -> AppResult<Value> {
+pub async fn market_top_orders(state: State<'_, AppState>, slug: String, force_refresh: Option<bool>) -> AppResult<Value> {
     if !valid_slug(&slug) { return Err(AppError::msg("Invalid item slug")); }
-    let mut response = crate::market::fetch_market_orders(&state, &slug, false).await?;
+    let mut response = crate::market::fetch_market_orders(&state, &slug, force_refresh.unwrap_or(false)).await?;
     let orders = response.get_mut("data").and_then(Value::as_array_mut)
         .ok_or_else(|| AppError::msg("Invalid item orders response"))?;
     let (mut sell, mut buy): (Vec<Value>, Vec<Value>) = std::mem::take(orders).into_iter()

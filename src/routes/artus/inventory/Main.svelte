@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { LazyStore } from '@tauri-apps/plugin-store';
 	import { invoke } from '@tauri-apps/api/core';
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import Table from '$lib/components/Table.svelte';
 	import type { TableColumn } from '$lib/components/table-types';
 	import Button from '$lib/components/Button.svelte';
+	import Select from '$lib/components/Select.svelte';
 	import Combobox from '$lib/components/Combobox.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
 	import {
@@ -20,6 +21,9 @@
 	import InventoryRow from './InventoryRow.svelte';
 	import CreateListing from './CreateListing.svelte';
 	import { masteredMarketItems } from '$lib/listing-context';
+	import { marketAccount } from '$lib/market-account.svelte';
+	import { fetchMarketListings } from '$lib/market-listings';
+	import type { Listing, ListingChange, ListingItem } from '../listings/types';
 
 	let { onOpenMarket = () => {} }: { onOpenMarket?: (slug: string) => void } = $props();
 
@@ -38,10 +42,43 @@
 	let newSlugs = $state<string[]>([]);
 	let loading = $state(true);
 	let search = $state('');
+	let masteryFilter = $state('all');
+	let listingFilter = $state('all');
+	let newFilter = $state('all');
+	const masteryOptions = [
+		{ value: 'all', label: 'All items' },
+		{ value: 'mastered', label: 'Mastered' },
+		{ value: 'unmastered', label: 'Not mastered' },
+	];
+	const listingOptions = [
+		{ value: 'all', label: 'All items' },
+		{ value: 'listed', label: 'Listed' },
+		{ value: 'unlisted', label: 'Not listed' },
+	];
+	const newOptions = [
+		{ value: 'all', label: 'All items' },
+		{ value: 'new', label: 'New' },
+		{ value: 'existing', label: 'Existing' },
+	];
 	let sortColumn = $state<SortColumn>('name');
 	let sortDirection = $state<'asc' | 'desc'>('asc');
 	let addOpen = $state(false);
 	let listingItem = $state<InventoryItem | null>(null);
+	let editingListing = $state<Listing | null>(null);
+	let listings = $state<Listing[]>([]);
+	let listingDetails = $state<Record<string, ListingItem>>({});
+	let listingsLoaded = $state(false);
+	let listingsError = $state<string | null>(null);
+	let listingsRequest = 0;
+	const listingBySlug = $derived.by(() => {
+		const bySlug = new Map<string, Listing>();
+		for (const listing of listings) {
+			if (listing.type !== 'sell') continue;
+			const slug = listingDetails[listing.itemId]?.slug;
+			if (slug && !bySlug.has(slug)) bySlug.set(slug, listing);
+		}
+		return bySlug;
+	});
 	let addItems = $state<{ label: string; value: string; ducats?: number }[]>([]);
 	let addItemsAttempted = $state(false);
 	let addItemsLoading = $state(false);
@@ -120,9 +157,17 @@
 		addOpen = false;
 	}
 
-	const filtered = $derived(
-		data.filter((item) => item.name.toLowerCase().includes(search.trim().toLowerCase())),
-	);
+	const filtered = $derived(data.filter((item) => {
+		if (!item.name.toLowerCase().includes(search.trim().toLowerCase())) return false;
+		if (masteryFilter !== 'all' && isMastered(item) !== (masteryFilter === 'mastered')) return false;
+		if (listingFilter !== 'all' && listingsLoaded) {
+			const slug = inventoryMarketSlug(item);
+			const listed = !!slug && listingBySlug.has(slug);
+			if (listed !== (listingFilter === 'listed')) return false;
+		}
+		const isNew = !!item.slug && newSlugs.includes(item.slug);
+		return newFilter === 'all' || isNew === (newFilter === 'new');
+	}));
 	const sorted = $derived.by(() => {
 		const items = [...filtered];
 		return items.sort((a, b) => {
@@ -163,6 +208,62 @@
 		return slug
 			? masteredItems.slugs.has(slug)
 			: masteredItems.names.has(inventoryNameKey(item.name));
+	}
+
+	async function refreshListings(accountName: string) {
+		const request = ++listingsRequest;
+		listingsLoaded = false;
+		listingsError = null;
+		try {
+			const [orders, details] = await Promise.all([
+				fetchMarketListings(),
+				Object.keys(listingDetails).length
+					? Promise.resolve(listingDetails)
+					: invoke<Record<string, ListingItem>>('market_item_details'),
+			]);
+			if (request !== listingsRequest || marketAccount.session?.ingameName !== accountName) return;
+			listings = orders;
+			listingDetails = details;
+			listingsLoaded = true;
+		} catch (error) {
+			if (request === listingsRequest) listingsError = String(error);
+		}
+	}
+
+	$effect(() => {
+		const accountName = marketAccount.session?.ingameName;
+		if (accountName) untrack(() => void refreshListings(accountName));
+		else {
+			++listingsRequest;
+			listings = [];
+			listingsLoaded = false;
+			listingsError = null;
+		}
+	});
+
+	function openListing(item: InventoryItem, listing: Listing | null) {
+		editingListing = listing;
+		listingItem = item;
+	}
+
+	function applyListingChange(change: ListingChange) {
+		switch (change.kind) {
+			case 'created':
+				if (change.listing) listings = [...listings, change.listing];
+				else if (marketAccount.session) void refreshListings(marketAccount.session.ingameName);
+				break;
+			case 'updated':
+				listings = listings.map((listing) => listing.id === change.id
+					? { ...listing, platinum: change.platinum, quantity: change.quantity } : listing);
+				break;
+			case 'visibility':
+				listings = listings.map((listing) => listing.id === change.id
+					? { ...listing, visible: change.visible } : listing);
+				break;
+			case 'deleted':
+				listings = listings.filter((listing) => listing.id !== change.id);
+				break;
+		}
 	}
 
 	onMount(() => {
@@ -226,6 +327,13 @@
 		saveInventory();
 	}
 
+	function resetFilters() {
+		search = '';
+		masteryFilter = 'all';
+		listingFilter = 'all';
+		newFilter = 'all';
+	}
+
 	function setSort(key: string) {
 		const column = key as SortColumn;
 		if (sortColumn === column) sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
@@ -236,64 +344,68 @@
 	}
 </script>
 
-<div class="flex flex-col items-center gap-4 mx-auto p-8 w-full">
-	<div class="flex flex-col gap-6 w-full max-w-5xl">
-		<div class="bg-card/50 p-4 border border-border-secondary">
-			<div class="mb-3 font-semibold text-muted-foreground text-xs uppercase tracking-wider">
-				Grand total
+<div class="mx-auto py-6 w-full max-w-5xl">
+	<div class="flex flex-col gap-4">
+		<header class="flex flex-wrap justify-between items-center gap-4 w-full">
+			<div>
+				<section class="flex flex-wrap items-center divide-border-secondary divide-x">
+					<div class="pr-4">{data.length} items</div>
+					<div class="flex items-center gap-1.5 px-4 tabular-nums">
+						{platinumFormatter.format(totalPlatinum)}
+						<img src="/icons/platinum.png" class="size-4" alt="platinum" />
+					</div>
+					<div class="flex items-center gap-1.5 pl-4 tabular-nums">
+						{totalDucats.toLocaleString()}
+						<img src="/icons/ducats.png" class="size-4" alt="ducats" />
+					</div>
+				</section>
+				<p class="mt-1 text-muted-foreground text-xs">Totals include items with known values.</p>
 			</div>
-			<div class="flex flex-wrap items-center gap-x-8 gap-y-3">
-				<div class="flex items-center gap-2 font-semibold tabular-nums text-xl">
-					{platinumFormatter.format(totalPlatinum)}
-					<img src="/icons/platinum.png" class="size-5" alt="platinum" />
-				</div>
-				<div class="flex items-center gap-2 font-semibold tabular-nums text-xl">
-					{totalDucats.toLocaleString()}
-					<img src="/icons/ducats.png" class="size-5" alt="ducats" />
-				</div>
-			</div>
-			<p class="mt-2 text-muted-foreground text-xs">Totals include items with known values.</p>
-			{#if newSlugs.length > 0}
-				<Button onclick={dismissNewDots} class="mt-3 text-xs">
-					Dismiss {newSlugs.length} new dots
+			<div class="flex flex-wrap items-center gap-2">
+				{#if newSlugs.length > 0}<Button onclick={dismissNewDots} class="text-sm">Dismiss {newSlugs.length} new dots</Button>{/if}
+				<Button variant="primary" onclick={() => (addOpen = true)} class="inline-flex items-center gap-1.5 text-sm">
+					<Icon icon="lucide:plus" class="size-4" /> Add item
 				</Button>
-			{/if}
-		</div>
+			</div>
+		</header>
+		<div class="bg-surface my-1 w-full h-px"></div>
 
 		{#if loading}
 			<p class="py-10 text-muted-foreground text-center">Loading inventory…</p>
 		{:else}
-			<div class="w-full">
-				<label
-					for="inventory-search"
-					class="block mb-1.5 font-semibold text-muted-foreground text-xs"
-				>
-					Search items
-				</label>
-				<div class="flex items-center gap-3">
-					<input
-						id="inventory-search"
-						type="search"
-						bind:value={search}
-						placeholder="Search for an item..."
-						class="flex-1 bg-background p-2 border focus-visible:border-accent outline-none min-w-0 h-10 text-foreground placeholder:text-muted-foreground"
-					/>
-					<Button
-						onclick={() => (addOpen = true)}
-						class="flex items-center gap-1 h-10 text-xs shrink-0"
-					>
-						<Icon icon="lucide:plus" class="size-3.5" /> Add item
-					</Button>
+			{#if listingsError && marketAccount.session}
+				<p role="alert" class="text-danger text-sm">Could not load your listings. <button type="button" class="underline cursor-pointer" onclick={() => refreshListings(marketAccount.session!.ingameName)}>Retry</button></p>
+			{/if}
+			<div class="flex flex-wrap items-end gap-3">
+				<div class="flex-1 min-w-56">
+					<label for="inventory-search" class="block mb-1.5 font-semibold text-muted-foreground text-xs">Search items</label>
+					<input id="inventory-search" type="search" bind:value={search} placeholder="Search for an item..." class="bg-background p-2 border focus-visible:border-accent outline-none w-full h-10 text-foreground placeholder:text-muted-foreground" />
 				</div>
+				<div class="flex-1 min-w-36">
+					<label for="inventory-mastery" class="block mb-1.5 font-semibold text-muted-foreground text-xs">Mastery</label>
+					<Select type="single" items={masteryOptions} bind:value={masteryFilter} triggerProps={{ id: 'inventory-mastery', class: 'max-w-none h-10' }} />
+				</div>
+				<div class="flex-1 min-w-36">
+					<label for="inventory-listing" class="block mb-1.5 font-semibold text-muted-foreground text-xs">Listing</label>
+					<Select type="single" items={listingOptions} bind:value={listingFilter} disabled={!listingsLoaded} triggerProps={{ id: 'inventory-listing', class: 'max-w-none h-10' }} />
+				</div>
+				<div class="flex-1 min-w-36">
+					<label for="inventory-new" class="block mb-1.5 font-semibold text-muted-foreground text-xs">Added</label>
+					<Select type="single" items={newOptions} bind:value={newFilter} triggerProps={{ id: 'inventory-new', class: 'max-w-none h-10' }} />
+				</div>
+				<Button onclick={resetFilters} class="h-10">Reset filters</Button>
 			</div>
 			{#snippet inventoryRow(item: InventoryItem)}
+				{@const slug = inventoryMarketSlug(item)}
 				<InventoryRow
 					{item}
 					mastered={isMastered(item)}
+					listing={slug ? listingBySlug.get(slug) : undefined}
+					{listingsLoaded}
 					isNew={!!item.slug && newSlugs.includes(item.slug)}
 					onChangeQuantity={updateQuantity}
 					{onOpenMarket}
-					onCreateListing={(item) => (listingItem = item)}
+					onOpenListing={openListing}
 				/>
 			{/snippet}
 			<Table
@@ -303,15 +415,23 @@
 				renderRow={inventoryRow}
 				emptyMessage={data.length === 0
 					? 'Your inventory is empty.'
-					: 'No inventory items match this search.'}
+					: 'No inventory items match these filters.'}
 				{sortColumn}
 				{sortDirection}
 				onSort={setSort}
 				minWidth="920px"
 			/>
 			<CreateListing
-				bind:item={listingItem}
+				bind:item={
+					() => listingItem,
+					(value) => {
+						listingItem = value;
+						if (value === null) editingListing = null;
+					}
+				}
+				editing={editingListing}
 				mastered={listingItem ? isMastered(listingItem) : false}
+				onSaved={applyListingChange}
 			/>
 			<p class="text-muted-foreground text-sm">Showing {sorted.length} of {data.length} items</p>
 			{#snippet addTitle()}Add inventory item{/snippet}
