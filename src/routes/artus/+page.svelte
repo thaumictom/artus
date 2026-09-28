@@ -91,7 +91,7 @@
 	let isInstallingUpdate = $state(false);
 
 	let showUpdatePrompt = $derived(Boolean(updateVersion) && !dismissedUpdatePrompt);
-	const NOTIFICATION_REFRESH_INTERVAL_MS = 5 * 60_000;
+	const NOTIFICATION_REFRESH_INTERVAL_MS = 3 * 60_000;
 
 	onMount(() => {
 		let disposed = false;

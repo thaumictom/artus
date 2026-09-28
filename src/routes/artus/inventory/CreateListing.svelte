@@ -9,7 +9,7 @@
 	import Keybind from '$lib/components/Keybind.svelte';
 	import ListingItemInfo from '$lib/components/ListingItemInfo.svelte';
 	import ListingQuantityWarning from '$lib/components/ListingQuantityWarning.svelte';
-	import type { EditableListing } from '../listings/types';
+	import type { EditableListing, Listing, ListingChange } from '../listings/types';
 	type ListingItemDetails = {
 		maxRank?: number;
 		maxCharges?: number;
@@ -70,7 +70,7 @@
 	}: {
 		item: InventoryItem | null;
 		mastered?: boolean;
-		onSaved?: () => void;
+		onSaved?: (change: ListingChange) => void;
 		editing?: EditableListing | null;
 		overlayMode?: boolean;
 		overlayHotkey?: { action: string; sequence: number } | null;
@@ -253,7 +253,7 @@
 		const current = ++requestId;
 		void Promise.all([
 			invoke('get_market_orders', { slug }),
-			invoke<{ data: ListingItemDetails }>('get_market_item', { slug }),
+			invoke<{ data: ListingItemDetails }>('get_cached_wfm_item', { slug }),
 			invoke<TodayStatistics | null>('get_tradeable_today_statistics', { slug }),
 		])
 			.then(([response, itemResponse, statistics]) => {
@@ -288,10 +288,12 @@
 		busy = true;
 		error = null;
 		try {
+			let change: ListingChange;
 			if (editing) {
 				await invoke('market_update_listing', { id: editing.id, platinum: price, quantity });
+				change = { kind: 'updated', id: editing.id, slug: item.slug, platinum: price, quantity };
 			} else {
-				await invoke('market_create_listing', {
+				const response = await invoke<{ data?: Listing }>('market_create_listing', {
 					slug: item.slug,
 					platinum: price,
 					quantity,
@@ -304,9 +306,12 @@
 						subtype: details?.subtypes?.length ? subtype : null,
 					},
 				});
+				const listing = response.data;
+				change = { kind: 'created', slug: item.slug, platinum: price, visible,
+					listing: listing && typeof listing.id === 'string' && typeof listing.itemId === 'string' ? listing : null };
 			}
 			item = null;
-			onSaved();
+			onSaved(change);
 		} catch (cause) {
 			error = String(cause);
 		} finally {
@@ -322,7 +327,7 @@
 		try {
 			await invoke('market_set_listing_visibility', { id: editing.id, visible });
 			currentVisible = visible;
-			onSaved();
+			onSaved({ kind: 'visibility', id: editing.id, slug: item?.slug, visible });
 		} catch (cause) {
 			error = String(cause);
 		} finally {
@@ -336,8 +341,9 @@
 		error = null;
 		try {
 			await invoke('market_delete_listing', { id: editing.id });
+			const slug = item?.slug;
 			item = null;
-			onSaved();
+			onSaved({ kind: 'deleted', id: editing.id, slug });
 		} catch (cause) {
 			error = String(cause);
 		} finally {

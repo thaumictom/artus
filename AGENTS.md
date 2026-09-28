@@ -10,7 +10,7 @@ Early-alpha Warframe desktop companion for Windows and Linux. Tauri 2/Rust 2021 
 - `hotkeys.rs`, `window_watcher.rs`, `relic_rewards.rs`, `layer_shell.rs`: focus-sensitive shortcuts, game process/window tracking, read-only EE.log tailing for relic reward open/close events, and optional Wayland integration. Default capture is Ctrl+Home; inventory capture is Ctrl+Shift+Home.
 - `src/routes/artus/inventory/`: OCR additions, editable quantities and platinum/ducat totals persisted in `inventory.json`. The `ocr_result` listener currently exists only while this tab is mounted.
 - `src/routes/artus/mastery/`: **work in progress**, not functional mastery tracking. `scripts/generate-mastery-items.mjs` derives `src/lib/data/masterable-items.json` from `@wfcd/items`.
-- `src-tauri/src/market.rs`: warframe.market v2 item/orders requests and v1 statistics. OCR dictionary/prices come from `api.thaumictom.de/warframe/v2/` at startup. `src/lib/schemas.ts` validates frontend API responses with Zod.
+- `src-tauri/src/api.rs`: startup, 30-minute, and manual catalog refresh for the Thaumictom feeds and warframe.market v2 items. `market.rs` serves cached item details and fetches live item orders/v1 statistics. `src/lib/schemas.ts` validates frontend API responses with Zod.
 - `main.rs` registers commands/plugins; `setup.rs` initializes windows/data/background workers; `state.rs` holds synchronized backend state; `error.rs` provides `AppError`/`AppResult`; `updater.rs` checks releases and installs/relaunches after the UI prompt.
 
 ## Working conventions
@@ -23,6 +23,8 @@ Early-alpha Warframe desktop companion for Windows and Linux. Tauri 2/Rust 2021 
 - Register new commands in `main.rs`; check window labels and `src-tauri/capabilities/` when changing desktop permissions. Regenerate mastery data instead of hand-editing it; do not edit build output or generated Tauri/Svelte files.
 - Do not add migration code, compatibility shims, or automatic cleanup for old settings, stored data, or application behavior. Assume this app has a single user; update current defaults and code directly.
 - Do not create regression tests. Use the existing validation commands and focused manual checks when verification is needed.
+- Route new outbound API endpoints through one backend fetch path and give each catalog a shared cache. Read cached item metadata from commands instead of fetching once per item or per window. Refresh the Thaumictom catalogs and warframe.market `/v2/items` on the central 30-minute cycle and through Maintenance; keep `/items` conditional on its ETag. Use the shared `Artus/<version> (+https://github.com/thaumictom/artus)` User-Agent for HTTP and WebSocket connections. Avoid unbounded per-item request loops against warframe.market.
+- `/wfm-items` supplies market item IDs and listing variant fields; use its cached slug/ID indexes for identity lookups, listing creation, and searches. Reserve cached warframe.market `/v2/items` for Market view details such as localized text and images.
 
 ## Commands and validation
 

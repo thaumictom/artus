@@ -1,12 +1,10 @@
-//! Warframe.market API proxy commands.
-//!
-//! All requests go through the shared [`reqwest::Client`] stored in [`AppState`]
-//! to reuse connections and respect keep-alive.
+//! Cached item lookups and live order/statistics commands.
 
 use serde_json::Value;
 use std::collections::HashMap;
 use tauri::{AppHandle, Manager, State};
 
+use crate::api;
 use crate::error::{AppError, AppResult};
 use crate::state::AppState;
 
@@ -30,7 +28,7 @@ struct CatalogCacheMetadata {
     item_count: usize,
 }
 
-/// Revalidate once during setup. No catalog is retained in backend application state.
+/// Revalidate the local item catalog using its ETag.
 pub fn refresh_item_catalog(app: &AppHandle) -> AppResult<usize> {
     let path = catalog_path(app)?;
     let metadata_path = path.with_extension("meta.json");
@@ -42,6 +40,7 @@ pub fn refresh_item_catalog(app: &AppHandle) -> AppResult<usize> {
         .and_then(|bytes| serde_json::from_slice::<CatalogCacheMetadata>(&bytes).ok())
         .filter(|metadata| reqwest::header::HeaderValue::from_str(&metadata.etag).is_ok());
     let mut request = reqwest::blocking::Client::builder()
+        .user_agent(api::USER_AGENT)
         .timeout(std::time::Duration::from_secs(30))
         .build()?
         .get("https://api.thaumictom.de/warframe/v2/items");
@@ -139,14 +138,11 @@ async fn fetch_json_request(request: reqwest::RequestBuilder) -> AppResult<Value
         .map_err(|e| AppError::msg(e.to_string()))
 }
 
-/// Fetches the search dictionary outside the webview's CORS restrictions.
+/// Returns the search list already loaded from /wfm-items.
 #[tauri::command]
-pub async fn get_market_dictionary(state: State<'_, AppState>) -> AppResult<Value> {
-    fetch_json(
-        &state.http_client,
-        "https://api.thaumictom.de/warframe/v2/wfm-items",
-    )
-    .await
+pub fn get_market_dictionary(state: State<'_, AppState>) -> AppResult<Value> {
+    state.catalogs.lock()?.wfm_items.clone()
+        .ok_or_else(|| AppError::msg("market dictionary unavailable"))
 }
 
 /// Minimal landing-page entry from the tradeable item feed.
@@ -159,17 +155,14 @@ pub struct MostTradedItem {
 
 /// Rank the minimal item feed by liquidity for incremental display in the frontend.
 #[tauri::command]
-pub async fn get_most_traded_items(state: State<'_, AppState>) -> AppResult<Vec<MostTradedItem>> {
+pub fn get_most_traded_items(state: State<'_, AppState>) -> AppResult<Vec<MostTradedItem>> {
     #[derive(serde::Deserialize)]
     struct Feed {
         items: Vec<MostTradedItem>,
     }
 
-    let response = fetch_json(
-        &state.http_client,
-        "https://api.thaumictom.de/warframe/v2/tradeable-items",
-    )
-    .await?;
+    let response = state.catalogs.lock()?.tradeable_items.clone()
+        .ok_or_else(|| AppError::msg("tradeable items unavailable"))?;
     let mut items = serde_json::from_value::<Feed>(response)?.items;
     items.retain(|item| item.liquidity.is_some_and(|value| value.is_finite()));
     items.sort_by(|a, b| {
@@ -229,16 +222,39 @@ pub fn get_tradeable_today_statistics(
     }))
 }
 
-/// Fetches item details from warframe.market.
+/// Returns item details from the cached full /v2/items catalog.
 #[tauri::command]
-pub async fn get_market_item(state: State<'_, AppState>, slug: String) -> AppResult<Value> {
-    let url = format!("{MARKET_API_V2}/item/{slug}");
-    fetch_json(&state.http_client, &url).await
+pub fn get_cached_market_item(state: State<'_, AppState>, slug: String) -> AppResult<Value> {
+    let item = api::cached_market_item(&state, &slug)?;
+    Ok(serde_json::json!({ "apiVersion": "v2", "data": item, "error": null }))
+}
+
+/// Returns WFM item identity and variant fields without reading the market catalog.
+#[tauri::command]
+pub fn get_cached_wfm_item(state: State<'_, AppState>, slug: String) -> AppResult<Value> {
+    let item = api::cached_wfm_item(&state, &slug)?;
+    Ok(serde_json::json!({ "apiVersion": "v2", "data": item, "error": null }))
+}
+
+/// Minimal identities for the slugs recognized in one overlay capture.
+#[tauri::command]
+pub fn get_ocr_market_items(state: State<'_, AppState>, slugs: Vec<String>) -> AppResult<Value> {
+    let cache = state.catalogs.lock()?;
+    let items = slugs.into_iter().filter_map(|slug| {
+        let base = slug.strip_suffix("_intact").or_else(|| slug.strip_suffix("_radiant")).unwrap_or(&slug);
+        cache.wfm_by_slug.get(&slug).or_else(|| cache.wfm_by_slug.get(base))
+            .map(|item| (slug, serde_json::json!({ "id": item["id"], "maxRank": item["maxRank"] })))
+    }).collect::<serde_json::Map<String, Value>>();
+    Ok(Value::Object(items))
 }
 
 /// Fetches current buy/sell orders for an item.
 #[tauri::command]
 pub async fn get_market_orders(state: State<'_, AppState>, slug: String) -> AppResult<Value> {
+    fetch_market_orders(&state, &slug).await
+}
+
+pub(crate) async fn fetch_market_orders(state: &AppState, slug: &str) -> AppResult<Value> {
     let url = format!("{MARKET_API_V2}/orders/item/{slug}");
     fetch_json_request(
         state

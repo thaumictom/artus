@@ -1,11 +1,10 @@
 //! Application initialization — runs once during Tauri's `setup` hook.
 
-use log::{error, info};
+use log::error;
 use tauri::{App, Manager};
 
-use crate::error::AppResult;
 use crate::state::AppState;
-use crate::{hotkeys, layer_shell, ocr, window_watcher};
+use crate::{api, hotkeys, layer_shell, ocr, window_watcher};
 
 #[cfg(target_os = "windows")]
 use crate::relic_rewards;
@@ -56,19 +55,10 @@ pub fn init(app: &mut App, is_wayland: bool) -> Result<(), Box<dyn std::error::E
         Err(err) => error!("failed to load primary themes: {err}"),
     }
 
-    // Fetch remote dictionary and price data
-    log_result(
-        "dictionary entries",
-        ocr::load_ocr_dictionary(&app.handle()),
-    );
-    log_result(
-        "tradeable item prices",
-        ocr::load_tradeable_item_prices(&app.handle()),
-    );
-
-    // Refresh the disk-only catalog before the UI can request its local copy.
-    log_result("cached market items", crate::market::refresh_item_catalog(app.handle()));
-    log_result("mastery dictionary entries", ocr::load_mastery_dictionary(app.handle()));
+    if let Err(error) = api::refresh_catalogs(app.handle()) {
+        error!("catalog refresh incomplete: {error}");
+    }
+    api::start_refresh_loop(app.handle().clone());
 
     // Spawn background tasks
     #[cfg(target_os = "windows")]
@@ -79,12 +69,4 @@ pub fn init(app: &mut App, is_wayland: bool) -> Result<(), Box<dyn std::error::E
     window_watcher::spawn_window_watcher(app.handle().clone());
 
     Ok(())
-}
-
-/// Logs the result of a data-loading operation.
-fn log_result(label: &str, result: AppResult<usize>) {
-    match result {
-        Ok(count) => info!("loaded {label}: {count}"),
-        Err(err) => error!("failed to load {label}: {err}"),
-    }
 }

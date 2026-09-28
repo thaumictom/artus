@@ -124,7 +124,7 @@
 {#snippet title()}World state notifications{/snippet}
 
 {#snippet description()}
-	Choose the events Artus should watch. Active rules refresh the world state every five minutes.
+	Choose the events Artus should watch. Active rules refresh the world state every three minutes.
 {/snippet}
 
 {#snippet dialogClose()}<Button>Done</Button>{/snippet}

@@ -13,3 +13,9 @@ export type Listing = {
 export type ListingItem = { name: string; slug: string };
 
 export type EditableListing = Pick<Listing, 'id' | 'type' | 'platinum' | 'quantity' | 'visible'>;
+
+export type ListingChange =
+	| { kind: 'created'; slug: string; platinum: number; visible: boolean; listing: Listing | null }
+	| { kind: 'updated'; id: string; slug?: string; platinum: number; quantity: number }
+	| { kind: 'visibility'; id: string; slug?: string; visible: boolean }
+	| { kind: 'deleted'; id: string; slug?: string };

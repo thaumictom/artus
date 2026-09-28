@@ -39,17 +39,16 @@ pub struct AppState {
 
     /// OCR dictionary entries fetched from the remote API on startup.
     pub ocr_dictionary: Mutex<Vec<OcrDictionaryEntry>>,
-    /// Market item IDs and rank limits keyed by OCR slug, loaded with the dictionary.
-    pub ocr_market_items: Mutex<HashMap<String, crate::ocr::dictionary::OcrMarketItem>>,
+    /// Catalog payloads shared by all windows and lookup commands.
+    pub catalogs: Mutex<crate::api::CatalogCache>,
+    /// Prevent overlapping scheduled and manual catalog refreshes.
+    pub catalog_refresh: Mutex<()>,
 
     /// Full masterable item and component names, including non-tradeable gear.
     pub mastery_dictionary: Mutex<Vec<MasteryDictionaryEntry>>,
 
     /// Median prices keyed by item slug, fetched from the remote API.
     pub ocr_tradeable_prices: Mutex<HashMap<String, TradeablePriceEntry>>,
-
-    /// Prevents concurrent background price retries when the startup fetch failed.
-    pub ocr_price_retry_in_progress: AtomicBool,
 
     /// `true` while the Warframe window is the active foreground window.
     pub warframe_focused: AtomicBool,
@@ -78,13 +77,16 @@ impl Default for AppState {
             overlay_was_visible: AtomicBool::new(false),
             ocr_theme_colors: Mutex::new(HashMap::new()),
             ocr_dictionary: Mutex::new(Vec::new()),
-            ocr_market_items: Mutex::new(HashMap::new()),
+            catalogs: Mutex::new(crate::api::CatalogCache::default()),
+            catalog_refresh: Mutex::new(()),
             mastery_dictionary: Mutex::new(Vec::new()),
             ocr_tradeable_prices: Mutex::new(HashMap::new()),
-            ocr_price_retry_in_progress: AtomicBool::new(false),
             warframe_focused: AtomicBool::new(false),
             warframe_running: AtomicBool::new(false),
-            http_client: reqwest::Client::new(),
+            http_client: reqwest::Client::builder()
+                .user_agent(crate::api::USER_AGENT)
+                .build()
+                .expect("shared HTTP client"),
             market_session: Mutex::new(None),
             market_status_operation: tokio::sync::Mutex::new(()),
         }

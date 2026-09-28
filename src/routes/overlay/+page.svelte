@@ -11,7 +11,7 @@
 	import { fetchMarketListings } from '$lib/market-listings';
 	import { changeOcrItemQuantities, inventoryMarketSlug, inventoryNameKey, setOcrItemQuantities, type InventoryItem } from '$lib/inventory';
 	import CreateListing from '../artus/inventory/CreateListing.svelte';
-	import type { EditableListing, Listing } from '../artus/listings/types';
+	import type { EditableListing, Listing, ListingChange } from '../artus/listings/types';
 	import OverlayItem from './components/OverlayItem.svelte';
 	import OverlayShortcuts from './components/OverlayShortcuts.svelte';
 	import OverlayStatus from './components/OverlayStatus.svelte';
@@ -45,6 +45,9 @@
 	let listingBySlug = $state(new Map<string, { status: 'active' | 'hidden'; platinum: number }>());
 	let activeListingReadSequence = 0;
 	let activeListingsReady = $state(false);
+	let captureListings = $state<Listing[]>([]);
+	let marketItemsBySlug = $state<Record<string, { id: string; maxRank?: number | null }>>({});
+	let activeListingsPromise: Promise<void> = Promise.resolve();
 	let quicklistBusy = $state(false);
 	let quicklistFeedback = $state<{ message: string; error: boolean } | null>(null);
 	let quicklistFeedbackTimer: ReturnType<typeof setTimeout> | undefined;
@@ -62,9 +65,68 @@
 	const heldHotkeys = new Map<string, HeldHotkey>();
 	type OcrMarketItem = { id: string; maxRank?: number | null };
 
+	function listingForSlug(slug: string): { status: 'active' | 'hidden'; platinum: number } | null {
+		const item = marketItemsBySlug[slug];
+		if (!item) return null;
+		const word = words.find((candidate) => candidate.slug === slug);
+		const candidates = captureListings.filter((order) => order.type === 'sell' && order.itemId === item.id);
+		const matching = candidates.find((order) =>
+			(!word?.subtype || order.subtype?.toLowerCase() === word.subtype.toLowerCase()) &&
+			(!item.maxRank || (order.rank ?? 0) === 0),
+		) ?? candidates[0];
+		return matching ? { status: matching.visible ? 'active' : 'hidden', platinum: matching.platinum } : null;
+	}
+
+	function updateListingForSlug(slug: string) {
+		const next = new Map(listingBySlug);
+		const targets = [slug, ...words.flatMap((word) => word.slug &&
+			inventoryMarketSlug({ name: word.text, slug: word.slug, quantity: 0 }) === slug
+			? [word.slug] : [])];
+		for (const target of new Set(targets)) {
+			const listing = listingForSlug(target);
+			if (listing) next.set(target, listing);
+			else next.delete(target);
+		}
+		listingBySlug = next;
+	}
+
+	function applyCaptureListingChange(change: ListingChange) {
+		switch (change.kind) {
+			case 'created':
+				if (change.listing) {
+					captureListings = [...captureListings, change.listing];
+					updateListingForSlug(change.slug);
+				} else {
+					const next = new Map(listingBySlug);
+					for (const word of words) {
+						if (word.slug && inventoryMarketSlug({ name: word.text, slug: word.slug, quantity: 0 }) === change.slug)
+							next.set(word.slug, { status: change.visible ? 'active' : 'hidden', platinum: change.platinum });
+					}
+					listingBySlug = next;
+				}
+				break;
+			case 'updated':
+				captureListings = captureListings.map((order) => order.id === change.id
+					? { ...order, platinum: change.platinum, quantity: change.quantity } : order);
+				if (change.slug) updateListingForSlug(change.slug);
+				break;
+			case 'visibility':
+				captureListings = captureListings.map((order) => order.id === change.id
+					? { ...order, visible: change.visible } : order);
+				if (change.slug) updateListingForSlug(change.slug);
+				break;
+			case 'deleted':
+				captureListings = captureListings.filter((order) => order.id !== change.id);
+				if (change.slug) updateListingForSlug(change.slug);
+				break;
+		}
+	}
+
 	async function refreshActiveListings(slugs: string[], sequence: number, loggedIn = marketLoggedIn) {
 		activeListingsReady = false;
 		listingBySlug = new Map();
+		captureListings = [];
+		marketItemsBySlug = {};
 		if (!loggedIn || slugs.length === 0) {
 			return;
 		}
@@ -74,25 +136,11 @@
 				invoke<Record<string, OcrMarketItem>>('get_ocr_market_items', { slugs }),
 			]);
 			if (sequence !== activeListingReadSequence) return;
-			const sellListingsByItemId = new Map<string, Listing[]>();
-			for (const order of orders) {
-				if (order.type !== 'sell') continue;
-				const listings = sellListingsByItemId.get(order.itemId) ?? [];
-				listings.push(order);
-				sellListingsByItemId.set(order.itemId, listings);
-			}
+			captureListings = orders;
+			marketItemsBySlug = marketItems;
 			const itemListings = slugs.map((slug) => {
-				const item = marketItems[slug];
-				if (!item) return null;
-				const word = words.find((candidate) => candidate.slug === slug);
-				const candidates = sellListingsByItemId.get(item.id) ?? [];
-				const matching = candidates.find((order) =>
-					(!word?.subtype || order.subtype?.toLowerCase() === word.subtype.toLowerCase()) &&
-					(!item.maxRank || (order.rank ?? 0) === 0),
-				) ?? candidates[0];
-				return matching
-					? [slug, { status: matching.visible ? 'active' : 'hidden', platinum: matching.platinum }] as const
-					: null;
+				const listing = listingForSlug(slug);
+				return listing ? [slug, listing] as const : null;
 			});
 			if (sequence === activeListingReadSequence) {
 				listingBySlug = new Map(itemListings.filter((entry): entry is readonly [string, { status: 'active' | 'hidden'; platinum: number }] => entry !== null));
@@ -116,9 +164,8 @@
 		const session = overlaySession;
 		const selected = selectedIndex;
 		try {
-			const [itemResponse, listings, ordersResponse, statistics] = await Promise.all([
-				invoke<{ data: { id: string; maxRank?: number; maxCharges?: number; maxAmberStars?: number; maxCyanStars?: number; subtypes?: string[] } }>('get_market_item', { slug }),
-				fetchMarketListings(),
+			const [itemResponse, ordersResponse, statistics] = await Promise.all([
+				invoke<{ data: { id: string; maxRank?: number; maxCharges?: number; maxAmberStars?: number; maxCyanStars?: number; subtypes?: string[] } }>('get_cached_wfm_item', { slug }),
 				invoke('get_market_orders', { slug }),
 				invoke<{ median: number | null } | null>('get_tradeable_today_statistics', { slug }),
 			]);
@@ -126,7 +173,7 @@
 			const item = itemResponse.data;
 			if (!item?.id) throw new Error('Could not read market item');
 			const subtype = item.subtypes?.find((option) => option.toLowerCase() === word.subtype?.toLowerCase()) ?? item.subtypes?.[0] ?? null;
-			if (listings.some((listing) => listing.type === 'sell' && listing.itemId === item.id &&
+			if (captureListings.some((listing) => listing.type === 'sell' && listing.itemId === item.id &&
 				(!subtype || listing.subtype?.toLowerCase() === subtype.toLowerCase()) &&
 				(!item.maxRank || (listing.rank ?? 0) === 0))) {
 				throw new Error('This item already has a listing');
@@ -138,7 +185,7 @@
 				.map((order) => order.platinum);
 			const price = quicklistPrice(config.quicklist_price_strategy, statistics?.median ?? word.market_median ?? null, offers);
 			const quantity = Math.min(9999, Math.max(1, Math.floor(ownedBySlug.get(slug) ?? ownedByName.get(inventoryNameKey(word.text)) ?? word.quantity ?? 1)));
-			await invoke('market_create_listing', {
+			const created = await invoke<{ data?: Listing }>('market_create_listing', {
 				slug, platinum: price, quantity, visible: !config.quicklist_hide_first,
 				variant: {
 					rank: item.maxRank ? 0 : null, charges: item.maxCharges ? 0 : null,
@@ -147,7 +194,9 @@
 				},
 			});
 			if (request === quicklistRequest && session === overlaySession) {
-				listingBySlug = new Map(listingBySlug).set(slug, { status: config.quicklist_hide_first ? 'hidden' : 'active', platinum: price });
+				const listing = created.data;
+				applyCaptureListingChange({ kind: 'created', slug, platinum: price, visible: !config.quicklist_hide_first,
+					listing: listing && typeof listing.id === 'string' && typeof listing.itemId === 'string' ? listing : null });
 				showQuicklistFeedback(`Listing created for ${price} platinum${config.quicklist_hide_first ? ' (hidden)' : ''}`);
 			}
 		} catch (error) {
@@ -160,7 +209,7 @@
 	$effect(() => {
 		const sequence = ++activeListingReadSequence;
 		const slugs = [...new Set(words.flatMap((word) => word.slug ? [word.slug] : []))];
-		void refreshActiveListings(slugs, sequence, marketLoggedIn);
+		activeListingsPromise = refreshActiveListings(slugs, sequence, marketLoggedIn);
 	});
 	const repeatableActions = new Set([
 		'cycle',
@@ -216,17 +265,16 @@
 		listingLookupLoading = true;
 		listingLookupStatus = 'Checking your listings…';
 		try {
-			const [itemResponse, orders] = await Promise.all([
-				invoke<{ data: { id: string; maxRank?: number; subtypes?: string[] } }>('get_market_item', { slug }),
-				fetchMarketListings(),
-			]);
+			await activeListingsPromise;
+			if (!activeListingsReady) throw new Error('Listings are not available yet');
+			const itemResponse = await invoke<{ data: { id: string; maxRank?: number; subtypes?: string[] } }>('get_cached_wfm_item', { slug });
 			if (request !== listingLookupSequence) return;
 			const item = itemResponse.data;
 			if (typeof item?.id !== 'string') {
 				throw new Error('Could not read your market listings');
 			}
 			const subtype = word.subtype ?? item.subtypes?.[0];
-			const sellListings = orders.filter((order) =>
+			const sellListings = captureListings.filter((order) =>
 				order.type === 'sell' && order.itemId === item.id,
 			);
 			const existing = sellListings.find((order) =>
@@ -638,6 +686,6 @@
 		overlayMode
 		overlayHotkey={listingHotkey}
 		initialSubtype={listingSubtype}
-		onSaved={() => void refreshActiveListings([...new Set(words.flatMap((word) => word.slug ? [word.slug] : []))], ++activeListingReadSequence)}
+		onSaved={applyCaptureListingChange}
 	/>
 </main>

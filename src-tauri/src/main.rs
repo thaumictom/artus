@@ -3,6 +3,7 @@
     windows_subsystem = "windows"
 )]
 
+mod api;
 mod error;
 mod hotkeys;
 mod layer_shell;
@@ -44,7 +45,10 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_notification::init())
-        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_updater::Builder::new()
+            .header("User-Agent", api::USER_AGENT)
+            .expect("updater user agent")
+            .build())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(
@@ -70,13 +74,15 @@ fn main() {
             relic_auto_add::get_relic_selection_debug_image,
             updater::check_for_update,
             updater::download_and_relaunch_update,
-            market::get_market_item,
+            market::get_cached_market_item,
+            market::get_cached_wfm_item,
             market::get_market_dictionary,
             market::get_most_traded_items,
             market::get_mastery_tradeable_prices,
             market::get_tradeable_today_statistics,
             market::get_cached_market_items,
-            ocr::dictionary::get_ocr_market_items,
+            market::get_ocr_market_items,
+            api::refresh_api_catalogs,
             market::get_market_orders,
             market::get_market_statistics,
             market_account::market_login,

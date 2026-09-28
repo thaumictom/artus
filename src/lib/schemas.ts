@@ -71,6 +71,15 @@ export const GetItemResponseSchema = BaseResponseSchema.extend({
 	data: ItemSchema,
 });
 
+export const CachedWfmItemResponseSchema = z.object({
+	data: z.object({
+		id: z.string(),
+		name: z.string(),
+		slug: z.string(),
+		bulkTradable: z.boolean().optional(),
+	}),
+});
+
 // Base statistic item
 const StatisticBase = z.object({
 	datetime: z.string(),

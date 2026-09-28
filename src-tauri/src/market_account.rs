@@ -14,7 +14,7 @@ use crate::{error::{AppError, AppResult}, state::AppState};
 use crate::hotkeys;
 
 const API: &str = "https://api.warframe.market";
-const USER_AGENT: &str = concat!("Artus/", env!("CARGO_PKG_VERSION"), " (+https://github.com/thaumictom/artus)");
+const USER_AGENT: &str = crate::api::USER_AGENT;
 const ACCOUNT_STORE_PATH: &str = "market-account.json";
 const EXIT_INVISIBLE_KEY: &str = "invisible_on_exit";
 const REMEMBERED_TOKEN_KEY: &str = "auth_token";
@@ -355,7 +355,7 @@ pub fn exit_app(app: AppHandle, restart: bool) {
 #[tauri::command]
 pub async fn market_top_orders(state: State<'_, AppState>, slug: String) -> AppResult<Value> {
     if !valid_slug(&slug) { return Err(AppError::msg("Invalid item slug")); }
-    let mut response = response_json(state.http_client.get(format!("{API}/v2/orders/item/{slug}"))).await?;
+    let mut response = crate::market::fetch_market_orders(&state, &slug).await?;
     let orders = response.get_mut("data").and_then(Value::as_array_mut)
         .ok_or_else(|| AppError::msg("Invalid item orders response"))?;
     let (mut sell, mut buy): (Vec<Value>, Vec<Value>) = std::mem::take(orders).into_iter()
@@ -411,11 +411,10 @@ pub struct ListingItemDetails {
 
 #[tauri::command]
 pub async fn market_item_details(state: State<'_, AppState>) -> AppResult<std::collections::HashMap<String, ListingItemDetails>> {
-    let response = response_json(state.http_client.get(format!("{API}/v2/items"))).await?;
-    let items = response["data"].as_array().ok_or_else(|| AppError::msg("Invalid item list"))?;
-    Ok(items.iter().filter_map(|item| {
-        Some((item["id"].as_str()?.to_owned(), ListingItemDetails {
-            name: item.pointer("/i18n/en/name").and_then(Value::as_str).unwrap_or_else(|| item["slug"].as_str().unwrap_or("Item")).to_owned(),
+    let catalogs = state.catalogs.lock()?;
+    Ok(catalogs.wfm_by_id.iter().filter_map(|(id, item)| {
+        Some((id.clone(), ListingItemDetails {
+            name: item["name"].as_str().unwrap_or_else(|| item["slug"].as_str().unwrap_or("Item")).to_owned(),
             slug: item["slug"].as_str()?.to_owned(),
         }))
     }).collect())
@@ -424,15 +423,14 @@ pub async fn market_item_details(state: State<'_, AppState>) -> AppResult<std::c
 #[tauri::command]
 pub async fn market_create_listing(state: State<'_, AppState>, slug: String, platinum: i64, quantity: i64, visible: bool, variant: ListingVariant) -> AppResult<Value> {
     if !valid_slug(&slug) || !valid_order(platinum, quantity) { return Err(AppError::msg("Invalid listing details")); }
-    let item = response_json(state.http_client.get(format!("{API}/v2/item/{slug}"))).await?;
-    let data = &item["data"];
+    let data = crate::api::cached_wfm_item(&state, &slug)?;
     let item_id = data["id"].as_str().ok_or_else(|| AppError::msg("Item ID unavailable"))?;
     let mut body = json!({"itemId":item_id,"type":"sell","platinum":platinum,"quantity":quantity,"visible":visible});
     if data["bulkTradable"].as_bool() == Some(true) { body["perTrade"] = json!(1); }
-    insert_level(&mut body, data, "rank", "maxRank", variant.rank)?;
-    insert_level(&mut body, data, "charges", "maxCharges", variant.charges)?;
-    insert_level(&mut body, data, "amberStars", "maxAmberStars", variant.amber_stars)?;
-    insert_level(&mut body, data, "cyanStars", "maxCyanStars", variant.cyan_stars)?;
+    insert_level(&mut body, &data, "rank", "maxRank", variant.rank)?;
+    insert_level(&mut body, &data, "charges", "maxCharges", variant.charges)?;
+    insert_level(&mut body, &data, "amberStars", "maxAmberStars", variant.amber_stars)?;
+    insert_level(&mut body, &data, "cyanStars", "maxCyanStars", variant.cyan_stars)?;
     if let Some(subtypes) = data["subtypes"].as_array().filter(|subtypes| !subtypes.is_empty()) {
         let subtype = variant.subtype.as_deref().ok_or_else(|| AppError::msg("Subtype is required for this item"))?;
         if !subtypes.iter().any(|candidate| candidate.as_str() == Some(subtype)) { return Err(AppError::msg("Invalid subtype")); }

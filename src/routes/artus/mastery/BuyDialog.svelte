@@ -4,7 +4,7 @@
 	import Dialog from '$lib/components/Dialog.svelte';
 	import Button from '$lib/components/Button.svelte';
 	import CopyTradeMessage from '$lib/components/CopyTradeMessage.svelte';
-	import { GetItemResponseSchema, OrderWithUserSchema } from '$lib/schemas';
+	import { CachedWfmItemResponseSchema, OrderWithUserSchema } from '$lib/schemas';
 
 	type BuyItem = { slug: string; name: string };
 	type Order = z.infer<typeof OrderWithUserSchema>;
@@ -40,12 +40,12 @@
 		loading = true;
 		void Promise.all([
 			invoke('market_top_orders', { slug }),
-			invoke('get_market_item', { slug }),
+			invoke('get_cached_wfm_item', { slug }),
 		]).then(([topResponse, itemResponse]) => {
 			if (current !== requestId) return;
 			orders = TopOrdersSchema.parse(topResponse).data.sell;
-			const details = GetItemResponseSchema.parse(itemResponse).data;
-			itemName = details.i18n?.en?.name ?? name;
+			const details = CachedWfmItemResponseSchema.parse(itemResponse).data;
+			itemName = details.name || name;
 			bulkTradable = details.bulkTradable ?? false;
 		}).catch((cause) => {
 			if (current === requestId) error = String(cause);

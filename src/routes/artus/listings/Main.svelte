@@ -21,7 +21,7 @@
 	import ListingSummary from './ListingSummary.svelte';
 	import ListingTable from './ListingTable.svelte';
 	import { listingName, listingOwned, listingSlug } from './listing-utils';
-	import type { Listing, ListingItem } from './types';
+	import type { Listing, ListingChange, ListingItem } from './types';
 
 	let { onOpenMarket = () => {} }: { onOpenMarket?: (slug: string) => void } = $props();
 	const inventoryStore = new LazyStore('inventory.json');
@@ -108,7 +108,7 @@
 	});
 
 	async function refresh() {
-		if (!marketAccount.session) return;
+		if (!marketAccount.session || loading || busy) return;
 		loadedFor = marketAccount.session.ingameName;
 		loading = true;
 		error = null;
@@ -126,6 +126,26 @@
 			error = String(cause);
 		} finally {
 			loading = false;
+		}
+	}
+
+	function applyListingChange(change: ListingChange) {
+		switch (change.kind) {
+			case 'created':
+				if (change.listing) orders = [...orders, change.listing];
+				else error = 'Listing created. Refresh to show it in the list.';
+				break;
+			case 'updated':
+				orders = orders.map((order) => order.id === change.id
+					? { ...order, platinum: change.platinum, quantity: change.quantity } : order);
+				break;
+			case 'visibility':
+				orders = orders.map((order) => order.id === change.id
+					? { ...order, visible: change.visible } : order);
+				break;
+			case 'deleted':
+				orders = orders.filter((order) => order.id !== change.id);
+				break;
 		}
 	}
 
@@ -159,7 +179,7 @@
 		error = null;
 		try {
 			await invoke('market_set_listing_visibility', { id: order.id, visible: !order.visible });
-			await refresh();
+			applyListingChange({ kind: 'visibility', id: order.id, visible: !order.visible });
 		} catch (cause) {
 			error = String(cause);
 		} finally {
@@ -176,11 +196,11 @@
 		try {
 			for (const order of targets) {
 				await invoke('market_set_listing_visibility', { id: order.id, visible });
+				applyListingChange({ kind: 'visibility', id: order.id, visible });
 			}
 		} catch (cause) {
 			updateError = String(cause);
 		} finally {
-			await refresh();
 			if (updateError) error = updateError;
 			busy = false;
 		}
@@ -203,9 +223,11 @@
 			await invoke('market_close_listing_one', { id: order.id });
 			closed = true;
 			await removeOneMarketInventoryItem(itemDetails[order.itemId]?.slug, nameFor(order));
-			await refresh();
+			orders = orders.flatMap((listing) => listing.id !== order.id ? [listing]
+				: listing.quantity > 1 ? [{ ...listing, quantity: listing.quantity - 1 }] : []);
 		} catch (cause) {
-			if (closed) await refresh();
+			if (closed) orders = orders.flatMap((listing) => listing.id !== order.id ? [listing]
+				: listing.quantity > 1 ? [{ ...listing, quantity: listing.quantity - 1 }] : []);
 			error = closed
 				? `Listing marked sold. Could not remove one from inventory: ${String(cause)}`
 				: String(cause);
@@ -219,8 +241,8 @@
 		error = null;
 		try {
 			await invoke('market_delete_listing', { id: removing.id });
+			applyListingChange({ kind: 'deleted', id: removing.id });
 			removing = null;
-			await refresh();
 		} catch (cause) {
 			error = String(cause);
 		} finally {
@@ -240,7 +262,7 @@
 					>
 						refreshed {fetchedAgo}
 					</time>{/if}
-				<Button disabled={loading} onclick={refresh} class="h-full" size="icon">
+				<Button disabled={loading || busy} onclick={refresh} class="h-full" size="icon">
 					<Icon icon="lucide:refresh-cw" class={`size-4 ${loading ? 'animate-spin' : ''}`} />
 				</Button>
 				<Button
@@ -359,7 +381,7 @@
 	mastered={activeItem && editing?.type !== 'buy'
 		? isMarketItemMastered(masteredIndex, activeItem.slug, activeItem.name)
 		: false}
-	onSaved={refresh}
+	onSaved={applyListingChange}
 />
 
 {#snippet removeTitle()}Delete listing?{/snippet}

@@ -125,7 +125,7 @@ async fn connect() -> Result<
         .insert(SEC_WEBSOCKET_PROTOCOL, HeaderValue::from_static("wfm"));
     request.headers_mut().insert(
         USER_AGENT,
-        HeaderValue::from_static(concat!("Artus/", env!("CARGO_PKG_VERSION"))),
+        HeaderValue::from_static(crate::api::USER_AGENT),
     );
 
     connect_async(request)

@@ -1,7 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { LazyStore } from '@tauri-apps/plugin-store';
-import { DictionarySchema, GetItemResponseSchema, OrderSchema } from '$lib/schemas';
+import { CachedWfmItemResponseSchema, DictionarySchema, OrderSchema } from '$lib/schemas';
 import { publishNotification } from '$lib/notifications.svelte';
 
 export type MarketNotificationIntent = 'buy' | 'sell';
@@ -103,8 +103,8 @@ export async function addMarketNotificationRule(input: {
 	duration: MarketNotificationDuration;
 	notifyOnce: boolean;
 }) {
-	const response = await invoke('get_market_item', { slug: input.slug });
-	const item = GetItemResponseSchema.parse(response).data;
+	const response = await invoke('get_cached_wfm_item', { slug: input.slug });
+	const item = CachedWfmItemResponseSchema.parse(response).data;
 
 	const now = Date.now();
 	const rule: MarketNotificationRule = {

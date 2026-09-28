@@ -218,7 +218,7 @@
 		searchError = null;
 		const sequence = ++searchSequence;
 
-		invoke('get_market_item', { slug })
+		invoke('get_cached_market_item', { slug })
 			.then((response: any) => {
 				if (disposed || sequence !== searchSequence) return;
 				const { data } = GetItemResponseSchema.parse(response);

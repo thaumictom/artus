@@ -1,17 +1,16 @@
 //! Remote dictionary fetching, fuzzy matching, and tradeable-item price lookups.
 
 use std::collections::{BTreeMap, HashMap};
-use std::sync::atomic::Ordering;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
-use log::{info, warn};
+use log::info;
 use rayon::prelude::*;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde_json::Value;
 use tauri::{AppHandle, Manager, Runtime};
 
 use super::{
-    OcrThemeOption, OcrWord, CUSTOM_OCR_DICTIONARY_ITEMS, OCR_DICTIONARY_API_URL,
-    OCR_DICTIONARY_HTTP_TIMEOUT_SECS, THEME_COLORS_TOML, TRADEABLE_ITEMS_API_URL,
+    OcrThemeOption, OcrWord, CUSTOM_OCR_DICTIONARY_ITEMS, THEME_COLORS_TOML,
 };
 use crate::error::{AppError, AppResult};
 use crate::state::AppState;
@@ -48,13 +47,6 @@ pub struct TradeablePriceEntry {
     pub ducats: Option<u64>,
 }
 
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct OcrMarketItem {
-    pub id: String,
-    pub max_rank: Option<u64>,
-}
-
 // ── API response types ────────────────────────────────────────────────────────
 
 #[derive(Debug, Deserialize)]
@@ -73,8 +65,6 @@ struct DictionaryApiResponse {
 
 #[derive(Debug, Deserialize)]
 struct DictionaryApiItem {
-    #[serde(default)]
-    id: Option<String>,
     name: String,
     slug: String,
     #[serde(default)]
@@ -166,14 +156,6 @@ impl TradeablePriceEntry {
     }
 }
 
-/// Builds a blocking HTTP client with the configured timeout.
-fn blocking_http_client() -> AppResult<reqwest::blocking::Client> {
-    reqwest::blocking::Client::builder()
-        .timeout(Duration::from_secs(OCR_DICTIONARY_HTTP_TIMEOUT_SECS))
-        .build()
-        .map_err(|err| AppError::msg(format!("failed to build HTTP client: {err}")))
-}
-
 // ── Theme loading ─────────────────────────────────────────────────────────────
 
 /// Parses the embedded `theme_colors.toml` and returns the available themes.
@@ -210,27 +192,8 @@ pub fn load_primary_theme_options<R: Runtime>(
 
 /// Fetches the OCR dictionary from the remote API and stores it in [`AppState`].
 /// Returns the number of entries loaded.
-pub fn load_ocr_dictionary<R: Runtime>(app: &AppHandle<R>) -> AppResult<usize> {
-    let client = blocking_http_client()?;
-
-    let payload: DictionaryApiResponse = client
-        .get(OCR_DICTIONARY_API_URL)
-        .send()?
-        .error_for_status()?
-        .json()?;
-
-    // Keep IDs from the same feed used for OCR so the overlay can match /orders/my
-    // without requesting every recognized item from warframe.market.
-    let mut market_items = HashMap::new();
-    for item in &payload.items {
-        let Some(id) = item.id.as_ref().filter(|id| !id.is_empty()) else { continue };
-        let market_item = OcrMarketItem { id: id.clone(), max_rank: item.max_rank };
-        market_items.insert(item.slug.clone(), market_item.clone());
-        if item.slug.ends_with("_relic") && !item.tags.iter().any(|tag| tag == "requiem") {
-            market_items.insert(format!("{}_intact", item.slug), market_item.clone());
-            market_items.insert(format!("{}_radiant", item.slug), market_item);
-        }
-    }
+pub fn load_ocr_dictionary<R: Runtime>(app: &AppHandle<R>, value: Value) -> AppResult<usize> {
+    let payload: DictionaryApiResponse = serde_json::from_value(value)?;
 
     // Set entries carry the total ducats, but are excluded from OCR matching below.
     let set_ducats: HashMap<String, u64> = payload
@@ -341,34 +304,15 @@ pub fn load_ocr_dictionary<R: Runtime>(app: &AppHandle<R>) -> AppResult<usize> {
 
     let count = entries.len();
     *app.state::<AppState>().ocr_dictionary.lock()? = entries;
-    *app.state::<AppState>().ocr_market_items.lock()? = market_items;
     Ok(count)
-}
-
-/// Returns the item identities already fetched with the OCR dictionary.
-#[tauri::command]
-pub fn get_ocr_market_items(
-    state: tauri::State<'_, AppState>,
-    slugs: Vec<String>,
-) -> AppResult<HashMap<String, OcrMarketItem>> {
-    let items = state.ocr_market_items.lock()?;
-    Ok(slugs.into_iter().filter_map(|slug| {
-        items.get(&slug).cloned().map(|item| (slug, item))
-    }).collect())
 }
 
 // ── Tradeable item prices ─────────────────────────────────────────────────────
 
 /// Fetches tradeable item price statistics and stores them in [`AppState`].
 /// Returns the number of items with valid median prices.
-pub fn load_tradeable_item_prices<R: Runtime>(app: &AppHandle<R>) -> AppResult<usize> {
-    let client = blocking_http_client()?;
-
-    let payload: TradeableItemsApiResponse = client
-        .get(TRADEABLE_ITEMS_API_URL)
-        .send()?
-        .error_for_status()?
-        .json()?;
+pub fn load_tradeable_item_prices<R: Runtime>(app: &AppHandle<R>, value: Value) -> AppResult<usize> {
+    let payload: TradeableItemsApiResponse = serde_json::from_value(value)?;
 
     let prices = build_tradeable_prices(payload);
     let count = prices.len();
@@ -587,30 +531,6 @@ pub fn map_words_to_dictionary<R: Runtime>(
 
     if dict.is_empty() {
         return words.to_vec();
-    }
-
-    // Retry a failed startup price fetch in the background; OCR must not wait on HTTP.
-    let needs_prices = state
-        .ocr_tradeable_prices
-        .lock()
-        .map(|p| p.is_empty())
-        .unwrap_or(false);
-
-    if needs_prices
-        && !state
-            .ocr_price_retry_in_progress
-            .swap(true, Ordering::AcqRel)
-    {
-        let app = app.clone();
-        tauri::async_runtime::spawn_blocking(move || {
-            match load_tradeable_item_prices(&app) {
-                Ok(count) => info!("background-loaded tradeable item prices: {count}"),
-                Err(err) => warn!("failed to background-load tradeable item prices: {err}"),
-            }
-            app.state::<AppState>()
-                .ocr_price_retry_in_progress
-                .store(false, Ordering::Release);
-        });
     }
 
     let prices = state.ocr_tradeable_prices.lock().ok();
