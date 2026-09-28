@@ -5,6 +5,7 @@
 	import Icon from '@iconify/svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
 	import Button from '$lib/components/Button.svelte';
+	import Skeleton from '$lib/components/Skeleton.svelte';
 	import CopyTradeMessage from '$lib/components/CopyTradeMessage.svelte';
 	import { CachedWfmItemResponseSchema, OrderWithUserSchema } from '$lib/schemas';
 	import { MarketOrdersRefresh } from '$lib/market-orders-refresh.svelte';
@@ -87,7 +88,22 @@
 			</div>
 		</div>
 		{#if ordersRefresh.fetchedAt === null && !error}
-			<p class="text-muted-foreground text-sm">Loading current orders...</p>
+			<div role="status" aria-label="Loading current orders" class="border border-border-secondary divide-y divide-border-secondary">
+				{#each Array(6) as _}
+					<div class="flex items-center gap-3 px-3 py-2.5 h-12">
+						<div class="flex flex-col flex-1 gap-1.5 min-w-0">
+							<Skeleton class="w-2/5 h-3" />
+							<Skeleton class="w-1/3 h-2.5" />
+						</div>
+						<Skeleton class="w-10 h-3" />
+						<Skeleton class="w-8 h-8" />
+					</div>
+				{/each}
+				<div class="flex justify-between items-center px-3 py-3">
+					<Skeleton class="w-28 h-3" />
+					<Skeleton class="w-12 h-3" />
+				</div>
+			</div>
 		{:else if error && ordersRefresh.fetchedAt === null}
 			<p role="alert" class="text-danger text-sm">Could not load sell orders. {error}</p>
 		{:else if orders.length === 0}

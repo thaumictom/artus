@@ -6,6 +6,7 @@
 	import { invoke } from '@tauri-apps/api/core';
 	import { untrack } from 'svelte';
 	import Button from '$lib/components/Button.svelte';
+	import Skeleton from '$lib/components/Skeleton.svelte';
 	import Icon from '@iconify/svelte';
 	import { MarketOrdersRefresh } from '$lib/market-orders-refresh.svelte';
 	import CopyTradeMessage from '$lib/components/CopyTradeMessage.svelte';
@@ -262,6 +263,18 @@
 			</tr>
 		</thead>
 		<tbody>
+			{#if ordersRefresh.fetchedAt === null && !ordersError}
+				{#each Array(5) as _}
+					<tr class="*:px-1 *:py-2 *:border-t" aria-label="Loading order">
+						<td><Skeleton class="w-32 h-4" /></td>
+						<td><Skeleton class="w-8 h-4 ml-auto" /></td>
+						<td><Skeleton class="w-12 h-4 ml-auto" /></td>
+						<td><Skeleton class="w-8 h-4 ml-auto" /></td>
+						{#if groupByProperty}<td><Skeleton class="w-8 h-4 ml-auto" /></td>{/if}
+						<td><Skeleton class="w-8 h-8 ml-auto" /></td>
+					</tr>
+				{/each}
+			{/if}
 			{#each filteredOrders as order (order.id)}
 				<tr class="*:px-1 *:py-2 *:border-t">
 					<td>

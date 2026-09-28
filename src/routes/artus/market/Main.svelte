@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Combobox from '$lib/components/Combobox.svelte';
 	import Button from '$lib/components/Button.svelte';
+	import Skeleton from '$lib/components/Skeleton.svelte';
 	// import { RadioGroup } from 'bits-ui'; // Tag filtering is temporarily disabled.
 	import { onMount } from 'svelte';
 	import { z } from 'zod';
@@ -302,7 +303,16 @@
 	<div class="bg-surface my-1 w-full max-w-3xl h-px" aria-hidden="true"></div>
 	{#if isSearching || itemData}
 		{#if isSearching}
-			<div>Loading...</div>
+			<div role="status" aria-label="Loading market item" class="flex flex-col gap-4 w-full max-w-3xl">
+				<div class="flex items-center gap-4 p-4 border">
+					<Skeleton class="size-20 shrink-0" />
+					<div class="flex flex-col gap-3 w-full">
+						<Skeleton class="w-1/2 h-5" />
+						<Skeleton class="w-1/3 h-3" />
+					</div>
+				</div>
+				<Skeleton class="w-full h-56" />
+			</div>
 		{:else if itemData}
 			<InfoCard
 				{itemData}
@@ -337,7 +347,15 @@
 				<span class="text-muted-foreground text-xs">Sorted by liquidity</span>
 			</div>
 			{#if isLoadingMostTraded}
-				<p role="status" class="text-muted-foreground text-sm">Loading most traded items...</p>
+				<div role="status" aria-label="Loading most traded items" class="divide-y divide-surface">
+					{#each Array(8) as _}
+						<div class="flex items-center gap-3 px-3 py-2.5 h-10">
+							<Skeleton class="w-5 h-3" />
+							<Skeleton class="flex-1 max-w-64 h-3" />
+							<Skeleton class="w-12 h-3 ml-auto" />
+						</div>
+					{/each}
+				</div>
 			{:else if mostTradedError}
 				<div role="alert" class="flex items-center gap-2 text-sm">
 					<span>Could not load the most traded items.</span>

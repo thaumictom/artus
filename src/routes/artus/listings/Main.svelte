@@ -4,6 +4,7 @@
 	import { LazyStore } from '@tauri-apps/plugin-store';
 	import Icon from '@iconify/svelte';
 	import Button from '$lib/components/Button.svelte';
+	import Skeleton from '$lib/components/Skeleton.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
 	import { marketAccount, marketProfileUrl } from '$lib/market-account.svelte';
 	import {
@@ -280,10 +281,23 @@
 		</header>
 		<div class="bg-surface my-1 w-full h-px"></div>
 		{#if loading && orders.length === 0}
-			<div
-				class="bg-card/50 p-10 border border-border-secondary text-muted-foreground text-sm text-center"
-			>
-				Loading listings...
+			<div role="status" aria-label="Loading listings" class="flex flex-col gap-4">
+				<div class="flex gap-3">
+					<Skeleton class="flex-1 h-11" />
+					<Skeleton class="w-32 h-11" />
+					<Skeleton class="w-32 h-11" />
+				</div>
+				<div class="bg-card/50 border border-border-secondary divide-y divide-border-secondary">
+					{#each Array(6) as _}
+						<div class="flex items-center gap-4 px-3 py-3.5 h-14">
+							<Skeleton class="flex-1 max-w-64 h-4" />
+							<Skeleton class="w-14 h-6" />
+							<Skeleton class="w-12 h-4" />
+							<Skeleton class="w-12 h-4" />
+							<Skeleton class="w-16 h-4" />
+						</div>
+					{/each}
+				</div>
 			</div>
 		{:else if error && !editing && !removing && orders.length === 0}
 			<div class="bg-card/50 p-10 border border-border-secondary text-center">

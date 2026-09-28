@@ -4,6 +4,7 @@
 	import { inventoryMarketSlug, inventoryNameKey, waitForInventorySave, type InventoryItem } from '$lib/inventory';
 	import { isOwnedMasteryComponent, mastery, type MasteryItem } from '$lib/mastery.svelte';
 	import Select from '$lib/components/Select.svelte';
+	import Skeleton from '$lib/components/Skeleton.svelte';
 	import MasteryTable from './MasteryTable.svelte';
 	import BuyDialog from './BuyDialog.svelte';
 	import TrackedMastery from './TrackedMastery.svelte';
@@ -147,9 +148,23 @@
 <div class="flex flex-col items-center gap-4 mx-auto p-8 w-full">
 	<div class="flex flex-col gap-6 w-full max-w-5xl">
 		<TrackedMastery />
-		{#if mastery.loading}<p class="py-10 text-muted-foreground text-center">
-				Loading mastery items…
-			</p>
+		{#if mastery.loading}
+			<div role="status" aria-label="Loading mastery items" class="flex flex-col gap-4">
+				<div class="flex flex-wrap gap-3">
+					<Skeleton class="flex-1 min-w-56 h-10" />
+					{#each Array(3) as _}<Skeleton class="w-36 h-10" />{/each}
+				</div>
+				<div class="bg-card/50 border border-border-secondary divide-y divide-border-secondary">
+					{#each Array(7) as _}
+						<div class="flex items-center gap-4 px-3 py-3.5 h-14">
+							<Skeleton class="flex-1 max-w-64 h-4" />
+							<Skeleton class="w-20 h-4" />
+							<Skeleton class="w-12 h-4" />
+							<Skeleton class="w-12 h-4" />
+						</div>
+					{/each}
+				</div>
+			</div>
 		{:else if mastery.error}<p class="p-4 border border-destructive rounded text-destructive">
 				{mastery.error}
 			</p>

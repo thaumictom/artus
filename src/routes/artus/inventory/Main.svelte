@@ -7,6 +7,7 @@
 	import Table from '$lib/components/Table.svelte';
 	import type { TableColumn } from '$lib/components/table-types';
 	import Button from '$lib/components/Button.svelte';
+	import Skeleton from '$lib/components/Skeleton.svelte';
 	import Select from '$lib/components/Select.svelte';
 	import Combobox from '$lib/components/Combobox.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
@@ -419,7 +420,23 @@
 		<div class="bg-surface my-1 w-full h-px"></div>
 
 		{#if loading}
-			<p class="py-10 text-muted-foreground text-center">Loading inventory…</p>
+			<div role="status" aria-label="Loading inventory" class="flex flex-col gap-4">
+				<div class="flex flex-wrap gap-3">
+					<Skeleton class="flex-1 min-w-56 h-10" />
+					{#each Array(4) as _}<Skeleton class="w-32 h-10" />{/each}
+				</div>
+				<div class="bg-card/50 border border-border-secondary divide-y divide-border-secondary">
+					{#each Array(7) as _}
+						<div class="flex items-center gap-4 px-3 py-3.5 h-14">
+							<Skeleton class="flex-1 max-w-64 h-4" />
+							<Skeleton class="w-16 h-4" />
+							<Skeleton class="w-12 h-4" />
+							<Skeleton class="w-12 h-4" />
+							<Skeleton class="w-16 h-4" />
+						</div>
+					{/each}
+				</div>
+			</div>
 		{:else}
 			{#if listingsError && marketAccount.session}
 				<p role="alert" class="text-danger text-sm">
@@ -585,17 +602,18 @@
 						>
 							Item
 						</label>
-						<Combobox
-							type="single"
-							items={addItems}
-							bind:value={selectedAddSlug}
-							inputValue={selectedAddItem?.label ?? ''}
-							disabled={addItemsLoading || addItemsError}
-							inputProps={{
-								id: 'inventory-add-item',
-								placeholder: addItemsLoading ? 'Loading items...' : 'Search for an item...',
-							}}
-						/>
+						{#if addItemsLoading && addItems.length === 0}
+							<div role="status" aria-label="Loading market items"><Skeleton class="w-full h-10" /></div>
+						{:else}
+							<Combobox
+								type="single"
+								items={addItems}
+								bind:value={selectedAddSlug}
+								inputValue={selectedAddItem?.label ?? ''}
+								disabled={addItemsLoading || addItemsError}
+								inputProps={{ id: 'inventory-add-item', placeholder: 'Search for an item...' }}
+							/>
+						{/if}
 						{#if addItemsError}
 							<div role="alert" class="flex items-center gap-2 mt-2 text-sm">
 								<span>Could not load the item list.</span>

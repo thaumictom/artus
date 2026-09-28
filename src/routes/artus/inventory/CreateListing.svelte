@@ -3,6 +3,7 @@
 	import { untrack } from 'svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
 	import Button from '$lib/components/Button.svelte';
+	import Skeleton from '$lib/components/Skeleton.svelte';
 	import type { InventoryItem } from '$lib/inventory';
 	import { GetOrdersResponseSchema } from '$lib/schemas';
 	import { config } from '$lib/settings.svelte';
@@ -447,7 +448,30 @@
 	}}
 >
 	<div class="flex flex-col gap-4 px-6 py-1 overflow-y-auto">
-		{#if loading}<p class="text-muted-foreground text-sm">Loading current orders...</p>{:else}
+		{#if loading}
+			<div role="status" aria-label="Loading current orders" class="flex flex-col gap-4">
+				<div class="bg-card/50 p-3 border border-border-secondary">
+					<div class="grid grid-cols-3 gap-4">
+						{#each Array(3) as _}
+							<div class="flex flex-col items-center gap-2">
+								<Skeleton class="w-16 h-2.5" />
+								<Skeleton class="w-12 h-4" />
+							</div>
+						{/each}
+					</div>
+				</div>
+				<div class="gap-4 grid grid-cols-1 sm:grid-cols-2">
+					{#each Array(2) as _}
+						<div class="flex flex-col gap-2 bg-card/50 p-3 border border-border-secondary">
+							<Skeleton class="w-3/4 h-4" />
+							{#each Array(3) as _}
+								<div class="flex justify-between gap-3"><Skeleton class="w-12 h-3" /><Skeleton class="w-8 h-3" /></div>
+							{/each}
+						</div>
+					{/each}
+				</div>
+			</div>
+		{:else}
 			<div class="bg-card/50 p-3 border border-border-secondary text-center">
 				<div
 					class="grid grid-cols-3 divide-border-secondary divide-x"
