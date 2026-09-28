@@ -6,8 +6,6 @@ export type InventoryItem = {
 	isCustom?: boolean;
 	category?: string;
 	quantity: number;
-	marketMedian?: number;
-	marketMedianUsesOfferFallback?: boolean;
 	ducats?: number;
 };
 
@@ -15,8 +13,6 @@ export type InventoryOcrWord = {
 	slug?: string;
 	is_custom?: boolean;
 	text: string;
-	market_median?: number;
-	market_median_from_current_offers?: boolean;
 	ducats?: number;
 };
 
@@ -81,10 +77,6 @@ function saveOcrItemQuantities(changes: OcrQuantityChange[]) {
 				} else {
 					existing.quantity = next;
 					existing.slug ??= word.slug;
-					if (actual > 0 && word.market_median != null) {
-						existing.marketMedian = word.market_median;
-						existing.marketMedianUsesOfferFallback = word.market_median_from_current_offers;
-					}
 					existing.ducats ??= word.ducats;
 				}
 			} else {
@@ -94,8 +86,6 @@ function saveOcrItemQuantities(changes: OcrQuantityChange[]) {
 					slug: word.slug,
 					isCustom: word.is_custom,
 					quantity: next,
-					marketMedian: word.market_median,
-					marketMedianUsesOfferFallback: word.market_median_from_current_offers,
 					ducats: word.ducats,
 				});
 			}

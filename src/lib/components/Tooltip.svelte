@@ -46,7 +46,7 @@
 				<div class="p-2 border">
 					{@render content()}
 				</div>
-				<Tooltip.Arrow class="text-border" />
+				<!-- <Tooltip.Arrow /> -->
 			</Tooltip.Content>
 		</Tooltip.Portal>
 	</Tooltip.Root>

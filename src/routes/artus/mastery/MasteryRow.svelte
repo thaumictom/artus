@@ -135,7 +135,7 @@
 	</td>
 	<td class="px-3 py-3.5 text-right align-middle tabular-nums">
 		{#if price}
-			<span class="inline-flex items-center justify-end gap-1" title={price.from_current_offers ? 'Current offer median; no recent trade median' : 'Recent trade median'}>
+			<span class="inline-flex items-center justify-end gap-1" title={price.from_current_offers ? 'Current offer median; recent trades exist' : 'Recent trade median'}>
 				{price.median.toLocaleString(undefined, { maximumFractionDigits: 1 })}
 				<img src="/icons/platinum.png" class="size-3.5" alt="platinum" />
 			</span>

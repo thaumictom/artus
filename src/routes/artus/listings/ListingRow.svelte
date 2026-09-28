@@ -80,7 +80,7 @@
 			<span
 				class="inline-flex justify-end items-center gap-1"
 				title={median.from_current_offers
-					? 'Current offer median; no recent trade median'
+					? 'Current offer median; recent trades exist'
 					: 'Recent trade median'}
 			>
 				{priceFormatter.format(median.median)}

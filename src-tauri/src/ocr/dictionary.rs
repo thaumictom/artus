@@ -91,6 +91,8 @@ struct TradeableItemApiItem {
     #[serde(default, alias = "statistics_Today", deserialize_with = "deserialize_statistics")]
     statistics_today: Vec<TradeableItemStats>,
     #[serde(default, deserialize_with = "deserialize_statistics")]
+    statistics_yesterday: Vec<TradeableItemStats>,
+    #[serde(default, deserialize_with = "deserialize_statistics")]
     statistics_live: Vec<TradeableItemStats>,
     #[serde(default)]
     ducats: Option<u64>,
@@ -119,29 +121,71 @@ where
     Ok(entries.unwrap_or_default().into_iter().flatten().collect())
 }
 
+fn traded_stat(stats: Option<&TradeableItemStats>) -> Option<&TradeableItemStats> {
+    stats.filter(|s| s.volume.is_some_and(|volume| volume.is_finite() && volume > 0.0))
+}
+
+fn positive_price(value: Option<f64>) -> Option<f64> {
+    value.filter(|v| v.is_finite() && *v > 0.0)
+}
+
+fn valid_median(stats: Option<&TradeableItemStats>) -> Option<f64> {
+    positive_price(stats.and_then(|s| s.median))
+}
+
+fn recent_price<'a>(
+    today: Option<&'a TradeableItemStats>,
+    yesterday: Option<&'a TradeableItemStats>,
+    live: Option<&TradeableItemStats>,
+) -> Option<(f64, bool, &'a TradeableItemStats)> {
+    let today = traded_stat(today);
+    let yesterday = traded_stat(yesterday);
+    let source = today.or(yesterday)?;
+    today.and_then(|stats| valid_median(Some(stats)).map(|median| (median, false, stats)))
+        .or_else(|| yesterday.and_then(|stats| valid_median(Some(stats)).map(|median| (median, false, stats))))
+        .or_else(|| valid_median(live).map(|median| (median, true, source)))
+}
+
+fn relic_price(
+    median: f64,
+    used_offer: bool,
+    used_subtype: bool,
+    source: &TradeableItemStats,
+    target_today: Option<&TradeableItemStats>,
+    source_today: Option<&TradeableItemStats>,
+    ducats: Option<u64>,
+) -> TradeablePriceEntry {
+    let target_today = traded_stat(target_today);
+    TradeablePriceEntry {
+        median,
+        today_median: valid_median(target_today),
+        weighted_avg: positive_price(target_today.and_then(|s| s.wa_price)),
+        today_volume: target_today.and_then(|s| s.volume),
+        used_current_offer_fallback: used_offer,
+        relic_price_is_fallback: used_subtype,
+        trades_24h: traded_stat(source_today).and_then(|s| s.volume),
+        moving_avg: positive_price(source.moving_avg),
+        ducats,
+    }
+}
+
 fn resolve_price(
-    stats: Option<&TradeableItemStats>,
+    today: Option<&TradeableItemStats>,
+    yesterday: Option<&TradeableItemStats>,
     live: Option<&TradeableItemStats>,
     ducats: Option<u64>,
 ) -> Option<TradeablePriceEntry> {
-    let (median, used_current_offer_fallback) = stats
-        .and_then(|s| s.median)
-        .filter(|v| v.is_finite())
-        .map(|v| (v, false))
-        .or_else(|| {
-            live.and_then(|s| s.median)
-                .filter(|v| v.is_finite())
-                .map(|v| (v, true))
-        })?;
+    let (median, used_current_offer_fallback, source) = recent_price(today, yesterday, live)?;
+    let today = traded_stat(today);
     Some(TradeablePriceEntry {
         median,
-        today_median: stats.and_then(|s| s.median).filter(|v| v.is_finite()),
-        weighted_avg: stats.and_then(|s| s.wa_price).filter(|v| v.is_finite()),
-        today_volume: stats.and_then(|s| s.volume).filter(|v| v.is_finite()),
+        today_median: valid_median(today),
+        weighted_avg: positive_price(today.and_then(|s| s.wa_price)),
+        today_volume: today.and_then(|s| s.volume),
         used_current_offer_fallback,
         relic_price_is_fallback: false,
-        trades_24h: stats.and_then(|s| s.volume).filter(|v| v.is_finite()),
-        moving_avg: stats.and_then(|s| s.moving_avg).filter(|v| v.is_finite()),
+        trades_24h: today.and_then(|s| s.volume),
+        moving_avg: positive_price(source.moving_avg),
         ducats,
     })
 }
@@ -332,8 +376,14 @@ fn build_tradeable_prices(
         }
 
         if slug.ends_with("_relic") && !slug.contains("requiem") {
-            let get_stat = |subtype_target: &str| -> Option<&TradeableItemStats> {
+            let get_today = |subtype_target: &str| -> Option<&TradeableItemStats> {
                 item.statistics_today
+                    .iter()
+                    .find(|s| s.subtype.as_deref() == Some(subtype_target))
+            };
+
+            let get_yesterday = |subtype_target: &str| -> Option<&TradeableItemStats> {
+                item.statistics_yesterday
                     .iter()
                     .find(|s| s.subtype.as_deref() == Some(subtype_target))
             };
@@ -344,104 +394,36 @@ fn build_tradeable_prices(
                     .find(|s| s.subtype.as_deref() == Some(subtype_target))
             };
 
-            let intact_stats = get_stat("intact");
+            let intact_stats = get_today("intact");
+            let intact_yesterday = get_yesterday("intact");
             let intact_offers = get_offer("intact");
-            let radiant_stats = get_stat("radiant");
+            let radiant_stats = get_today("radiant");
+            let radiant_yesterday = get_yesterday("radiant");
             let radiant_offers = get_offer("radiant");
 
-            // Resolve Intact prices
-            let intact_median_data = intact_stats
-                .and_then(|s| s.median)
-                .filter(|m| m.is_finite())
-                .map(|m| (m, false, false)) // (median, used_current_offer_fallback, used_subtype_fallback)
-                .or_else(|| {
-                    intact_offers
-                        .and_then(|s| s.median)
-                        .filter(|m| m.is_finite())
-                        .map(|m| (m, true, false))
-                })
-                .or_else(|| {
-                    radiant_stats
-                        .and_then(|s| s.median)
-                        .filter(|m| m.is_finite())
-                        .map(|m| (m, false, true))
-                })
-                .or_else(|| {
-                    radiant_offers
-                        .and_then(|s| s.median)
-                        .filter(|m| m.is_finite())
-                        .map(|m| (m, true, true))
-                });
+            let intact_median_data = recent_price(intact_stats, intact_yesterday, intact_offers)
+                .map(|(median, used_offer, source)| (median, used_offer, false, source))
+                .or_else(|| recent_price(radiant_stats, radiant_yesterday, radiant_offers)
+                    .map(|(median, used_offer, source)| (median, used_offer, true, source)));
 
-            if let Some((median, used_offer, used_subtype)) = intact_median_data {
-                let source_stat = if !used_subtype {
-                    intact_stats
-                } else {
-                    radiant_stats
-                };
+            if let Some((median, used_offer, used_subtype, source)) = intact_median_data {
                 prices.insert(
                     format!("{}_intact", slug),
-                    TradeablePriceEntry {
-                        median,
-                        today_median: intact_stats.and_then(|s| s.median).filter(|v| v.is_finite()),
-                        weighted_avg: intact_stats.and_then(|s| s.wa_price).filter(|v| v.is_finite()),
-                        today_volume: intact_stats.and_then(|s| s.volume).filter(|v| v.is_finite()),
-                        used_current_offer_fallback: used_offer,
-                        relic_price_is_fallback: used_subtype,
-                        trades_24h: source_stat.and_then(|s| s.volume).filter(|v| v.is_finite()),
-                        moving_avg: source_stat
-                            .and_then(|s| s.moving_avg)
-                            .filter(|v| v.is_finite()),
-                        ducats: item.ducats,
-                    },
+                    relic_price(median, used_offer, used_subtype, source, intact_stats,
+                        if used_subtype { radiant_stats } else { intact_stats }, item.ducats),
                 );
             }
 
-            // Resolve Radiant prices
-            let radiant_median_data = radiant_stats
-                .and_then(|s| s.median)
-                .filter(|m| m.is_finite())
-                .map(|m| (m, false, false))
-                .or_else(|| {
-                    radiant_offers
-                        .and_then(|s| s.median)
-                        .filter(|m| m.is_finite())
-                        .map(|m| (m, true, false))
-                })
-                .or_else(|| {
-                    intact_stats
-                        .and_then(|s| s.median)
-                        .filter(|m| m.is_finite())
-                        .map(|m| (m, false, true))
-                })
-                .or_else(|| {
-                    intact_offers
-                        .and_then(|s| s.median)
-                        .filter(|m| m.is_finite())
-                        .map(|m| (m, true, true))
-                });
+            let radiant_median_data = recent_price(radiant_stats, radiant_yesterday, radiant_offers)
+                .map(|(median, used_offer, source)| (median, used_offer, false, source))
+                .or_else(|| recent_price(intact_stats, intact_yesterday, intact_offers)
+                    .map(|(median, used_offer, source)| (median, used_offer, true, source)));
 
-            if let Some((median, used_offer, used_subtype)) = radiant_median_data {
-                let source_stat = if !used_subtype {
-                    radiant_stats
-                } else {
-                    intact_stats
-                };
+            if let Some((median, used_offer, used_subtype, source)) = radiant_median_data {
                 prices.insert(
                     format!("{}_radiant", slug),
-                    TradeablePriceEntry {
-                        median,
-                        today_median: radiant_stats.and_then(|s| s.median).filter(|v| v.is_finite()),
-                        weighted_avg: radiant_stats.and_then(|s| s.wa_price).filter(|v| v.is_finite()),
-                        today_volume: radiant_stats.and_then(|s| s.volume).filter(|v| v.is_finite()),
-                        used_current_offer_fallback: used_offer,
-                        relic_price_is_fallback: used_subtype,
-                        trades_24h: source_stat.and_then(|s| s.volume).filter(|v| v.is_finite()),
-                        moving_avg: source_stat
-                            .and_then(|s| s.moving_avg)
-                            .filter(|v| v.is_finite()),
-                        ducats: item.ducats,
-                    },
+                    relic_price(median, used_offer, used_subtype, source, radiant_stats,
+                        if used_subtype { intact_stats } else { radiant_stats }, item.ducats),
                 );
             }
         } else {
@@ -449,6 +431,7 @@ fn build_tradeable_prices(
             let ranks: std::collections::BTreeSet<_> = item
                 .statistics_today
                 .iter()
+                .chain(&item.statistics_yesterday)
                 .chain(&item.statistics_live)
                 .filter_map(|s| s.mod_rank)
                 .collect();
@@ -457,11 +440,15 @@ fn build_tradeable_prices(
                     .statistics_today
                     .iter()
                     .find(|s| s.mod_rank == Some(*rank));
+                let yesterday = item
+                    .statistics_yesterday
+                    .iter()
+                    .find(|s| s.mod_rank == Some(*rank));
                 let live = item
                     .statistics_live
                     .iter()
                     .find(|s| s.mod_rank == Some(*rank));
-                if let Some(price) = resolve_price(stats, live, item.ducats) {
+                if let Some(price) = resolve_price(stats, yesterday, live, item.ducats) {
                     prices.insert(format!("{slug}_rank_{rank}"), price);
                 }
             }
@@ -470,38 +457,18 @@ fn build_tradeable_prices(
                 .statistics_today
                 .iter()
                 .find(|s| s.mod_rank == base_rank);
+            let stats_yesterday = item
+                .statistics_yesterday
+                .iter()
+                .find(|s| s.mod_rank == base_rank);
             let offers = item
                 .statistics_live
                 .iter()
                 .find(|s| s.mod_rank == base_rank);
 
-            let stats_median = stats_today.and_then(|s| s.median).filter(|m| m.is_finite());
-            let offers_median = offers.and_then(|s| s.median).filter(|m| m.is_finite());
-
-            // Prefer today's stats; fall back to current offers
-            let Some((median, used_fallback)) = stats_median
-                .map(|v| (v, false))
-                .or_else(|| offers_median.map(|v| (v, true)))
-            else {
-                continue;
-            };
-
-            prices.insert(
-                slug.to_string(),
-                TradeablePriceEntry {
-                    median,
-                    today_median: stats_today.and_then(|s| s.median).filter(|v| v.is_finite()),
-                    weighted_avg: stats_today.and_then(|s| s.wa_price).filter(|v| v.is_finite()),
-                    today_volume: stats_today.and_then(|s| s.volume).filter(|v| v.is_finite()),
-                    used_current_offer_fallback: used_fallback,
-                    relic_price_is_fallback: false,
-                    trades_24h: stats_today.and_then(|s| s.volume).filter(|v| v.is_finite()),
-                    moving_avg: stats_today
-                        .and_then(|s| s.moving_avg)
-                        .filter(|v| v.is_finite()),
-                    ducats: item.ducats,
-                },
-            );
+            if let Some(price) = resolve_price(stats_today, stats_yesterday, offers, item.ducats) {
+                prices.insert(slug.to_string(), price);
+            }
         }
     }
 

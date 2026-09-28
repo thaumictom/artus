@@ -4,7 +4,6 @@
 	import { inventoryMarketSlug, inventoryNameKey, waitForInventorySave, type InventoryItem } from '$lib/inventory';
 	import { isOwnedMasteryComponent, mastery, type MasteryItem } from '$lib/mastery.svelte';
 	import Select from '$lib/components/Select.svelte';
-	import Button from '$lib/components/Button.svelte';
 	import MasteryTable from './MasteryTable.svelte';
 	import BuyDialog from './BuyDialog.svelte';
 	import TrackedMastery from './TrackedMastery.svelte';
@@ -143,15 +142,6 @@
 		search = event.currentTarget.value;
 		visibleCount = 150;
 	}
-	function resetFilters() {
-		search = '';
-		category = 'All';
-		tag = 'All';
-		progress = 'All';
-		sortColumn = 'name';
-		sortDirection = 'asc';
-		visibleCount = 150;
-	}
 </script>
 
 <div class="flex flex-col items-center gap-4 mx-auto p-8 w-full">
@@ -220,7 +210,6 @@
 						triggerProps={{ id: 'mastery-progress', class: 'max-w-none h-10' }}
 					/>
 				</div>
-				<Button onclick={resetFilters} class="h-10">Reset filters</Button>
 			</div>
 			<MasteryTable
 				items={visible}

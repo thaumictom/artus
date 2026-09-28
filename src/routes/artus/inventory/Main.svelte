@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { LazyStore } from '@tauri-apps/plugin-store';
 	import { invoke } from '@tauri-apps/api/core';
+	import { listen } from '@tauri-apps/api/event';
 	import { onMount, untrack } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import Table from '$lib/components/Table.svelte';
@@ -18,12 +19,14 @@
 	} from '$lib/inventory';
 	import { mastery } from '$lib/mastery.svelte';
 	import { DictionarySchema } from '$lib/schemas';
+	import { formatWfmTag, wfmCategory } from '$lib/wfm-tags';
 	import InventoryRow from './InventoryRow.svelte';
 	import CreateListing from './CreateListing.svelte';
 	import { masteredMarketItems } from '$lib/listing-context';
 	import { marketAccount } from '$lib/market-account.svelte';
 	import { fetchMarketListings } from '$lib/market-listings';
 	import type { Listing, ListingChange, ListingItem } from '../listings/types';
+	import Tooltip from '$lib/components/Tooltip.svelte';
 
 	let { onOpenMarket = () => {} }: { onOpenMarket?: (slug: string) => void } = $props();
 
@@ -42,9 +45,10 @@
 	let newSlugs = $state<string[]>([]);
 	let loading = $state(true);
 	let search = $state('');
+	let categoryFilter = $state('All');
+	let tagFilter = $state('All');
 	let masteryFilter = $state('all');
 	let listingFilter = $state('all');
-	let newFilter = $state('all');
 	const masteryOptions = [
 		{ value: 'all', label: 'All items' },
 		{ value: 'mastered', label: 'Mastered' },
@@ -55,11 +59,18 @@
 		{ value: 'listed', label: 'Listed' },
 		{ value: 'unlisted', label: 'Not listed' },
 	];
-	const newOptions = [
-		{ value: 'all', label: 'All items' },
-		{ value: 'new', label: 'New' },
-		{ value: 'existing', label: 'Existing' },
-	];
+	type ItemMetadata = { category: string; tags: string[] };
+	let metadataBySlug = $state.raw<Record<string, ItemMetadata>>({});
+	let metadataRequest = 0;
+	const categories = $derived(['All', ...new Set(data.map((item) => categoryFor(item)).sort())]);
+	const tags = $derived([
+		'All',
+		...new Set(data.flatMap((item) => metadataFor(item)?.tags ?? []).sort()),
+	]);
+	const categoryOptions = $derived(categories.map((value) => ({ value, label: value })));
+	const tagOptions = $derived(
+		tags.map((value) => ({ value, label: value === 'All' ? value : formatWfmTag(value) })),
+	);
 	let sortColumn = $state<SortColumn>('name');
 	let sortDirection = $state<'asc' | 'desc'>('asc');
 	let addOpen = $state(false);
@@ -80,53 +91,55 @@
 		return bySlug;
 	});
 	let addItems = $state<{ label: string; value: string; ducats?: number }[]>([]);
-	let addItemsAttempted = $state(false);
-	let addItemsLoading = $state(false);
+	let addItemsLoading = $state(true);
 	let addItemsError = $state(false);
-	let addPrices = $state<Record<string, { median: number; from_current_offers: boolean }>>({});
 	let selectedAddSlug = $state('');
 	let addQuantity = $state(1);
 	const selectedAddItem = $derived(addItems.find((item) => item.value === selectedAddSlug));
 	const canAddItem = $derived(
 		!!selectedAddItem && Number.isSafeInteger(addQuantity) && addQuantity > 0,
 	);
-	$effect(() => {
-		if (addOpen && !addItemsAttempted) void loadAddItems();
-	});
-
 	async function loadAddItems() {
-		addItemsAttempted = true;
+		const request = ++metadataRequest;
 		addItemsLoading = true;
 		addItemsError = false;
 		try {
-			const [dictionaryResponse, prices] = await Promise.all([
-				invoke('get_market_dictionary'),
-				invoke<Record<string, { median: number; from_current_offers: boolean }>>(
-					'get_mastery_tradeable_prices',
-				).catch((error) => {
-					console.error('Could not load cached market prices:', error);
-					return {};
-				}),
-			]);
+			const dictionaryResponse = await invoke('get_market_dictionary');
 			const dictionary = DictionarySchema.parse(dictionaryResponse);
+			if (request !== metadataRequest) return;
 			addItems = dictionary.items.map((item) => ({
 				label: item.name,
 				value: item.slug,
 				ducats: item.ducats,
 			}));
-			addPrices = prices;
+			metadataBySlug = Object.fromEntries(
+				dictionary.items.map((item) => [
+					item.slug,
+					{ category: wfmCategory(item.tags), tags: item.tags },
+				]),
+			);
 		} catch (error) {
 			console.error('Could not load items for inventory:', error);
-			addItemsError = true;
+			if (request === metadataRequest && addItems.length === 0) addItemsError = true;
 		} finally {
-			addItemsLoading = false;
+			if (request === metadataRequest) addItemsLoading = false;
 		}
+	}
+
+	function metadataFor(item: InventoryItem): ItemMetadata | undefined {
+		const slug = inventoryMarketSlug(item);
+		return slug
+			? (metadataBySlug[slug] ?? metadataBySlug[slug.replace(/_rank_\d+$/, '')])
+			: undefined;
+	}
+
+	function categoryFor(item: InventoryItem): string {
+		return metadataFor(item)?.category ?? item.category ?? 'Other';
 	}
 
 	function addSelectedItem() {
 		if (!canAddItem || !selectedAddItem) return;
 		const slug = selectedAddItem.value;
-		const price = addPrices[slug] ?? mastery.prices[slug];
 		const existing = data.find(
 			(item) =>
 				!item.isCustom &&
@@ -136,18 +149,12 @@
 		if (existing) {
 			existing.quantity += addQuantity;
 			existing.slug ??= slug;
-			if (price && existing.marketMedian == null) {
-				existing.marketMedian = price.median;
-				existing.marketMedianUsesOfferFallback = price.from_current_offers;
-			}
 			existing.ducats ??= selectedAddItem.ducats;
 		} else {
 			data.push({
 				name: selectedAddItem.label,
 				slug,
 				quantity: addQuantity,
-				marketMedian: price?.median,
-				marketMedianUsesOfferFallback: price?.from_current_offers,
 				ducats: selectedAddItem.ducats,
 			});
 		}
@@ -157,17 +164,21 @@
 		addOpen = false;
 	}
 
-	const filtered = $derived(data.filter((item) => {
-		if (!item.name.toLowerCase().includes(search.trim().toLowerCase())) return false;
-		if (masteryFilter !== 'all' && isMastered(item) !== (masteryFilter === 'mastered')) return false;
-		if (listingFilter !== 'all' && listingsLoaded) {
-			const slug = inventoryMarketSlug(item);
-			const listed = !!slug && listingBySlug.has(slug);
-			if (listed !== (listingFilter === 'listed')) return false;
-		}
-		const isNew = !!item.slug && newSlugs.includes(item.slug);
-		return newFilter === 'all' || isNew === (newFilter === 'new');
-	}));
+	const filtered = $derived(
+		data.filter((item) => {
+			if (!item.name.toLowerCase().includes(search.trim().toLowerCase())) return false;
+			if (categoryFilter !== 'All' && categoryFor(item) !== categoryFilter) return false;
+			if (tagFilter !== 'All' && !metadataFor(item)?.tags.includes(tagFilter)) return false;
+			if (masteryFilter !== 'all' && isMastered(item) !== (masteryFilter === 'mastered'))
+				return false;
+			if (listingFilter !== 'all' && listingsLoaded) {
+				const slug = inventoryMarketSlug(item);
+				const listed = !!slug && listingBySlug.has(slug);
+				if (listed !== (listingFilter === 'listed')) return false;
+			}
+			return true;
+		}),
+	);
 	const sorted = $derived.by(() => {
 		const items = [...filtered];
 		return items.sort((a, b) => {
@@ -178,13 +189,13 @@
 				sortColumn === 'quantity'
 					? a.quantity
 					: sortColumn === 'median'
-						? a.marketMedian
+						? priceFor(a)?.median
 						: a.ducats;
 			const second =
 				sortColumn === 'quantity'
 					? b.quantity
 					: sortColumn === 'median'
-						? b.marketMedian
+						? priceFor(b)?.median
 						: b.ducats;
 			if (first == null) return second == null ? a.name.localeCompare(b.name) : 1;
 			if (second == null) return -1;
@@ -194,13 +205,16 @@
 		});
 	});
 	const totalPlatinum = $derived(
-		data.reduce((sum, item) => sum + (item.marketMedian ?? 0) * item.quantity, 0),
+		data.reduce((sum, item) => sum + (priceFor(item)?.median ?? 0) * item.quantity, 0),
 	);
 	const totalDucats = $derived(
 		data.reduce((sum, item) => sum + (item.ducats ?? 0) * item.quantity, 0),
 	);
 	const platinumFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
 	const masteredItems = $derived(masteredMarketItems(mastery.items, mastery.checked));
+	function priceFor(item: InventoryItem) {
+		return item.slug ? mastery.prices[item.slug] : undefined;
+	}
 
 	function isMastered(item: InventoryItem) {
 		if (item.isCustom) return false;
@@ -253,12 +267,16 @@
 				else if (marketAccount.session) void refreshListings(marketAccount.session.ingameName);
 				break;
 			case 'updated':
-				listings = listings.map((listing) => listing.id === change.id
-					? { ...listing, platinum: change.platinum, quantity: change.quantity } : listing);
+				listings = listings.map((listing) =>
+					listing.id === change.id
+						? { ...listing, platinum: change.platinum, quantity: change.quantity }
+						: listing,
+				);
 				break;
 			case 'visibility':
-				listings = listings.map((listing) => listing.id === change.id
-					? { ...listing, visible: change.visible } : listing);
+				listings = listings.map((listing) =>
+					listing.id === change.id ? { ...listing, visible: change.visible } : listing,
+				);
 				break;
 			case 'deleted':
 				listings = listings.filter((listing) => listing.id !== change.id);
@@ -299,6 +317,25 @@
 		};
 	});
 
+	onMount(() => {
+		let disposed = false;
+		let unlistenCatalog: (() => void) | undefined;
+		void loadAddItems();
+		void listen('api_catalogs_fetched', () => {
+			void loadAddItems();
+		})
+			.then((cleanup) => {
+				if (disposed) cleanup();
+				else unlistenCatalog = cleanup;
+			})
+			.catch((error) => console.error('Could not observe item catalog refresh:', error));
+		return () => {
+			disposed = true;
+			metadataRequest++;
+			unlistenCatalog?.();
+		};
+	});
+
 	function saveInventory() {
 		const items = $state.snapshot(data);
 		const savedNewSlugs = [...newSlugs];
@@ -327,13 +364,6 @@
 		saveInventory();
 	}
 
-	function resetFilters() {
-		search = '';
-		masteryFilter = 'all';
-		listingFilter = 'all';
-		newFilter = 'all';
-	}
-
 	function setSort(key: string) {
 		const column = key as SortColumn;
 		if (sortColumn === column) sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
@@ -349,7 +379,20 @@
 		<header class="flex flex-wrap justify-between items-center gap-4 w-full">
 			<div>
 				<section class="flex flex-wrap items-center divide-border-secondary divide-x">
-					<div class="pr-4">{data.length} items</div>
+					<div class="flex items-center gap-1.5 pr-4">
+						<span>{data.length} items</span>
+						{#if data.length}
+							<Tooltip side="bottom" align="center">
+								{#snippet children()}<Icon
+										icon="material-symbols:info-outline-rounded"
+										class="size-4 text-muted-foreground"
+									/>{/snippet}
+								{#snippet content()}
+									<div>Total number of items in your inventory that have a price.</div>
+								{/snippet}
+							</Tooltip>
+						{/if}
+					</div>
 					<div class="flex items-center gap-1.5 px-4 tabular-nums">
 						{platinumFormatter.format(totalPlatinum)}
 						<img src="/icons/platinum.png" class="size-4" alt="platinum" />
@@ -359,11 +402,16 @@
 						<img src="/icons/ducats.png" class="size-4" alt="ducats" />
 					</div>
 				</section>
-				<p class="mt-1 text-muted-foreground text-xs">Totals include items with known values.</p>
 			</div>
 			<div class="flex flex-wrap items-center gap-2">
-				{#if newSlugs.length > 0}<Button onclick={dismissNewDots} class="text-sm">Dismiss {newSlugs.length} new dots</Button>{/if}
-				<Button variant="primary" onclick={() => (addOpen = true)} class="inline-flex items-center gap-1.5 text-sm">
+				{#if newSlugs.length > 0}<Button onclick={dismissNewDots} class="text-sm">
+						Dismiss {newSlugs.length} new dots
+					</Button>{/if}
+				<Button
+					variant="primary"
+					onclick={() => (addOpen = true)}
+					class="inline-flex items-center gap-1.5 text-sm"
+				>
 					<Icon icon="lucide:plus" class="size-4" /> Add item
 				</Button>
 			</div>
@@ -374,31 +422,110 @@
 			<p class="py-10 text-muted-foreground text-center">Loading inventory…</p>
 		{:else}
 			{#if listingsError && marketAccount.session}
-				<p role="alert" class="text-danger text-sm">Could not load your listings. <button type="button" class="underline cursor-pointer" onclick={() => refreshListings(marketAccount.session!.ingameName)}>Retry</button></p>
+				<p role="alert" class="text-danger text-sm">
+					Could not load your listings. <button
+						type="button"
+						class="underline cursor-pointer"
+						onclick={() => refreshListings(marketAccount.session!.ingameName)}
+					>
+						Retry
+					</button>
+				</p>
 			{/if}
-			<div class="flex flex-wrap items-end gap-3">
-				<div class="flex-1 min-w-56">
-					<label for="inventory-search" class="block mb-1.5 font-semibold text-muted-foreground text-xs">Search items</label>
-					<input id="inventory-search" type="search" bind:value={search} placeholder="Search for an item..." class="bg-background p-2 border focus-visible:border-accent outline-none w-full h-10 text-foreground placeholder:text-muted-foreground" />
+			<div
+				class="items-end gap-3 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-[minmax(14rem,2fr)_minmax(9rem,1.25fr)_minmax(9rem,1.25fr)_minmax(7rem,0.75fr)_minmax(7rem,0.75fr)]"
+			>
+				<div class="sm:col-span-2 xl:col-span-1 min-w-0">
+					<label
+						for="inventory-search"
+						class="block mb-1.5 font-semibold text-muted-foreground text-xs"
+					>
+						Search items
+					</label>
+					<input
+						id="inventory-search"
+						type="search"
+						bind:value={search}
+						placeholder="Search for an item..."
+						class="bg-background p-2 border focus-visible:border-accent outline-none w-full h-10 text-foreground placeholder:text-muted-foreground"
+					/>
 				</div>
-				<div class="flex-1 min-w-36">
-					<label for="inventory-mastery" class="block mb-1.5 font-semibold text-muted-foreground text-xs">Mastery</label>
-					<Select type="single" items={masteryOptions} bind:value={masteryFilter} triggerProps={{ id: 'inventory-mastery', class: 'max-w-none h-10' }} />
+				<div class="min-w-0">
+					<label
+						for="inventory-category"
+						class="block mb-1.5 font-semibold text-muted-foreground text-xs"
+					>
+						Category
+					</label>
+					<Select
+						type="single"
+						items={categoryOptions}
+						bind:value={categoryFilter}
+						triggerProps={{ id: 'inventory-category', class: 'max-w-none h-10' }}
+					/>
 				</div>
-				<div class="flex-1 min-w-36">
-					<label for="inventory-listing" class="block mb-1.5 font-semibold text-muted-foreground text-xs">Listing</label>
-					<Select type="single" items={listingOptions} bind:value={listingFilter} disabled={!listingsLoaded} triggerProps={{ id: 'inventory-listing', class: 'max-w-none h-10' }} />
+				<div class="min-w-0">
+					<label
+						for="inventory-tag"
+						class="block mb-1.5 font-semibold text-muted-foreground text-xs"
+					>
+						Tag
+					</label>
+					<Select
+						type="single"
+						items={tagOptions}
+						bind:value={tagFilter}
+						triggerProps={{ id: 'inventory-tag', class: 'max-w-none h-10' }}
+					/>
 				</div>
-				<div class="flex-1 min-w-36">
-					<label for="inventory-new" class="block mb-1.5 font-semibold text-muted-foreground text-xs">Added</label>
-					<Select type="single" items={newOptions} bind:value={newFilter} triggerProps={{ id: 'inventory-new', class: 'max-w-none h-10' }} />
+				<div class="min-w-0">
+					<label
+						for="inventory-mastery"
+						class="block mb-1.5 font-semibold text-muted-foreground text-xs"
+					>
+						Mastery
+					</label>
+					<Select
+						type="single"
+						items={masteryOptions}
+						bind:value={masteryFilter}
+						triggerProps={{ id: 'inventory-mastery', class: 'max-w-none h-10' }}
+					/>
 				</div>
-				<Button onclick={resetFilters} class="h-10">Reset filters</Button>
+				<div class="min-w-0">
+					<label
+						for="inventory-listing"
+						class="block mb-1.5 font-semibold text-muted-foreground text-xs"
+					>
+						Listing
+					</label>
+					<Select
+						type="single"
+						items={listingOptions}
+						bind:value={listingFilter}
+						disabled={!listingsLoaded}
+						triggerProps={{ id: 'inventory-listing', class: 'max-w-none h-10' }}
+					/>
+				</div>
 			</div>
+			{#if addItemsError}
+				<p role="alert" class="text-danger text-sm">
+					Could not load item categories and tags. <button
+						type="button"
+						class="underline cursor-pointer"
+						onclick={loadAddItems}
+					>
+						Retry
+					</button>
+				</p>
+			{/if}
 			{#snippet inventoryRow(item: InventoryItem)}
 				{@const slug = inventoryMarketSlug(item)}
 				<InventoryRow
 					{item}
+					category={categoryFor(item)}
+					tags={metadataFor(item)?.tags ?? []}
+					price={priceFor(item)}
 					mastered={isMastered(item)}
 					listing={slug ? listingBySlug.get(slug) : undefined}
 					{listingsLoaded}

@@ -50,6 +50,8 @@ export const mastery = $state({
 
 let startPromise: Promise<void> | null = null;
 let unlisten: UnlistenFn | undefined;
+let unlistenPrices: UnlistenFn | undefined;
+let pricesRequest = 0;
 let saveQueue = Promise.resolve();
 let overlaySlugsByMasteryKey = new Map<string, string[]>();
 
@@ -121,6 +123,16 @@ function markOcrWords(words: { mastery_key?: string }[]) {
 	persist();
 }
 
+async function loadTradeablePrices() {
+	const request = ++pricesRequest;
+	try {
+		const prices = tradeablePriceSchema.parse(await invoke('get_mastery_tradeable_prices'));
+		if (request === pricesRequest) mastery.prices = prices;
+	} catch (error) {
+		console.error('Could not load mastery median prices:', error);
+	}
+}
+
 export function initializeMastery() {
 	if (startPromise) return startPromise;
 	startPromise = (async () => {
@@ -165,9 +177,7 @@ export function initializeMastery() {
 			overlaySlugsByMasteryKey = buildOverlaySlugIndex(mastery.items);
 			// Populate the overlay cache for progress saved before this index existed.
 			await persist();
-			void invoke('get_mastery_tradeable_prices')
-				.then((value) => { mastery.prices = tradeablePriceSchema.parse(value); })
-				.catch((error) => console.error('Could not load mastery median prices:', error));
+			void loadTradeablePrices();
 			void invoke('get_market_dictionary')
 				.then((value) => {
 					const dictionary = DictionarySchema.parse(value);
@@ -181,6 +191,7 @@ export function initializeMastery() {
 			unlisten = await listen<{ words: { mastery_key?: string }[]; is_mastery_add?: boolean }>('ocr_result', (event) => {
 				if (event.payload.is_mastery_add) markOcrWords(event.payload.words);
 			});
+			unlistenPrices = await listen('api_catalogs_fetched', () => { void loadTradeablePrices(); });
 			mastery.error = '';
 		} catch (error) {
 			mastery.error = 'Could not load mastery items. Restart Artus after the item catalog has loaded.';
@@ -196,5 +207,8 @@ export function initializeMastery() {
 export function stopMasteryListener() {
 	unlisten?.();
 	unlisten = undefined;
+	unlistenPrices?.();
+	unlistenPrices = undefined;
+	pricesRequest++;
 	startPromise = null;
 }

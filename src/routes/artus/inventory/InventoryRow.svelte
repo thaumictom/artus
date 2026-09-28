@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
 	import { inventoryMarketSlug, type InventoryItem } from '$lib/inventory';
+	import { formatWfmTag } from '$lib/wfm-tags';
 	import { marketAccount } from '$lib/market-account.svelte';
 	import Button from '$lib/components/Button.svelte';
 	import QuantityControl from '$lib/components/QuantityControl.svelte';
@@ -8,6 +9,9 @@
 
 	let {
 		item,
+		category,
+		tags,
+		price,
 		mastered,
 		listing,
 		listingsLoaded,
@@ -17,6 +21,9 @@
 		onOpenListing,
 	}: {
 		item: InventoryItem;
+		category: string;
+		tags: string[];
+		price?: { median: number; from_current_offers: boolean };
 		mastered: boolean;
 		listing?: Listing;
 		listingsLoaded: boolean;
@@ -31,6 +38,7 @@
 	);
 	const marketSlug = $derived(inventoryMarketSlug(item));
 	const listingTooltip = $derived(listing ? `Listed for ${listing.platinum.toLocaleString()} platinum${listing.visible ? '' : ' (hidden)'}` : '');
+	const categoryDetails = $derived([category, ...tags.map(formatWfmTag)].join(' · '));
 	const platinumFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
 	function openListing() {
 		if (!marketSlug) return;
@@ -67,15 +75,15 @@
 				></span>
 			{/if}
 		</div>
-		{#if item.category}<div class="mt-0.5 text-muted-foreground text-xs font-normal">{item.category}</div>{/if}
+		<div class="mt-0.5 max-w-72 truncate text-muted-foreground text-xs font-normal" title={categoryDetails}>{categoryDetails}</div>
 	</td>
 	<td class="px-3 py-3.5 text-right tabular-nums">
 		<QuantityControl value={item.quantity} label={item.name} onChange={(delta) => onChangeQuantity(item, delta)} />
 	</td>
 	<td class="px-3 py-3.5 text-right tabular-nums">
-		{#if item.marketMedian != null}
-			<span class="inline-flex items-center justify-end gap-1" title={item.marketMedianUsesOfferFallback ? 'Current offer median; no recent trade median' : 'Recent trade median'}>
-				{platinumFormatter.format(item.marketMedian)}
+		{#if price}
+			<span class="inline-flex items-center justify-end gap-1" title={price.from_current_offers ? 'Current offer median; recent trades exist' : 'Recent trade median'}>
+				{platinumFormatter.format(price.median)}
 				<img src="/icons/platinum.png" class="size-3.5" alt="platinum" />
 			</span>
 		{:else}<span class="text-muted-foreground">—</span>{/if}
@@ -86,8 +94,8 @@
 		{:else}<span class="text-muted-foreground">—</span>{/if}
 	</td>
 	<td class="px-3 py-3.5 text-right tabular-nums font-semibold">
-		{#if item.marketMedian != null}
-			<span class="inline-flex items-center justify-end gap-1">{platinumFormatter.format(item.marketMedian * item.quantity)}<img src="/icons/platinum.png" class="size-3.5" alt="platinum" /></span>
+		{#if price}
+			<span class="inline-flex items-center justify-end gap-1">{platinumFormatter.format(price.median * item.quantity)}<img src="/icons/platinum.png" class="size-3.5" alt="platinum" /></span>
 		{:else}<span class="text-muted-foreground font-normal">—</span>{/if}
 	</td>
 	<td class="px-3 py-3.5 text-right tabular-nums font-semibold">
