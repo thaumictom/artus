@@ -206,10 +206,9 @@
 			await refresh();
 		} catch (cause) {
 			if (closed) await refresh();
-			error =
-				closed
-					? `Listing marked sold. Could not remove one from inventory: ${String(cause)}`
-					: String(cause);
+			error = closed
+				? `Listing marked sold. Could not remove one from inventory: ${String(cause)}`
+				: String(cause);
 		} finally {
 			busy = false;
 		}
@@ -230,7 +229,7 @@
 	}
 </script>
 
-<div class="mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full max-w-5xl">
+<div class="mx-auto py-6 w-full max-w-5xl">
 	<div class="flex flex-col gap-4">
 		<header class="flex flex-wrap justify-between items-center gap-4 w-full">
 			<ListingSummary {orders} />
@@ -321,8 +320,18 @@
 						Showing {sortedOrders.length} of {orders.length} listings
 					</p>
 					<div class="flex items-center gap-2">
-						<Button disabled={busy || !orders.some((order) => order.visible)} onclick={() => setAllVisibility(false)}>Hide all</Button>
-						<Button disabled={busy || !orders.some((order) => !order.visible)} onclick={() => setAllVisibility(true)}>Show all</Button>
+						<Button
+							disabled={busy || !orders.some((order) => order.visible)}
+							onclick={() => setAllVisibility(false)}
+						>
+							Hide all
+						</Button>
+						<Button
+							disabled={busy || !orders.some((order) => !order.visible)}
+							onclick={() => setAllVisibility(true)}
+						>
+							Show all
+						</Button>
 					</div>
 				</div>
 			</div>
