@@ -26,7 +26,7 @@
 	import DashboardMain from './dashboard/Main.svelte';
 	import InventoryTab from './inventory/Main.svelte';
 	import MarketMain from './market/Main.svelte';
-	import Listings from './listings/Listings.svelte';
+	import Listings from './listings/Main.svelte';
 	import { marketAccount } from '$lib/market-account.svelte';
 	import MasteryMain from './mastery/Main.svelte';
 

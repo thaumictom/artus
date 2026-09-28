@@ -1,5 +1,5 @@
+- [x] auto sell
 - fixing the few mastered items missing
-- auto sell
 - mastery recommendations where it tells you whats the next easiest thing to master
 - relic info ingame/inapp
 - images/thumbnails
@@ -10,3 +10,5 @@
 - automatic price changing features
 - respect 100 warframe market orders limit (test it out) - add option for patreons to set it to unlimited
 - weekly (customizable) todo list
+- add skeletons/placeholders on wfm integrations
+- fix dialog jank
