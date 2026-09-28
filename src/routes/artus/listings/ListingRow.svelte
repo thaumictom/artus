@@ -38,7 +38,7 @@
 </script>
 
 <tr
-	class="hover:bg-surface/70 border-t transition-colors cursor-pointer"
+	class="hover:bg-surface/70 border-border-secondary border-t transition-colors cursor-pointer"
 	onclick={handleRowClick}
 	onkeydown={(event) => {
 		if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) {
