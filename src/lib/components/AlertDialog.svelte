@@ -79,7 +79,7 @@
 		<AlertDialog.Overlay
 			onpointerdown={notifyOutsideAttempt}
 			class={cn(
-				'z-50 fixed inset-0 bg-black/50 data-[state=open]:backdrop-blur-xs data-[state=closed]:animate-out data-[state=open]:animate-in artus-modal-overlay artus-alert-dialog-overlay data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+				'z-50 fixed inset-0 bg-black/50 backdrop-blur-xs artus-modal-overlay artus-alert-dialog-overlay',
 				open && outsideAttempt && 'alert-outside-attempt',
 			)}
 		/>
@@ -87,7 +87,7 @@
 			{...contentProps}
 			onEscapeKeydown={dismissOnEscape}
 			class={cn(
-				'top-1/2 left-1/2 z-50 fixed gap-2 grid bg-background p-7 border outline-hidden max-w-lg -translate-x-1/2 -translate-y-1/2 data-[state=closed]:animate-out data-[state=open]:animate-in alert-dialog-content data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
+				'top-1/2 left-1/2 z-50 fixed gap-2 grid bg-background p-7 border outline-hidden max-w-lg -translate-x-1/2 -translate-y-1/2 artus-modal-content alert-dialog-content',
 				open && outsideAttempt && 'alert-outside-attempt',
 				contentProps?.class,
 			)}

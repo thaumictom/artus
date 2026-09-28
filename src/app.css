@@ -124,9 +124,69 @@ body {
 
 /* Alerts */
 .artus-app-shell {
+	border-radius: 0;
+	clip-path: inset(0 round 0px);
+	overflow: hidden;
 	transition:
 		transform 600ms var(--ease-dialog-shell),
-		border-radius 600ms var(--ease-dialog-shell);
+		border-radius 600ms ease-in-out,
+		clip-path 600ms ease-in-out;
+}
+
+.artus-modal-overlay[data-state='open'] {
+	animation: artus-overlay-in 180ms ease-out both;
+}
+
+.artus-modal-overlay[data-state='closed'] {
+	animation: artus-overlay-out 160ms ease-in both;
+}
+
+.artus-modal-content[data-state='open'] {
+	animation: artus-dialog-in 220ms var(--ease-dialog-shell) both;
+}
+
+.artus-modal-content[data-state='closed'] {
+	animation: artus-dialog-out 160ms ease-in both;
+}
+
+@keyframes artus-overlay-in {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes artus-overlay-out {
+	from {
+		opacity: 1;
+	}
+	to {
+		opacity: 0;
+	}
+}
+
+@keyframes artus-dialog-in {
+	from {
+		opacity: 0;
+		transform: scale(0.96);
+	}
+	to {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+@keyframes artus-dialog-out {
+	from {
+		opacity: 1;
+		transform: scale(1);
+	}
+	to {
+		opacity: 0;
+		transform: scale(0.97);
+	}
 }
 
 body:has(.artus-app-shell) {
@@ -134,19 +194,8 @@ body:has(.artus-app-shell) {
 	background-image: none;
 }
 
-body:has(.artus-alert-dialog-overlay[data-state='open']) {
+body:has(.artus-alert-dialog-overlay) {
 	background-image: linear-gradient(to bottom, var(--color-red-800), var(--color-red-950));
-	background-size: 100% 200%;
-	animation: alert-dialog-background-drift 4s ease-in-out infinite alternate;
-}
-
-@keyframes alert-dialog-background-drift {
-	from {
-		background-position: 0 0;
-	}
-	to {
-		background-position: 0 100%;
-	}
 }
 
 .alert-dialog-content {
@@ -165,7 +214,18 @@ body:has(.artus-alert-dialog-overlay[data-state='open']) {
 }
 
 body:has(.artus-modal-overlay[data-state='open']) .artus-app-shell {
+	transition-duration: 300ms;
 	transform: scale(0.98);
 	border-radius: 16px;
-	overflow: hidden;
+	clip-path: inset(0 round 16px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.artus-app-shell {
+		transition-duration: 0ms !important;
+	}
+	.artus-modal-overlay,
+	.artus-modal-content {
+		animation-duration: 0ms !important;
+	}
 }

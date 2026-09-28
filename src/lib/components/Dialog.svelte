@@ -36,7 +36,7 @@
 	<BitsDialog.Content
 		{...contentProps}
 		class={cn(
-			'gap-4 grid bg-background py-6 border outline-hidden w-[min(42rem,calc(100vw-2rem))] min-w-0 overflow-hidden data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
+			'gap-4 grid bg-background py-6 border outline-hidden w-[min(42rem,calc(100vw-2rem))] min-w-0 overflow-hidden artus-modal-content',
 			belowContent
 				? 'relative min-h-0 max-h-full flex-1'
 				: 'top-1/2 left-1/2 z-50 fixed h-[min(42rem,calc(100vh-2rem))] -translate-x-1/2 -translate-y-1/2',
@@ -75,7 +75,7 @@
 	{/if}
 	<BitsDialog.Portal>
 		<BitsDialog.Overlay
-			class={cn('z-50 fixed inset-0 data-[state=closed]:animate-out data-[state=open]:animate-in artus-modal-overlay data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0', strongBackdrop ? 'bg-black/80' : 'bg-black/50', blurBackdrop && 'data-[state=open]:backdrop-blur-xs')}
+			class={cn('z-50 fixed inset-0 artus-modal-overlay', strongBackdrop ? 'bg-black/80' : 'bg-black/50', blurBackdrop && 'backdrop-blur-xs')}
 		/>
 		{#if belowContent}
 			<div class="top-1/2 left-1/2 z-50 fixed flex flex-col gap-2 w-[min(42rem,calc(100vw-2rem))] max-h-[calc(100vh-2rem)] -translate-x-1/2 -translate-y-1/2">
