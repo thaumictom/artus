@@ -76,6 +76,7 @@ fn main() {
             market::get_mastery_tradeable_prices,
             market::get_tradeable_today_statistics,
             market::get_cached_market_items,
+            ocr::dictionary::get_ocr_market_items,
             market::get_market_orders,
             market::get_market_statistics,
             market_account::market_login,

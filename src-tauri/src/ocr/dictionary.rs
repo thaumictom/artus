@@ -6,7 +6,7 @@ use std::time::{Duration, Instant};
 
 use log::{info, warn};
 use rayon::prelude::*;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager, Runtime};
 
 use super::{
@@ -48,6 +48,13 @@ pub struct TradeablePriceEntry {
     pub ducats: Option<u64>,
 }
 
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OcrMarketItem {
+    pub id: String,
+    pub max_rank: Option<u64>,
+}
+
 // ── API response types ────────────────────────────────────────────────────────
 
 #[derive(Debug, Deserialize)]
@@ -66,6 +73,8 @@ struct DictionaryApiResponse {
 
 #[derive(Debug, Deserialize)]
 struct DictionaryApiItem {
+    #[serde(default)]
+    id: Option<String>,
     name: String,
     slug: String,
     #[serde(default)]
@@ -210,6 +219,19 @@ pub fn load_ocr_dictionary<R: Runtime>(app: &AppHandle<R>) -> AppResult<usize> {
         .error_for_status()?
         .json()?;
 
+    // Keep IDs from the same feed used for OCR so the overlay can match /orders/my
+    // without requesting every recognized item from warframe.market.
+    let mut market_items = HashMap::new();
+    for item in &payload.items {
+        let Some(id) = item.id.as_ref().filter(|id| !id.is_empty()) else { continue };
+        let market_item = OcrMarketItem { id: id.clone(), max_rank: item.max_rank };
+        market_items.insert(item.slug.clone(), market_item.clone());
+        if item.slug.ends_with("_relic") && !item.tags.iter().any(|tag| tag == "requiem") {
+            market_items.insert(format!("{}_intact", item.slug), market_item.clone());
+            market_items.insert(format!("{}_radiant", item.slug), market_item);
+        }
+    }
+
     // Set entries carry the total ducats, but are excluded from OCR matching below.
     let set_ducats: HashMap<String, u64> = payload
         .items
@@ -319,7 +341,20 @@ pub fn load_ocr_dictionary<R: Runtime>(app: &AppHandle<R>) -> AppResult<usize> {
 
     let count = entries.len();
     *app.state::<AppState>().ocr_dictionary.lock()? = entries;
+    *app.state::<AppState>().ocr_market_items.lock()? = market_items;
     Ok(count)
+}
+
+/// Returns the item identities already fetched with the OCR dictionary.
+#[tauri::command]
+pub fn get_ocr_market_items(
+    state: tauri::State<'_, AppState>,
+    slugs: Vec<String>,
+) -> AppResult<HashMap<String, OcrMarketItem>> {
+    let items = state.ocr_market_items.lock()?;
+    Ok(slugs.into_iter().filter_map(|slug| {
+        items.get(&slug).cloned().map(|item| (slug, item))
+    }).collect())
 }
 
 // ── Tradeable item prices ─────────────────────────────────────────────────────

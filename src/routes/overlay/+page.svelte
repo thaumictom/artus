@@ -60,15 +60,19 @@
 		interval?: ReturnType<typeof setInterval>;
 	};
 	const heldHotkeys = new Map<string, HeldHotkey>();
+	type OcrMarketItem = { id: string; maxRank?: number | null };
 
-	async function refreshActiveListings(slugs: string[], sequence: number) {
+	async function refreshActiveListings(slugs: string[], sequence: number, loggedIn = marketLoggedIn) {
 		activeListingsReady = false;
 		listingBySlug = new Map();
-		if (!marketLoggedIn || slugs.length === 0) {
+		if (!loggedIn || slugs.length === 0) {
 			return;
 		}
 		try {
-			const orders = await fetchMarketListings();
+			const [orders, marketItems] = await Promise.all([
+				fetchMarketListings(),
+				invoke<Record<string, OcrMarketItem>>('get_ocr_market_items', { slugs }),
+			]);
 			if (sequence !== activeListingReadSequence) return;
 			const sellListingsByItemId = new Map<string, Listing[]>();
 			for (const order of orders) {
@@ -77,9 +81,9 @@
 				listings.push(order);
 				sellListingsByItemId.set(order.itemId, listings);
 			}
-			const itemListings = await Promise.all(slugs.map(async (slug) => {
-				const response = await invoke<{ data: { id: string; maxRank?: number } }>('get_market_item', { slug });
-				const item = response.data;
+			const itemListings = slugs.map((slug) => {
+				const item = marketItems[slug];
+				if (!item) return null;
 				const word = words.find((candidate) => candidate.slug === slug);
 				const candidates = sellListingsByItemId.get(item.id) ?? [];
 				const matching = candidates.find((order) =>
@@ -89,7 +93,7 @@
 				return matching
 					? [slug, { status: matching.visible ? 'active' : 'hidden', platinum: matching.platinum }] as const
 					: null;
-			}));
+			});
 			if (sequence === activeListingReadSequence) {
 				listingBySlug = new Map(itemListings.filter((entry): entry is readonly [string, { status: 'active' | 'hidden'; platinum: number }] => entry !== null));
 				activeListingsReady = true;
@@ -156,7 +160,7 @@
 	$effect(() => {
 		const sequence = ++activeListingReadSequence;
 		const slugs = [...new Set(words.flatMap((word) => word.slug ? [word.slug] : []))];
-		void refreshActiveListings(slugs, sequence);
+		void refreshActiveListings(slugs, sequence, marketLoggedIn);
 	});
 	const repeatableActions = new Set([
 		'cycle',
@@ -485,7 +489,6 @@
 		listen<boolean>('market_auth_changed', ({ payload }) => {
 			marketAuthRevision++;
 			marketLoggedIn = payload;
-			void refreshActiveListings([...new Set(words.flatMap((word) => word.slug ? [word.slug] : []))], ++activeListingReadSequence);
 			if (!payload) {
 				cancelListingLookup();
 				closeListing();

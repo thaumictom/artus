@@ -39,6 +39,8 @@ pub struct AppState {
 
     /// OCR dictionary entries fetched from the remote API on startup.
     pub ocr_dictionary: Mutex<Vec<OcrDictionaryEntry>>,
+    /// Market item IDs and rank limits keyed by OCR slug, loaded with the dictionary.
+    pub ocr_market_items: Mutex<HashMap<String, crate::ocr::dictionary::OcrMarketItem>>,
 
     /// Full masterable item and component names, including non-tradeable gear.
     pub mastery_dictionary: Mutex<Vec<MasteryDictionaryEntry>>,
@@ -76,6 +78,7 @@ impl Default for AppState {
             overlay_was_visible: AtomicBool::new(false),
             ocr_theme_colors: Mutex::new(HashMap::new()),
             ocr_dictionary: Mutex::new(Vec::new()),
+            ocr_market_items: Mutex::new(HashMap::new()),
             mastery_dictionary: Mutex::new(Vec::new()),
             ocr_tradeable_prices: Mutex::new(HashMap::new()),
             ocr_price_retry_in_progress: AtomicBool::new(false),
