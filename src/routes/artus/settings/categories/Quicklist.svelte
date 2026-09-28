@@ -7,7 +7,7 @@
 	import { config, updateSetting } from '$lib/settings.svelte';
 
 	let open = $state(false);
-	const exampleOffers = [12, 13, 17, 18, 20];
+	const exampleOffers = [12, 13, 15, 17, 18];
 	const exampleMedian = 15;
 	let examplePrice = $derived(
 		quicklistPrice(config.quicklist_price_strategy, exampleMedian, exampleOffers),

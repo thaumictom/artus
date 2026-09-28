@@ -34,13 +34,12 @@
 	let search = $state('');
 	let typeFilter = $state<'all' | 'buy' | 'sell'>('all');
 	let statusFilter = $state<'all' | 'visible' | 'hidden'>('all');
-	let sortColumn = $state<'name' | 'price' | 'quantity' | 'status'>('name');
+	let sortColumn = $state<'name' | 'price' | 'quantity'>('name');
 	let sortDirection = $state<'asc' | 'desc'>('asc');
 	let loadedFor = $state<string | null>(null);
 	let lastFetchedAt = $state<Date | null>(null);
 	let now = $state(Date.now());
 	let fetchedAgo = $derived(lastFetchedAt === null ? '' : timeAgo(lastFetchedAt.getTime(), now));
-	let menuOpenFor = $state<string | null>(null);
 	let createPickerOpen = $state(false);
 	let activeItem = $state<InventoryItem | null>(null);
 	let editing = $state<Listing | null>(null);
@@ -73,9 +72,6 @@
 					break;
 				case 'quantity':
 					comparison = a.quantity - b.quantity;
-					break;
-				case 'status':
-					comparison = Number(a.visible) - Number(b.visible);
 					break;
 			}
 			const byName = nameFor(a).localeCompare(nameFor(b), undefined, { sensitivity: 'base' });
@@ -140,7 +136,6 @@
 	});
 
 	async function openEdit(order: Listing) {
-		menuOpenFor = null;
 		await tick();
 		requestAnimationFrame(() => {
 			editing = order;
@@ -152,7 +147,6 @@
 		});
 	}
 	async function openDelete(order: Listing) {
-		menuOpenFor = null;
 		await tick();
 		requestAnimationFrame(() => {
 			removing = order;
@@ -161,7 +155,6 @@
 	}
 	async function setVisibility(order: Listing) {
 		if (busy) return;
-		menuOpenFor = null;
 		busy = true;
 		error = null;
 		try {
@@ -170,6 +163,25 @@
 		} catch (cause) {
 			error = String(cause);
 		} finally {
+			busy = false;
+		}
+	}
+	async function setAllVisibility(visible: boolean) {
+		if (busy) return;
+		const targets = orders.filter((order) => order.visible !== visible);
+		if (!targets.length) return;
+		busy = true;
+		error = null;
+		let updateError: string | null = null;
+		try {
+			for (const order of targets) {
+				await invoke('market_set_listing_visibility', { id: order.id, visible });
+			}
+		} catch (cause) {
+			updateError = String(cause);
+		} finally {
+			await refresh();
+			if (updateError) error = updateError;
 			busy = false;
 		}
 	}
@@ -182,22 +194,20 @@
 			sortDirection = column === 'name' ? 'asc' : 'desc';
 		}
 	}
-	async function soldOne(order: Listing, removeInventory: boolean) {
+	async function soldOne(order: Listing) {
 		if (busy || order.type !== 'sell' || (order.perTrade ?? 1) !== 1) return;
-		menuOpenFor = null;
 		busy = true;
 		error = null;
 		let closed = false;
 		try {
 			await invoke('market_close_listing_one', { id: order.id });
 			closed = true;
-			if (removeInventory)
-				await removeOneMarketInventoryItem(itemDetails[order.itemId]?.slug, nameFor(order));
+			await removeOneMarketInventoryItem(itemDetails[order.itemId]?.slug, nameFor(order));
 			await refresh();
 		} catch (cause) {
 			if (closed) await refresh();
 			error =
-				closed && removeInventory
+				closed
 					? `Listing marked sold. Could not remove one from inventory: ${String(cause)}`
 					: String(cause);
 		} finally {
@@ -296,7 +306,6 @@
 						{itemDetails}
 						{inventoryItems}
 						{busy}
-						bind:menuOpenFor
 						{sortColumn}
 						{sortDirection}
 						onSort={setSort}
@@ -311,6 +320,10 @@
 					<p class="text-muted-foreground text-sm">
 						Showing {sortedOrders.length} of {orders.length} listings
 					</p>
+					<div class="flex items-center gap-2">
+						<Button disabled={busy || !orders.some((order) => order.visible)} onclick={() => setAllVisibility(false)}>Hide all</Button>
+						<Button disabled={busy || !orders.some((order) => !order.visible)} onclick={() => setAllVisibility(true)}>Show all</Button>
+					</div>
 				</div>
 			</div>
 		{/if}

@@ -2,6 +2,7 @@
 	import Table from '$lib/components/Table.svelte';
 	import type { TableColumn } from '$lib/components/table-types';
 	import type { InventoryItem } from '$lib/inventory';
+	import { mastery } from '$lib/mastery.svelte';
 	import ListingRow from './ListingRow.svelte';
 	import type { Listing, ListingItem } from './types';
 
@@ -10,7 +11,6 @@
 		itemDetails,
 		inventoryItems,
 		busy,
-		menuOpenFor = $bindable<string | null>(null),
 		sortColumn,
 		sortDirection,
 		onSort,
@@ -24,23 +24,22 @@
 		itemDetails: Record<string, ListingItem>;
 		inventoryItems: InventoryItem[];
 		busy: boolean;
-		menuOpenFor: string | null;
 		sortColumn: string;
 		sortDirection: 'asc' | 'desc';
 		onSort: (key: string) => void;
 		onEdit: (order: Listing) => void;
 		onVisibility: (order: Listing) => void;
-		onSoldOne: (order: Listing, removeInventory: boolean) => void;
+		onSoldOne: (order: Listing) => void;
 		onDelete: (order: Listing) => void;
 		onOpenMarket: (slug: string) => void;
 	} = $props();
 
 	const columns: TableColumn[] = [
-		{ key: 'name', label: 'Name', sortable: true, class: 'min-w-64' },
-		{ key: 'type', label: 'Type', class: 'w-24' },
-		{ key: 'price', label: 'Price', sortable: true, align: 'right', class: 'w-28' },
-		{ key: 'quantity', label: 'Quantity', sortable: true, align: 'right', class: 'w-28' },
-		{ key: 'status', label: 'Status', sortable: true, class: 'w-28' },
+		{ key: 'name', label: 'Name', sortable: true },
+		{ key: 'type', label: 'Type', class: 'w-20' },
+		{ key: 'median', label: 'Market Median', align: 'right', class: 'w-24' },
+		{ key: 'price', label: 'Price', sortable: true, align: 'right', class: 'w-24' },
+		{ key: 'quantity', label: 'Quantity', sortable: true, align: 'right', class: 'w-24' },
 		{ key: 'actions', label: '', align: 'right', class: 'w-0' },
 	];
 </script>
@@ -51,7 +50,7 @@
 		{itemDetails}
 		{inventoryItems}
 		{busy}
-		bind:menuOpenFor
+		median={mastery.prices[itemDetails[order.itemId]?.slug ?? order.itemId]}
 		{onEdit}
 		{onVisibility}
 		{onSoldOne}

@@ -4,6 +4,7 @@ export const quicklistStrategies = [
 	{ value: 'match_cheapest', label: 'Match cheapest' },
 	{ value: 'undercut_cheapest', label: 'Undercut cheapest by 1' },
 	{ value: 'undercut_above_median', label: 'Undercut cheapest over median' },
+	{ value: 'undercut_at_or_above_median', label: 'Undercut cheapest over or on median' },
 ] as const;
 
 export type QuicklistStrategy = (typeof quicklistStrategies)[number]['value'];
@@ -23,6 +24,12 @@ export function quicklistPrice(strategy: QuicklistStrategy, median: number | nul
 			if (roundedMedian === null) { price = null; break; }
 			const cheapestAbove = prices.find((offer) => offer > roundedMedian);
 			price = cheapestAbove === undefined ? roundedMedian : cheapestAbove - 1;
+			break;
+		}
+		case 'undercut_at_or_above_median': {
+			if (roundedMedian === null) { price = null; break; }
+			const cheapestAtOrAbove = prices.find((offer) => offer >= roundedMedian);
+			price = cheapestAtOrAbove === undefined ? roundedMedian : cheapestAtOrAbove - 1;
 			break;
 		}
 	}
