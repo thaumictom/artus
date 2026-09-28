@@ -10,5 +10,5 @@
 - automatic price changing features
 - respect 100 warframe market orders limit (test it out) - add option for patreons to set it to unlimited
 - weekly (customizable) todo list
-- add skeletons/placeholders on wfm integrations
-- fix dialog jank
+- improve skeletons
+- inside overlay: deleting listing doesn't update the overlayitem. you need to double click cancel/hide listing
