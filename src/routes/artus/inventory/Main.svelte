@@ -60,6 +60,37 @@
 		{ value: 'listed', label: 'Listed' },
 		{ value: 'unlisted', label: 'Not listed' },
 	];
+	const filterControls = $derived([
+		{
+			id: 'inventory-category',
+			label: 'Category',
+			options: categoryOptions,
+			value: categoryFilter,
+			setValue: (value: string) => (categoryFilter = value),
+		},
+		{
+			id: 'inventory-tag',
+			label: 'Tag',
+			options: tagOptions,
+			value: tagFilter,
+			setValue: (value: string) => (tagFilter = value),
+		},
+		{
+			id: 'inventory-mastery',
+			label: 'Mastery',
+			options: masteryOptions,
+			value: masteryFilter,
+			setValue: (value: string) => (masteryFilter = value),
+		},
+		{
+			id: 'inventory-listing',
+			label: 'Listing',
+			options: listingOptions,
+			value: listingFilter,
+			setValue: (value: string) => (listingFilter = value),
+			disabled: !listingsLoaded,
+		},
+	]);
 	type ItemMetadata = { category: string; tags: string[] };
 	let metadataBySlug = $state.raw<Record<string, ItemMetadata>>({});
 	let metadataRequest = 0;
@@ -418,24 +449,23 @@
 			</div>
 		</header>
 		<div class="bg-surface my-1 w-full h-px"></div>
-
 		{#if loading}
-			<div role="status" aria-label="Loading inventory" class="flex flex-col gap-4">
-				<div class="flex flex-wrap gap-3">
-					<Skeleton class="flex-1 min-w-56 h-10" />
-					{#each Array(4) as _}<Skeleton class="w-32 h-10" />{/each}
-				</div>
-				<div class="bg-card/50 border border-border-secondary divide-y divide-border-secondary">
-					{#each Array(7) as _}
-						<div class="flex items-center gap-4 px-3 py-3.5 h-14">
-							<Skeleton class="flex-1 max-w-64 h-4" />
-							<Skeleton class="w-16 h-4" />
-							<Skeleton class="w-12 h-4" />
-							<Skeleton class="w-12 h-4" />
-							<Skeleton class="w-16 h-4" />
+			<div role="status" aria-label="Loading inventory" class="flex flex-col gap-3">
+				<div
+					class="items-end gap-3 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-[minmax(14rem,2fr)_minmax(9rem,1.25fr)_minmax(9rem,1.25fr)_minmax(7rem,0.75fr)_minmax(7rem,0.75fr)]"
+				>
+					<div class="flex flex-col gap-1">
+						<Skeleton class="flex-1 mb-1.5 w-min text-xs">Search items</Skeleton>
+						<Skeleton class="h-10" />
+					</div>
+					{#each filterControls as filter (filter.id)}
+						<div class="flex flex-col gap-1">
+							<Skeleton class="flex-1 mb-1.5 w-min text-xs">{filter.label}</Skeleton>
+							<Skeleton class="max-w-80 h-10" />
 						</div>
 					{/each}
 				</div>
+				<Skeleton class="w-full h-64" />
 			</div>
 		{:else}
 			{#if listingsError && marketAccount.session}
@@ -467,63 +497,20 @@
 						class="bg-background p-2 border focus-visible:border-accent outline-none w-full h-10 text-foreground placeholder:text-muted-foreground"
 					/>
 				</div>
-				<div class="min-w-0">
-					<label
-						for="inventory-category"
-						class="block mb-1.5 font-semibold text-muted-foreground text-xs"
-					>
-						Category
-					</label>
-					<Select
-						type="single"
-						items={categoryOptions}
-						bind:value={categoryFilter}
-						triggerProps={{ id: 'inventory-category', class: 'max-w-none h-10' }}
-					/>
-				</div>
-				<div class="min-w-0">
-					<label
-						for="inventory-tag"
-						class="block mb-1.5 font-semibold text-muted-foreground text-xs"
-					>
-						Tag
-					</label>
-					<Select
-						type="single"
-						items={tagOptions}
-						bind:value={tagFilter}
-						triggerProps={{ id: 'inventory-tag', class: 'max-w-none h-10' }}
-					/>
-				</div>
-				<div class="min-w-0">
-					<label
-						for="inventory-mastery"
-						class="block mb-1.5 font-semibold text-muted-foreground text-xs"
-					>
-						Mastery
-					</label>
-					<Select
-						type="single"
-						items={masteryOptions}
-						bind:value={masteryFilter}
-						triggerProps={{ id: 'inventory-mastery', class: 'max-w-none h-10' }}
-					/>
-				</div>
-				<div class="min-w-0">
-					<label
-						for="inventory-listing"
-						class="block mb-1.5 font-semibold text-muted-foreground text-xs"
-					>
-						Listing
-					</label>
-					<Select
-						type="single"
-						items={listingOptions}
-						bind:value={listingFilter}
-						disabled={!listingsLoaded}
-						triggerProps={{ id: 'inventory-listing', class: 'max-w-none h-10' }}
-					/>
-				</div>
+				{#each filterControls as filter (filter.id)}
+					<div class="min-w-0">
+						<label for={filter.id} class="block mb-1.5 font-semibold text-muted-foreground text-xs">
+							{filter.label}
+						</label>
+						<Select
+							type="single"
+							items={filter.options}
+							bind:value={() => filter.value, filter.setValue}
+							disabled={filter.disabled ?? false}
+							triggerProps={{ id: filter.id, class: 'max-w-none h-10' }}
+						/>
+					</div>
+				{/each}
 			</div>
 			{#if addItemsError}
 				<p role="alert" class="text-danger text-sm">
@@ -603,7 +590,9 @@
 							Item
 						</label>
 						{#if addItemsLoading && addItems.length === 0}
-							<div role="status" aria-label="Loading market items"><Skeleton class="w-full h-10" /></div>
+							<div role="status" aria-label="Loading market items">
+								<Skeleton class="w-full h-10" />
+							</div>
 						{:else}
 							<Combobox
 								type="single"

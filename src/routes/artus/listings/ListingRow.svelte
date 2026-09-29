@@ -114,16 +114,16 @@
 				<Button
 					size="icon"
 					class="inline-flex justify-center items-center size-8"
-					disabled={busy || (order.perTrade ?? 1) !== 1 || owned < 1}
+					disabled={busy || (order.perTrade ?? 1) !== 1}
 					title={(order.perTrade ?? 1) !== 1
 						? 'This listing must be sold in larger trade units'
 						: owned < 1
-							? 'No matching item in inventory'
+							? 'Sold 1'
 							: 'Sold 1 & adjust inventory'}
-					aria-label="Sold 1 & adjust inventory"
+					aria-label={owned < 1 ? 'Sold 1' : 'Sold 1 & adjust inventory'}
 					onclick={() => onSoldOne(order)}
 				>
-					<Icon icon="lucide:package-minus" class="size-4" />
+					<Icon icon={owned < 1 ? 'lucide:check' : 'lucide:package-minus'} class="size-4" />
 				</Button>
 			{/if}
 			<Button

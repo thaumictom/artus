@@ -223,7 +223,9 @@
 		try {
 			await invoke('market_close_listing_one', { id: order.id });
 			closed = true;
-			await removeOneMarketInventoryItem(itemDetails[order.itemId]?.slug, nameFor(order));
+			if (ownedFor(order) > 0) {
+				await removeOneMarketInventoryItem(itemDetails[order.itemId]?.slug, nameFor(order));
+			}
 			orders = orders.flatMap((listing) => listing.id !== order.id ? [listing]
 				: listing.quantity > 1 ? [{ ...listing, quantity: listing.quantity - 1 }] : []);
 		} catch (cause) {
