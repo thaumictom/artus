@@ -59,70 +59,165 @@ pub fn binary_target_filter_with_tolerance(
     GrayImage::from_raw(width, height, output).expect("invalid binary filter output dimensions")
 }
 
-/// Erases checkmark icons from the binary image before they can become OCR text.
-pub fn remove_checkmarks(image: &mut GrayImage) -> Vec<CheckmarkMatch> {
-    static TEMPLATE: OnceLock<GrayImage> = OnceLock::new();
-    let template = TEMPLATE.get_or_init(|| {
-        image::load_from_memory(include_bytes!("../checkmark_template.png"))
+struct CheckmarkTemplate {
+    width: u32,
+    height: u32,
+    foreground: Vec<(u32, u32)>,
+    icon_size: u32,
+    offset_x: u32,
+    offset_y: u32,
+}
+
+/// Matches only the inner check, then erases the full icon before OCR.
+/// Confidence is the lower of foreground and background agreement, so blank
+/// space or a solid dark patch cannot dominate the score.
+pub fn remove_checkmarks(image: &mut GrayImage, threshold: f64) -> Vec<CheckmarkMatch> {
+    static TEMPLATES: OnceLock<Vec<CheckmarkTemplate>> = OnceLock::new();
+    let templates = TEMPLATES.get_or_init(|| {
+        let template = image::load_from_memory(include_bytes!("../checkmark_template_3.png"))
             .expect("invalid checkmark template")
-            .into_luma8()
+            .into_rgba8();
+        // Transparent pixels in this cutout are background, not black pixels.
+        let binary = GrayImage::from_fn(template.width(), template.height(), |x, y| {
+            let pixel = template.get_pixel(x, y);
+            image::Luma([if pixel[3] > 0 && pixel[0] < 128 {
+                0
+            } else {
+                255
+            }])
+        });
+        // Filtering can thin the check itself as well as remove its ring.
+        // Match both stroke widths so a thin, large check does not win as a
+        // smaller match covering only part of its longer diagonal.
+        let mut thin = binary.clone();
+        dilate_mut(&mut thin, Norm::L1, 1);
+        // Cover 60–200% of the original UI size, including both supplied samples.
+        [binary, thin]
+            .into_iter()
+            .flat_map(|binary| {
+                (6..=20).map(move |step| {
+                    let scale = step as f64 / 10.0;
+                    let width = (binary.width() as f64 * scale).round() as u32;
+                    let height = (binary.height() as f64 * scale).round() as u32;
+                    let scaled = image::imageops::resize(
+                        &binary,
+                        width,
+                        height,
+                        image::imageops::FilterType::Nearest,
+                    );
+                    let foreground = scaled
+                        .enumerate_pixels()
+                        .filter(|(_, _, pixel)| pixel[0] == 0)
+                        .map(|(x, y, _)| (x, y))
+                        .collect();
+                    // The 20×20 cutout starts at (7, 4) inside the original 31×31 icon.
+                    // Keep full icon geometry for erasure and the adjacent quantity crop.
+                    CheckmarkTemplate {
+                        width,
+                        height,
+                        foreground,
+                        icon_size: (31.0 * scale).round() as u32,
+                        offset_x: (7.0 * scale).round() as u32,
+                        offset_y: (4.0 * scale).round() as u32,
+                    }
+                })
+            })
+            .collect()
     });
     let (width, height) = image.dimensions();
-    let (tw, th) = template.dimensions();
-    if width < tw || height < th {
-        return Vec::new();
+    let threshold = threshold.clamp(0.5, 1.0);
+    let stride = width as usize + 1;
+    let raw = image.as_raw();
+    // Summed foreground counts reject impossible matches in constant time.
+    let mut counts = vec![0u32; stride * (height as usize + 1)];
+    for y in 0..height as usize {
+        let mut row_sum = 0;
+        for x in 0..width as usize {
+            row_sum += u32::from(raw[y * width as usize + x] == 0);
+            counts[(y + 1) * stride + x + 1] = counts[y * stride + x + 1] + row_sum;
+        }
     }
 
-    let foreground: Vec<_> = template.pixels().map(|pixel| pixel[0] == 0).collect();
-    let black_total = foreground.iter().filter(|&&v| v).count();
-    let white_total = foreground.len() - black_total;
-    let raw = image.as_mut();
-    let mut matches = Vec::new();
-    for y in 0..=height - th {
-        let mut x = 0;
-        while x <= width - tw {
-            let anchors = [(14, 1), (18, 14), (15, 18), (15, 28)];
-            if anchors
-                .iter()
-                .filter(|&&(ax, ay)| {
-                    raw[(y + ay) as usize * width as usize + (x + ax) as usize] == 0
-                })
-                .count()
-                < 3
-            {
-                x += 1;
-                continue;
-            }
-            let mut black = 0;
-            let mut white = 0;
-            for ty in 0..th as usize {
-                let row = (y as usize + ty) * width as usize + x as usize;
-                let template_row = ty * tw as usize;
-                for tx in 0..tw as usize {
-                    if foreground[template_row + tx] {
-                        black += (raw[row + tx] == 0) as usize;
+    let mut candidates = Vec::new();
+    for template in templates {
+        let (tw, th) = (template.width, template.height);
+        if width < tw || height < th {
+            continue;
+        }
+        let black_total = template.foreground.len();
+        let white_total = (tw * th) as usize - black_total;
+        let required_black = (black_total as f64 * threshold).ceil() as usize;
+        let allowed_white_errors = (white_total as f64 * (1.0 - threshold)).floor() as usize;
+        for y in 0..=height - th {
+            for x in 0..=width - tw {
+                let left = x as usize;
+                let right = (x + tw) as usize;
+                let top = y as usize * stride;
+                let bottom = (y + th) as usize * stride;
+                let patch_black = (counts[bottom + right]
+                    - counts[top + right]
+                    - (counts[bottom + left] - counts[top + left]))
+                    as usize;
+                if patch_black < required_black || patch_black > black_total + allowed_white_errors
+                {
+                    continue;
+                }
+                let mut black = 0;
+                let mut misses = 0;
+                for &(tx, ty) in &template.foreground {
+                    if raw[(y + ty) as usize * width as usize + (x + tx) as usize] == 0 {
+                        black += 1;
                     } else {
-                        white += (raw[row + tx] == 255) as usize;
+                        misses += 1;
+                        if misses > black_total - required_black {
+                            break;
+                        }
                     }
                 }
-            }
-            if black * 10 >= 8 * black_total && white * 10 >= 8 * white_total {
-                matches.push(CheckmarkMatch {
-                    x,
-                    y,
-                    width: tw,
-                    height: th,
-                });
-                for ty in 0..th as usize {
-                    let start = (y as usize + ty) * width as usize + x as usize;
-                    raw[start..start + tw as usize].fill(255);
+                if black < required_black || patch_black - black > allowed_white_errors {
+                    continue;
                 }
-                x += tw;
-            } else {
-                x += 1;
+                let confidence = (black as f64 / black_total as f64)
+                    .min(1.0 - (patch_black - black) as f64 / white_total as f64);
+                let icon_x = x.saturating_sub(template.offset_x);
+                let icon_y = y.saturating_sub(template.offset_y);
+                candidates.push((
+                    confidence,
+                    CheckmarkMatch {
+                        x: icon_x,
+                        y: icon_y,
+                        width: (x + template.icon_size - template.offset_x).min(width) - icon_x,
+                        height: (y + template.icon_size - template.offset_y).min(height) - icon_y,
+                    },
+                ));
             }
         }
     }
+    // Select the strongest match across positions and scales before modifying
+    // the image, so one icon cannot be detected repeatedly at different sizes.
+    candidates.sort_unstable_by(|a, b| b.0.total_cmp(&a.0));
+    let mut matches: Vec<CheckmarkMatch> = Vec::new();
+    for (_, mark) in candidates {
+        if matches.iter().any(|other| {
+            mark.x < other.x + other.width
+                && other.x < mark.x + mark.width
+                && mark.y < other.y + other.height
+                && other.y < mark.y + mark.height
+        }) {
+            continue;
+        }
+        matches.push(mark);
+        // Clear a two-pixel margin too, so ring remnants cannot become OCR digits.
+        let left = mark.x.saturating_sub(2);
+        let top = mark.y.saturating_sub(2);
+        let right = (mark.x + mark.width).saturating_add(2).min(width);
+        let bottom = (mark.y + mark.height).saturating_add(2).min(height);
+        for y in top..bottom {
+            let start = y as usize * width as usize + left as usize;
+            image.as_mut()[start..start + (right - left) as usize].fill(255);
+        }
+    }
+    matches.sort_unstable_by_key(|mark| (mark.y, mark.x));
     matches
 }
 
@@ -143,7 +238,7 @@ mod checkmark_tests {
         }
         image.put_pixel(50, 20, image::Luma([0]));
 
-        let matches = remove_checkmarks(&mut image);
+        let matches = remove_checkmarks(&mut image, 0.8);
 
         assert_eq!(
             matches,

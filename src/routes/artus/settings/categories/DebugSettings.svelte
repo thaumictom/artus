@@ -8,6 +8,7 @@
 	import Dialog from '$lib/components/Dialog.svelte';
 	import Button from '$lib/components/Button.svelte';
 	import Switch from '$lib/components/Switch.svelte';
+	import Slider from '$lib/components/Slider.svelte';
 	import CommonSetting from '$lib/components/ui/CommonSetting.svelte';
 	import DictionarySettings from '../components/DictionarySettings.svelte';
 	import OcrBoundingBoxesSetting from '../components/OcrBoundingBoxesSetting.svelte';
@@ -110,6 +111,28 @@
 	<OcrBoundingBoxesSetting />
 	<OcrGroupingSettings />
 	<DictionarySettings />
+	<CommonSetting
+		title="Quantity checkmark confidence"
+		description="Minimum checkmark match confidence for reading owned quantities. Lower it for missed checkmarks; raise it if other shapes are detected. Changes apply to the next OCR capture."
+		align="vertical"
+	>
+		<Slider
+			min={0.5}
+			max={1}
+			step={0.01}
+			type="single"
+			aria-label="Quantity checkmark confidence"
+			onValueCommit={() => updateSetting('ocr_checkmark_match_threshold')}
+			bind:value={config.ocr_checkmark_match_threshold}
+		>
+			{#snippet thumbLabel({ value })}
+				{Math.round((typeof value === 'number' ? value : config.ocr_checkmark_match_threshold) * 100)}%
+			{/snippet}
+		</Slider>
+		<p class="text-muted-foreground text-sm">
+			Current confidence: {Math.round(config.ocr_checkmark_match_threshold * 100)}%
+		</p>
+	</CommonSetting>
 	<div>
 		<h2 class="mb-2 font-medium">Last OCR image</h2>
 		{#if ocrDebug.imageUrl}

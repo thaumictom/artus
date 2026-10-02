@@ -63,6 +63,7 @@ type Config = {
 	quicklist_price_strategy: QuicklistStrategy;
 
 	show_ocr_bounding_boxes: boolean;
+	ocr_checkmark_match_threshold: number;
 	ocr_dictionary_mapping_enabled: boolean;
 	ocr_dictionary_match_threshold: number;
 	ocr_mastery_dictionary_match_threshold: number;
@@ -130,6 +131,7 @@ export const config = $state({
 
 	// Debug settings
 	show_ocr_bounding_boxes: false,
+	ocr_checkmark_match_threshold: 0.8,
 
 	ocr_max_x_gap_multiplier: 1.0,
 	ocr_max_y_gap_multiplier: 2.0,

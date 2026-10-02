@@ -24,6 +24,7 @@ use super::{
 use crate::error::{AppError, AppResult};
 use crate::layer_shell;
 use crate::ocr::preprocessing::CheckmarkMatch;
+use crate::ocr::DEFAULT_OCR_CHECKMARK_MATCH_THRESHOLD;
 use crate::state::AppState;
 use crate::store_ext::SettingsExt;
 use crate::window_watcher::is_warframe_process;
@@ -121,8 +122,13 @@ fn capture_active_window_with_mode_inner<R: Runtime>(
     #[cfg(target_os = "windows")]
     if !is_manual && !is_mastery_add {
         crate::relic_auto_add::record_rewards(
-            run_sequence, capture.x, capture.y, capture.width, capture.height,
-            capture.image.width(), &blocks,
+            run_sequence,
+            capture.x,
+            capture.y,
+            capture.width,
+            capture.height,
+            capture.image.width(),
+            &blocks,
         );
     }
 
@@ -174,8 +180,7 @@ fn capture_warframe_window() -> AppResult<CapturedWindow> {
         .map_err(|err| AppError::msg(format!("failed to list windows: {err}")))?
         .into_iter()
         .find(|w| {
-            w.pid()
-                .is_ok_and(|pid| is_warframe_process(&sys, pid))
+            w.pid().is_ok_and(|pid| is_warframe_process(&sys, pid))
                 && !w.is_minimized().unwrap_or(false)
         })
         .ok_or_else(|| AppError::msg("no non-minimized Warframe window found"))?;
@@ -244,7 +249,14 @@ fn preprocess_capture<R: Runtime>(
     }
 
     let mut filtered = binary_target_filter(&capture.image, &targets);
-    let checkmarks = crate::ocr::preprocessing::remove_checkmarks(&mut filtered);
+    let checkmark_threshold = app
+        .get_setting_f64(
+            "ocr_checkmark_match_threshold",
+            DEFAULT_OCR_CHECKMARK_MATCH_THRESHOLD,
+        )
+        .clamp(0.5, 1.0);
+    let checkmarks =
+        crate::ocr::preprocessing::remove_checkmarks(&mut filtered, checkmark_threshold);
     apply_morphology(&mut filtered);
 
     let upscale_factor = 2;
@@ -330,7 +342,7 @@ fn read_checkmark_quantities<R: Runtime>(
     let api = TesseractAPI::new();
     if api.init(&tessdata, "eng").is_err()
         || api
-            .set_page_seg_mode(TessPageSegMode::PSM_SINGLE_WORD)
+            .set_page_seg_mode(TessPageSegMode::PSM_SINGLE_LINE)
             .is_err()
         || api
             .set_variable("tessedit_char_whitelist", "0123456789")
@@ -832,14 +844,24 @@ pub fn hide_overlay<R: Runtime>(app: &AppHandle<R>) -> AppResult<()> {
         crate::hotkeys::unregister_overlay_hotkeys(app);
         crate::hotkeys::unregister_escape_hotkey(app);
 
-        let sequence = app.state::<AppState>()
-            .overlay_sequence.lock().map(|value| *value).unwrap_or(0);
+        let sequence = app
+            .state::<AppState>()
+            .overlay_sequence
+            .lock()
+            .map(|value| *value)
+            .unwrap_or(0);
         let handle = app.clone();
         tauri::async_runtime::spawn(async move {
             tokio::time::sleep(Duration::from_millis(100)).await;
-            let current = handle.state::<AppState>()
-                .overlay_sequence.lock().map(|value| *value).unwrap_or(0);
-            if current == sequence { let _ = overlay.hide(); }
+            let current = handle
+                .state::<AppState>()
+                .overlay_sequence
+                .lock()
+                .map(|value| *value)
+                .unwrap_or(0);
+            if current == sequence {
+                let _ = overlay.hide();
+            }
         });
     }
 
@@ -849,18 +871,27 @@ pub fn hide_overlay<R: Runtime>(app: &AppHandle<R>) -> AppResult<()> {
 /// Display saved-reward feedback in the existing clickthrough window.
 #[tauri::command]
 pub fn show_relic_add_toast<R: Runtime>(app: AppHandle<R>) -> AppResult<()> {
-    let overlay = app.get_webview_window("overlay")
+    let overlay = app
+        .get_webview_window("overlay")
         .ok_or_else(|| AppError::WindowNotFound("overlay".into()))?;
     let sequence = bump_overlay_sequence(&app)?;
-    overlay.show().map_err(|err| AppError::msg(format!("failed to show relic confirmation: {err}")))?;
+    overlay
+        .show()
+        .map_err(|err| AppError::msg(format!("failed to show relic confirmation: {err}")))?;
     let _ = overlay.set_ignore_cursor_events(true);
     let _ = overlay.set_focusable(false);
     tauri::async_runtime::spawn(async move {
         // Leave time for the frontend's ten-second message and exit fade.
         tokio::time::sleep(Duration::from_secs(11)).await;
-        let current = app.state::<AppState>()
-            .overlay_sequence.lock().map(|value| *value).unwrap_or(0);
-        if current == sequence { let _ = hide_overlay(&app); }
+        let current = app
+            .state::<AppState>()
+            .overlay_sequence
+            .lock()
+            .map(|value| *value)
+            .unwrap_or(0);
+        if current == sequence {
+            let _ = hide_overlay(&app);
+        }
     });
     Ok(())
 }
