@@ -4,7 +4,11 @@
 	import { getDashboardCycles } from '../cycles';
 	import BaroKiTeer from './BaroKiTeer.svelte';
 
-	let { world, now }: { world: WorldState; now: number } = $props();
+	let { world, now, onOpenBaro }: {
+		world: WorldState;
+		now: number;
+		onOpenBaro: () => void;
+	} = $props();
 
 	let cycles = $derived(getDashboardCycles(world, now));
 
@@ -51,5 +55,5 @@
 			</div>
 		</div>
 	{/each}
-	<BaroKiTeer trader={world.voidTrader} {now} />
+	<BaroKiTeer trader={world.voidTrader} {now} onOpenInventory={onOpenBaro} />
 </section>

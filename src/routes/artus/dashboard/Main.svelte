@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import { dashboard, reloadWorldState } from '$lib/worldstate.svelte';
 	import { config, loadSettings } from '$lib/settings.svelte';
 	import { hasActiveNotificationRules } from '$lib/notifications.svelte';
@@ -18,6 +18,7 @@
 	let isReloadCoolingDown = $state(false);
 	let showAllViews = $state(false);
 	let activeView = $state<DashboardView>('fissures');
+	let liveViewsElement = $state<HTMLDivElement>();
 	let favoriteViews = $derived(
 		[...dashboardViews]
 			.filter(
@@ -49,6 +50,13 @@
 			? dashboard.world.timestamp.getTime() + (localNow - dashboard.fetchedAt)
 			: localNow,
 	);
+
+	async function openBaroInventory() {
+		if (!collapsedViews.some((view) => view.value === 'BaroInventory')) showAllViews = true;
+		activeView = 'BaroInventory';
+		await tick();
+		liveViewsElement?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+	}
 
 	onMount(() => {
 		void loadSettings().catch((error) =>
@@ -103,9 +111,9 @@
 		<div class="bg-surface w-full h-px"></div>
 		{#if dashboard.world}
 			<div class="flex flex-col gap-12">
-				<CycleWidgets world={dashboard.world} now={worldNow} />
+				<CycleWidgets world={dashboard.world} now={worldNow} onOpenBaro={openBaroInventory} />
 				<!-- <div class="bg-surface w-full h-px"></div> -->
-				<div class="flex flex-col gap-4">
+				<div class="flex flex-col gap-4" bind:this={liveViewsElement}>
 					<div class="flex flex-col gap-2">
 						<div class="flex justify-between items-center gap-2">
 							<div class="font-medium text-sm whitespace-nowrap">Live World State Views</div>
