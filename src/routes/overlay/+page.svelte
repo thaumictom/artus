@@ -372,7 +372,7 @@
 	function syncScannedQuantities(scannedWords: OcrWord[]) {
 		const quantities = new Map<string, { word: OcrWord; quantity: number }>();
 		for (const word of scannedWords) {
-			if (!word.slug) continue;
+			if (!word.slug || word.is_custom) continue;
 			const quantity = word.quantity ?? 1;
 			if (!Number.isSafeInteger(quantity) || quantity <= 0) continue;
 			quantities.set(word.slug, { word, quantity });
@@ -482,6 +482,7 @@
 		}
 		if (selectedIndex === null) return;
 		if (action === 'inventory_increment' || action === 'inventory_decrement') {
+			if (words[selectedIndex].is_custom) return;
 			applyInventoryChanges([
 				{
 					word: words[selectedIndex],

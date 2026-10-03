@@ -245,15 +245,19 @@ pub fn finish<R: Runtime>(app: &AppHandle<R>) -> Option<String> {
     let result = if !app.get_setting_bool("relic_reward_auto_add", true) {
         "Auto-add disabled".to_string()
     } else if let Some(word) = resolve_selection(current) {
-        match add_reward_to_inventory(app, &word) {
-            Ok(()) => {
-                info!("relic auto-add saved: {}", word.text);
-                added_name = Some(word.text.clone());
-                format!("Added +1 {} to inventory", word.text)
-            }
-            Err(err) => {
-                warn!("failed to add selected relic reward: {err}");
-                format!("Inventory save failed: {err}")
+        if word.is_custom == Some(true) {
+            format!("Skipped custom reward: {}", word.text)
+        } else {
+            match add_reward_to_inventory(app, &word) {
+                Ok(()) => {
+                    info!("relic auto-add saved: {}", word.text);
+                    added_name = Some(word.text.clone());
+                    format!("Added +1 {} to inventory", word.text)
+                }
+                Err(err) => {
+                    warn!("failed to add selected relic reward: {err}");
+                    format!("Inventory save failed: {err}")
+                }
             }
         }
     } else {
@@ -280,6 +284,9 @@ pub fn show_added_feedback<R: Runtime + 'static>(app: &AppHandle<R>, name: Strin
 }
 
 fn add_reward_to_inventory<R: Runtime>(app: &AppHandle<R>, word: &OcrWord) -> Result<(), String> {
+    if word.is_custom == Some(true) {
+        return Err("custom dictionary rewards cannot be added to inventory".to_string());
+    }
     let store = app.store("inventory.json").map_err(|err| err.to_string())?;
     let mut items: Vec<Value> = store
         .get("items")

@@ -2,6 +2,7 @@
 	import Icon from '@iconify/svelte';
 	import Button from '$lib/components/Button.svelte';
 	import Checkbox from '$lib/components/Checkbox.svelte';
+	import WarframeItem from '$lib/components/WarframeItem.svelte';
 	import { isOwnedMasteryComponent, mastery, setMasteryChecked, type MasteryItem } from '$lib/mastery.svelte';
 
 	let {
@@ -66,22 +67,13 @@
 	<div class="min-w-0">
 		<div class="flex items-center gap-2 font-semibold text-foreground">
 			{#if item.itemCount != null && item.itemCount > 1}<span class="text-accent shrink-0">{item.itemCount}×</span>{/if}
-			{#if item.marketSlug}
-				<Button variant="link" size="none" class="flex items-center gap-1 font-semibold text-foreground text-left" onclick={() => onOpenMarket(item.marketSlug!)}>
-					<span class="break-words">{item.name}</span>
-					<Icon icon="material-symbols:arrow-outward-rounded" class="size-4 shrink-0" />
-				</Button>
-			{:else}
-				<span class="break-words">{item.name}</span>
-			{/if}
-			{#if isComponent && ownedCount > 0}<span class="text-muted-foreground text-xs font-normal whitespace-nowrap shrink-0">{ownedCount} owned</span>{/if}
-			{#if automatic}<span class="bg-accent rounded-full size-2 shrink-0" title="Automatically added by mastery hotkey" aria-label="Automatically added"></span>{/if}
+			<WarframeItem item={item.marketSlug ?? item.key} name={item.name} {ownedCount}
+				mastered={checked} {onOpenMarket} showMastered={!isComponent}>
+				{#snippet trailing()}
+					{#if automatic}<span class="bg-accent rounded-full size-2 shrink-0" title="Automatically added by mastery hotkey" aria-label="Automatically added"></span>{/if}
+				{/snippet}
+			</WarframeItem>
 		</div>
-		{#if !isComponent}
-			<div class="mt-0.5 text-muted-foreground text-xs">
-				{item.category ?? item.type ?? 'Other'} · MR {item.masteryReq ?? '—'}{item.tradable || item.marketSlug ? ' · Tradeable' : ''}
-			</div>
-		{/if}
 	</div>
 {/snippet}
 

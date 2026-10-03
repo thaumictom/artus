@@ -12,6 +12,7 @@
 		align = 'center',
 		class: className,
 		triggerProps,
+		triggerTag = 'button',
 	}: {
 		children: Snippet;
 		content: Snippet;
@@ -20,6 +21,7 @@
 		align?: 'start' | 'center' | 'end';
 		class?: string;
 		triggerProps?: WithoutChildren<Tooltip.TriggerProps>;
+		triggerTag?: 'button' | 'div';
 	} = $props();
 </script>
 
@@ -33,7 +35,14 @@
 				triggerProps?.class,
 			)}
 		>
-			{@render children()}
+			{#snippet child({ props })}
+				{#if triggerTag === 'div'}
+					<!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard users can focus the container to read its tooltip.) -->
+					<div {...props} tabindex="0">{@render children()}</div>
+				{:else}
+					<button {...props}>{@render children()}</button>
+				{/if}
+			{/snippet}
 		</Tooltip.Trigger>
 		<Tooltip.Portal>
 			<Tooltip.Content

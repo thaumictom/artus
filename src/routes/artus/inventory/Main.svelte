@@ -527,8 +527,6 @@
 				{@const slug = inventoryMarketSlug(item)}
 				<InventoryRow
 					{item}
-					category={categoryFor(item)}
-					tags={metadataFor(item)?.tags ?? []}
 					price={priceFor(item)}
 					mastered={isMastered(item)}
 					listing={slug ? listingBySlug.get(slug) : undefined}

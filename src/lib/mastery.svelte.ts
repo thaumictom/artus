@@ -3,6 +3,7 @@ import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import { LazyStore } from '@tauri-apps/plugin-store';
 import { z } from 'zod';
 import { DictionarySchema } from '$lib/schemas';
+import { catalogMarketSlug } from '$lib/market-catalog';
 
 const catalogItemSchema = z.object({
 	name: z.string(),
@@ -14,10 +15,11 @@ const catalogItemSchema = z.object({
 	components: z.array(z.string()).nullish(),
 	tags: z.array(z.string()).nullish(),
 	marketSlug: z.string().nullish(),
+	marketInfo: z.object({ urlName: z.string().nullish() }).nullish(),
 	wikiaUrl: z.string().nullish(),
 	tradable: z.boolean().optional(),
 	ducats: z.number().nullish(),
-});
+}).transform((item) => ({ ...item, marketSlug: catalogMarketSlug(item) }));
 
 const tradeablePriceSchema = z.record(z.string(), z.object({
 	median: z.number(),

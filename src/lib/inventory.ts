@@ -42,7 +42,7 @@ export function setOcrItemQuantities(changes: { word: InventoryOcrWord; quantity
 function saveOcrItemQuantities(changes: OcrQuantityChange[]) {
 	const save = latestSave.catch(() => undefined).then(async () => {
 		const applied = new Map<string, number>();
-		if (!changes.some((change) => change.word.slug &&
+		if (!changes.some((change) => change.word.slug && !change.word.is_custom &&
 			('delta' in change
 				? Number.isSafeInteger(change.delta) && change.delta !== 0
 				: Number.isSafeInteger(change.quantity) && change.quantity > 0))) {
@@ -57,7 +57,8 @@ function saveOcrItemQuantities(changes: OcrQuantityChange[]) {
 		const newSlugs = Array.isArray(savedSlugs) ? savedSlugs : [];
 		for (const change of changes) {
 			const { word } = change;
-			if (!word.slug) continue;
+			// Custom dictionary entries are recognizable rewards, not inventory items.
+			if (!word.slug || word.is_custom) continue;
 			if ('delta' in change && (!Number.isSafeInteger(change.delta) || change.delta === 0)) continue;
 			if ('quantity' in change && (!Number.isSafeInteger(change.quantity) || change.quantity <= 0)) continue;
 			const existing = items.find((item) =>

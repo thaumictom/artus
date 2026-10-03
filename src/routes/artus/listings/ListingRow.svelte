@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Icon from '@iconify/svelte';
 	import Button from '$lib/components/Button.svelte';
+	import WarframeItem from '$lib/components/WarframeItem.svelte';
 	import type { InventoryItem } from '$lib/inventory';
 	import { listingName, listingOwned, listingSlug } from './listing-utils';
 	import type { Listing, ListingItem } from './types';
@@ -51,21 +52,10 @@
 	aria-label={`Edit ${name} listing`}
 >
 	<td class="px-3 py-3.5 min-w-64">
-		<Button
-			variant="link"
-			size="none"
-			class="flex items-center gap-1 font-semibold text-foreground text-left"
-			onclick={() => onOpenMarket(listingSlug(order, itemDetails))}
-		>
-			{name}
-			<Icon icon="material-symbols:arrow-outward-rounded" class="size-4" />
-		</Button>
+		<WarframeItem item={listingSlug(order, itemDetails)} {name} ownedCount={owned}
+			listing={order.type === 'sell' ? order : null} hideListing={true} {onOpenMarket} />
 		{#if order.rank != null || order.subtype}
-			<div class="mt-0.5 text-muted-foreground text-xs">
-				{order.rank != null ? `Rank ${order.rank}` : ''}{order.rank != null && order.subtype
-					? ' · '
-					: ''}{order.subtype ?? ''}
-			</div>
+			<p class="mt-1 text-xs text-muted-foreground">{[order.rank != null ? `Rank ${order.rank}` : '', order.subtype].filter(Boolean).join(' · ')}</p>
 		{/if}
 	</td>
 	<td class="px-3 py-3.5">

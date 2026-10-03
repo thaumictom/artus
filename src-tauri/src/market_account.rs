@@ -428,7 +428,7 @@ pub async fn market_item_details(state: State<'_, AppState>) -> AppResult<std::c
 }
 
 #[tauri::command]
-pub async fn market_create_listing(state: State<'_, AppState>, slug: String, platinum: i64, quantity: i64, visible: bool, variant: ListingVariant) -> AppResult<Value> {
+pub async fn market_create_listing(app: AppHandle, state: State<'_, AppState>, slug: String, platinum: i64, quantity: i64, visible: bool, variant: ListingVariant) -> AppResult<Value> {
     if !valid_slug(&slug) || !valid_order(platinum, quantity) { return Err(AppError::msg("Invalid listing details")); }
     let data = crate::api::cached_wfm_item(&state, &slug)?;
     let item_id = data["id"].as_str().ok_or_else(|| AppError::msg("Item ID unavailable"))?;
@@ -445,29 +445,39 @@ pub async fn market_create_listing(state: State<'_, AppState>, slug: String, pla
     } else if variant.subtype.is_some() {
         return Err(AppError::msg("Subtype is not supported for this item"));
     }
-    authenticated(&state, reqwest::Method::POST, "order", Some(body)).await
+    let response = authenticated(&state, reqwest::Method::POST, "order", Some(body)).await?;
+    let _ = app.emit("market_listings_changed", ());
+    Ok(response)
 }
 
 #[tauri::command]
-pub async fn market_update_listing(state: State<'_, AppState>, id: String, platinum: i64, quantity: i64) -> AppResult<Value> {
+pub async fn market_update_listing(app: AppHandle, state: State<'_, AppState>, id: String, platinum: i64, quantity: i64) -> AppResult<Value> {
     if !valid_id(&id) || !valid_order(platinum, quantity) { return Err(AppError::msg("Invalid listing details")); }
-    authenticated(&state, reqwest::Method::PATCH, &format!("order/{id}"), Some(json!({"platinum":platinum,"quantity":quantity}))).await
+    let response = authenticated(&state, reqwest::Method::PATCH, &format!("order/{id}"), Some(json!({"platinum":platinum,"quantity":quantity}))).await?;
+    let _ = app.emit("market_listings_changed", ());
+    Ok(response)
 }
 
 #[tauri::command]
-pub async fn market_set_listing_visibility(state: State<'_, AppState>, id: String, visible: bool) -> AppResult<Value> {
+pub async fn market_set_listing_visibility(app: AppHandle, state: State<'_, AppState>, id: String, visible: bool) -> AppResult<Value> {
     if !valid_id(&id) { return Err(AppError::msg("Invalid listing ID")); }
-    authenticated(&state, reqwest::Method::PATCH, &format!("order/{id}"), Some(json!({"visible":visible}))).await
+    let response = authenticated(&state, reqwest::Method::PATCH, &format!("order/{id}"), Some(json!({"visible":visible}))).await?;
+    let _ = app.emit("market_listings_changed", ());
+    Ok(response)
 }
 
 #[tauri::command]
-pub async fn market_close_listing_one(state: State<'_, AppState>, id: String) -> AppResult<Value> {
+pub async fn market_close_listing_one(app: AppHandle, state: State<'_, AppState>, id: String) -> AppResult<Value> {
     if !valid_id(&id) { return Err(AppError::msg("Invalid listing ID")); }
-    authenticated(&state, reqwest::Method::POST, &format!("order/{id}/close"), Some(json!({"quantity":1}))).await
+    let response = authenticated(&state, reqwest::Method::POST, &format!("order/{id}/close"), Some(json!({"quantity":1}))).await?;
+    let _ = app.emit("market_listings_changed", ());
+    Ok(response)
 }
 
 #[tauri::command]
-pub async fn market_delete_listing(state: State<'_, AppState>, id: String) -> AppResult<Value> {
+pub async fn market_delete_listing(app: AppHandle, state: State<'_, AppState>, id: String) -> AppResult<Value> {
     if !valid_id(&id) { return Err(AppError::msg("Invalid listing ID")); }
-    authenticated(&state, reqwest::Method::DELETE, &format!("order/{id}"), None).await
+    let response = authenticated(&state, reqwest::Method::DELETE, &format!("order/{id}"), None).await?;
+    let _ = app.emit("market_listings_changed", ());
+    Ok(response)
 }

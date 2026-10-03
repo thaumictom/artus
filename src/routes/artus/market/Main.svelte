@@ -1,6 +1,7 @@
 <script lang="ts">
 	import Combobox from '$lib/components/Combobox.svelte';
 	import Button from '$lib/components/Button.svelte';
+	import WarframeItem from '$lib/components/WarframeItem.svelte';
 	import Skeleton from '$lib/components/Skeleton.svelte';
 	// import { RadioGroup } from 'bits-ui'; // Tag filtering is temporarily disabled.
 	import { onMount } from 'svelte';
@@ -15,16 +16,13 @@
 	import Statistics from './Statistics.svelte';
 	import InfoCard from './InfoCard.svelte';
 	import { invoke } from '@tauri-apps/api/core';
-	import { LazyStore } from '@tauri-apps/plugin-store';
-	import { inventoryMarketSlug, inventoryNameKey, waitForInventorySave, type InventoryItem } from '$lib/inventory';
-	import { mastery } from '$lib/mastery.svelte';
-	import { MarketCatalogSchema, type CatalogItem } from '$lib/market-catalog';
+	import { warframeItems, resolveWarframeItem, itemGameRef } from '$lib/warframe-item.svelte';
 	import MarketNotificationRules from './MarketNotificationRules.svelte';
 	import { clearMarketNotificationTarget, marketNavigation } from '$lib/market-navigation.svelte';
 	import { appNavigation, navigateTo } from '$lib/app-navigation.svelte';
 
-	let catalog = $state.raw<Record<string, CatalogItem> | null>(null);
-	let catalogError = $state(false);
+	let catalog = $derived(warframeItems.catalog);
+	let catalogError = $derived(warframeItems.catalogError);
 	let dictionaryItems: {
 		label: string;
 		value: string;
@@ -86,37 +84,10 @@
 
 	let selectedSlug = $state('');
 	let searchError = $state<string | null>(null);
-	let inventoryItems = $state<InventoryItem[]>([]);
-	const ownedItems = $derived.by(() => {
-		const bySlug = new Map<string, number>();
-		const byName = new Map<string, number>();
-		for (const item of inventoryItems) {
-			if (item.isCustom || item.quantity <= 0) continue;
-			const slug = inventoryMarketSlug(item);
-			if (slug) bySlug.set(slug, (bySlug.get(slug) ?? 0) + item.quantity);
-			else {
-				const name = inventoryNameKey(item.name);
-				byName.set(name, (byName.get(name) ?? 0) + item.quantity);
-			}
-		}
-		return { bySlug, byName };
-	});
 	function ownedCountFor(slug: string) {
 		const name = dictionaryItems.find((item) => item.value === slug)?.label;
-		return (ownedItems.bySlug.get(slug) ?? 0) + (name ? ownedItems.byName.get(inventoryNameKey(name)) ?? 0 : 0);
+		return resolveWarframeItem(slug, name).ownedCount;
 	}
-	const masteredSlugs = $derived.by(() => {
-		const checked = new Set(mastery.checked);
-		const slugs = new Set<string>();
-		for (const item of mastery.items) {
-			if (checked.has(item.key) && item.marketSlug) slugs.add(item.marketSlug);
-			for (const component of item.components) {
-				if ((checked.has(item.key) || checked.has(component.key)) && component.marketSlug)
-					slugs.add(component.marketSlug);
-			}
-		}
-		return slugs;
-	});
 	let relatedItems = $derived.by(() => {
 		const current = dictionaryItems.find((item) => item.value === itemData?.slug);
 		const setSlug = current?.isSet ? current.value : current?.setSlug;
@@ -165,25 +136,10 @@
 	}
 
 	onMount(() => {
-		void waitForInventorySave()
-			.then(() => new LazyStore('inventory.json').get<InventoryItem[]>('items'))
-			.then((items) => { if (!disposed) inventoryItems = items ?? []; })
-			.catch((error) => console.error('Could not load inventory ownership:', error));
 		void loadDictionary();
 		void loadMostTraded();
-		void invoke('get_cached_market_items')
-			.then((response) => {
-				if (!disposed) catalog = MarketCatalogSchema.parse(response);
-			})
-			.catch((error) => {
-				if (!disposed) {
-					console.error('Failed to read local item catalog:', error);
-					catalogError = true;
-				}
-			});
 		return () => {
 			disposed = true;
-			catalog = null;
 		};
 	});
 
@@ -316,9 +272,7 @@
 		{:else if itemData}
 			<InfoCard
 				{itemData}
-				catalogItem={catalog?.[itemData.gameRef]}
-				mastered={masteredSlugs.has(itemData.slug)}
-				ownedCount={ownedCountFor(itemData.slug)}
+				catalogItem={catalog[itemGameRef(itemData.gameRef)]}
 				{relatedItems}
 				onSelectItem={handleValueChange}
 			/>
@@ -392,17 +346,25 @@
 				<ol class="divide-y divide-surface">
 					{#each visibleMostTradedItems as item, index (item.slug)}
 						<li>
-							<button
-								type="button"
-								class="flex items-center gap-3 hover:bg-surface focus-visible:bg-surface px-3 py-2.5 focus-visible:outline-accent w-full text-sm text-left transition cursor-pointer"
+							<div
+								class="flex items-center gap-3 hover:bg-surface px-3 py-2.5 w-full text-sm transition cursor-pointer focus-visible:outline-2 focus-visible:outline-accent"
+								role="button"
+								tabindex="0"
+								aria-label={`View ${item.name} on the market`}
 								onclick={() => handleValueChange(item.slug)}
+								onkeydown={(event) => {
+									if (event.key === 'Enter' || event.key === ' ') {
+										event.preventDefault();
+										handleValueChange(item.slug);
+									}
+								}}
 							>
 								<span class="w-5 tabular-nums text-muted-foreground shrink-0">{index + 1}</span>
-								<span class="flex-1">{item.name}</span>
+								<div class="flex-1 min-w-0"><WarframeItem item={item.slug} name={item.name} hideMarket={true} hideTooltip={true} /></div>
 								<span class="tabular-nums text-muted-foreground">
 									{number.format(item.liquidity)}
 								</span>
-							</button>
+							</div>
 						</li>
 					{/each}
 				</ol>

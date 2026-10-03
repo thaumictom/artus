@@ -19,6 +19,7 @@
 		navigateTo,
 	} from '$lib/app-navigation.svelte';
 	import { initializeMastery, stopMasteryListener } from '$lib/mastery.svelte';
+	import { initializeWarframeItems } from '$lib/warframe-item.svelte';
 	// import ArtusMainPage from './ArtusMainPage.svelte';
 	// import ArtusSidebar from './ArtusSidebar.svelte';
 	// import SiteHeader from './SiteHeader.svelte';
@@ -127,6 +128,7 @@
 		// In particular, a first-run store initialization can be slower than the
 		// page mount or fail independently while world state is still usable.
 		initializeWorldState();
+		const stopWarframeItems = initializeWarframeItems();
 		void loadSettings().catch((error) => console.error('Could not load settings:', error));
 		void loadMarketSession().catch((error) =>
 			console.error('Could not load market session:', error),
@@ -144,6 +146,7 @@
 			window.removeEventListener('mouseup', handleSideButton, true);
 			window.removeEventListener('auxclick', preventSideButtonDefault, true);
 			stopMasteryListener();
+			stopWarframeItems();
 		};
 	});
 
