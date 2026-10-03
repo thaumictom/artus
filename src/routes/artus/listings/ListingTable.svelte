@@ -37,6 +37,7 @@
 	const columns: TableColumn[] = [
 		{ key: 'name', label: 'Name', sortable: true },
 		{ key: 'type', label: 'Type', class: 'w-20' },
+		{ key: 'visible', label: 'Visibility', class: 'w-36 whitespace-nowrap' },
 		{ key: 'median', label: 'Market Median', align: 'right', class: 'w-24' },
 		{ key: 'price', label: 'Price', sortable: true, align: 'right', class: 'w-24' },
 		{ key: 'quantity', label: 'Quantity', sortable: true, align: 'right', class: 'w-24' },

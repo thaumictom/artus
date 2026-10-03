@@ -28,18 +28,29 @@
 		matched: boolean;
 	};
 
-	function isOrderedSubsequence(query: string, text: string): boolean {
+	function getSubsequenceIndices(query: string, text: string): number[] | null {
+		const indices: number[] = [];
 		let queryIndex = 0;
-		for (const char of text) {
-			if (char === query[queryIndex]) {
+		for (let i = 0; i < text.length; i += 1) {
+			if (text[i] === query[queryIndex]) {
+				indices.push(i);
 				queryIndex += 1;
 				if (queryIndex === query.length) {
-					return true;
+					return indices;
 				}
 			}
 		}
 
-		return query.length === 0;
+		return query.length === 0 ? indices : null;
+	}
+
+	function compareSubsequenceIndices(left: number[], right: number[]): number {
+		// Prefer the earliest match for the first query character whose position differs.
+		for (let i = 0; i < left.length; i += 1) {
+			const difference = left[i] - right[i];
+			if (difference !== 0) return difference;
+		}
+		return 0;
 	}
 
 	function getHighlightSegments(label: string, query: string): HighlightSegment[] {
@@ -49,22 +60,11 @@
 		}
 
 		const normalizedLabel = label.toLowerCase();
-		const matchedIndices = new Set<number>();
-		let queryIndex = 0;
-
-		for (let i = 0; i < normalizedLabel.length; i += 1) {
-			if (normalizedLabel[i] === normalizedQuery[queryIndex]) {
-				matchedIndices.add(i);
-				queryIndex += 1;
-				if (queryIndex === normalizedQuery.length) {
-					break;
-				}
-			}
-		}
-
-		if (queryIndex !== normalizedQuery.length) {
+		const indices = getSubsequenceIndices(normalizedQuery, normalizedLabel);
+		if (indices === null) {
 			return [{ text: label, matched: false }];
 		}
+		const matchedIndices = new Set(indices);
 
 		const segments: HighlightSegment[] = [];
 		let buffer = '';
@@ -106,15 +106,19 @@
 					item,
 					startsWithMatch: normalizedLabel.startsWith(normalizedQuery),
 					exactMatch: normalizedLabel.includes(normalizedQuery),
-					isSubsequenceMatch: isOrderedSubsequence(normalizedQuery, normalizedLabel),
+					matchedIndices: getSubsequenceIndices(normalizedQuery, normalizedLabel),
 					score: fuzzball.WRatio(item.label, normalizedQuery),
 				};
 			})
-			.filter(({ isSubsequenceMatch }) => isSubsequenceMatch)
+			.filter(
+				(match): match is typeof match & { matchedIndices: number[] } =>
+					match.matchedIndices !== null,
+			)
 			.sort(
 				(left, right) =>
 					Number(right.startsWithMatch) - Number(left.startsWithMatch) ||
 					Number(right.exactMatch) - Number(left.exactMatch) ||
+					compareSubsequenceIndices(left.matchedIndices, right.matchedIndices) ||
 					right.score - left.score ||
 					left.item.label.localeCompare(right.item.label),
 			)

@@ -57,9 +57,6 @@
 			class="flex items-center gap-1 font-semibold text-foreground text-left"
 			onclick={() => onOpenMarket(listingSlug(order, itemDetails))}
 		>
-			{#if order.visible === false}
-				<Icon icon="material-symbols:visibility-off-outline-rounded" class="mr-0.5 size-3.5" />
-			{/if}
 			{name}
 			<Icon icon="material-symbols:arrow-outward-rounded" class="size-4" />
 		</Button>
@@ -77,6 +74,20 @@
 		>
 			{order.type === 'sell' ? 'Sell' : 'Buy'}
 		</span>
+	</td>
+	<td class="px-3 py-3.5">
+		<Button
+			size="none"
+			class={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-accent ${order.visible ? 'border-success/30 bg-success/15 text-success hover:bg-success/25' : 'border-border bg-muted/15 text-muted-foreground hover:bg-muted/25'}`}
+			disabled={busy}
+			title={order.visible ? 'Hide listing' : 'Unhide listing'}
+			aria-label={`Toggle visibility for ${name}`}
+			aria-pressed={order.visible}
+			onclick={() => onVisibility(order)}
+		>
+			<Icon icon={order.visible ? 'lucide:check' : 'lucide:x'} class="size-3.5" aria-hidden="true" />
+			{order.visible ? 'Visible' : 'Hidden'}
+		</Button>
 	</td>
 	<td class="px-3 py-3.5 tabular-nums text-right">
 		{#if median && Number.isFinite(median.median)}
@@ -100,16 +111,6 @@
 	<td class="px-3 py-3.5 font-semibold tabular-nums text-right">{order.quantity}</td>
 	<td class="px-3 py-3.5 text-right">
 		<div class="flex justify-end items-center gap-1.5">
-			<Button
-				size="icon"
-				class="inline-flex justify-center items-center size-8"
-				disabled={busy}
-				title={order.visible ? 'Hide listing' : 'Unhide listing'}
-				aria-label={order.visible ? 'Hide listing' : 'Unhide listing'}
-				onclick={() => onVisibility(order)}
-			>
-				<Icon icon={order.visible ? 'lucide:eye-off' : 'lucide:eye'} class="size-4" />
-			</Button>
 			{#if order.type === 'sell'}
 				<Button
 					size="icon"
