@@ -97,18 +97,28 @@ export const dashboardViews = [
 
 export type DashboardView = (typeof dashboardViews)[number]['value'];
 
+const unusedViews = [
+	'SyndicateMissions', 'KuvaMissions', 'DarkSectors', 'CommunityCampaign', 'Events',
+	'Arbitration', 'WeeklyChallenges', 'SentientOutposts', 'PersistentEnemies', 'GlobalUpgrades',
+] as const satisfies readonly DashboardView[];
+const unusedViewIds = new Set<string>(unusedViews);
+
+export function isDashboardViewVisible(view: string, showUnused: boolean): boolean {
+	return showUnused || !unusedViewIds.has(view);
+}
+
 const viewGroups = [
 	{
 		label: 'News & Events',
-		views: ['news', 'Events', 'Kinepage', 'ClanInitiative', 'CommunityCampaign'],
+		views: ['news', 'ClanInitiative'],
 	},
 	{
 		label: 'Missions',
-		views: ['fissures', 'Alerts', 'Invasions', 'SyndicateMissions', 'KuvaMissions', 'DarkSectors'],
+		views: ['fissures', 'Alerts', 'Invasions'],
 	},
 	{
 		label: 'Challenges',
-		views: ['Sortie', 'ArchonHunt', 'Arbitration', 'Circuit', 'Archimedea', 'Descendia', 'Nightwave', 'WeeklyChallenges', 'Conclave', 'Faceoff'],
+		views: ['Sortie', 'ArchonHunt', 'Circuit', 'Archimedea', 'Descendia', 'Nightwave', 'Conclave', 'Faceoff'],
 	},
 	{
 		label: 'Vendors & Market',
@@ -116,12 +126,17 @@ const viewGroups = [
 	},
 	{
 		label: 'World Activity',
-		views: ['WorldCycles', 'Calendar', 'SentientOutposts', 'Simaris', 'PersistentEnemies', 'Construction', 'GlobalUpgrades'],
+		views: ['WorldCycles', 'Calendar', 'Kinepage', 'Simaris', 'Construction'],
 	},
-
-] satisfies { label: string; views: DashboardView[] }[];
+	{
+		label: 'Unused',
+		views: [...unusedViews],
+		debugOnly: true,
+	},
+] satisfies { label: string; views: DashboardView[]; debugOnly?: boolean }[];
 
 export const dashboardViewGroups = viewGroups.map((group) => ({
 	label: group.label,
+	debugOnly: 'debugOnly' in group && group.debugOnly === true,
 	views: group.views.map((value) => dashboardViews.find((view) => view.value === value)!),
 }));

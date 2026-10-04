@@ -12,7 +12,7 @@
 	import Collapsible from '$lib/components/Collapsible.svelte';
 	import { config, loadSettings, updateSetting } from '$lib/settings.svelte';
 	import { initializeAlertCompletions } from '$lib/alert-completions.svelte';
-	import { dashboardViewGroups, dashboardViews, type DashboardView } from '../dashboard-views';
+	import { dashboardViewGroups, dashboardViews, isDashboardViewVisible, type DashboardView } from '../dashboard-views';
 
 	let {
 		activeView,
@@ -40,9 +40,13 @@
 	let saveQueue = Promise.resolve();
 	let pinnedSelection: DashboardView | null = null;
 	let pinnedValues = $derived(config.dashboard_view_favorites);
+	let visibleGroups = $derived(dashboardViewGroups.filter((group) =>
+		!group.debugOnly || config.show_unused_dashboard_views,
+	));
 	let pinnedViews = $derived(
 		[...dashboardViews]
-			.filter((view) => pinnedValues.includes(view.value))
+			.filter((view) => pinnedValues.includes(view.value)
+				&& isDashboardViewVisible(view.value, config.show_unused_dashboard_views))
 			.sort((a, b) => pinnedValues.indexOf(a.value) - pinnedValues.indexOf(b.value)),
 	);
 	let pins = $derived(new Set(pinnedViews.map((view) => view.value)));
@@ -65,7 +69,7 @@
 		const selectedFromPin = pinnedSelection === selected;
 		pinnedSelection = null;
 		if (selectedFromPin) return;
-		const group = dashboardViewGroups.find((group) =>
+		const group = visibleGroups.find((group) =>
 			group.views.some((view) => view.value === selected),
 		);
 		// Reveal externally selected views without reopening groups the user collapses.
@@ -74,7 +78,7 @@
 
 	function selectView(value: DashboardView, fromPinned = false) {
 		pinnedSelection = fromPinned ? value : null;
-		const group = dashboardViewGroups.find((group) =>
+		const group = visibleGroups.find((group) =>
 			group.views.some((view) => view.value === value),
 		);
 		if (group && !fromPinned) openedGroups[group.label] = true;
@@ -82,7 +86,11 @@
 	}
 
 	function savePins(values: DashboardView[]) {
-		config.dashboard_view_favorites = values;
+		// Editing visible pins must preserve pins hidden by the Debug toggle.
+		const hiddenPins = config.dashboard_view_favorites.filter((value) =>
+			!isDashboardViewVisible(value, config.show_unused_dashboard_views),
+		);
+		config.dashboard_view_favorites = [...values, ...hiddenPins];
 		saveError = null;
 		saveQueue = saveQueue
 			.catch(() => undefined)
@@ -290,7 +298,7 @@
 				{/if}
 			</section>
 			<div class="bg-surface m-3 h-px"></div>
-			{#each dashboardViewGroups as group (group.label)}
+			{#each visibleGroups as group (group.label)}
 				<section aria-label={group.label} class="mb-3 px-3">
 					<Collapsible
 						bind:open={openedGroups[group.label]}

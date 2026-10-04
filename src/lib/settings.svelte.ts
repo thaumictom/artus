@@ -48,6 +48,7 @@ type Config = {
 	visual_relic_reward_detection: boolean;
 	relic_reward_sound: boolean;
 	dashboard_view_favorites: string[];
+	show_unused_dashboard_views: boolean;
 	desktop_notifications_enabled: boolean;
 	hide_to_tray_on_close: boolean;
 	hide_donate_button: boolean;
@@ -132,6 +133,7 @@ export const config = $state({
 	capture_mods: false,
 
 	// Debug settings
+	show_unused_dashboard_views: false,
 	show_ocr_bounding_boxes: false,
 	ocr_checkmark_match_threshold: 0.8,
 

@@ -108,6 +108,17 @@
 {#snippet relicImageDescription()}Scroll to inspect the full-size filtered image.{/snippet}
 
 <div class="flex flex-col gap-8">
+	<CommonSetting
+		title="Show unused dashboard views"
+		description="Show the Unused group and its pinned views in dashboard navigation. These views may have no useful information yet."
+		labelProps={{ for: 'show_unused_dashboard_views' }}
+	>
+		<Switch
+			id="show_unused_dashboard_views"
+			bind:checked={config.show_unused_dashboard_views}
+			onCheckedChange={() => updateSetting('show_unused_dashboard_views')}
+		/>
+	</CommonSetting>
 	<OcrBoundingBoxesSetting />
 	<OcrGroupingSettings />
 	<DictionarySettings />

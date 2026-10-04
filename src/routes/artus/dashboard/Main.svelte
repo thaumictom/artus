@@ -4,9 +4,10 @@
 	import { appNavigation, navigateTo } from '$lib/app-navigation.svelte';
 	import { hasActiveNotificationRules } from '$lib/notifications.svelte';
 	import { createFocusedRefresh } from '$lib/focused-refresh';
+	import { config, loadSettings } from '$lib/settings.svelte';
 	import DashboardHeader from './widgets/DashboardFooter.svelte';
 	import DashboardNavigation from './widgets/DashboardNavigation.svelte';
-	import { dashboardViews, type DashboardView } from './dashboard-views';
+	import { dashboardViews, isDashboardViewVisible, type DashboardView } from './dashboard-views';
 	import NotificationRuleSettings from './widgets/NotificationRuleSettings.svelte';
 	import MainContent from '../MainContent.svelte';
 
@@ -14,6 +15,7 @@
 	const MANUAL_RELOAD_COOLDOWN_MS = 3_000;
 	let localNow = $state(Date.now());
 	let isReloadCoolingDown = $state(false);
+	let settingsReady = $state(false);
 	let activeView = $derived(appNavigation.current.dashboardView);
 	let liveViewsElement = $state<HTMLDivElement>();
 	let selectedView = $derived(dashboardViews.find((view) => view.value === activeView));
@@ -30,12 +32,22 @@
 	);
 
 	async function openDashboardView(target: DashboardView) {
+		if (!isDashboardViewVisible(target, config.show_unused_dashboard_views)) return;
 		navigateTo('dashboard', '', target);
 		await tick();
 		liveViewsElement?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 	}
 
+	$effect(() => {
+		if (settingsReady && !isDashboardViewVisible(activeView, config.show_unused_dashboard_views)) {
+			navigateTo('dashboard', '', 'fissures');
+		}
+	});
+
 	onMount(() => {
+		void loadSettings().then(() => { settingsReady = true; }).catch((error) => {
+			console.error('Could not load dashboard settings:', error);
+		});
 		const focusedRefresh = createFocusedRefresh(
 			() => {
 				const isStale = dashboard.fetchedAt === null ||
