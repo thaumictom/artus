@@ -1,6 +1,6 @@
 import type { Component } from 'svelte';
 import type { WorldState } from 'warframe-worldstate-parser';
-import { alertCompletions } from '$lib/alert-completions.svelte';
+import { alertCompletions, isAlertCompleted } from '$lib/alert-completions.svelte';
 import { isBaroActive } from './baro';
 import { isCurrent } from './views/view-types';
 import type { DashboardViewProps } from './views/view-types';
@@ -56,7 +56,7 @@ export const dashboardViews = [
 		value: 'Alerts', label: "Alerts", component: Alerts,
 		itemCount: (world, now) => alertCompletions.loaded
 			? (world.alerts ?? []).filter((item) => isCurrent(item, now)
-				&& (!item.id || !alertCompletions.completedIds.includes(item.id))).length
+				&& !isAlertCompleted(item.id)).length
 			: 0,
 	},
 	{ value: 'Invasions', label: "Invasions", component: Invasions },

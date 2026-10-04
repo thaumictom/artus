@@ -8,6 +8,12 @@ export const alertCompletions = $state({
 	loaded: false,
 });
 
+const completedIdSet = $derived(new Set(alertCompletions.completedIds));
+
+export function isAlertCompleted(id: string | undefined): boolean {
+	return !!id && completedIdSet.has(id);
+}
+
 // Serialize reads and writes so reopening the view cannot race a pending save.
 function withStore<T>(action: () => Promise<T>): Promise<T> {
 	const result = pending.then(action);
