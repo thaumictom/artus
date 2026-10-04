@@ -406,7 +406,7 @@
 	}
 </script>
 
-<div class="page-width mx-auto py-6 w-full max-w-5xl">
+<div class="mx-auto p-8 w-full max-w-5xl page-width">
 	<div class="flex flex-col gap-4">
 		<header class="flex flex-wrap justify-between items-center gap-4 w-full">
 			<div>

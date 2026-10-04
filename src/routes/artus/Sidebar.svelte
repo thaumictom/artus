@@ -3,6 +3,7 @@
 	import Icon from '@iconify/svelte';
 	import type { Sections } from '$lib/types';
 	import { marketAccount } from '$lib/market-account.svelte';
+	import { is } from 'zod/v4/locales';
 
 	let {
 		sections,
@@ -20,23 +21,23 @@
 </script>
 
 {#snippet navLabel(section: Sections[string])}
-	<div
-		class="flex items-center gap-2.5 px-2.5 py-2.5 w-full h-full group-data-[state=active]:text-accent cursor-pointer"
-	>
-		<span
-			class="group-data-[state=active]:bg-accent group-hover:bg-accent rounded-full w-0.5 h-4"
-		></span>
-		<Icon icon={section.icon} class="size-5 shrink-0" />
-		<span
-			aria-hidden={!isSidebarOpen}
-			class={{
-				'overflow-hidden text-base whitespace-nowrap transition-opacity duration-300 ease-in-out text-left': true,
-				'opacity-100 flex-1': isSidebarOpen,
-				'opacity-0 w-0': !isSidebarOpen,
-			}}
-		>
-			{section.label}
-		</span>
+	<div class="px-2.5 w-full h-full group-data-[state=active]:text-accent cursor-pointer">
+		<div class="flex items-center gap-2.5 group-data-[state=active]:bg-accent/10 py-2.5 rounded-md">
+			<span
+				class="group-data-[state=active]:bg-accent group-hover:bg-accent rounded-full w-0.5 h-4"
+			></span>
+			<Icon icon={section.icon} class="size-5 shrink-0" />
+			<span
+				aria-hidden={!isSidebarOpen}
+				class={{
+					'overflow-hidden text-base whitespace-nowrap transition-opacity text-left': true,
+					'opacity-100 flex-1': isSidebarOpen,
+					'opacity-0 w-0': !isSidebarOpen,
+				}}
+			>
+				{section.label}
+			</span>
+		</div>
 	</div>
 {/snippet}
 
@@ -92,7 +93,7 @@
 			{/if}
 		{/each}
 	</div>
-	<div class="p-3 shrink-0 max-[800px]:hidden">
+	<div class="max-[800px]:hidden p-3 shrink-0">
 		<Button.Root
 			class="relative hover:bg-elevated opacity-0 focus-visible:opacity-100 group-focus-within/sidebar:opacity-100 group-hover/sidebar:opacity-100 p-2 rounded focus-visible:outline-2 focus-visible:outline-accent text-muted-foreground hover:text-foreground transition cursor-pointer"
 			aria-label="Toggle sidebar"

@@ -2,7 +2,18 @@
 	import { formatTimeLeft } from '$lib/date';
 	import RadioGroup from '$lib/components/RadioGroup.svelte';
 	import ToggleGroup from '$lib/components/ToggleGroup.svelte';
+	import Table from '$lib/components/Table.svelte';
+	import type { TableColumn } from '$lib/components/table-types';
 	import type { DashboardViewProps } from './view-types';
+
+	const columns: TableColumn[] = [
+		{ key: 'era', label: 'Era', class: 'w-28' },
+		{ key: 'missionType', label: 'Mission type', class: 'whitespace-nowrap' },
+		{ key: 'planet', label: 'Planet' },
+		{ key: 'node', label: 'Node' },
+		{ key: 'mode', label: 'Mode', class: 'whitespace-nowrap' },
+		{ key: 'expiry', label: 'Expires in', align: 'right', class: 'w-32 whitespace-nowrap' },
+	];
 
 	const fissureFilterOptions = [
 		{ value: 'normal', label: 'Normal' },
@@ -45,7 +56,7 @@
 	);
 
 	function eraLabelClass(tier: string) {
-		const base = 'border px-2 py-0.5 font-medium text-sm';
+		const base = 'border px-2 py-1 font-medium text-sm';
 		switch (tier.toLowerCase()) {
 			case 'lith':
 				return `${base} bg-[#d08770]/20 border-[#d08770]/50 text-[#d08770]`;
@@ -65,8 +76,12 @@
 	}
 </script>
 
-<div class="flex flex-col gap-2">
-	<div class="flex flex-wrap items-center gap-2">
+<div class="@container/filters flex flex-col gap-2">
+	<div class="flex flex-wrap @max-[52rem]/filters:justify-between items-center gap-x-8 gap-y-4">
+		<div class="flex flex-col gap-1">
+			<div class="font-semibold text-muted-foreground text-sm">Era</div>
+			<RadioGroup label="Filter fissure era" options={eraFilterOptions} bind:value={eraFilter} />
+		</div>
 		<div class="flex flex-col gap-1">
 			<div class="font-semibold text-muted-foreground text-sm">Mission category</div>
 			<ToggleGroup
@@ -75,53 +90,64 @@
 				bind:value={fissureFilter}
 			/>
 		</div>
-		<div class="flex flex-col gap-1">
-			<div class="font-semibold text-muted-foreground text-sm">Era</div>
-			<RadioGroup label="Filter fissure era" options={eraFilterOptions} bind:value={eraFilter} />
-		</div>
 	</div>
 </div>
 
-<ul>
-	{#each activeFissures as fissure (fissure.id)}
-		<li
-			class="gap-x-3 grid grid-cols-[minmax(0,1fr)_auto] px-1.5 py-3 border-surface not-last:border-b text-base"
-		>
-			<div class="flex flex-col gap-1">
-				<div class="flex items-center gap-1.5">
-					<span class={eraLabelClass(fissure.tier)}>
-						{fissure.tier}
-					</span>
-					<p class="truncate">
-						{fissure.missionType}
-					</p>
-				</div>
-				<p class="text-muted-foreground text-sm truncate">
-					{fissure.node}
-					{#if fissure.isStorm}
-						· Void Storm{/if}
-					{#if fissure.isHard}
-						· Steel Path{/if}
-				</p>
-			</div>
-			<div class="flex items-center gap-2">
-				{#if fissure.expiry}
-					<time
-						class="tabular-nums text-muted-foreground text-base whitespace-nowrap"
-						datetime={fissure.expiry.toISOString()}
-					>
-						{formatTimeLeft(fissure.expiry, now)}
-					</time>
-				{/if}
-			</div>
-		</li>
-	{:else}
-		<li class="p-4 text-muted-foreground text-base">No active fissures in this snapshot.</li>
-	{/each}
-</ul>
+{#snippet fissureRow(fissure: DashboardViewProps['world']['fissures'][number])}
+	{@const location = fissure.node.match(/^(.*) \(([^()]*)\)$/)}
+	<tr class="hover:bg-surface/30 border-border-secondary border-t">
+		<td class="p-3 whitespace-nowrap">
+			<span class={eraLabelClass(fissure.tier)}>{fissure.tier}</span>
+		</td>
+		<td class="p-3">
+			{fissure.missionType === 'Extermination' ? 'Exterminate' : fissure.missionType}
+		</td>
+		<td class="p-3 text-muted-foreground">{location?.[2] ?? '—'}</td>
+		<td class="p-3 text-muted-foreground">{location?.[1] ?? fissure.node}</td>
+		<td class="p-3 text-muted-foreground whitespace-nowrap">
+			{#if fissure.isStorm}
+				<span
+					class="bg-indigo-400/20 px-2 py-1 border border-indigo-400/50 font-medium text-indigo-400 text-sm"
+				>
+					Void Storm
+				</span>
+			{/if}
+			{#if fissure.isHard}
+				<span
+					class="bg-red-400/20 saturate-25 px-2 py-1 border border-red-400/50 font-medium text-red-400 text-sm"
+				>
+					Steel Path
+				</span>
+			{/if}
+			{#if !fissure.isStorm && !fissure.isHard}
+				<span
+					class="bg-muted/20 px-2 py-1 border border-muted/50 font-medium text-muted-foreground text-sm"
+				>
+					Normal
+				</span>
+			{/if}
+		</td>
+		<td class="p-3 text-muted-foreground text-right whitespace-nowrap">
+			{#if fissure.expiry}
+				<time class="tabular-nums" datetime={fissure.expiry.toISOString()}>
+					{formatTimeLeft(fissure.expiry, now)}
+				</time>
+			{/if}
+		</td>
+	</tr>
+{/snippet}
+
+<Table
+	{columns}
+	rows={activeFissures}
+	rowKey={(fissure) =>
+		fissure.id ?? `${fissure.nodeKey}:${fissure.tier}:${fissure.activation?.getTime()}`}
+	renderRow={fissureRow}
+	emptyMessage="No fissures match the selected filters."
+/>
 
 <style>
 	.omnia-era {
-		background: linear-gradient(100deg, #d0877060, #4c566a60, #d8dee960, #ebcb8b60, #bf616a60);
+		background: linear-gradient(105deg, #d0877070, #4c566a70, #d8dee970, #ebcb8b70);
 	}
 </style>

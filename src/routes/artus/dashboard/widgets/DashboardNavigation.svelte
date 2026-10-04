@@ -104,6 +104,12 @@
 		return { duration: 0 };
 	}
 
+	function viewRowClass(value: DashboardView) {
+		return `flex items-center gap-1 hover:bg-surface/50 px-1 border border-transparent rounded w-full min-w-0 h-9 text-base ${
+			activeView === value ? 'bg-accent/10 text-accent' : 'bg-background text-foreground'
+		}`;
+	}
+
 	function handleDragEnd(event: SortableList.RootEvents['ondragend']) {
 		const { draggedItemIndex, targetItemIndex, isCanceled } = event;
 		if (isCanceled || targetItemIndex === null || draggedItemIndex === targetItemIndex) return;
@@ -121,34 +127,30 @@
 	{@const count = world && 'itemCount' in view ? view.itemCount(world, now) : undefined}
 	{@const status = world && 'statusLabel' in view ? view.statusLabel(world, now) : undefined}
 	<span class="min-w-0 truncate">{view.label}</span>
-	{#if count !== undefined}
+	{#if count !== undefined && !editing}
 		<span
-			class="ml-1 px-2 border-2 rounded-full tabular-nums text-muted-foreground text-sm shrink-0"
+			class="flex justify-center items-center bg-surface ml-1 px-1.25 border rounded-full tabular-nums text-muted-foreground text-trim text-xs shrink-0"
 		>
 			{count}
 		</span>
 	{/if}
-	{#if status !== undefined}
-		<span class="ml-1 px-2 border-2 rounded-full tabular-nums text-accent text-sm shrink-0">
+	{#if status !== undefined && !editing}
+		<span
+			class="bg-surface ml-1 px-1.5 border rounded-full tabular-nums text-accent text-xs shrink-0"
+		>
 			{status}
 		</span>
 	{/if}
 {/snippet}
 
 {#snippet viewLink(view: (typeof dashboardViews)[number], fromPinned = false)}
-	<div
-		class={{
-			'group/view flex flex-1 items-stretch pr-4 min-w-0 w-full text-base': true,
-			'text-accent bg-accent/10': activeView === view.value,
-			'text-foreground hover:bg-surface/50': activeView !== view.value,
-		}}
-	>
+	<div class={viewRowClass(view.value)}>
 		<button
 			type="button"
 			aria-current={activeView === view.value ? 'page' : undefined}
 			title={view.label}
 			onclick={() => selectView(view.value, fromPinned)}
-			class="flex flex-1 items-center gap-1 py-1.5 pr-2 pl-4 focus-visible:outline-2 focus-visible:outline-accent min-w-0 text-left cursor-pointer"
+			class="flex flex-1 items-center gap-1 px-2 rounded focus-visible:outline-2 focus-visible:outline-accent min-w-0 h-7 text-left cursor-pointer"
 		>
 			{@render viewLabel(view)}
 		</button>
@@ -159,7 +161,7 @@
 				title={pins.has(view.value) ? `Unpin ${view.label}` : `Pin ${view.label}`}
 				aria-pressed={pins.has(view.value)}
 				onclick={() => togglePin(view.value)}
-				class="flex justify-center items-center hover:bg-surface focus-visible:outline-2 focus-visible:outline-accent w-8 text-muted-foreground cursor-pointer shrink-0"
+				class="flex justify-center items-center hover:bg-surface rounded focus-visible:outline-2 focus-visible:outline-accent w-7 h-7 text-muted-foreground hover:text-foreground cursor-pointer shrink-0"
 				class:text-accent={pins.has(view.value)}
 			>
 				<Icon icon={pins.has(view.value) ? 'lucide:pin-off' : 'lucide:pin'} class="size-4" />
@@ -170,7 +172,7 @@
 
 <nav
 	aria-label="World state views"
-	class="flex flex-col pr-0.5 w-56 h-full min-h-0 world-state-navigation shrink-0"
+	class="flex flex-col pr-0.5 w-60 h-full min-h-0 world-state-navigation shrink-0"
 >
 	<OverlayScrollbarsComponent
 		bind:this={scrollbars}
@@ -179,7 +181,7 @@
 		class="flex-1 bg-background rounded-t-md w-full min-h-0"
 	>
 		<div class="flex flex-col">
-			<section aria-labelledby="pinned-views-heading" class="mb-2 pb-2 border-surface border-b-2">
+			<section aria-labelledby="pinned-views-heading" class="mb-3 pb-3 border-surface border-b-2">
 				<div class="flex justify-between items-center gap-2 p-4">
 					<h2
 						id="pinned-views-heading"
@@ -221,13 +223,7 @@
 									transitionIn={noTransition}
 									transitionOut={noTransition}
 								>
-									<div
-										class={{
-											'flex items-center gap-1 hover:bg-surface/50 px-1 border border-transparent rounded w-full min-w-0 h-9': true,
-											'bg-accent/10 text-accent': activeView === view.value,
-											'bg-background text-foreground': activeView !== view.value,
-										}}
-									>
+									<div class={viewRowClass(view.value)}>
 										<SortableList.ItemHandle
 											class="flex justify-center items-center hover:bg-surface rounded focus-visible:outline-2 focus-visible:outline-accent w-6 h-7 text-muted-foreground cursor-grab active:cursor-grabbing shrink-0"
 										>
@@ -254,7 +250,7 @@
 						</SortableList.Root>
 					</div>
 				{:else}
-					<ul>
+					<ul class="flex flex-col gap-0.5 px-3">
 						{#each pinnedViews as view (view.value)}
 							<li>{@render viewLink(view, true)}</li>
 						{/each}
@@ -281,15 +277,15 @@
 			</section>
 
 			{#each dashboardViewGroups as group (group.label)}
-				<section aria-label={group.label} class="last:mb-2">
+				<section aria-label={group.label} class="mb-3 px-3">
 					<Collapsible
 						bind:open={openedGroups[group.label]}
-						triggerClass="flex justify-between items-center gap-2 hover:bg-elevated/50 px-4 py-3 w-full text-muted-foreground hover:text-foreground text-left cursor-pointer focus-visible:outline-2 focus-visible:outline-accent"
+						triggerClass="flex justify-between items-center gap-1 bg-background hover:bg-surface/50 px-3 mb-0.5 border border-transparent rounded w-full min-w-0 h-9 text-muted-foreground hover:text-foreground text-base text-left cursor-pointer focus-visible:outline-2 focus-visible:outline-accent uppercase text-xs tracking-widest"
 					>
 						{#snippet button(open)}
 							<span
 								title={group.label}
-								class="min-w-0 font-medium text-sm truncate uppercase tracking-wider"
+								class="min-w-0 font-medium truncate"
 								class:text-accent={group.views.some((view) => view.value === activeView)}
 							>
 								{group.label}
@@ -301,7 +297,7 @@
 						{/snippet}
 						{#snippet content(open)}
 							{#if open}
-								<ul class="pb-4" transition:slide={{ duration: 180 }}>
+								<ul class="flex flex-col gap-0.5 pb-2" transition:slide={{ duration: 180 }}>
 									{#each group.views as view (view.value)}
 										<li class="flex items-stretch">
 											{@render viewLink(view)}

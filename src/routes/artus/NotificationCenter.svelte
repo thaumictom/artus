@@ -3,7 +3,10 @@
 	import { Popover } from 'bits-ui';
 	import { tick } from 'svelte';
 	import { dashboard } from '$lib/worldstate.svelte';
-	import { activeMarketNotificationCount, marketNotificationState } from '$lib/market-notifications.svelte';
+	import {
+		activeMarketNotificationCount,
+		marketNotificationState,
+	} from '$lib/market-notifications.svelte';
 	import { openMarketNotificationTarget } from '$lib/market-navigation.svelte';
 	import {
 		clearNotificationHistory,
@@ -105,7 +108,9 @@
 <Popover.Root {open} onOpenChange={handleOpenChange}>
 	<Popover.Trigger
 		aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}${marketConnection !== 'disconnected' ? `, market feed ${marketConnection}` : ''}`}
-		title={marketConnection === 'disconnected' ? 'Notifications' : `Notifications · market feed ${marketConnection}`}
+		title={marketConnection === 'disconnected'
+			? 'Notifications'
+			: `Notifications · market feed ${marketConnection}`}
 		class="flex justify-center items-center gap-1.5 hover:bg-elevated px-1.5 border min-w-7.5 h-7.5 cursor-pointer"
 	>
 		<Icon
@@ -138,7 +143,7 @@
 						<button
 							type="button"
 							onclick={() => void clearNotificationHistory()}
-							class="hover:text-foreground text-muted-foreground text-sm cursor-pointer shrink-0"
+							class="text-muted-foreground hover:text-foreground text-sm cursor-pointer shrink-0"
 						>
 							Clear all
 						</button>
@@ -148,7 +153,7 @@
 					<button
 						type="button"
 						onclick={() => void openNotificationRules()}
-						class="flex items-center gap-1 hover:text-foreground text-muted-foreground text-sm cursor-pointer"
+						class="flex items-center gap-1 text-muted-foreground hover:text-foreground text-sm cursor-pointer"
 					>
 						<Icon icon="material-symbols:notification-add-outline-rounded" class="size-3.5" />
 						Rules (world)
@@ -156,7 +161,7 @@
 					<button
 						type="button"
 						onclick={() => void openMarketNotificationRules()}
-						class="flex items-center gap-1 hover:text-foreground text-muted-foreground text-sm cursor-pointer"
+						class="flex items-center gap-1 text-muted-foreground hover:text-foreground text-sm cursor-pointer"
 					>
 						<Icon icon="material-symbols:shopping-cart-outline-rounded" class="size-3.5" />
 						Rules (market)
@@ -171,7 +176,7 @@
 					<button
 						type="button"
 						onclick={openNotificationSettings}
-						class="flex items-center gap-1 hover:text-foreground text-muted-foreground text-sm cursor-pointer"
+						class="flex items-center gap-1 text-muted-foreground hover:text-foreground text-sm cursor-pointer"
 					>
 						<Icon icon="material-symbols:settings-outline-rounded" class="size-3.5" />
 						Settings
@@ -202,12 +207,18 @@
 									<h3 class="font-medium text-base">{entry.title}</h3>
 								</div>
 								<p class="mt-0.5 text-muted-foreground text-sm">{entry.body}</p>
-								<time class="block mt-1.5 text-muted-foreground text-[11px]" datetime={new Date(entry.createdAt).toISOString()}>
+								<time
+									class="block mt-1.5 text-[11px] text-muted-foreground"
+									datetime={new Date(entry.createdAt).toISOString()}
+								>
 									{formatCreatedAt(entry.createdAt)}
 								</time>
 							</div>
 							{#if entry.market}
-								<Icon icon="material-symbols:arrow-forward-rounded" class="self-center size-4 shrink-0" />
+								<Icon
+									icon="material-symbols:arrow-forward-rounded"
+									class="self-center size-4 shrink-0"
+								/>
 							{/if}
 						</svelte:element>
 						<button
@@ -215,14 +226,17 @@
 							onclick={() => void dismissNotification(entry.id)}
 							aria-label={`Dismiss ${entry.title} notification`}
 							title="Dismiss notification"
-							class="flex justify-center items-center hover:bg-elevated text-muted-foreground hover:text-foreground size-7 shrink-0 cursor-pointer"
+							class="flex justify-center items-center hover:bg-elevated size-7 text-muted-foreground hover:text-foreground cursor-pointer shrink-0"
 						>
 							<Icon icon="material-symbols:close-rounded" class="size-4" />
 						</button>
 					</article>
 				{:else}
 					<div class="flex flex-col items-center px-6 py-10 text-center">
-						<Icon icon="material-symbols:notifications-off-outline-rounded" class="mb-3 size-8 text-muted-foreground" />
+						<Icon
+							icon="material-symbols:notifications-off-outline-rounded"
+							class="mb-3 size-8 text-muted-foreground"
+						/>
 						<p class="font-medium text-base">No notifications yet</p>
 						<p class="mt-1 text-muted-foreground text-sm">
 							Add notification rules from World State to watch for updates.
@@ -243,6 +257,6 @@
 
 <style>
 	.omnia-era {
-		background: linear-gradient(100deg, #d0877060, #4c566a60, #d8dee960, #ebcb8b60, #bf616a60);
+		background: linear-gradient(105deg, #d0877070, #4c566a70, #d8dee970, #ebcb8b70);
 	}
 </style>

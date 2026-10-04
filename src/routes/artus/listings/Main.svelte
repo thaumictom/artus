@@ -137,12 +137,16 @@
 				else error = 'Listing created. Refresh to show it in the list.';
 				break;
 			case 'updated':
-				orders = orders.map((order) => order.id === change.id
-					? { ...order, platinum: change.platinum, quantity: change.quantity } : order);
+				orders = orders.map((order) =>
+					order.id === change.id
+						? { ...order, platinum: change.platinum, quantity: change.quantity }
+						: order,
+				);
 				break;
 			case 'visibility':
-				orders = orders.map((order) => order.id === change.id
-					? { ...order, visible: change.visible } : order);
+				orders = orders.map((order) =>
+					order.id === change.id ? { ...order, visible: change.visible } : order,
+				);
 				break;
 			case 'deleted':
 				orders = orders.filter((order) => order.id !== change.id);
@@ -226,11 +230,22 @@
 			if (ownedFor(order) > 0) {
 				await removeOneMarketInventoryItem(itemDetails[order.itemId]?.slug, nameFor(order));
 			}
-			orders = orders.flatMap((listing) => listing.id !== order.id ? [listing]
-				: listing.quantity > 1 ? [{ ...listing, quantity: listing.quantity - 1 }] : []);
+			orders = orders.flatMap((listing) =>
+				listing.id !== order.id
+					? [listing]
+					: listing.quantity > 1
+						? [{ ...listing, quantity: listing.quantity - 1 }]
+						: [],
+			);
 		} catch (cause) {
-			if (closed) orders = orders.flatMap((listing) => listing.id !== order.id ? [listing]
-				: listing.quantity > 1 ? [{ ...listing, quantity: listing.quantity - 1 }] : []);
+			if (closed)
+				orders = orders.flatMap((listing) =>
+					listing.id !== order.id
+						? [listing]
+						: listing.quantity > 1
+							? [{ ...listing, quantity: listing.quantity - 1 }]
+							: [],
+				);
 			error = closed
 				? `Listing marked sold. Could not remove one from inventory: ${String(cause)}`
 				: String(cause);
@@ -254,7 +269,7 @@
 	}
 </script>
 
-<div class="page-width mx-auto py-6 w-full max-w-5xl">
+<div class="mx-auto p-8 w-full max-w-5xl page-width">
 	<div class="flex flex-col gap-4">
 		<header class="flex flex-wrap justify-between items-center gap-4 w-full">
 			<ListingSummary {orders} />
@@ -289,7 +304,7 @@
 					<Skeleton class="w-32 h-11" />
 					<Skeleton class="w-32 h-11" />
 				</div>
-				<div class="bg-card/50 border border-border-secondary divide-y divide-border-secondary">
+				<div class="bg-card/50 border border-border-secondary divide-border-secondary divide-y">
 					{#each Array(6) as _}
 						<div class="flex items-center gap-4 px-3 py-3.5 h-14">
 							<Skeleton class="flex-1 max-w-64 h-4" />
