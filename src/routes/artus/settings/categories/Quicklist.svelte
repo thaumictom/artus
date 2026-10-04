@@ -49,7 +49,7 @@
 	{#snippet title()}Quicklist price strategy{/snippet}
 	{#snippet description()}Preview where your listing appears among five example sell orders.{/snippet}
 	<div class="space-y-4 px-6 min-h-0 overflow-y-auto">
-		<div class="bg-card/50 p-4 border border-border-secondary text-sm">
+		<div class="bg-card/50 p-4 border border-border-secondary text-base">
 			<p class="mb-2 font-semibold">Median: {exampleMedian}p</p>
 			{#each preview as offer, index (`${offer.price}-${offer.yours}-${index}`)}
 				<div
@@ -62,9 +62,9 @@
 			{/each}
 		</div>
 		<fieldset class="space-y-2">
-			<legend class="mb-2 font-semibold text-sm">Strategy</legend>
+			<legend class="mb-2 font-semibold text-base">Strategy</legend>
 			{#each quicklistStrategies as strategy}
-				<label class="flex items-center gap-2 text-sm cursor-pointer">
+				<label class="flex items-center gap-2 text-base cursor-pointer">
 					<input
 						type="radio"
 						name="quicklist-strategy"
@@ -75,7 +75,7 @@
 				</label>
 			{/each}
 		</fieldset>
-		<p class="text-muted-foreground text-xs">
+		<p class="text-muted-foreground text-sm">
 			Median prices are rounded to the nearest platinum before the strategy is applied.
 		</p>
 	</div>

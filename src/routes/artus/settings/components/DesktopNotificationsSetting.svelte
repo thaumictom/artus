@@ -25,7 +25,7 @@
 	/>
 </CommonSetting>
 {#if permissionError}
-	<p role="alert" class="mt-2 text-danger text-xs">
+	<p role="alert" class="mt-2 text-danger text-sm">
 		Notification permission was not granted by the operating system.
 	</p>
 {/if}

@@ -103,7 +103,7 @@
 		aria-current={activeView === view.value ? 'page' : undefined}
 		onclick={() => selectView(view.value)}
 		class={{
-			'block flex-1 px-3 py-1.5 border-l-2 min-w-0 w-full text-sm text-left cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-[-2px]': true,
+			'block flex-1 px-3 py-1.5 border-l-2 min-w-0 w-full text-base text-left cursor-pointer transition-colors focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-[-2px]': true,
 			'bg-accent/10 border-accent text-accent': activeView === view.value,
 			'border-transparent text-muted-foreground hover:bg-surface hover:text-foreground': activeView !== view.value,
 		}}
@@ -125,7 +125,7 @@
 		<div class="space-y-3 px-2 py-4">
 			<section aria-labelledby="pinned-views-heading" class="pb-3 border-b border-border-secondary">
 				<div class="flex justify-between items-center gap-2 pl-3 pb-2">
-					<h2 id="pinned-views-heading" class="font-medium text-muted-foreground text-xs uppercase tracking-wider">
+					<h2 id="pinned-views-heading" class="font-medium text-muted-foreground text-sm uppercase tracking-wider">
 						Pinned
 					</h2>
 					<Button
@@ -135,13 +135,13 @@
 						aria-label={editing ? 'Finish editing pins' : 'Edit pinned views'}
 						aria-pressed={editing}
 						onclick={() => (editing = !editing)}
-						class="text-xs"
+						class="text-sm"
 					>
 						{editing ? 'Done' : 'Edit'}
 					</Button>
 				</div>
 				{#if editing}
-					<p class="px-3 pb-3 text-muted-foreground text-xs">Drag to reorder. Pin views from the groups below.</p>
+					<p class="px-3 pb-3 text-muted-foreground text-sm">Drag to reorder. Pin views from the groups below.</p>
 					<SortableList.Root
 						gap={pinnedViews.length === 0 ? 0 : 4}
 						hasLockedAxis
@@ -163,7 +163,7 @@
 									<SortableList.ItemHandle class="flex items-center px-1.5 text-muted-foreground">
 										<Icon icon="material-symbols:drag-indicator-rounded" class="size-4" />
 									</SortableList.ItemHandle>
-									<span class="flex-1 py-1.5 min-w-0 text-sm">{view.label}</span>
+									<span class="flex-1 py-1.5 min-w-0 text-base">{view.label}</span>
 									<SortableList.ItemRemove
 										type="button"
 										onclick={() => togglePin(view.value)}
@@ -185,13 +185,13 @@
 					</ul>
 				{/if}
 				{#if pinnedViews.length === 0}
-					<p class="px-3 py-1 text-muted-foreground text-xs">
+					<p class="px-3 py-1 text-muted-foreground text-sm">
 						{editing ? 'No pinned views yet.' : 'Use Edit to pin your favorite views.'}
 					</p>
 				{/if}
-				{#if loadError}<p role="alert" class="px-3 py-2 text-danger text-xs">{loadError}</p>{/if}
+				{#if loadError}<p role="alert" class="px-3 py-2 text-danger text-sm">{loadError}</p>{/if}
 				{#if saveError}
-					<div role="alert" class="flex items-center gap-2 px-3 py-2 text-danger text-xs">
+					<div role="alert" class="flex items-center gap-2 px-3 py-2 text-danger text-sm">
 						<span>{saveError}</span>
 						<Button variant="link" size="none" onclick={() => savePins(pinnedViews.map((view) => view.value))}>Retry</Button>
 					</div>
@@ -206,7 +206,7 @@
 					>
 						{#snippet button(open)}
 							<span
-								class="font-medium text-xs uppercase tracking-wider"
+								class="font-medium text-sm uppercase tracking-wider"
 								class:text-accent={group.views.some((view) => view.value === activeView)}
 							>{group.label}</span>
 							<Icon

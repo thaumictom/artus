@@ -185,7 +185,7 @@
 	<div class="flex items-center gap-4 w-full">
 		{#if groupByProperty && maxFilterValue > 0}
 			<div class="flex flex-col gap-1 grow">
-				<div class="flex justify-between text-xs">
+				<div class="flex justify-between text-sm">
 					<div>{groupByProperty} filter</div>
 					<div class="text-muted-foreground">
 						{#if groupFilterRange[0] === groupFilterRange[1]}
@@ -222,7 +222,7 @@
 		<Button
 			onclick={() => ordersRefresh.reload()}
 			disabled={ordersRefresh.refreshing || ordersRefresh.coolingDown}
-			class="flex items-center gap-1 text-sm"
+			class="flex items-center gap-1 text-base"
 		>
 			<Icon
 				icon="material-symbols:refresh"
@@ -231,21 +231,21 @@
 			{ordersRefresh.refreshing ? 'Refreshing...' : 'Reload orders'}
 		</Button>
 		{#if ordersRefresh.fetchedAt !== null}
-			<div class="tabular-nums text-sm">
+			<div class="tabular-nums text-base">
 				fetched {ordersRefresh.fetchedAgo}
 			</div>
 		{/if}
 		<a
 			href={`https://warframe.market/items/${slug}`}
 			target="_blank"
-			class="text-sm hover:underline"
+			class="text-base hover:underline"
 		>
 			<span>view on warframe.market</span>
 			<Icon icon="material-symbols:arrow-outward-rounded" class="inline size-4" />
 		</a>
 	</div>
 	{#if ordersError}
-		<p role="alert" class="text-danger text-sm">{ordersError}</p>
+		<p role="alert" class="text-danger text-base">{ordersError}</p>
 	{/if}
 	<table class="border-collapse" aria-busy={ordersRefresh.refreshing}>
 		<thead>
@@ -307,7 +307,7 @@
 							<img src="/icons/platinum.png" alt="Platinum" class="size-3" />
 						</div>
 						{#if quantityPerTrade(order) > 1}
-							<div class="text-muted-foreground text-xs">
+							<div class="text-muted-foreground text-sm">
 								{priceFormatter.format(order.platinum)} total
 							</div>
 						{/if}
@@ -315,7 +315,7 @@
 					<td align="right">
 						<div>{order.quantity}</div>
 						{#if quantityPerTrade(order) > 1}
-							<div class="text-muted-foreground text-xs">{quantityPerTrade(order)} per trade</div>
+							<div class="text-muted-foreground text-sm">{quantityPerTrade(order)} per trade</div>
 						{/if}
 					</td>
 					{#if groupByProperty}

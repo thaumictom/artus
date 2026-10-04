@@ -159,7 +159,7 @@
 	<div class="flex flex-wrap justify-between items-start gap-3">
 		<div>
 			<div class="flex items-center gap-2">
-				<h2 class="font-medium text-lg">{config.title}</h2>
+				<h2 class="font-medium text-xl">{config.title}</h2>
 				<Tooltip
 					side="right"
 					align="start"
@@ -198,7 +198,7 @@
 					{/snippet}
 				</Tooltip>
 			</div>
-			<p class="text-muted-foreground text-sm">
+			<p class="text-muted-foreground text-base">
 				{source === 'tenet'
 					? 'Ergo Glast'
 					: source === 'coda'
@@ -216,7 +216,7 @@
 				</a>
 			</p>
 		</div>
-		<div class="text-sm text-right">
+		<div class="text-base text-right">
 			<p>Resets in {formatTimeLeft(new Date(rotation.end), now)}</p>
 			<p class="text-muted-foreground">
 				<time datetime={new Date(rotation.start).toISOString()}>
@@ -228,7 +228,7 @@
 		</div>
 	</div>
 	{#if loading || (data?.fetchedAt != null && (!sameRotation || !batchMatches || source === 'acrithis')) || data?.observedAt != null}
-		<div class="text-muted-foreground text-sm" role="status">
+		<div class="text-muted-foreground text-base" role="status">
 			{#if loading}<p>Reading wiki offerings…</p>{/if}
 			{#if data?.fetchedAt != null}
 				{#if !sameRotation || !batchMatches || source === 'acrithis'}<p>
@@ -243,13 +243,13 @@
 			{#if data?.observedAt != null}<p>Last reported: {utc(data.observedAt)}</p>{/if}
 		</div>
 	{/if}
-	{#if error || data?.error}<p class="text-danger text-sm" role="alert">
+	{#if error || data?.error}<p class="text-danger text-base" role="alert">
 			{error || data?.error}
 		</p>{/if}
 	{#if error}<Button onclick={load} disabled={loading}>Read cached status</Button>{/if}
-	{#if linkError}<p class="text-danger text-sm" role="alert">{linkError}</p>{/if}
+	{#if linkError}<p class="text-danger text-base" role="alert">{linkError}</p>{/if}
 	{#if data?.items.length && (source === 'acrithis' ? !reportCurrent : !sameRotation || !batchMatches)}
-		<p class="text-muted-foreground text-sm">
+		<p class="text-muted-foreground text-base">
 			{source === 'coda'
 				? 'Current batch weapons; bonuses have not been reported for this rotation.'
 				: 'Previous reports shown below; current offerings are unconfirmed.'}
@@ -263,7 +263,7 @@
 		minWidth={source === 'acrithis' ? '280px' : '540px'}
 		emptyMessage={loading ? 'Loading offerings…' : 'No reported offerings available.'}
 	/>
-	<div class="flex flex-wrap justify-between gap-2 text-muted-foreground text-xs">
+	<div class="flex flex-wrap justify-between gap-2 text-muted-foreground text-sm">
 		<p>
 			Source: WARFRAME Wiki contributors · <a
 				href="https://creativecommons.org/licenses/by-nc-sa/3.0/"

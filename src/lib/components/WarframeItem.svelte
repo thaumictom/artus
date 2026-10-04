@@ -62,7 +62,7 @@
 			<span title={hideTooltip ? undefined : 'Mastered'} aria-label="Mastered"><Icon icon="material-symbols:check-circle-rounded" class="size-4 text-accent" /></span>
 		{/if}
 		{#if !hideOwned && owned > 0}
-			<span class="inline-flex items-center gap-1 text-muted-foreground text-xs font-normal whitespace-nowrap" title={hideTooltip ? undefined : `${owned} owned`}>
+			<span class="inline-flex items-center gap-1 text-muted-foreground text-sm font-normal whitespace-nowrap" title={hideTooltip ? undefined : `${owned} owned`}>
 				<Icon icon="lucide:package" class="size-3.5" />{owned} owned
 			</span>
 		{/if}
@@ -72,7 +72,7 @@
 		{@render trailing?.()}
 	</div>
 	{#if showDetails && subtext}
-		<p class="mt-1 text-muted-foreground text-xs font-normal line-clamp-1">{subtext}</p>
+		<p class="mt-1 text-muted-foreground text-sm font-normal line-clamp-1">{subtext}</p>
 	{/if}
 </div>
 {/snippet}
@@ -83,8 +83,8 @@
 	<Tooltip align="start" triggerTag="div" class="block w-full min-w-0 text-left" triggerProps={{ 'aria-label': `Details for ${resolved.name}` }}>
 		{#snippet children()}{@render itemContent()}{/snippet}
 			{#snippet content()}
-				<div class="flex flex-col gap-3 max-h-[min(28rem,60vh)] overflow-y-auto text-xs font-normal">
-					<p class="font-semibold text-sm">{resolved.name}</p>
+				<div class="flex flex-col gap-3 max-h-[min(28rem,60vh)] overflow-y-auto text-sm font-normal">
+					<p class="font-semibold text-base">{resolved.name}</p>
 					{#if description}<p class="whitespace-pre-line">{description}</p>{/if}
 					{#if effects.length}
 						<div>

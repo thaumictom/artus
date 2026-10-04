@@ -261,7 +261,7 @@
 			<div class="flex flex-wrap items-center gap-2">
 				{#if lastFetchedAt}<time
 						datetime={lastFetchedAt.toISOString()}
-						class="text-muted-foreground text-xs"
+						class="text-muted-foreground text-sm"
 					>
 						refreshed {fetchedAgo}
 					</time>{/if}
@@ -272,11 +272,11 @@
 					href={marketAccount.session ? marketProfileUrl(marketAccount.session) : undefined}
 					target="_blank"
 					rel="noopener noreferrer"
-					class="text-sm"
+					class="text-base"
 				>
 					View profile <Icon icon="material-symbols:arrow-outward-rounded" class="inline size-4" />
 				</Button>
-				<Button variant="primary" onclick={() => (createPickerOpen = true)} class="text-sm">
+				<Button variant="primary" onclick={() => (createPickerOpen = true)} class="text-base">
 					<Icon icon="lucide:plus" class="inline size-4" /> Create listing
 				</Button>
 			</div>
@@ -303,7 +303,7 @@
 			</div>
 		{:else if error && !editing && !removing && orders.length === 0}
 			<div class="bg-card/50 p-10 border border-border-secondary text-center">
-				<p role="alert" class="mb-3 text-danger text-sm">{error}</p>
+				<p role="alert" class="mb-3 text-danger text-base">{error}</p>
 				<Button onclick={refresh}>Try again</Button>
 			</div>
 		{:else if orders.length === 0}
@@ -315,8 +315,8 @@
 				>
 					<Icon icon="material-symbols:format-list-bulleted-rounded" class="size-6" />
 				</div>
-				<h2 class="font-semibold text-base">No listings yet</h2>
-				<p class="mt-1 text-muted-foreground text-sm">Create a sell listing for a market item.</p>
+				<h2 class="font-semibold text-lg">No listings yet</h2>
+				<p class="mt-1 text-muted-foreground text-base">Create a sell listing for a market item.</p>
 				<Button
 					variant="primary"
 					class="inline-flex items-center gap-1.5 mt-5"
@@ -327,13 +327,13 @@
 			</div>
 		{:else}
 			<div class="flex flex-col gap-4">
-				{#if error && !editing && !removing}<p role="alert" class="text-danger text-sm">
+				{#if error && !editing && !removing}<p role="alert" class="text-danger text-base">
 						{error}
 					</p>{/if}
 				<ListingFilters bind:search bind:typeFilter bind:statusFilter />
 				{#if sortedOrders.length === 0}
 					<div
-						class="bg-card/50 p-8 border border-border-secondary text-muted-foreground text-sm text-center"
+						class="bg-card/50 p-8 border border-border-secondary text-muted-foreground text-base text-center"
 					>
 						No listings match this search.
 					</div>
@@ -354,7 +354,7 @@
 					/>
 				{/if}
 				<div class="flex flex-wrap justify-between items-center gap-3 bg-card/30">
-					<p class="text-muted-foreground text-sm">
+					<p class="text-muted-foreground text-base">
 						Showing {sortedOrders.length} of {orders.length} listings
 					</p>
 					<div class="flex items-center gap-2">
@@ -423,7 +423,7 @@
 	dialogActions={removeActions}
 	contentProps={{ class: 'h-auto' }}
 >
-	<div class="px-6 text-sm">
+	<div class="px-6 text-base">
 		{removing ? nameFor(removing) : ''}{#if error}<p role="alert" class="mt-2 text-danger">
 				{error}
 			</p>{/if}

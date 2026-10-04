@@ -20,7 +20,7 @@
 		<span
 			aria-hidden={!isSidebarOpen}
 			class={{
-				'overflow-hidden text-sm whitespace-nowrap transition-all duration-300 ease-in-out text-left': true,
+				'overflow-hidden text-base whitespace-nowrap transition-all duration-300 ease-in-out text-left': true,
 				'opacity-100 w-32': isSidebarOpen,
 				'opacity-0 w-0': !isSidebarOpen,
 			}}
@@ -62,7 +62,7 @@
 								side="right"
 								sideOffset={8}
 								collisionPadding={12}
-								class="z-100 bg-surface shadow-xl p-3 border border-border max-w-64 text-surface-foreground text-sm"
+								class="z-100 bg-surface shadow-xl p-3 border border-border max-w-64 text-surface-foreground text-base"
 							>
 								Log in to warframe.market first to view your listings.
 								<Tooltip.Arrow class="text-border" />

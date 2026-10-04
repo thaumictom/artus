@@ -25,10 +25,10 @@
 </script>
 
 <article class="bg-background p-3 border border-surface min-w-0" aria-labelledby="baro-heading">
-	<p id="baro-heading" class="text-muted-foreground text-xs truncate">Baro Ki'Teer</p>
+	<p id="baro-heading" class="text-muted-foreground text-sm truncate">Baro Ki'Teer</p>
 	<div class="flex flex-col gap-2.5">
-		<span class="font-medium text-sm truncate">{trader.location || 'Unknown relay'}</span>
-		<div class="flex flex-1 justify-between items-center text-muted-foreground text-xs">
+		<span class="font-medium text-base truncate">{trader.location || 'Unknown relay'}</span>
+		<div class="flex flex-1 justify-between items-center text-muted-foreground text-sm">
 			{#if active}
 				<span>
 					Leaves in
@@ -39,7 +39,7 @@
 				<Button
 					variant="link"
 					size="none"
-					class="inline-flex items-center gap-1 border-0 text-xs"
+					class="inline-flex items-center gap-1 border-0 text-sm"
 					onclick={onOpenInventory}
 				>
 					View inventory <Icon icon="lucide:arrow-right" class="size-3.5" aria-hidden="true" />

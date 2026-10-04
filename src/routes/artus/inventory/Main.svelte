@@ -436,13 +436,13 @@
 				</section>
 			</div>
 			<div class="flex flex-wrap items-center gap-2">
-				{#if newSlugs.length > 0}<Button onclick={dismissNewDots} class="text-sm">
+				{#if newSlugs.length > 0}<Button onclick={dismissNewDots} class="text-base">
 						Dismiss {newSlugs.length} new dots
 					</Button>{/if}
 				<Button
 					variant="primary"
 					onclick={() => (addOpen = true)}
-					class="inline-flex items-center gap-1.5 text-sm"
+					class="inline-flex items-center gap-1.5 text-base"
 				>
 					<Icon icon="lucide:plus" class="size-4" /> Add item
 				</Button>
@@ -455,12 +455,12 @@
 					class="items-end gap-3 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-[minmax(14rem,2fr)_minmax(9rem,1.25fr)_minmax(9rem,1.25fr)_minmax(7rem,0.75fr)_minmax(7rem,0.75fr)]"
 				>
 					<div class="flex flex-col gap-1">
-						<Skeleton class="flex-1 mb-1.5 w-min text-xs">Search items</Skeleton>
+						<Skeleton class="flex-1 mb-1.5 w-min text-sm">Search items</Skeleton>
 						<Skeleton class="h-10" />
 					</div>
 					{#each filterControls as filter (filter.id)}
 						<div class="flex flex-col gap-1">
-							<Skeleton class="flex-1 mb-1.5 w-min text-xs">{filter.label}</Skeleton>
+							<Skeleton class="flex-1 mb-1.5 w-min text-sm">{filter.label}</Skeleton>
 							<Skeleton class="max-w-80 h-10" />
 						</div>
 					{/each}
@@ -469,7 +469,7 @@
 			</div>
 		{:else}
 			{#if listingsError && marketAccount.session}
-				<p role="alert" class="text-danger text-sm">
+				<p role="alert" class="text-danger text-base">
 					Could not load your listings. <button
 						type="button"
 						class="underline cursor-pointer"
@@ -485,7 +485,7 @@
 				<div class="sm:col-span-2 xl:col-span-1 min-w-0">
 					<label
 						for="inventory-search"
-						class="block mb-1.5 font-semibold text-muted-foreground text-xs"
+						class="block mb-1.5 font-semibold text-muted-foreground text-sm"
 					>
 						Search items
 					</label>
@@ -499,7 +499,7 @@
 				</div>
 				{#each filterControls as filter (filter.id)}
 					<div class="min-w-0">
-						<label for={filter.id} class="block mb-1.5 font-semibold text-muted-foreground text-xs">
+						<label for={filter.id} class="block mb-1.5 font-semibold text-muted-foreground text-sm">
 							{filter.label}
 						</label>
 						<Select
@@ -513,7 +513,7 @@
 				{/each}
 			</div>
 			{#if addItemsError}
-				<p role="alert" class="text-danger text-sm">
+				<p role="alert" class="text-danger text-base">
 					Could not load item categories and tags. <button
 						type="button"
 						class="underline cursor-pointer"
@@ -562,7 +562,7 @@
 				mastered={listingItem ? isMastered(listingItem) : false}
 				onSaved={applyListingChange}
 			/>
-			<p class="text-muted-foreground text-sm">Showing {sorted.length} of {data.length} items</p>
+			<p class="text-muted-foreground text-base">Showing {sorted.length} of {data.length} items</p>
 			{#snippet addTitle()}Add inventory item{/snippet}
 			{#snippet addDescription()}Search the market item list and add it to your inventory.{/snippet}
 			{#snippet addClose()}<Button>Cancel</Button>{/snippet}
@@ -583,7 +583,7 @@
 					<div class="flex-1 min-w-0">
 						<label
 							for="inventory-add-item"
-							class="block mb-1.5 font-semibold text-muted-foreground text-xs"
+							class="block mb-1.5 font-semibold text-muted-foreground text-sm"
 						>
 							Item
 						</label>
@@ -602,7 +602,7 @@
 							/>
 						{/if}
 						{#if addItemsError}
-							<div role="alert" class="flex items-center gap-2 mt-2 text-sm">
+							<div role="alert" class="flex items-center gap-2 mt-2 text-base">
 								<span>Could not load the item list.</span>
 								<button class="underline cursor-pointer" onclick={loadAddItems}>Retry</button>
 							</div>
@@ -611,7 +611,7 @@
 					<div class="w-28 shrink-0">
 						<label
 							for="inventory-add-quantity"
-							class="block mb-1.5 font-semibold text-muted-foreground text-xs"
+							class="block mb-1.5 font-semibold text-muted-foreground text-sm"
 						>
 							Quantity
 						</label>

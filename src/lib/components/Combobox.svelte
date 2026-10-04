@@ -157,7 +157,7 @@
 				{#each filteredItems as item (item.value)}
 					<Combobox.Item
 						{...item}
-						class="data-[highlighted]:inset-ring-1 data-[highlighted]:inset-ring-accent/40 flex justify-between items-center gap-2 data-[highlighted]:bg-elevated data-[disabled]:opacity-50 p-2 outline-none data-[highlighted]:text-foreground text-sm cursor-pointer data-[disabled]:pointer-events-none"
+						class="data-[highlighted]:inset-ring-1 data-[highlighted]:inset-ring-accent/40 flex justify-between items-center gap-2 data-[highlighted]:bg-elevated data-[disabled]:opacity-50 p-2 outline-none data-[highlighted]:text-foreground text-base cursor-pointer data-[disabled]:pointer-events-none"
 					>
 						{#snippet children({ selected })}
 							<span class="flex-1 min-w-0 truncate">
@@ -185,7 +185,7 @@
 				{/each}
 			</Combobox.Viewport>
 			<div
-				class="flex items-center gap-3 px-3 py-2 border-t text-muted-foreground text-xs shrink-0"
+				class="flex items-center gap-3 px-3 py-2 border-t text-muted-foreground text-sm shrink-0"
 			>
 				<span class="inline-flex items-center gap-1 whitespace-nowrap">
 					<Keybind aria-label="Up arrow" class="p-0.5">

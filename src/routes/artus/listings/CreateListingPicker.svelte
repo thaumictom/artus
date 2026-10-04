@@ -61,12 +61,12 @@
 {#snippet actions()}<Button variant="primary" disabled={!selectedItem} onclick={selectItem}>Continue</Button>{/snippet}
 <Dialog bind:open {title} {description} dialogClose={close} dialogActions={actions} contentProps={{ class: 'h-auto' }}>
 	<div class="px-6">
-		<label for="listing-create-item" class="block mb-1.5 font-semibold text-muted-foreground text-xs">Item</label>
+		<label for="listing-create-item" class="block mb-1.5 font-semibold text-muted-foreground text-sm">Item</label>
 		{#if loading && catalogItems.length === 0}
 			<div role="status" aria-label="Loading market items"><Skeleton class="w-full h-10" /></div>
 		{:else}
 			<Combobox type="single" items={catalogItems} bind:value={selectedSlug} inputValue={selectedItem?.label ?? ''} disabled={!!error} inputProps={{ id: 'listing-create-item', placeholder: 'Search for an item...' }} />
 		{/if}
-		{#if error}<p role="alert" class="mt-2 text-danger text-sm">Could not load items. <button type="button" class="underline cursor-pointer" onclick={loadCatalog}>Retry</button></p>{/if}
+		{#if error}<p role="alert" class="mt-2 text-danger text-base">Could not load items. <button type="button" class="underline cursor-pointer" onclick={loadCatalog}>Retry</button></p>{/if}
 	</div>
 </Dialog>

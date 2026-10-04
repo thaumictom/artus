@@ -150,7 +150,7 @@
 				{#if word.slug && masteredSlugs.has(word.slug)}
 					<Icon icon="hugeicons:laurel-wreath-left-03" class="inline size-3.5 text-orange-300" />
 				{/if}
-				<span class="trim-text">
+				<span class="text-trim">
 					{displayText}
 				</span>
 				{#if word.quantity != null}

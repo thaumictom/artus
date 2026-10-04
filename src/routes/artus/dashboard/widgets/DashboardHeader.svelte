@@ -26,21 +26,21 @@
 	<Button
 		onclick={onReload}
 		disabled={loading || reloadCoolingDown}
-		class="flex items-center gap-1 text-sm"
+		class="flex items-center gap-1 text-base"
 	>
 		<Icon icon="material-symbols:refresh" class={loading ? 'size-4 animate-spin' : 'size-4'} />
 		{loading ? 'Refreshing...' : 'Reload world state'}
 	</Button>
 	<div class="text-right leading-0">
 		{#if fetchedAt !== null}
-			<div class="text-muted-foreground text-sm">fetched {timeAgo(fetchedAt, now)}</div>
+			<div class="text-muted-foreground text-base">fetched {timeAgo(fetchedAt, now)}</div>
 		{/if}
 		{#if worldTimestamp}
-			<time class="text-muted-foreground text-xs" datetime={worldTimestamp.toISOString()}>
+			<time class="text-muted-foreground text-sm" datetime={worldTimestamp.toISOString()}>
 				snapshot: {worldTimestamp.toLocaleTimeString()}
 			</time>
 		{/if}
 	</div>
 </div>
 
-{#if error}<p class="text-danger text-sm">{error}</p>{/if}
+{#if error}<p class="text-danger text-base">{error}</p>{/if}

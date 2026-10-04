@@ -55,7 +55,7 @@
 	triggerProps={{ 'aria-label': 'Copy trade message to clipboard', onclick: copyToClipboard }}>
 	{#snippet children()}<Icon icon="material-symbols:content-copy" class="size-4" />{/snippet}
 	{#snippet content()}
-		<div class="text-xs whitespace-nowrap">
+		<div class="text-sm whitespace-nowrap">
 			<div class="mb-2 font-medium">Copy to clipboard</div>
 			<div class="gap-x-3 gap-y-1 grid grid-cols-[auto_1fr]">
 				<span class="text-muted-foreground">Platform</span>

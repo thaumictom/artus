@@ -76,14 +76,14 @@
 	contentProps={{ class: 'h-auto max-h-[calc(100vh-2rem)]' }}>
 	<div class="px-6 overflow-y-auto">
 		<div class="flex flex-wrap justify-between items-center gap-3 mb-3">
-			<h3 class="font-semibold text-sm">Cheapest in-game sell orders</h3>
+			<h3 class="font-semibold text-base">Cheapest in-game sell orders</h3>
 			<div class="flex items-center gap-3 text-muted-foreground">
-				<Button onclick={() => ordersRefresh.reload()} disabled={ordersRefresh.refreshing || ordersRefresh.coolingDown} class="flex items-center gap-1 text-sm">
+				<Button onclick={() => ordersRefresh.reload()} disabled={ordersRefresh.refreshing || ordersRefresh.coolingDown} class="flex items-center gap-1 text-base">
 					<Icon icon="material-symbols:refresh" class={ordersRefresh.refreshing ? 'size-4 animate-spin' : 'size-4'} />
 					{ordersRefresh.refreshing ? 'Refreshing...' : 'Reload orders'}
 				</Button>
 				{#if ordersRefresh.fetchedAt !== null}
-					<span class="tabular-nums text-sm whitespace-nowrap">fetched {ordersRefresh.fetchedAgo}</span>
+					<span class="tabular-nums text-base whitespace-nowrap">fetched {ordersRefresh.fetchedAgo}</span>
 				{/if}
 			</div>
 		</div>
@@ -105,29 +105,29 @@
 				</div>
 			</div>
 		{:else if error && ordersRefresh.fetchedAt === null}
-			<p role="alert" class="text-danger text-sm">Could not load sell orders. {error}</p>
+			<p role="alert" class="text-danger text-base">Could not load sell orders. {error}</p>
 		{:else if orders.length === 0}
-			<p class="text-muted-foreground text-sm">No sell orders available.</p>
+			<p class="text-muted-foreground text-base">No sell orders available.</p>
 		{:else}
 			<div class="border border-border-secondary divide-y divide-border-secondary">
 				{#each orders as order (order.id)}
-					<div class="flex items-center gap-3 px-3 py-2 text-sm">
+					<div class="flex items-center gap-3 px-3 py-2 text-base">
 						<div class="min-w-0 flex-1">
 							<div class="truncate font-medium">{order.user.ingameName}</div>
-							<div class="text-muted-foreground text-xs">{order.user.status} · {order.quantity} available</div>
+							<div class="text-muted-foreground text-sm">{order.user.status} · {order.quantity} available</div>
 						</div>
 						<div class="flex items-center gap-1 tabular-nums font-semibold"><span>{order.platinum}</span><img src="/icons/platinum.png" class="size-3.5" alt="platinum" /></div>
 						<CopyTradeMessage {order} {itemName} {bulkTradable} variantProperty={variantProperty(order)} />
 					</div>
 				{/each}
-				<div class="flex items-center justify-between px-3 py-2 text-sm font-semibold">
+				<div class="flex items-center justify-between px-3 py-2 text-base font-semibold">
 					<span>Median sell price</span>
 					<span class="flex items-center gap-1 tabular-nums">{median}<img src="/icons/platinum.png" class="size-3.5" alt="platinum" /></span>
 				</div>
 			</div>
 		{/if}
 		{#if error && ordersRefresh.fetchedAt !== null}
-			<p role="alert" class="mt-2 text-danger text-sm">Could not refresh sell orders. {error}</p>
+			<p role="alert" class="mt-2 text-danger text-base">Could not refresh sell orders. {error}</p>
 		{/if}
 	</div>
 </Dialog>

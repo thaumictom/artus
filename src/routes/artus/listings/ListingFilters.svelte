@@ -28,7 +28,7 @@
 	class="items-end gap-4 grid md:grid-cols-2 xl:grid-cols-[minmax(14rem,1fr)_11rem_11rem] bg-card/50"
 >
 	<label for="listings-search" class="block min-w-0">
-		<span class="block mb-1.5 font-semibold text-muted-foreground text-xs">Search listings</span>
+		<span class="block mb-1.5 font-semibold text-muted-foreground text-sm">Search listings</span>
 		<span class="block relative">
 			<Icon
 				icon="lucide:search"
@@ -44,7 +44,7 @@
 		</span>
 	</label>
 	<label for="listings-type-filter" class="block min-w-0">
-		<span class="block mb-1.5 font-semibold text-muted-foreground text-xs">Listing type</span>
+		<span class="block mb-1.5 font-semibold text-muted-foreground text-sm">Listing type</span>
 		<Select
 			type="single"
 			bind:value={typeFilter}
@@ -57,7 +57,7 @@
 		/>
 	</label>
 	<label for="listings-status-filter" class="block min-w-0">
-		<span class="block mb-1.5 font-semibold text-muted-foreground text-xs">Status</span>
+		<span class="block mb-1.5 font-semibold text-muted-foreground text-sm">Status</span>
 		<Select
 			type="single"
 			bind:value={statusFilter}

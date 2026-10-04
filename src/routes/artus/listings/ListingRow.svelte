@@ -55,12 +55,12 @@
 		<WarframeItem item={listingSlug(order, itemDetails)} {name} ownedCount={owned}
 			listing={order.type === 'sell' ? order : null} hideListing={true} {onOpenMarket} />
 		{#if order.rank != null || order.subtype}
-			<p class="mt-1 text-xs text-muted-foreground">{[order.rank != null ? `Rank ${order.rank}` : '', order.subtype].filter(Boolean).join(' · ')}</p>
+			<p class="mt-1 text-sm text-muted-foreground">{[order.rank != null ? `Rank ${order.rank}` : '', order.subtype].filter(Boolean).join(' · ')}</p>
 		{/if}
 	</td>
 	<td class="px-3 py-3.5">
 		<span
-			class={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${order.type === 'sell' ? 'border-sky-500/30 bg-sky-500/15 text-sky-300' : 'border-violet-500/30 bg-violet-500/15 text-violet-300'}`}
+			class={`inline-flex rounded-full border px-3 py-1 text-sm font-semibold ${order.type === 'sell' ? 'border-sky-500/30 bg-sky-500/15 text-sky-300' : 'border-violet-500/30 bg-violet-500/15 text-violet-300'}`}
 		>
 			{order.type === 'sell' ? 'Sell' : 'Buy'}
 		</span>
@@ -68,7 +68,7 @@
 	<td class="px-3 py-3.5">
 		<Button
 			size="none"
-			class={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-accent ${order.visible ? 'border-success/30 bg-success/15 text-success hover:bg-success/25' : 'border-border bg-muted/15 text-muted-foreground hover:bg-muted/25'}`}
+			class={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-semibold whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-accent ${order.visible ? 'border-success/30 bg-success/15 text-success hover:bg-success/25' : 'border-border bg-muted/15 text-muted-foreground hover:bg-muted/25'}`}
 			disabled={busy}
 			title={order.visible ? 'Hide listing' : 'Unhide listing'}
 			aria-label={`Toggle visibility for ${name}`}

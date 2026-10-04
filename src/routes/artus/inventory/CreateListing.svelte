@@ -390,9 +390,9 @@
 {/snippet}
 {#snippet orderPrices(title: string, orders: OrderPreview[], showQuantity: boolean)}
 	<section class="bg-card/50 p-3 border border-border-secondary min-w-0">
-		<h3 class="mb-2 font-semibold text-sm">{title}</h3>
+		<h3 class="mb-2 font-semibold text-base">{title}</h3>
 		{#each orders as order (order.id)}
-			<div class="flex justify-between items-center gap-2 py-0.5 tabular-nums text-sm">
+			<div class="flex justify-between items-center gap-2 py-0.5 tabular-nums text-base">
 				<span class="flex items-center gap-1">
 					{priceFormatter.format(order.platinum)}
 					<img src="/icons/platinum.png" alt="platinum" class="size-3.5" />
@@ -402,13 +402,13 @@
 					</span>{/if}
 			</div>
 		{:else}
-			<p class="text-muted-foreground text-sm">No in-game orders</p>
+			<p class="text-muted-foreground text-base">No in-game orders</p>
 		{/each}
 	</section>
 {/snippet}
 {#snippet overlayControls()}
 	<div
-		class="flex flex-wrap justify-end items-center self-center gap-y-1 bg-background px-3 py-2 *:last:pr-0 *:pr-2 *:first:pl-0 *:pl-2 border border-border-secondary divide-border-secondary divide-x max-w-full text-muted-foreground text-xs"
+		class="flex flex-wrap justify-end items-center self-center gap-y-1 bg-background px-3 py-2 *:last:pr-0 *:pr-2 *:first:pl-0 *:pl-2 border border-border-secondary divide-border-secondary divide-x max-w-full text-muted-foreground text-sm"
 		aria-label="Listing keyboard shortcuts"
 	>
 		<span class="flex items-center gap-1">
@@ -478,24 +478,24 @@
 					title="Today's completed trades"
 				>
 					<div class="px-2">
-						<div class="text-muted-foreground text-xs">Median</div>
-						<div class="font-semibold tabular-nums text-sm">
+						<div class="text-muted-foreground text-sm">Median</div>
+						<div class="font-semibold tabular-nums text-base">
 							{todayStatistics?.median == null
 								? '—'
 								: `${priceFormatter.format(todayStatistics.median)}p`}
 						</div>
 					</div>
 					<div class="px-2">
-						<div class="text-muted-foreground text-xs">Weighted avg</div>
-						<div class="font-semibold tabular-nums text-sm">
+						<div class="text-muted-foreground text-sm">Weighted avg</div>
+						<div class="font-semibold tabular-nums text-base">
 							{todayStatistics?.weightedAverage == null
 								? '—'
 								: `${priceFormatter.format(todayStatistics.weightedAverage)}p`}
 						</div>
 					</div>
 					<div class="px-2">
-						<div class="text-muted-foreground text-xs">Volume</div>
-						<div class="font-semibold tabular-nums text-sm">
+						<div class="text-muted-foreground text-sm">Volume</div>
+						<div class="font-semibold tabular-nums text-base">
 							{todayStatistics?.volume == null
 								? '—'
 								: volumeFormatter.format(todayStatistics.volume)}
@@ -508,14 +508,14 @@
 				{@render orderPrices('Highest in-game buy orders', buyOrders, false)}
 			</div>
 			{#if !isEditing && (details?.maxRank || details?.maxCharges || details?.subtypes?.length || details?.maxAmberStars || details?.maxCyanStars)}
-				<p class="text-muted-foreground text-xs">
+				<p class="text-muted-foreground text-sm">
 					Top order prices may include other ranks or variants. Check the variant fields below
 					before posting.
 				</p>
 			{/if}
 		{/if}
 		<div class="gap-4 grid grid-cols-2">
-			<label class="flex flex-col gap-1 text-sm">
+			<label class="flex flex-col gap-1 text-base">
 				Price (platinum)
 				<input
 					type="number"
@@ -527,7 +527,7 @@
 				/>
 			</label>
 			<div class="flex flex-col gap-2">
-				<label class="flex flex-col gap-1 text-sm">
+				<label class="flex flex-col gap-1 text-base">
 					Quantity
 					<input
 						type="number"
@@ -545,7 +545,7 @@
 		</div>
 		{#if !isEditing && (details?.maxRank || details?.maxCharges || details?.maxAmberStars || details?.maxCyanStars || details?.subtypes?.length)}
 			<div class="gap-3 grid grid-cols-2 pt-3 border-border-secondary border-t">
-				{#if details.maxRank}<label class="flex flex-col gap-1 text-sm">
+				{#if details.maxRank}<label class="flex flex-col gap-1 text-base">
 						Rank (0–{details.maxRank})
 						<input
 							type="number"
@@ -556,7 +556,7 @@
 							class={`bg-background p-2 border border-border-secondary focus-visible:border-accent outline-none text-foreground ${selectedClass('rank')}`}
 						/>
 					</label>{/if}
-				{#if details.maxCharges}<label class="flex flex-col gap-1 text-sm">
+				{#if details.maxCharges}<label class="flex flex-col gap-1 text-base">
 						Charges (0–{details.maxCharges})
 						<input
 							type="number"
@@ -567,7 +567,7 @@
 							class={`bg-background p-2 border border-border-secondary focus-visible:border-accent outline-none text-foreground ${selectedClass('charges')}`}
 						/>
 					</label>{/if}
-				{#if details.maxAmberStars}<label class="flex flex-col gap-1 text-sm">
+				{#if details.maxAmberStars}<label class="flex flex-col gap-1 text-base">
 						Amber stars (0–{details.maxAmberStars})
 						<input
 							type="number"
@@ -578,7 +578,7 @@
 							class={`bg-background p-2 border border-border-secondary focus-visible:border-accent outline-none text-foreground ${selectedClass('amberStars')}`}
 						/>
 					</label>{/if}
-				{#if details.maxCyanStars}<label class="flex flex-col gap-1 text-sm">
+				{#if details.maxCyanStars}<label class="flex flex-col gap-1 text-base">
 						Cyan stars (0–{details.maxCyanStars})
 						<input
 							type="number"
@@ -589,7 +589,7 @@
 							class={`bg-background p-2 border border-border-secondary focus-visible:border-accent outline-none text-foreground ${selectedClass('cyanStars')}`}
 						/>
 					</label>{/if}
-				{#if details.subtypes?.length}<label class="flex flex-col gap-1 text-sm">
+				{#if details.subtypes?.length}<label class="flex flex-col gap-1 text-base">
 						Subtype
 						<select
 							bind:value={subtype}
@@ -600,7 +600,7 @@
 					</label>{/if}
 			</div>
 		{/if}
-		{#if error}<p role="alert" class="text-danger text-sm">{error}</p>{/if}
+		{#if error}<p role="alert" class="text-danger text-base">{error}</p>{/if}
 	</div>
 </Dialog>
 

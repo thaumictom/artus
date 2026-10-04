@@ -5,7 +5,7 @@
 </script>
 
 {#if quantity > ownedCount}
-	<div class="flex items-center gap-1 text-muted-foreground text-sm">
+	<div class="flex items-center gap-1 text-muted-foreground text-base">
 		<Icon icon="mdi:alert-circle-outline" class="size-4" />
 		{#if ownedCount === 0}
 			<p>

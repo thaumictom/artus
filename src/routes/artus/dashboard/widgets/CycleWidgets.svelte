@@ -20,10 +20,10 @@
 <section aria-label="World cycles" class="gap-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
 	{#each cycles as { key, label, cycle } (key)}
 		<div class="bg-background p-3 border border-surface min-w-0">
-			<p class="text-muted-foreground text-xs truncate">{label}</p>
+			<p class="text-muted-foreground text-sm truncate">{label}</p>
 			<div class="flex flex-wrap justify-between items-baseline gap-x-2 gap-y-1">
-				<span class="font-medium text-sm truncate">{formatState(cycle.state)}</span>
-				<span class="ml-auto tabular-nums text-muted-foreground text-xs whitespace-nowrap">
+				<span class="font-medium text-base truncate">{formatState(cycle.state)}</span>
+				<span class="ml-auto tabular-nums text-muted-foreground text-sm whitespace-nowrap">
 					{#if cycle.expiry}
 						{formatState(cycle.nextState)} in
 						<time datetime={cycle.expiry.toISOString()}>{formatTimeLeft(cycle.expiry, now)}</time>

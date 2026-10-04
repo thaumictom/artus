@@ -119,14 +119,14 @@
 <section aria-labelledby="calendar-heading" class="flex flex-col gap-5">
 	<header class="flex justify-between items-end gap-4">
 		<div>
-			<h2 id="calendar-heading" class="font-expanded font-medium text-lg">1999 Calendar</h2>
+			<h2 id="calendar-heading" class="font-expanded font-medium text-xl">1999 Calendar</h2>
 			{#if calendar}
-				<p class="mt-1 text-muted-foreground text-sm">
+				<p class="mt-1 text-muted-foreground text-base">
 					{calendar.season} · Loop {calendar.yearIteration}
 				</p>
 			{/if}
 		</div>
-		<p class="text-muted-foreground text-xs">Hover an event for details</p>
+		<p class="text-muted-foreground text-sm">Hover an event for details</p>
 	</header>
 
 	<div class="flex flex-col gap-6">
@@ -137,7 +137,7 @@
 				</h3>
 				<div class="gap-px grid grid-cols-7 bg-surface border-surface border-b">
 					{#each WEEKDAYS as weekday}
-						<div class="bg-background/80 px-2 py-1.5 text-muted-foreground text-xs text-center">
+						<div class="bg-background/80 px-2 py-1.5 text-muted-foreground text-sm text-center">
 							{weekday}
 						</div>
 					{/each}
@@ -147,7 +147,7 @@
 						{#if cell}
 							<div class="bg-background p-2 min-h-24 min-w-0">
 								<time
-									class="block mb-1.5 text-muted-foreground text-xs tabular-nums"
+									class="block mb-1.5 text-muted-foreground text-sm tabular-nums"
 									datetime={dateKey(cell.date)}
 								>
 									{cell.day}
@@ -163,7 +163,7 @@
 													icon={appearance.icon}
 													class={`size-3.5 shrink-0 ${appearance.color}`}
 												/>
-												<span class="text-xs truncate">{eventTitle(event)}</span>
+												<span class="text-sm truncate">{eventTitle(event)}</span>
 											{/snippet}
 											{#snippet content()}
 												<div class="flex items-start gap-2">
@@ -172,12 +172,12 @@
 														class={`mt-0.5 size-4 shrink-0 ${appearance.color}`}
 													/>
 													<div class="min-w-0">
-														<p class="text-muted-foreground text-xs">{event.type}</p>
+														<p class="text-muted-foreground text-sm">{event.type}</p>
 														<p class="font-medium">{eventTitle(event)}</p>
 														{#if eventDescription(event)}
 															<p class="mt-1 text-muted-foreground">{eventDescription(event)}</p>
 														{/if}
-														<p class="mt-2 text-muted-foreground text-xs">
+														<p class="mt-2 text-muted-foreground text-sm">
 															{DATE_FORMATTER.format(cell.date)}
 														</p>
 													</div>

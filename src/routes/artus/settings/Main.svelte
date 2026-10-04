@@ -32,7 +32,7 @@
 <div class="page-width flex mx-auto p-8 w-full max-w-2xl">
 	<div class="flex-1">
 		{#each components as { name, component: Component }, i}
-			<h1 class="mb-8 font-bold text-lg scroll-mt-8" id={kebabCase(name)}>
+			<h1 class="mb-8 font-bold text-xl scroll-mt-8" id={kebabCase(name)}>
 				{name}
 			</h1>
 			<Component />
@@ -41,8 +41,8 @@
 		<MetaInformation />
 	</div>
 	<div class="top-8 sticky ml-4 pl-4 border-border border-l h-min">
-		<p class="mb-2 font-medium text-sm">Contents</p>
-		<ul class="text-muted-foreground text-sm">
+		<p class="mb-2 font-medium text-base">Contents</p>
+		<ul class="text-muted-foreground text-base">
 			{#each components as { name }, i}
 				<li class="mb-1">
 					<a href={'#' + name.toLowerCase().replace(/\s+/g, '-')} class="hover:underline">

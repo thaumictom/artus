@@ -36,7 +36,7 @@
 	>
 		<Label.Root {...labelProps}>
 			<h2>{title}</h2>
-			<p class="text-muted-foreground text-xs">
+			<p class="text-muted-foreground text-sm">
 				{description}
 			</p>
 		</Label.Root>

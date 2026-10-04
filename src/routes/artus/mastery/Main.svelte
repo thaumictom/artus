@@ -173,7 +173,7 @@
 				<div class="flex-1 min-w-56">
 					<label
 						for="mastery-search"
-						class="block mb-1.5 font-semibold text-muted-foreground text-xs"
+						class="block mb-1.5 font-semibold text-muted-foreground text-sm"
 					>
 						Search items
 					</label>
@@ -189,7 +189,7 @@
 				<div class="flex-1 min-w-36">
 					<label
 						for="mastery-category"
-						class="block mb-1.5 font-semibold text-muted-foreground text-xs"
+						class="block mb-1.5 font-semibold text-muted-foreground text-sm"
 					>
 						Category
 					</label>
@@ -201,7 +201,7 @@
 					/>
 				</div>
 				<div class="flex-1 min-w-36">
-					<label for="mastery-tag" class="block mb-1.5 font-semibold text-muted-foreground text-xs">
+					<label for="mastery-tag" class="block mb-1.5 font-semibold text-muted-foreground text-sm">
 						Tag
 					</label>
 					<Select
@@ -214,7 +214,7 @@
 				<div class="flex-1 min-w-36">
 					<label
 						for="mastery-progress"
-						class="block mb-1.5 font-semibold text-muted-foreground text-xs"
+						class="block mb-1.5 font-semibold text-muted-foreground text-sm"
 					>
 						Progress
 					</label>
@@ -240,7 +240,7 @@
 				{ownedComponentCount}
 				{completedComponentCount}
 			/>
-			<div class="flex justify-between items-center text-muted-foreground text-sm">
+			<div class="flex justify-between items-center text-muted-foreground text-base">
 				<span>Showing {visible.length} of {filtered.length} items</span>
 				{#if visible.length < filtered.length}<button
 						class="hover:bg-muted px-3 py-1.5 border border-border rounded text-foreground"

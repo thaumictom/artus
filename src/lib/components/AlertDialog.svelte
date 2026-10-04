@@ -93,7 +93,7 @@
 			)}
 		>
 			<div class="grid gap-2 select-none" use:windowDrag>
-				<AlertDialog.Title class="font-expanded font-bold text-lg">
+				<AlertDialog.Title class="font-expanded font-bold text-xl">
 					{@render title()}
 				</AlertDialog.Title>
 				<AlertDialog.Description>

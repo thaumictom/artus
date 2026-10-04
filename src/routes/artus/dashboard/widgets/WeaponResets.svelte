@@ -18,8 +18,8 @@
 			class="flex items-baseline justify-between gap-2 border-surface bg-background min-w-0 text-left focus-visible:outline-2 focus-visible:outline-accent"
 			onclick={() => onOpen(source)}
 		>
-			<span class="text-sm">{wikiSources[source].title}</span>
-			<span class="text-muted-foreground text-xs tabular-nums whitespace-nowrap">
+			<span class="text-base">{wikiSources[source].title}</span>
+			<span class="text-muted-foreground text-sm tabular-nums whitespace-nowrap">
 				Reset in <time datetime={reset.toISOString()}>{formatTimeLeft(reset, now)}</time>
 			</span>
 		</Button>

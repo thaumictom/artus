@@ -48,7 +48,7 @@
 			Delete all listings
 		</Button>
 	</CommonSetting>
-	{#if result}<p role="status" class="text-muted-foreground text-sm">{result}</p>{/if}
+	{#if result}<p role="status" class="text-muted-foreground text-base">{result}</p>{/if}
 	{#snippet title()}Delete all listings?{/snippet}
 	{#snippet description()}
 		This permanently deletes every buy and sell listing from your warframe.market account.
@@ -71,5 +71,5 @@
 		{dialogActions}
 		contentProps={{ class: 'h-auto' }}
 	>
-		{#if error}<p role="alert" class="px-6 text-danger text-sm">{error}</p>{/if}
+		{#if error}<p role="alert" class="px-6 text-danger text-base">{error}</p>{/if}
 	</Dialog>

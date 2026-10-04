@@ -131,14 +131,14 @@
 			<div class="px-4 py-3 border-b">
 				<div class="flex justify-between items-start gap-3">
 					<div>
-						<h2 class="font-semibold text-sm">Notifications</h2>
-						<p class="text-muted-foreground text-xs">Recent world-state and market matches</p>
+						<h2 class="font-semibold text-base">Notifications</h2>
+						<p class="text-muted-foreground text-sm">Recent world-state and market matches</p>
 					</div>
 					{#if notificationCenter.entries.length > 0}
 						<button
 							type="button"
 							onclick={() => void clearNotificationHistory()}
-							class="hover:text-foreground text-muted-foreground text-xs cursor-pointer shrink-0"
+							class="hover:text-foreground text-muted-foreground text-sm cursor-pointer shrink-0"
 						>
 							Clear all
 						</button>
@@ -148,7 +148,7 @@
 					<button
 						type="button"
 						onclick={() => void openNotificationRules()}
-						class="flex items-center gap-1 hover:text-foreground text-muted-foreground text-xs cursor-pointer"
+						class="flex items-center gap-1 hover:text-foreground text-muted-foreground text-sm cursor-pointer"
 					>
 						<Icon icon="material-symbols:notification-add-outline-rounded" class="size-3.5" />
 						Rules (world)
@@ -156,7 +156,7 @@
 					<button
 						type="button"
 						onclick={() => void openMarketNotificationRules()}
-						class="flex items-center gap-1 hover:text-foreground text-muted-foreground text-xs cursor-pointer"
+						class="flex items-center gap-1 hover:text-foreground text-muted-foreground text-sm cursor-pointer"
 					>
 						<Icon icon="material-symbols:shopping-cart-outline-rounded" class="size-3.5" />
 						Rules (market)
@@ -171,7 +171,7 @@
 					<button
 						type="button"
 						onclick={openNotificationSettings}
-						class="flex items-center gap-1 hover:text-foreground text-muted-foreground text-xs cursor-pointer"
+						class="flex items-center gap-1 hover:text-foreground text-muted-foreground text-sm cursor-pointer"
 					>
 						<Icon icon="material-symbols:settings-outline-rounded" class="size-3.5" />
 						Settings
@@ -199,9 +199,9 @@
 									{#if entry.era}
 										<span class={eraLabelClass(entry.era)}>{entry.era}</span>
 									{/if}
-									<h3 class="font-medium text-sm">{entry.title}</h3>
+									<h3 class="font-medium text-base">{entry.title}</h3>
 								</div>
-								<p class="mt-0.5 text-muted-foreground text-xs">{entry.body}</p>
+								<p class="mt-0.5 text-muted-foreground text-sm">{entry.body}</p>
 								<time class="block mt-1.5 text-muted-foreground text-[11px]" datetime={new Date(entry.createdAt).toISOString()}>
 									{formatCreatedAt(entry.createdAt)}
 								</time>
@@ -223,8 +223,8 @@
 				{:else}
 					<div class="flex flex-col items-center px-6 py-10 text-center">
 						<Icon icon="material-symbols:notifications-off-outline-rounded" class="mb-3 size-8 text-muted-foreground" />
-						<p class="font-medium text-sm">No notifications yet</p>
-						<p class="mt-1 text-muted-foreground text-xs">
+						<p class="font-medium text-base">No notifications yet</p>
+						<p class="mt-1 text-muted-foreground text-sm">
 							Add notification rules from World State to watch for updates.
 						</p>
 					</div>

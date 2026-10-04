@@ -35,7 +35,7 @@
 		Clear inventory
 	</Button>
 </CommonSetting>
-{#if error}<p role="alert" class="text-danger text-sm">{error}</p>{/if}
+{#if error}<p role="alert" class="text-danger text-base">{error}</p>{/if}
 
 <AlertDialog bind:open={showConfirmation}>
 	{#snippet title()}Clear the entire inventory?{/snippet}

@@ -44,14 +44,14 @@
 <header class="flex justify-between items-center w-full" use:windowDrag>
 	<!-- Left title -->
 	<div class="flex items-center select-none">
-		<div class="flex w-44 shrink-0 items-center">
+		<div class="flex items-center w-44 shrink-0">
 			<div class="flex items-center gap-1 px-2">
 				<Button.Root
 					aria-label="Go back"
 					title="Back"
 					onclick={navigateBack}
 					disabled={appNavigation.index === 0}
-					class="hover:bg-elevated disabled:opacity-40 p-1 rounded disabled:cursor-default cursor-pointer"
+					class="hover:bg-elevated disabled:opacity-40 p-1 rounded cursor-pointer disabled:cursor-default"
 				>
 					<Icon icon="material-symbols:arrow-back-rounded" class="size-5" />
 				</Button.Root>
@@ -60,14 +60,16 @@
 					title="Forward"
 					onclick={navigateForward}
 					disabled={appNavigation.index === appNavigation.entries.length - 1}
-					class="hover:bg-elevated disabled:opacity-40 p-1 rounded disabled:cursor-default cursor-pointer"
+					class="hover:bg-elevated disabled:opacity-40 p-1 rounded cursor-pointer disabled:cursor-default"
 				>
 					<Icon icon="material-symbols:arrow-forward-rounded" class="size-5" />
 				</Button.Root>
 			</div>
-			<div class="px-4 font-expanded font-black text-accent text-xs text-center uppercase">Artus</div>
+			<div class="px-2 font-expanded font-black text-accent text-trim text-center uppercase">
+				Artus
+			</div>
 		</div>
-		<div class="bg-muted rounded-full w-0.5 h-4 text-xs"></div>
+		<div class="bg-muted rounded-full w-0.5 h-4 text-sm"></div>
 		<div class="px-4">{title}</div>
 	</div>
 	<!-- Right controls -->
@@ -76,19 +78,22 @@
 			aria-label="Full-width content"
 			aria-pressed={config.full_width_content}
 			title={config.full_width_content ? 'Use centered content' : 'Use full-width content'}
-			class="hover:bg-elevated p-1 rounded cursor-pointer focus-visible:outline-2 focus-visible:outline-accent"
+			class="hover:bg-elevated p-1 rounded focus-visible:outline-2 focus-visible:outline-accent cursor-pointer"
 			onclick={() => {
 				config.full_width_content = !config.full_width_content;
 				void updateSetting('full_width_content');
 			}}
 		>
-			<Icon icon={config.full_width_content ? 'lucide:minimize-2' : 'lucide:maximize-2'} class="size-5" />
+			<Icon
+				icon={config.full_width_content ? 'lucide:minimize-2' : 'lucide:maximize-2'}
+				class="size-5"
+			/>
 		</Button.Root>
 		{#if !config.hide_donate_button}
 			<Button.Root
 				href="https://ko-fi.com/thaumictom"
 				target="_blank"
-				class="flex items-center gap-2 hover:bg-elevated px-2 py-1 border text-sm"
+				class="flex items-center gap-2 hover:bg-elevated px-2 py-1 border text-base"
 			>
 				<Icon icon="simple-icons:kofi" class="size-4" />
 				Donate

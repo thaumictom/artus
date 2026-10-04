@@ -129,14 +129,14 @@
 				{Math.round((typeof value === 'number' ? value : config.ocr_checkmark_match_threshold) * 100)}%
 			{/snippet}
 		</Slider>
-		<p class="text-muted-foreground text-sm">
+		<p class="text-muted-foreground text-base">
 			Current confidence: {Math.round(config.ocr_checkmark_match_threshold * 100)}%
 		</p>
 	</CommonSetting>
 	<div>
 		<h2 class="mb-2 font-medium">Last OCR image</h2>
 		{#if ocrDebug.imageUrl}
-			<p class="mb-2 text-muted-foreground text-sm">
+			<p class="mb-2 text-muted-foreground text-base">
 				{ocrDebug.width} × {ocrDebug.height} pixels
 			</p>
 			<Dialog
@@ -155,7 +155,7 @@
 				</div>
 			</Dialog>
 		{:else}
-			<p class="text-muted-foreground text-sm">
+			<p class="text-muted-foreground text-base">
 				Trigger OCR capture to show its processed image here.
 			</p>
 		{/if}
@@ -164,7 +164,7 @@
 		<div>
 			<h2 class="mb-2 font-medium">Last filtered relic selection capture</h2>
 			{#if relicImageUrl}
-				<p class="mb-2 text-muted-foreground text-sm">
+				<p class="mb-2 text-muted-foreground text-base">
 					{relicImageSize?.width} × {relicImageSize?.height} pixels ·
 					{relicMatchedItem
 						? `${relicMatchedItem} (slot ${(relicSelectedSlot ?? 0) + 1})${relicClusterX === null ? '' : ` · cluster x=${relicClusterX}`}`
@@ -172,11 +172,11 @@
 							? `No reward match (${relicRewardCount} mapped of ${relicOcrWordCount} OCR words)`
 							: `Cluster x=${relicClusterX} · no reward match (${relicRewardCount} mapped of ${relicOcrWordCount} OCR words)`}
 				</p>
-				<p class="mb-2 text-muted-foreground text-sm">
+				<p class="mb-2 text-muted-foreground text-base">
 					OCR right edges:
 					{relicRewardEdges.map(([name, edge], index) => `${index + 1}: ${name} x=${Math.round(edge)}`).join(' · ')}
 				</p>
-				<p class="mb-2 text-muted-foreground text-sm">{relicStatus}</p>
+				<p class="mb-2 text-muted-foreground text-base">{relicStatus}</p>
 				<Dialog
 					trigger={relicImageTrigger}
 					title={relicImageTitle}
@@ -198,7 +198,7 @@
 					</div>
 				</Dialog>
 			{:else}
-				<p class="text-muted-foreground text-sm">No relic selection strip has been captured yet.</p>
+				<p class="text-muted-foreground text-base">No relic selection strip has been captured yet.</p>
 			{/if}
 		</div>
 	{/if}

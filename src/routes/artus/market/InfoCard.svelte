@@ -52,9 +52,9 @@
 			<div class="flex flex-col">
 				<h1 class="sr-only">{itemData.i18n?.en.name}</h1>
 				<WarframeItem item={itemData.slug} name={itemData.i18n?.en.name}
-					clickable={false} nameClass="font-medium text-lg" />
+					clickable={false} nameClass="font-medium text-xl" />
 				{#if statusLabels.length}
-					<div class="text-muted-foreground text-xs uppercase">
+					<div class="text-muted-foreground text-sm uppercase">
 						{statusLabels.join(' · ')}
 					</div>
 				{/if}
@@ -63,7 +63,7 @@
 				href={wikiUrl}
 				target="_blank"
 				rel="noopener noreferrer"
-				class="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground text-sm hover:underline"
+				class="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground text-base hover:underline"
 			>
 				Wiki
 				<Icon icon="material-symbols:arrow-outward-rounded" class="size-4" />
@@ -75,7 +75,7 @@
 			<div class="flex items-center gap-3">
 				{#if hasMoreInfo}
 					<Collapsible.Trigger
-						class="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground text-sm cursor-pointer shrink-0"
+						class="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground text-base cursor-pointer shrink-0"
 					>
 						More info
 						<Icon
@@ -96,8 +96,8 @@
 								onclick={() => onSelectItem?.(item.value)}
 								aria-current={item.value === itemData.slug ? 'page' : undefined}
 								class={item.value === itemData.slug
-									? 'px-2 py-1 border border-accent bg-accent/10 text-accent text-xs font-medium'
-									: 'px-2 py-1 border text-muted-foreground hover:text-foreground hover:bg-surface text-xs cursor-pointer'}
+									? 'px-2 py-1 border border-accent bg-accent/10 text-accent text-sm font-medium'
+									: 'px-2 py-1 border text-muted-foreground hover:text-foreground hover:bg-surface text-sm cursor-pointer'}
 							>
 								<span class="inline-flex items-center gap-1">
 									<span>
@@ -119,23 +119,23 @@
 				{#if moreInfoOpen && hasMoreInfo}
 					<div transition:slide class="flex flex-col gap-4 pt-4">
 						{#if catalogItem?.description}
-							<p class="text-muted-foreground text-sm whitespace-pre-line">
+							<p class="text-muted-foreground text-base whitespace-pre-line">
 								{sanitizeItemDescription(catalogItem.description)}
 							</p>
 						{/if}
 						{#if details.length}
-							<dl class="gap-x-4 gap-y-3 grid grid-cols-2 sm:grid-cols-3 text-sm">
+							<dl class="gap-x-4 gap-y-3 grid grid-cols-2 sm:grid-cols-3 text-base">
 								{#each details as detail (detail.label)}
 									<div>
-										<dt class="text-muted-foreground text-xs">{detail.label}</dt>
+										<dt class="text-muted-foreground text-sm">{detail.label}</dt>
 										<dd>{detail.value}</dd>
 									</div>
 								{/each}
 							</dl>
 						{/if}
 						{#if maxRankEffects.length}
-							<div class="pt-3 border-t text-sm">
-								<div class="mb-1 text-muted-foreground text-xs">Max rank effects</div>
+							<div class="pt-3 border-t text-base">
+								<div class="mb-1 text-muted-foreground text-sm">Max rank effects</div>
 								{#each maxRankEffects as effect}
 									<p class="whitespace-pre-line">{effect}</p>
 								{/each}

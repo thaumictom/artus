@@ -64,7 +64,7 @@
 				{refreshing ? 'Refreshing APIs…' : 'Refresh APIs now'}
 			</Button>
 		</CommonSetting>
-		{#if refreshStatus}<p role="status" class="text-danger text-sm">{refreshStatus}</p>{/if}
+		{#if refreshStatus}<p role="status" class="text-danger text-base">{refreshStatus}</p>{/if}
 	</div>
 	<ResetMasteryItems />
 	<ResetInventory />

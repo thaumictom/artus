@@ -94,7 +94,7 @@
 			{#if dashboard.world}
 				<div class="flex flex-col gap-4 scroll-mt-6" bind:this={liveViewsElement}>
 					<div class="flex justify-between items-center gap-3">
-						<h1 class="font-medium text-sm">{selectedView?.label}</h1>
+						<h1 class="font-medium text-base">{selectedView?.label}</h1>
 						<div class="bg-surface h-px grow"></div>
 						<NotificationRuleSettings world={dashboard.world} />
 					</div>

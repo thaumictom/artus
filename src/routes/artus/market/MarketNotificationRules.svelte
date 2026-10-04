@@ -131,11 +131,11 @@
 		<div class="flex flex-col gap-5 pr-4.25 pl-6">
 			<section aria-labelledby="new-market-notification-heading">
 				<div class="flex justify-between items-baseline mb-2">
-					<h3 id="new-market-notification-heading" class="font-medium text-sm">New notification</h3>
+					<h3 id="new-market-notification-heading" class="font-medium text-base">New notification</h3>
 					<span
 						class:text-success={marketNotificationState.connection === 'connected'}
 						class:text-warn={marketNotificationState.connection === 'connecting'}
-						class="text-muted-foreground text-xs capitalize"
+						class="text-muted-foreground text-sm capitalize"
 					>
 						Live feed: {marketNotificationState.connection}
 					</span>
@@ -145,7 +145,7 @@
 						<div class="flex justify-between items-center gap-3 mb-1.5">
 							<label
 								for="market-notification-item"
-								class="font-semibold text-muted-foreground text-xs"
+								class="font-semibold text-muted-foreground text-sm"
 							>
 								Item
 							</label>
@@ -153,7 +153,7 @@
 								<button
 									type="button"
 									onclick={useCurrentItem}
-									class="flex items-center gap-1 text-muted-foreground hover:text-foreground text-xs cursor-pointer"
+									class="flex items-center gap-1 text-muted-foreground hover:text-foreground text-sm cursor-pointer"
 									title={`Select ${currentItem.name}`}
 								>
 									<Icon icon="material-symbols:subdirectory-arrow-left-rounded" class="size-3.5" />
@@ -177,7 +177,7 @@
 					</div>
 					<div class="items-start gap-4 grid grid-cols-1 sm:grid-cols-3">
 						<div>
-							<div class="mb-1.5 font-semibold text-muted-foreground text-xs">I want to</div>
+							<div class="mb-1.5 font-semibold text-muted-foreground text-sm">I want to</div>
 							<RadioGroup
 								label="Market notification intent"
 								options={intentOptions}
@@ -187,7 +187,7 @@
 						<div>
 							<label
 								for="market-notification-price"
-								class="block mb-1.5 font-semibold text-muted-foreground text-xs"
+								class="block mb-1.5 font-semibold text-muted-foreground text-sm"
 							>
 								{intent === 'sell' ? 'Minimum price' : 'Maximum price'}
 							</label>
@@ -199,7 +199,7 @@
 									step="1"
 									bind:value={price}
 									placeholder="Platinum"
-									class="bg-transparent px-3 outline-none w-full h-full text-sm"
+									class="bg-transparent px-3 outline-none w-full h-full text-base"
 								/>
 								<img src="/icons/platinum.png" alt="Platinum" class="mr-3 size-4" />
 							</div>
@@ -207,7 +207,7 @@
 						<div>
 							<label
 								for="market-notification-duration"
-								class="block mb-1.5 font-semibold text-muted-foreground text-xs"
+								class="block mb-1.5 font-semibold text-muted-foreground text-sm"
 							>
 								Duration
 							</label>
@@ -227,13 +227,13 @@
 								class="mt-0.5 size-4 accent-accent cursor-pointer"
 							/>
 							<span>
-								<span class="block font-medium text-sm">Stop after the first match</span>
-								<span class="block text-muted-foreground text-xs">
+								<span class="block font-medium text-base">Stop after the first match</span>
+								<span class="block text-muted-foreground text-sm">
 									The rule is removed after sending one notification.
 								</span>
 							</span>
 						</label>
-						<div class="flex items-center gap-2 text-muted-foreground text-xs">
+						<div class="flex items-center gap-2 text-muted-foreground text-sm">
 							<Icon icon="material-symbols:filter-alt-outline-rounded" class="size-4 shrink-0" />
 							<span>
 								{intent === 'sell'
@@ -243,9 +243,9 @@
 						</div>
 					</div>
 					{#if marketNotificationState.itemsError}
-						<p role="alert" class="text-danger text-xs">{marketNotificationState.itemsError}</p>
+						<p role="alert" class="text-danger text-sm">{marketNotificationState.itemsError}</p>
 					{/if}
-					{#if saveError}<p role="alert" class="text-danger text-xs">{saveError}</p>{/if}
+					{#if saveError}<p role="alert" class="text-danger text-sm">{saveError}</p>{/if}
 					<div class="flex justify-end">
 						<Button
 							class="min-w-36"
@@ -261,10 +261,10 @@
 
 			<section aria-labelledby="active-market-notifications-heading">
 				<div class="flex justify-between items-baseline mb-2">
-					<h3 id="active-market-notifications-heading" class="font-medium text-sm">
+					<h3 id="active-market-notifications-heading" class="font-medium text-base">
 						Active notifications
 					</h3>
-					<span class="text-muted-foreground text-xs">
+					<span class="text-muted-foreground text-sm">
 						{marketNotificationState.rules.length} active
 					</span>
 				</div>
@@ -272,8 +272,8 @@
 					{#each marketNotificationState.rules as rule (rule.id)}
 						<article class="flex justify-between items-center gap-3 p-3 border">
 							<div class="min-w-0">
-								<h4 class="font-medium text-sm truncate">{rule.itemName}</h4>
-								<p class="text-muted-foreground text-xs">{ruleDescription(rule)}</p>
+								<h4 class="font-medium text-base truncate">{rule.itemName}</h4>
+								<p class="text-muted-foreground text-sm">{ruleDescription(rule)}</p>
 								<p class="mt-1 text-[11px] text-muted-foreground">
 									{expiryDescription(rule)}{rule.notifyOnce !== false ? ' • First match only' : ''}
 								</p>
@@ -288,11 +288,11 @@
 							</button>
 						</article>
 					{:else}
-						<p class="p-4 border text-muted-foreground text-sm">No active market notifications.</p>
+						<p class="p-4 border text-muted-foreground text-base">No active market notifications.</p>
 					{/each}
 				</div>
 				{#if marketNotificationState.connectionError}
-					<p role="status" class="mt-2 text-warn text-xs">
+					<p role="status" class="mt-2 text-warn text-sm">
 						{marketNotificationState.connectionError} Reconnecting automatically.
 					</p>
 				{/if}

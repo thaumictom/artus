@@ -13,7 +13,7 @@
 		children?: Snippet;
 	} = $props();
 
-	// <kbd class="inline-flex items-center bg-zinc-100 shadow-sm px-3 py-1.5 border border-zinc-400 border-b-4 active:border-b-2 rounded-lg font-sans font-medium text-zinc-900 text-sm transition-[transform,border-width] active:translate-y-[2px] cursor-pointer select-none">⌘ K</kbd>
+	// <kbd class="inline-flex items-center bg-zinc-100 shadow-sm px-3 py-1.5 border border-zinc-400 border-b-4 active:border-b-2 rounded-lg font-sans font-medium text-zinc-900 text-base transition-[transform,border-width] active:translate-y-[2px] cursor-pointer select-none">⌘ K</kbd>
 
 	const keyClass =
 		'inline-flex min-w-5 h-5 items-center justify-center border border-border-secondary border-b-2 rounded-sm bg-surface/90 px-1.5 text-[10px] font-semibold text-foreground tracking-wide font-sans';

@@ -44,10 +44,10 @@
 		)}
 	>
 		<div class="px-6 select-none" use:windowDrag>
-			<BitsDialog.Title class="font-expanded font-bold text-lg">
+			<BitsDialog.Title class="font-expanded font-bold text-xl">
 				{@render title()}
 			</BitsDialog.Title>
-			<BitsDialog.Description class="mt-1 text-muted-foreground text-sm">
+			<BitsDialog.Description class="mt-1 text-muted-foreground text-base">
 				{@render description()}
 			</BitsDialog.Description>
 		</div>

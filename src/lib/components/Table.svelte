@@ -27,8 +27,8 @@
 </script>
 
 <div class="bg-card/50 border border-border-secondary w-full min-w-0 overflow-x-auto">
-	<table class="w-full text-sm text-left" style:min-width={minWidth}>
-		<thead class="bg-surface/80 text-muted-foreground text-xs uppercase tracking-wider">
+	<table class="w-full text-base text-left" style:min-width={minWidth}>
+		<thead class="bg-surface/80 text-muted-foreground text-sm uppercase tracking-wider">
 			<tr>
 				{#each columns as column (column.key)}
 					<th

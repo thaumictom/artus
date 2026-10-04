@@ -114,7 +114,7 @@ body {
 	font-variation-settings: 'wdth' 62;
 }
 
-@utility trim-text {
+@utility text-trim {
 	text-box-trim: trim-both;
 	text-box-edge: cap alphabetic;
 }

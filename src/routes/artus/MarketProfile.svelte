@@ -166,7 +166,7 @@
 		triggerAriaLabel={`warframe.market profile, ${statusLabel[marketAccount.session.status]}`}
 	>
 		{#snippet trigger()}
-			<Button class="flex items-center gap-1 hover:bg-elevated" size="small">
+			<Button class="flex items-center gap-1 hover:bg-elevated text-sm" size="small">
 				<Icon icon="material-symbols:account-circle-outline-rounded" class="size-5" />
 				<span
 					class={`rounded-full size-2 ${dotColor[marketAccount.session?.status ?? 'invisible']} ${marketAccount.session?.status === 'ingame' ? 'animate-pulse' : ''}`}
@@ -174,7 +174,7 @@
 				<span>{statusLabel[marketAccount.session?.status ?? 'invisible']}</span>
 			</Button>
 		{/snippet}
-		<div class="flex flex-col text-sm">
+		<div class="flex flex-col text-base">
 			<Button
 				variant="ghost"
 				href={marketProfileUrl(marketAccount.session)}
@@ -187,7 +187,7 @@
 				<Icon icon="material-symbols:arrow-outward-rounded" class="size-4 shrink-0" />
 			</Button>
 			<div class="my-1 bg-border-secondary h-px"></div>
-			<p class="px-3 py-1 text-muted-foreground text-xs uppercase tracking-widest">Status</p>
+			<p class="px-3 py-1 text-muted-foreground text-sm uppercase tracking-widest">Status</p>
 			{#each statusOptions as status}
 				<Button
 					variant="ghost"
@@ -196,7 +196,7 @@
 					onclick={() => changeStatus(status)}
 					class="flex justify-between items-center"
 				>
-					<div class="flex items-center gap-3 trim-text">
+					<div class="flex items-center gap-3 text-trim">
 						<div class={`size-2 rounded-full ${dotColor[status]}`}></div>
 						<span class="flex-1">{statusLabel[status]}</span>
 					</div>
@@ -214,7 +214,7 @@
 						type="button"
 						class="flex justify-between items-center pl-1 w-full"
 					>
-						<div class="flex items-center gap-1 trim-text">
+						<div class="flex items-center gap-1 text-trim">
 							{#if marketAccount.session?.invisibleAt != null}
 								<Icon
 									icon="material-symbols:timer-rounded"
@@ -225,7 +225,7 @@
 							{/if}
 							<span class="flex-1">Status timer</span>
 							{#if marketAccount.session?.invisibleAt != null}
-								<span class="font-medium text-muted-foreground text-xs">(active)</span>
+								<span class="font-medium text-muted-foreground text-sm">(active)</span>
 							{/if}
 						</div>
 
@@ -240,7 +240,7 @@
 					{#if open}
 						<div transition:slide={{ duration: 180 }}>
 							<div class="flex flex-col gap-1 px-3 py-2">
-								<p class="text-muted-foreground text-xs uppercase tracking-widest">
+								<p class="text-muted-foreground text-sm uppercase tracking-widest">
 									Go invisible after
 								</p>
 								<div class="gap-1 grid grid-cols-2">
@@ -249,14 +249,14 @@
 											type="button"
 											disabled={busy || marketAccount.session?.status === 'invisible'}
 											onclick={() => scheduleInvisible(delay.minutes)}
-											class="py-1 text-xs"
+											class="py-1 text-sm"
 										>
 											{delay.label}
 										</Button>
 									{/each}
 								</div>
 								{#if deadline != null}
-									<div class="text-xs">
+									<div class="text-sm">
 										<div class="flex justify-between items-center gap-2">
 											<span class="text-muted-foreground">
 												going invisible in <span class="tabular-nums text-foreground">
@@ -278,7 +278,7 @@
 								{/if}
 							</div>
 							<div class="my-1 bg-border-secondary h-px"></div>
-							<div class="flex items-center gap-2 px-2 py-2 text-sm">
+							<div class="flex items-center gap-2 px-2 py-2 text-base">
 								<Checkbox
 									id="market-invisible-on-exit"
 									class="size-4"
@@ -286,7 +286,7 @@
 									disabled={savingPreference}
 									onCheckedChange={(checked) => changeInvisibleOnExit(checked === true)}
 								/>
-								<label for="market-invisible-on-exit" class="cursor-pointer trim-text">
+								<label for="market-invisible-on-exit" class="text-trim cursor-pointer">
 									Go invisible when Artus exits
 								</label>
 							</div>
@@ -298,7 +298,7 @@
 			<Button
 				variant="ghost"
 				type="button"
-				class="flex items-center gap-1 pl-1 w-full trim-text"
+				class="flex items-center gap-1 pl-1 w-full text-trim"
 				disabled={busy}
 				onclick={logout}
 			>
@@ -308,7 +308,7 @@
 
 			{#if error}
 				<div class="my-1 bg-border-secondary h-px"></div>
-				<p role="alert" class="px-3 py-1 font-bold text-danger text-xs">
+				<p role="alert" class="px-3 py-1 font-bold text-danger text-sm">
 					error: {error}
 				</p>
 			{/if}
@@ -331,7 +331,7 @@
 {#snippet description()}Sign in with your warframe.market email and password.{/snippet}
 <Dialog bind:open={loginOpen} {title} {description} contentProps={{ class: 'h-auto' }}>
 	<div class="flex flex-col gap-4 px-6">
-		<label class="flex flex-col gap-1 text-sm">
+		<label class="flex flex-col gap-1 text-base">
 			Email
 			<input
 				type="email"
@@ -340,7 +340,7 @@
 				class="bg-background p-2 border border-border-secondary focus-visible:border-accent outline-none text-foreground"
 			/>
 		</label>
-		<label class="flex flex-col gap-1 text-sm">
+		<label class="flex flex-col gap-1 text-base">
 			Password
 			<input
 				type="password"
@@ -349,11 +349,11 @@
 				class="bg-background p-2 border border-border-secondary focus-visible:border-accent outline-none text-foreground"
 			/>
 		</label>
-		<div class="flex items-center gap-2 text-sm">
+		<div class="flex items-center gap-2 text-base">
 			<Checkbox id="remember-market-login" bind:checked={remember} />
 			<label for="remember-market-login" class="cursor-pointer">Remember me</label>
 		</div>
-		{#if remember}<p class="text-muted-foreground text-xs">
+		{#if remember}<p class="text-muted-foreground text-sm">
 				Artus stores only your authorization token in local app data without encryption. Anyone with
 				the token can access your account until it expires or is revoked.
 			</p>{/if}
@@ -365,6 +365,6 @@
 		>
 			{busy ? 'Signing in...' : 'Log in'}
 		</Button>
-		{#if error}<p role="alert" class="text-danger text-sm">{error}</p>{/if}
+		{#if error}<p role="alert" class="text-danger text-base">{error}</p>{/if}
 	</div>
 </Dialog>

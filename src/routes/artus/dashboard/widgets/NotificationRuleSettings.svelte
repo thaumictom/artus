@@ -139,8 +139,8 @@
 			<section class="border">
 				<div class="flex justify-between items-center gap-4 p-4">
 					<div>
-						<h3 class="font-medium text-sm">Fissure missions</h3>
-						<p class="text-muted-foreground text-xs">
+						<h3 class="font-medium text-base">Fissure missions</h3>
+						<p class="text-muted-foreground text-sm">
 							Notify only when all selected filters match.
 						</p>
 					</div>
@@ -159,7 +159,7 @@
 					class="flex flex-col gap-4 px-4 pb-4"
 				>
 					<div>
-						<div class="flex justify-between mb-1.5 text-xs">
+						<div class="flex justify-between mb-1.5 text-sm">
 							<span class="font-semibold text-muted-foreground">Mission category</span>
 							<span class="text-muted-foreground">None selected means any</span>
 						</div>
@@ -172,7 +172,7 @@
 										category.value,
 									)}
 									onclick={() => toggleFilter('categories', category.value)}
-									class="aria-pressed:bg-accent px-2.5 py-1 border aria-pressed:border-accent text-xs aria-pressed:text-accent-foreground cursor-pointer disabled:cursor-not-allowed"
+									class="aria-pressed:bg-accent px-2.5 py-1 border aria-pressed:border-accent text-sm aria-pressed:text-accent-foreground cursor-pointer disabled:cursor-not-allowed"
 								>
 									{category.label}
 								</button>
@@ -180,7 +180,7 @@
 						</div>
 					</div>
 					<div>
-						<div class="flex justify-between mb-1.5 text-xs">
+						<div class="flex justify-between mb-1.5 text-sm">
 							<span class="font-semibold text-muted-foreground">Era</span>
 							<span class="text-muted-foreground">None selected means any</span>
 						</div>
@@ -191,7 +191,7 @@
 									disabled={!config.notification_rules.fissures.enabled}
 									aria-pressed={config.notification_rules.fissures.eras.includes(era)}
 									onclick={() => toggleFilter('eras', era)}
-									class="aria-pressed:bg-accent px-2.5 py-1 border aria-pressed:border-accent text-xs aria-pressed:text-accent-foreground cursor-pointer disabled:cursor-not-allowed"
+									class="aria-pressed:bg-accent px-2.5 py-1 border aria-pressed:border-accent text-sm aria-pressed:text-accent-foreground cursor-pointer disabled:cursor-not-allowed"
 								>
 									{era}
 								</button>
@@ -199,7 +199,7 @@
 						</div>
 					</div>
 					<div>
-						<div class="flex justify-between mb-1.5 text-xs">
+						<div class="flex justify-between mb-1.5 text-sm">
 							<span class="font-semibold text-muted-foreground">Mission type</span>
 							<span class="text-muted-foreground">None selected means any</span>
 						</div>
@@ -212,7 +212,7 @@
 										missionType,
 									)}
 									onclick={() => toggleFilter('missionTypes', missionType)}
-									class="aria-pressed:bg-accent px-2.5 py-1 border aria-pressed:border-accent text-xs aria-pressed:text-accent-foreground cursor-pointer disabled:cursor-not-allowed"
+									class="aria-pressed:bg-accent px-2.5 py-1 border aria-pressed:border-accent text-sm aria-pressed:text-accent-foreground cursor-pointer disabled:cursor-not-allowed"
 								>
 									{missionType}
 								</button>
@@ -226,8 +226,8 @@
 				<section class="border">
 					<div class="flex justify-between items-center gap-4 p-4">
 						<div>
-							<h3 class="font-medium text-sm">{rule.title}</h3>
-							<p class="text-muted-foreground text-xs">{rule.description}</p>
+							<h3 class="font-medium text-base">{rule.title}</h3>
+							<p class="text-muted-foreground text-sm">{rule.description}</p>
 						</div>
 						<Switch
 							checked={config.notification_rules[rule.key]}
@@ -249,7 +249,7 @@
 									saveRules();
 								}}
 							/>
-							<label for="invasion-exclude-common-rewards" class="text-xs leading-5 cursor-pointer">
+							<label for="invasion-exclude-common-rewards" class="text-sm leading-5 cursor-pointer">
 								Do not notify when reward is Fieldron, Detonite Injector, Mutagen Mass or Mutalist
 								Alad V Nav Coordinate
 							</label>
@@ -259,5 +259,5 @@
 			{/each}
 		</div>
 	</OverlayScrollbarsComponent>
-	{#if saveError}<p role="alert" class="px-6 text-danger text-sm">{saveError}</p>{/if}
+	{#if saveError}<p role="alert" class="px-6 text-danger text-base">{saveError}</p>{/if}
 </Dialog>

@@ -50,7 +50,7 @@
 				{align}
 				sideOffset={8}
 				collisionPadding={12}
-				class="z-100 bg-surface shadow-xl max-w-80 text-surface-foreground text-sm data-[state=closed]:animate-out data-[state=delayed-open]:animate-in"
+				class="z-100 bg-surface shadow-xl max-w-80 text-surface-foreground text-base data-[state=closed]:animate-out data-[state=delayed-open]:animate-in"
 			>
 				<div class="p-2 border">
 					{@render content()}

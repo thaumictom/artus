@@ -17,7 +17,7 @@
 			},
 			size: {
 				default: 'px-3 py-1.5',
-				small: 'px-2 py-1 text-sm',
+				small: 'px-2 py-1 text-base',
 				icon: 'p-2',
 				none: 'p-0',
 			},

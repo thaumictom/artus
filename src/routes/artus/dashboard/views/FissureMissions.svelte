@@ -49,7 +49,7 @@
 	);
 
 	function eraLabelClass(tier: string) {
-		const base = 'border px-2 py-0.5 font-medium text-xs';
+		const base = 'border px-2 py-0.5 font-medium text-sm';
 		switch (tier.toLowerCase()) {
 			case 'lith':
 				return `${base} bg-[#d08770]/20 border-[#d08770]/50 text-[#d08770]`;
@@ -72,7 +72,7 @@
 <div class="flex flex-col gap-2">
 	<div class="flex flex-wrap items-center gap-2">
 		<div class="flex flex-col gap-1">
-			<div class="font-semibold text-muted-foreground text-xs">Mission category</div>
+			<div class="font-semibold text-muted-foreground text-sm">Mission category</div>
 			<RadioGroup
 				label="Filter fissure mission type"
 				options={fissureFilterOptions}
@@ -80,7 +80,7 @@
 			/>
 		</div>
 		<div class="flex flex-col gap-1">
-			<div class="font-semibold text-muted-foreground text-xs">Era</div>
+			<div class="font-semibold text-muted-foreground text-sm">Era</div>
 			<RadioGroup label="Filter fissure era" options={eraFilterOptions} bind:value={eraFilter} />
 		</div>
 	</div>
@@ -89,7 +89,7 @@
 <ul>
 	{#each activeFissures as fissure (fissure.id)}
 		<li
-			class="gap-x-3 grid grid-cols-[minmax(0,1fr)_auto] px-1.5 py-3 border-surface not-last:border-b text-sm"
+			class="gap-x-3 grid grid-cols-[minmax(0,1fr)_auto] px-1.5 py-3 border-surface not-last:border-b text-base"
 		>
 			<div class="flex flex-col gap-1">
 				<div class="flex items-center gap-1.5">
@@ -100,7 +100,7 @@
 						{fissure.missionType}
 					</p>
 				</div>
-				<p class="text-muted-foreground text-xs truncate">
+				<p class="text-muted-foreground text-sm truncate">
 					{fissure.node}
 					{#if fissure.isStorm}
 						· Void Storm{/if}
@@ -111,7 +111,7 @@
 			<div class="flex items-center gap-2">
 				{#if fissure.expiry}
 					<time
-						class="tabular-nums text-muted-foreground text-sm whitespace-nowrap"
+						class="tabular-nums text-muted-foreground text-base whitespace-nowrap"
 						datetime={fissure.expiry.toISOString()}
 					>
 						{formatTimeLeft(fissure.expiry, now)}
@@ -120,7 +120,7 @@
 			</div>
 		</li>
 	{:else}
-		<li class="p-4 text-muted-foreground text-sm">No active fissures in this snapshot.</li>
+		<li class="p-4 text-muted-foreground text-base">No active fissures in this snapshot.</li>
 	{/each}
 </ul>
 

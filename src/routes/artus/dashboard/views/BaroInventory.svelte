@@ -101,7 +101,7 @@
 <section class="flex flex-col gap-3 min-w-0" aria-label="Baro Ki'Teer">
 	<div class="flex justify-between gap-1">
 		<div class="flex flex-col gap-1">
-			<div class="font-semibold text-muted-foreground text-xs">Filter</div>
+			<div class="font-semibold text-muted-foreground text-sm">Filter</div>
 			<RadioGroup
 				label="Filter Baro inventory category"
 				options={filterOptions}
@@ -110,9 +110,9 @@
 			/>
 		</div>
 		<div class="flex flex-col text-right">
-			<p class="text-sm">{trader?.location || 'Relay unavailable'}</p>
+			<p class="text-base">{trader?.location || 'Relay unavailable'}</p>
 			{#if available || false}
-				<p class="tabular-nums text-muted-foreground text-sm">
+				<p class="tabular-nums text-muted-foreground text-base">
 					Leaves in <time datetime={trader.expiry?.toISOString()}>
 						{formatTimeLeft(trader.expiry, now)}
 					</time>
@@ -124,14 +124,14 @@
 					</time>
 				</p>
 			{:else}
-				<p class="text-muted-foreground text-sm">Schedule updating</p>
+				<p class="text-muted-foreground text-base">Schedule updating</p>
 			{/if}
 		</div>
 	</div>
 	{#if warframeItems.catalogError}
-		<p class="text-muted-foreground text-sm" role="status">
+		<p class="text-muted-foreground text-base" role="status">
 			{warframeItems.catalogError}
-			<Button variant="link" size="none" class="text-sm" onclick={refreshWarframeItemCatalog}>
+			<Button variant="link" size="none" class="text-base" onclick={refreshWarframeItemCatalog}>
 				Retry
 			</Button>
 		</p>

@@ -10,10 +10,10 @@
 	<div class="pr-4">
 		{orders.length} listings
 	</div>
-	<div class="px-4 text-muted-foreground text-sm">
+	<div class="px-4 text-muted-foreground text-base">
 		{visibleCount} visible
 	</div>
-	<div class="pl-4 text-muted-foreground text-sm">
+	<div class="pl-4 text-muted-foreground text-base">
 		{orders.length - visibleCount} hidden
 	</div>
 </section>

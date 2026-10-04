@@ -39,7 +39,7 @@
 					<Slider.ThumbLabel
 						{index}
 						position="bottom"
-						class="bg-surface opacity-0 data-active:opacity-100 mt-3 px-2 border text-sm text-nowrap transition-opacity pointer-events-none"
+						class="bg-surface opacity-0 data-active:opacity-100 mt-3 px-2 border text-base text-nowrap transition-opacity pointer-events-none"
 					>
 						{@render thumbLabel({ value })}
 					</Slider.ThumbLabel>

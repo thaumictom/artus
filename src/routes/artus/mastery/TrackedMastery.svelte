@@ -35,10 +35,10 @@
 	}
 </script>
 
-<div class="p-4 border w-full text-sm">
+<div class="p-4 border w-full text-base">
 	<div class="flex justify-between items-baseline gap-3">
 		<span class="font-semibold">{rankProgress.label} · tracked mastery</span>
-		<span class="text-muted-foreground text-xs">
+		<span class="text-muted-foreground text-sm">
 			{checkedCount} / {mastery.items.length} checked
 		</span>
 	</div>
@@ -55,19 +55,19 @@
 			style:width={`${rankProgress.percent}%`}
 		></div>
 	</div>
-	<div class="flex justify-between gap-3 mt-1.5 text-muted-foreground text-xs">
+	<div class="flex justify-between gap-3 mt-1.5 text-muted-foreground text-sm">
 		<span>
 			{rankProgress.current.toLocaleString()} / {rankProgress.required.toLocaleString()} XP to next rank
 		</span>
 		<span>{rankProgress.xp.toLocaleString()} total XP</span>
 	</div>
-	<p class="mt-1 text-muted-foreground text-xs">
+	<p class="mt-1 text-muted-foreground text-sm">
 		{gearXp.toLocaleString()} gear XP + {mastery.otherXp.toLocaleString()} other XP
 	</p>
 	<div class="flex flex-wrap gap-2 mt-3">
-		<Button onclick={openOtherXp} class="text-xs">Add other mastery</Button>
+		<Button onclick={openOtherXp} class="text-sm">Add other mastery</Button>
 		{#if mastery.automatic.length > 0}
-			<Button onclick={dismissMasteryDots} class="text-xs">
+			<Button onclick={dismissMasteryDots} class="text-sm">
 				Dismiss {mastery.automatic.length} new dots
 			</Button>
 		{/if}
@@ -81,7 +81,7 @@
 
 <Dialog bind:open={dialogOpen} {title} {description} contentProps={{ class: 'h-auto' }}>
 	<form onsubmit={saveOtherXp} class="px-6 pt-3">
-		<label for="other-mastery-xp" class="block mb-1.5 font-semibold text-sm">
+		<label for="other-mastery-xp" class="block mb-1.5 font-semibold text-base">
 			Other mastery XP
 		</label>
 		<input
@@ -97,10 +97,10 @@
 			}}
 			class="bg-background p-2 border border-border focus-visible:border-accent outline-none w-full text-foreground"
 		/>
-		<p class="mt-2 text-muted-foreground text-xs">
+		<p class="mt-2 text-muted-foreground text-sm">
 			This amount is added to checked gear XP in the rank estimate.
 		</p>
-		{#if inputError}<p role="alert" class="mt-2 text-danger text-xs">{inputError}</p>{/if}
+		{#if inputError}<p role="alert" class="mt-2 text-danger text-sm">{inputError}</p>{/if}
 		<div class="flex justify-end gap-2 mt-5">
 			<Button onclick={() => (dialogOpen = false)}>Cancel</Button>
 			<Button type="submit" variant="primary">Save XP</Button>

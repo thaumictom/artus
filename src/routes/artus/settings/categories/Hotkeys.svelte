@@ -40,13 +40,13 @@
 	{#each groups as group, index}
 		{#if index > 0}<Separator.Root class="bg-border h-px" />{/if}
 		<section aria-labelledby={`keybind-group-${index}`}>
-			<h3 id={`keybind-group-${index}`} class="mb-3 font-semibold text-muted-foreground text-xs uppercase tracking-wider">
+			<h3 id={`keybind-group-${index}`} class="mb-3 font-semibold text-muted-foreground text-sm uppercase tracking-wider">
 				{group.title}
 			</h3>
 			<div class="grid grid-cols-2 gap-x-4 gap-y-4">
 				{#each group.keybinds as [action, label]}
 					<div class="min-w-0">
-						<p class="mb-1 text-sm">{label}</p>
+						<p class="mb-1 text-base">{label}</p>
 						<HotkeyCapture tauriHotkey={action} />
 					</div>
 				{/each}

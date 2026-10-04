@@ -247,14 +247,14 @@
 			{/if}
 		</div>
 		{#if dictionaryError}
-			<div role="alert" class="flex items-center gap-2 text-sm">
+			<div role="alert" class="flex items-center gap-2 text-base">
 				<span>{dictionaryError}</span>
 				<button class="underline cursor-pointer" onclick={loadDictionary}>Retry</button>
 			</div>
 		{/if}
 	</div>
 	{#if searchError}
-		<p role="alert" class="text-danger text-sm">{searchError}</p>
+		<p role="alert" class="text-danger text-base">{searchError}</p>
 	{/if}
 	<div class="page-width bg-surface my-1 w-full max-w-3xl h-px" aria-hidden="true"></div>
 	{#if isSearching || itemData}
@@ -277,7 +277,7 @@
 				onSelectItem={handleValueChange}
 			/>
 			{#if catalogError}
-				<p class="text-muted-foreground text-sm">
+				<p class="text-muted-foreground text-base">
 					Extra item details are unavailable. Restart while online to refresh them.
 				</p>
 			{/if}
@@ -298,7 +298,7 @@
 		<section class="page-width flex flex-col gap-3 w-full max-w-3xl" aria-labelledby="most-traded-heading">
 			<div class="flex justify-between items-baseline gap-4">
 				<h2 id="most-traded-heading">Most traded items</h2>
-				<span class="text-muted-foreground text-xs">Sorted by liquidity</span>
+				<span class="text-muted-foreground text-sm">Sorted by liquidity</span>
 			</div>
 			{#if isLoadingMostTraded}
 				<div role="status" aria-label="Loading most traded items" class="divide-y divide-surface">
@@ -311,16 +311,16 @@
 					{/each}
 				</div>
 			{:else if mostTradedError}
-				<div role="alert" class="flex items-center gap-2 text-sm">
+				<div role="alert" class="flex items-center gap-2 text-base">
 					<span>Could not load the most traded items.</span>
 					<Button onclick={loadMostTraded}>Retry</Button>
 				</div>
 			{:else if mostTradedItems.length === 0}
-				<p class="text-muted-foreground text-sm">No liquidity data is available yet.</p>
+				<p class="text-muted-foreground text-base">No liquidity data is available yet.</p>
 			{:else}
 				<!-- Tag filtering is temporarily disabled.
 				{#if isLoadingDictionary}
-					<p role="status" class="text-muted-foreground text-sm">Loading tag filters...</p>
+					<p role="status" class="text-muted-foreground text-base">Loading tag filters...</p>
 				{:else if !dictionaryError && tagFilters.length > 0}
 					<RadioGroup.Root
 						aria-label="Filter most traded items by tag"
@@ -331,13 +331,13 @@
 					>
 						<RadioGroup.Item
 							value="__all__"
-							class="data-[state=checked]:bg-accent hover:bg-surface px-3 py-1.5 border data-[state=checked]:border-accent focus-visible:outline-2 text-sm data-[state=checked]:text-accent-foreground cursor-pointer"
+							class="data-[state=checked]:bg-accent hover:bg-surface px-3 py-1.5 border data-[state=checked]:border-accent focus-visible:outline-2 text-base data-[state=checked]:text-accent-foreground cursor-pointer"
 						>All</RadioGroup.Item>
 						{#each tagFilters as { tag, liquidity } (tag)}
 							<RadioGroup.Item
 								value={tag}
 								title={`Total liquidity: ${number.format(liquidity)}`}
-								class="data-[state=checked]:bg-accent hover:bg-surface px-3 py-1.5 border data-[state=checked]:border-accent focus-visible:outline-2 text-sm capitalize data-[state=checked]:text-accent-foreground cursor-pointer"
+								class="data-[state=checked]:bg-accent hover:bg-surface px-3 py-1.5 border data-[state=checked]:border-accent focus-visible:outline-2 text-base capitalize data-[state=checked]:text-accent-foreground cursor-pointer"
 							>{tag.replaceAll('_', ' ')}</RadioGroup.Item>
 						{/each}
 					</RadioGroup.Root>
@@ -347,7 +347,7 @@
 					{#each visibleMostTradedItems as item, index (item.slug)}
 						<li>
 							<div
-								class="flex items-center gap-3 hover:bg-surface px-3 py-2.5 w-full text-sm transition cursor-pointer focus-visible:outline-2 focus-visible:outline-accent"
+								class="flex items-center gap-3 hover:bg-surface px-3 py-2.5 w-full text-base transition cursor-pointer focus-visible:outline-2 focus-visible:outline-accent"
 								role="button"
 								tabindex="0"
 								aria-label={`View ${item.name} on the market`}
