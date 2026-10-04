@@ -225,7 +225,7 @@
 						<Icon icon="material-symbols:notifications-off-outline-rounded" class="mb-3 size-8 text-muted-foreground" />
 						<p class="font-medium text-sm">No notifications yet</p>
 						<p class="mt-1 text-muted-foreground text-xs">
-							Add notification rules from the Dashboard to watch the world state.
+							Add notification rules from World State to watch for updates.
 						</p>
 					</div>
 				{/each}

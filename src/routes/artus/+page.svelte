@@ -51,8 +51,8 @@
 
 	const sections: Sections = {
 		dashboard: {
-			label: 'Dashboard',
-			icon: 'material-symbols:space-dashboard-outline-rounded',
+			label: 'World State',
+			icon: 'material-symbols:public',
 			component: DashboardMain,
 		},
 		mastery: {

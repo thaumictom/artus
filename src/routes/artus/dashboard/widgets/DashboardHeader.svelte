@@ -29,7 +29,7 @@
 		class="flex items-center gap-1 text-sm"
 	>
 		<Icon icon="material-symbols:refresh" class={loading ? 'size-4 animate-spin' : 'size-4'} />
-		{loading ? 'Refreshing...' : 'Reload dashboard'}
+		{loading ? 'Refreshing...' : 'Reload world state'}
 	</Button>
 	<div class="text-right leading-0">
 		{#if fetchedAt !== null}

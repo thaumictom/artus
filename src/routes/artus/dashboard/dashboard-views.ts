@@ -75,3 +75,31 @@ export const dashboardViews = [
 ] as const satisfies readonly { value: string; label: string; component: Component<DashboardViewProps> }[];
 
 export type DashboardView = (typeof dashboardViews)[number]['value'];
+
+const viewGroups = [
+	{
+		label: 'Missions',
+		views: ['fissures', 'Alerts', 'Invasions', 'SyndicateMissions', 'KuvaMissions', 'DarkSectors'],
+	},
+	{
+		label: 'Challenges',
+		views: ['Sortie', 'ArchonHunt', 'Arbitration', 'Circuit', 'Archimedea', 'Descendia', 'Nightwave', 'WeeklyChallenges', 'Conclave', 'Faceoff'],
+	},
+	{
+		label: 'Vendors & Market',
+		views: ['BaroInventory', 'TenetWeapons', 'CodaWeapons', 'Acrithis', 'SteelPath', 'PrimeResurgence', 'DailyDeals', 'FlashSales'],
+	},
+	{
+		label: 'World Activity',
+		views: ['Calendar', 'SentientOutposts', 'Simaris', 'PersistentEnemies', 'Construction', 'GlobalUpgrades'],
+	},
+	{
+		label: 'News & Events',
+		views: ['news', 'Events', 'Kinepage', 'ClanInitiative', 'CommunityCampaign'],
+	},
+] satisfies { label: string; views: DashboardView[] }[];
+
+export const dashboardViewGroups = viewGroups.map((group) => ({
+	label: group.label,
+	views: group.views.map((value) => dashboardViews.find((view) => view.value === value)!),
+}));
