@@ -25,7 +25,7 @@
 	} = $props();
 </script>
 
-<div class="flex flex-col gap-3">
+<div class="flex flex-col gap-2 px-6 pb-3">
 	{#if error}<p class="text-danger text-sm wrap-break-word">{error}</p>{/if}
 	<div class="flex flex-col text-muted-foreground text-sm">
 		{#if fetchedAt !== null}
@@ -37,7 +37,7 @@
 			</time>
 		{/if}
 	</div>
-	<div class="flex items-stretch gap-2">
+	<div class="flex items-stretch gap-1">
 		<Button
 			onclick={onReload}
 			disabled={loading || reloadCoolingDown}

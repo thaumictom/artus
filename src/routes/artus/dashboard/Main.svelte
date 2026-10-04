@@ -4,7 +4,7 @@
 	import { appNavigation, navigateTo } from '$lib/app-navigation.svelte';
 	import { hasActiveNotificationRules } from '$lib/notifications.svelte';
 	import { createFocusedRefresh } from '$lib/focused-refresh';
-	import DashboardHeader from './widgets/DashboardHeader.svelte';
+	import DashboardHeader from './widgets/DashboardFooter.svelte';
 	import DashboardNavigation from './widgets/DashboardNavigation.svelte';
 	import { dashboardViews, type DashboardView } from './dashboard-views';
 	import NotificationRuleSettings from './widgets/NotificationRuleSettings.svelte';
@@ -66,7 +66,12 @@
 </script>
 
 <div class="flex flex-1 w-full min-w-0 h-full min-h-0 overflow-hidden">
-	<DashboardNavigation {activeView} world={dashboard.world} now={worldNow} onSelect={openDashboardView}>
+	<DashboardNavigation
+		{activeView}
+		world={dashboard.world}
+		now={worldNow}
+		onSelect={openDashboardView}
+	>
 		{#snippet footer()}
 			<DashboardHeader
 				loading={dashboard.loading}

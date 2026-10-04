@@ -172,20 +172,20 @@
 
 <nav
 	aria-label="World state views"
-	class="flex flex-col pr-0.5 w-60 h-full min-h-0 world-state-navigation shrink-0"
+	class="flex flex-col bg-background mr-0.5 rounded-t-md w-60 h-full min-h-0 world-state-navigation shrink-0"
 >
 	<OverlayScrollbarsComponent
 		bind:this={scrollbars}
 		defer
 		options={{ scrollbars: { theme: scrollbarTheme, autoHide: 'move' } }}
-		class="flex-1 bg-background rounded-t-md w-full min-h-0"
+		class="flex-1 w-full min-h-0"
 	>
 		<div class="flex flex-col">
-			<section aria-labelledby="pinned-views-heading" class="mb-3 pb-3 border-surface border-b-2">
-				<div class="flex justify-between items-center gap-2 p-4">
+			<section aria-labelledby="pinned-views-heading">
+				<div class="flex justify-between items-center gap-2 p-3 pt-4">
 					<h2
 						id="pinned-views-heading"
-						class="font-medium text-muted-foreground text-sm uppercase tracking-wider"
+						class="px-3 font-medium text-muted-foreground text-xs uppercase tracking-widest"
 					>
 						Pinned
 					</h2>
@@ -196,13 +196,19 @@
 						aria-label={editing ? 'Finish editing pins' : 'Edit pinned views'}
 						aria-pressed={editing}
 						onclick={() => (editing = !editing)}
-						class="text-white text-sm"
+						class="flex items-center gap-1 mr-3 text-sm"
 					>
-						{editing ? 'Done' : 'Edit'}
+						{#if editing}
+							<Icon icon="material-symbols:check" class="size-4" />
+							done
+						{:else}
+							<Icon icon="material-symbols:edit" class="size-4" />
+							edit
+						{/if}
 					</Button>
 				</div>
 				{#if editing}
-					<p class="px-4 pb-3 text-muted-foreground text-sm">
+					<p class="px-4 pb-3 text-muted-foreground text-xs">
 						Drag to reorder. Pin views from the navigation below.
 					</p>
 					<div class="px-3 min-w-0">
@@ -275,7 +281,7 @@
 					</div>
 				{/if}
 			</section>
-
+			<div class="bg-surface m-3 h-px"></div>
 			{#each dashboardViewGroups as group (group.label)}
 				<section aria-label={group.label} class="mb-3 px-3">
 					<Collapsible
@@ -311,7 +317,8 @@
 			{/each}
 		</div>
 	</OverlayScrollbarsComponent>
-	<div class="bg-background p-4 border-surface border-t-2 shrink-0">
+	<div class="bg-surface mx-3 mb-3 h-px"></div>
+	<div class="shrink-0">
 		{@render footer()}
 	</div>
 </nav>
