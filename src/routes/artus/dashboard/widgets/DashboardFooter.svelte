@@ -25,7 +25,7 @@
 	} = $props();
 </script>
 
-<div class="flex flex-col gap-2 px-6 pb-3">
+<div class="flex flex-col gap-2 px-6 pb-4.5">
 	{#if error}<p class="text-danger text-sm wrap-break-word">{error}</p>{/if}
 	<div class="flex flex-col text-muted-foreground text-sm">
 		{#if fetchedAt !== null}

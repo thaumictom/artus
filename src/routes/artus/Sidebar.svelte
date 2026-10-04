@@ -24,7 +24,7 @@
 	<div class="px-2.5 w-full h-full group-data-[state=active]:text-accent cursor-pointer">
 		<div class="flex items-center gap-2.5 group-data-[state=active]:bg-accent/10 py-2.5 rounded-md">
 			<span
-				class="group-data-[state=active]:bg-accent group-hover:bg-accent rounded-full w-0.5 h-4"
+				class="group-data-[state=active]:bg-accent group-hover:bg-accent -ml-px rounded-full w-0.5 h-4"
 			></span>
 			<Icon icon={section.icon} class="size-5 shrink-0" />
 			<span

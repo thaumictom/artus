@@ -182,30 +182,34 @@
 	>
 		<div class="flex flex-col">
 			<section aria-labelledby="pinned-views-heading">
-				<div class="flex justify-between items-center gap-2 p-3 pt-4">
+				<div class="group/pinned-header flex justify-between items-center gap-2 p-3 pt-4">
 					<h2
 						id="pinned-views-heading"
 						class="px-3 font-medium text-muted-foreground text-xs uppercase tracking-widest"
 					>
 						Pinned
 					</h2>
-					<Button
-						variant="link"
-						size="none"
-						disabled={!pinsReady}
-						aria-label={editing ? 'Finish editing pins' : 'Edit pinned views'}
-						aria-pressed={editing}
-						onclick={() => (editing = !editing)}
-						class="flex items-center gap-1 mr-3 text-sm"
+					<span
+						class={editing ? '' : 'opacity-0 pointer-events-none group-hover/pinned-header:opacity-100 group-hover/pinned-header:pointer-events-auto group-focus-within/pinned-header:opacity-100 group-focus-within/pinned-header:pointer-events-auto'}
 					>
-						{#if editing}
-							<Icon icon="material-symbols:check" class="size-4" />
-							done
-						{:else}
-							<Icon icon="material-symbols:edit" class="size-4" />
-							edit
-						{/if}
-					</Button>
+						<Button
+							variant="link"
+							size="none"
+							disabled={!pinsReady}
+							aria-label={editing ? 'Finish editing pins' : 'Edit pinned views'}
+							aria-pressed={editing}
+							onclick={() => (editing = !editing)}
+							class="flex items-center gap-1 mr-3 text-sm"
+						>
+							{#if editing}
+								<Icon icon="material-symbols:check" class="size-4" />
+								done
+							{:else}
+								<Icon icon="material-symbols:edit" class="size-4" />
+								edit
+							{/if}
+						</Button>
+					</span>
 				</div>
 				{#if editing}
 					<p class="px-4 pb-3 text-muted-foreground text-xs">
@@ -317,7 +321,7 @@
 			{/each}
 		</div>
 	</OverlayScrollbarsComponent>
-	<div class="bg-surface mx-3 mb-3 h-px"></div>
+	<div class="bg-surface mx-3 mb-4 h-px"></div>
 	<div class="shrink-0">
 		{@render footer()}
 	</div>
