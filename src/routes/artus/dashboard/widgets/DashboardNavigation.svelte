@@ -185,12 +185,14 @@
 				<div class="group/pinned-header flex justify-between items-center gap-2 p-3 pt-4">
 					<h2
 						id="pinned-views-heading"
-						class="px-3 font-medium text-muted-foreground text-xs uppercase tracking-widest"
+						class="px-3 font-semibold text-muted-foreground text-xs uppercase tracking-widest"
 					>
 						Pinned
 					</h2>
 					<span
-						class={editing ? '' : 'opacity-0 pointer-events-none group-hover/pinned-header:opacity-100 group-hover/pinned-header:pointer-events-auto group-focus-within/pinned-header:opacity-100 group-focus-within/pinned-header:pointer-events-auto'}
+						class={editing
+							? ''
+							: 'opacity-0 pointer-events-none group-hover/pinned-header:opacity-100 group-hover/pinned-header:pointer-events-auto group-focus-within/pinned-header:opacity-100 group-focus-within/pinned-header:pointer-events-auto'}
 					>
 						<Button
 							variant="link"
@@ -295,7 +297,7 @@
 						{#snippet button(open)}
 							<span
 								title={group.label}
-								class="min-w-0 font-medium truncate"
+								class="min-w-0 font-semibold truncate"
 								class:text-accent={group.views.some((view) => view.value === activeView)}
 							>
 								{group.label}

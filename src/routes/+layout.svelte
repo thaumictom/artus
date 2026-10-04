@@ -6,6 +6,7 @@
 	import 'overlayscrollbars/overlayscrollbars.css';
 	import '../app.css';
 	import type { Snippet } from 'svelte';
+	import TooltipProvider from '$lib/components/TooltipProvider.svelte';
 
 	let { children }: { children?: Snippet } = $props();
 	onMount(() => {
@@ -22,4 +23,6 @@
 </script>
 
 <Toaster position="bottom-center" theme="dark" />
-{@render children?.()}
+<TooltipProvider>
+	{@render children?.()}
+</TooltipProvider>

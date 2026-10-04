@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Button, Tabs } from 'bits-ui';
 	import Tooltip from '$lib/components/Tooltip.svelte';
+	import TooltipProvider from '$lib/components/TooltipProvider.svelte';
 	import Icon from '@iconify/svelte';
 	import type { Sections } from '$lib/types';
 	import { marketAccount } from '$lib/market-account.svelte';
@@ -135,41 +136,43 @@
 				aria-hidden="true"
 				class="top-0 left-[9px] z-10 absolute bg-accent opacity-0 rounded-full w-0.5 h-4 pointer-events-none"
 			></span>
-			{#each Object.entries(sections) as [id, section]}
-				{@const unavailable = id === 'listings' && !marketAccount.session}
-				<Tooltip side="right" disabled={isSidebarOpen && !unavailable}>
-					{#snippet trigger({ props })}
-						{#if unavailable}
-							<span
-								{...props}
-								class={`${props.class ?? ''} block w-full cursor-not-allowed`}
-								aria-label="Listings unavailable. Log in to warframe.market first."
-							>
+			<TooltipProvider delayDuration={600} skipDelayDuration={200}>
+				{#each Object.entries(sections) as [id, section]}
+					{@const unavailable = id === 'listings' && !marketAccount.session}
+					<Tooltip side="right" disabled={isSidebarOpen && !unavailable}>
+						{#snippet trigger({ props })}
+							{#if unavailable}
+								<span
+									{...props}
+									class={`${props.class ?? ''} block w-full cursor-not-allowed`}
+									aria-label="Listings unavailable. Log in to warframe.market first."
+								>
+									<Tabs.Trigger
+										value={id}
+										disabled
+										aria-label={section.label}
+										class={`${navItemClass} opacity-40 pointer-events-none`}
+									>
+										{@render navLabel(section)}
+									</Tabs.Trigger>
+								</span>
+							{:else}
 								<Tabs.Trigger
+									{...props}
 									value={id}
-									disabled
 									aria-label={section.label}
-									class={`${navItemClass} opacity-40 pointer-events-none`}
+									class={`${props.class ?? ''} ${navItemClass}`}
 								>
 									{@render navLabel(section)}
 								</Tabs.Trigger>
-							</span>
-						{:else}
-							<Tabs.Trigger
-								{...props}
-								value={id}
-								aria-label={section.label}
-								class={`${props.class ?? ''} ${navItemClass}`}
-							>
-								{@render navLabel(section)}
-							</Tabs.Trigger>
-						{/if}
-					{/snippet}
-					{#snippet content()}
-						{section.label}{#if unavailable}: Log in to warframe.market first to view your listings.{/if}
-					{/snippet}
-				</Tooltip>
-			{/each}
+							{/if}
+						{/snippet}
+						{#snippet content()}
+							{section.label}{#if unavailable}: Log in to warframe.market first to view your listings.{/if}
+						{/snippet}
+					</Tooltip>
+				{/each}
+			</TooltipProvider>
 		</div>
 	</div>
 	<div class="max-[800px]:hidden p-3 shrink-0">
