@@ -2,19 +2,33 @@
 	import type { Snippet } from 'svelte';
 	import { formatTimeLeft } from '$lib/date';
 
-	let { children, action, footer, completed = false, expiry, now }: {
+	let { children, action, footer, completed = false, expiry, now, onActivate, disabled = false }: {
 		children: Snippet;
 		action?: Snippet;
 		footer?: Snippet;
 		completed?: boolean;
 		expiry?: Date;
 		now: number;
+		onActivate?: () => void;
+		disabled?: boolean;
 	} = $props();
 	let hasExpiry = $derived(expiry instanceof Date && Number.isFinite(expiry.getTime()));
+
+	function activate(event: MouseEvent) {
+		if (!onActivate || disabled) return;
+		// Links and controls own their clicks; the checkbox must not toggle twice.
+		if (event.target instanceof Element && event.target.closest(
+			'a, button, input, select, textarea, label, [role="button"], [role="checkbox"]',
+		)) return;
+		onActivate();
+	}
 </script>
 
 <!-- Render inside a list; each view supplies its content and controls. -->
-<li class="border transition-colors {completed ? 'bg-surface/30 border-surface' : 'bg-background border-border-secondary'}">
+<!-- Card clicks supplement the keyboard-accessible control supplied in the action slot. -->
+<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
+<li onclick={activate} class:cursor-pointer={!!onActivate && !disabled}
+	class="border transition-colors {completed ? 'bg-surface/30 border-surface' : 'bg-background border-border-secondary'}">
 	<div class="flex items-start justify-between gap-4 p-4">
 		<div class="min-w-0">{@render children()}</div>
 		{#if action}{@render action()}{/if}
