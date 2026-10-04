@@ -1,3 +1,8 @@
+<script module lang="ts">
+	// Formatting is identical across rows; one formatter avoids native allocations per item/mount.
+	const platinumFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
+</script>
+
 <script lang="ts">
 	import Icon from '@iconify/svelte';
 	import { inventoryMarketSlug, type InventoryItem } from '$lib/inventory';
@@ -33,7 +38,6 @@
 		`https://wiki.warframe.com/w/Special:Search?search=${encodeURIComponent(item.name)}`,
 	);
 	const marketSlug = $derived(inventoryMarketSlug(item));
-	const platinumFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
 	function openListing() {
 		if (!marketSlug) return;
 		onOpenListing({ ...item, slug: marketSlug }, listing ?? null);

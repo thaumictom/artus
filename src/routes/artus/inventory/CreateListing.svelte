@@ -282,6 +282,8 @@
 			.finally(() => {
 				if (current === requestId) loading = false;
 			});
+		// Closing the dialog or leaving the tab invalidates pending preview reads.
+		return () => { requestId++; };
 	});
 
 	async function save(visible: boolean) {

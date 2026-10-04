@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { invoke } from '@tauri-apps/api/core';
-	import { onMount, tick } from 'svelte';
-	import { LazyStore } from '@tauri-apps/plugin-store';
+	import { onMount, onDestroy, tick } from 'svelte';
+	import { inventory } from '$lib/inventory.svelte';
+	import { warframeItems, recordWarframeItemListings } from '$lib/warframe-item.svelte';
 	import Icon from '@iconify/svelte';
 	import Button from '$lib/components/Button.svelte';
 	import Skeleton from '$lib/components/Skeleton.svelte';
@@ -9,7 +10,6 @@
 	import { marketAccount, marketProfileUrl } from '$lib/market-account.svelte';
 	import {
 		removeOneMarketInventoryItem,
-		waitForInventorySave,
 		type InventoryItem,
 	} from '$lib/inventory';
 	import { mastery } from '$lib/mastery.svelte';
@@ -22,13 +22,20 @@
 	import ListingSummary from './ListingSummary.svelte';
 	import ListingTable from './ListingTable.svelte';
 	import { listingName, listingOwned, listingSlug } from './listing-utils';
-	import type { Listing, ListingChange, ListingItem } from './types';
+	import type { Listing, ListingChange } from './types';
 
 	let { onOpenMarket = () => {} }: { onOpenMarket?: (slug: string) => void } = $props();
-	const inventoryStore = new LazyStore('inventory.json');
 	let orders = $state<Listing[]>([]);
-	let itemDetails = $state<Record<string, ListingItem>>({});
-	let inventoryItems = $state<InventoryItem[]>([]);
+	const itemDetails = $derived(warframeItems.byId);
+	const inventoryItems = $derived(inventory.items);
+	let disposed = false;
+	let refreshRequest = 0;
+	let dialogFrame = 0;
+	onDestroy(() => {
+		disposed = true;
+		refreshRequest++;
+		cancelAnimationFrame(dialogFrame);
+	});
 	let loading = $state(false);
 	let busy = $state(false);
 	let error = $state<string | null>(null);
@@ -80,53 +87,31 @@
 		});
 	});
 	onMount(() => {
-		let disposed = false;
-		let unlisten: (() => void) | undefined;
 		const timer = setInterval(() => {
 			now = Date.now();
 		}, 1000);
-		void inventoryStore
-			.onChange<unknown>((key, value) => {
-				if (key === 'items' && Array.isArray(value)) inventoryItems = value as InventoryItem[];
-			})
-			.then((stop) => {
-				if (disposed) stop();
-				else unlisten = stop;
-			})
-			.catch((cause) => console.error('Could not observe inventory:', cause));
-		void waitForInventorySave()
-			.catch(() => undefined)
-			.then(() => inventoryStore.get<InventoryItem[]>('items'))
-			.then((items) => {
-				if (!disposed) inventoryItems = items ?? [];
-			})
-			.catch((cause) => console.error('Could not load inventory for listings:', cause));
 		return () => {
-			disposed = true;
 			clearInterval(timer);
-			unlisten?.();
 		};
 	});
 
 	async function refresh() {
 		if (!marketAccount.session || loading || busy) return;
 		loadedFor = marketAccount.session.ingameName;
+		const account = loadedFor;
+		const request = ++refreshRequest;
 		loading = true;
 		error = null;
 		try {
-			const [fetchedOrders, items] = await Promise.all([
-				fetchMarketListings(),
-				Object.keys(itemDetails).length
-					? Promise.resolve(itemDetails)
-					: invoke<Record<string, ListingItem>>('market_item_details'),
-			]);
+			const fetchedOrders = await fetchMarketListings();
+			if (disposed || request !== refreshRequest || account !== marketAccount.session?.ingameName) return;
 			orders = fetchedOrders;
-			itemDetails = items;
+			recordWarframeItemListings(fetchedOrders);
 			lastFetchedAt = new Date();
 		} catch (cause) {
-			error = String(cause);
+			if (!disposed && request === refreshRequest) error = String(cause);
 		} finally {
-			loading = false;
+			if (!disposed && request === refreshRequest) loading = false;
 		}
 	}
 
@@ -162,7 +147,9 @@
 
 	async function openEdit(order: Listing) {
 		await tick();
-		requestAnimationFrame(() => {
+		if (disposed) return;
+		cancelAnimationFrame(dialogFrame);
+		dialogFrame = requestAnimationFrame(() => {
 			editing = order;
 			activeItem = {
 				name: nameFor(order),
@@ -173,7 +160,9 @@
 	}
 	async function openDelete(order: Listing) {
 		await tick();
-		requestAnimationFrame(() => {
+		if (disposed) return;
+		cancelAnimationFrame(dialogFrame);
+		dialogFrame = requestAnimationFrame(() => {
 			removing = order;
 			error = null;
 		});

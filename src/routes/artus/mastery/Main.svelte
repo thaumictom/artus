@@ -1,7 +1,6 @@
 <script lang="ts">
-	import { LazyStore } from '@tauri-apps/plugin-store';
-	import { onMount } from 'svelte';
-	import { inventoryMarketSlug, inventoryNameKey, waitForInventorySave, type InventoryItem } from '$lib/inventory';
+	import { inventory } from '$lib/inventory.svelte';
+	import { inventoryMarketSlug, inventoryNameKey } from '$lib/inventory';
 	import { isOwnedMasteryComponent, mastery, type MasteryItem } from '$lib/mastery.svelte';
 	import Select from '$lib/components/Select.svelte';
 	import Skeleton from '$lib/components/Skeleton.svelte';
@@ -21,17 +20,7 @@
 	let sortDirection = $state<'asc' | 'desc'>('asc');
 	let visibleCount = $state(150);
 	let expanded = $state<string[]>([]);
-	let inventoryItems = $state<InventoryItem[]>([]);
-	onMount(() => {
-		let disposed = false;
-		void waitForInventorySave()
-			.then(() => new LazyStore('inventory.json').get<InventoryItem[]>('items'))
-			.then((items) => {
-				if (!disposed) inventoryItems = items ?? [];
-			})
-			.catch((error) => console.error('Could not load inventory ownership:', error));
-		return () => { disposed = true; };
-	});
+	const inventoryItems = $derived(inventory.items);
 	const ownedComponents = $derived.by(() => {
 		const bySlug = new Map<string, number>();
 		const byName = new Map<string, number>();

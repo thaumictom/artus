@@ -1,37 +1,35 @@
 <script lang="ts">
-	import { LazyStore } from '@tauri-apps/plugin-store';
-	import { invoke } from '@tauri-apps/api/core';
-	import { listen } from '@tauri-apps/api/event';
-	import { onMount, untrack } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import Table from '$lib/components/Table.svelte';
 	import type { TableColumn } from '$lib/components/table-types';
 	import Button from '$lib/components/Button.svelte';
-	import Skeleton from '$lib/components/Skeleton.svelte';
 	import Select from '$lib/components/Select.svelte';
 	import Combobox from '$lib/components/Combobox.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
 	import {
 		inventoryMarketSlug,
 		inventoryNameKey,
-		trackInventorySave,
-		waitForInventorySave,
+		saveInventoryItems,
 		type InventoryItem,
 	} from '$lib/inventory';
 	import { mastery } from '$lib/mastery.svelte';
-	import { DictionarySchema } from '$lib/schemas';
+	import { inventory, reloadInventory } from '$lib/inventory.svelte';
+	import {
+		warframeItems,
+		refreshWarframeItemCatalog,
+		refreshWarframeItemListings,
+		applyWarframeListingChange,
+	} from '$lib/warframe-item.svelte';
 	import { formatWfmTag, wfmCategory } from '$lib/wfm-tags';
 	import InventoryRow from './InventoryRow.svelte';
 	import CreateListing from './CreateListing.svelte';
 	import { masteredMarketItems } from '$lib/listing-context';
 	import { marketAccount } from '$lib/market-account.svelte';
-	import { fetchMarketListings } from '$lib/market-listings';
-	import type { Listing, ListingChange, ListingItem } from '../listings/types';
+	import type { Listing } from '../listings/types';
 	import Tooltip from '$lib/components/Tooltip.svelte';
 
 	let { onOpenMarket = () => {} }: { onOpenMarket?: (slug: string) => void } = $props();
 
-	const store = new LazyStore('inventory.json');
 	const columns: TableColumn[] = [
 		{ key: 'name', label: 'Item', sortable: true, class: 'min-w-48' },
 		{ key: 'quantity', label: 'Quantity', sortable: true, align: 'right', class: 'w-36' },
@@ -42,9 +40,9 @@
 		{ key: 'links', label: '', align: 'right', class: 'w-0' },
 	];
 	type SortColumn = 'name' | 'quantity' | 'median' | 'ducats';
-	let data = $state<InventoryItem[]>([]);
-	let newSlugs = $state<string[]>([]);
-	let loading = $state(true);
+	const data = $derived(inventory.items);
+	const newSlugs = $derived(inventory.newSlugs);
+	const loading = $derived(!inventory.ready);
 	let search = $state('');
 	let categoryFilter = $state('All');
 	let tagFilter = $state('All');
@@ -60,7 +58,7 @@
 		{ value: 'listed', label: 'Listed' },
 		{ value: 'unlisted', label: 'Not listed' },
 	];
-	const filterControls = $derived([
+	const filterControls = $derived.by(() => [
 		{
 			id: 'inventory-category',
 			label: 'Category',
@@ -91,9 +89,6 @@
 			disabled: !listingsLoaded,
 		},
 	]);
-	type ItemMetadata = { category: string; tags: string[] };
-	let metadataBySlug = $state.raw<Record<string, ItemMetadata>>({});
-	let metadataRequest = 0;
 	const categories = $derived(['All', ...new Set(data.map((item) => categoryFor(item)).sort())]);
 	const tags = $derived([
 		'All',
@@ -108,65 +103,37 @@
 	let addOpen = $state(false);
 	let listingItem = $state<InventoryItem | null>(null);
 	let editingListing = $state<Listing | null>(null);
-	let listings = $state<Listing[]>([]);
-	let listingDetails = $state<Record<string, ListingItem>>({});
-	let listingsLoaded = $state(false);
-	let listingsError = $state<string | null>(null);
-	let listingsRequest = 0;
+	const listings = $derived(warframeItems.listings);
+	const listingsLoaded = $derived(warframeItems.listingsLoaded);
+	const listingsError = $derived(warframeItems.listingsError);
 	const listingBySlug = $derived.by(() => {
 		const bySlug = new Map<string, Listing>();
 		for (const listing of listings) {
 			if (listing.type !== 'sell') continue;
-			const slug = listingDetails[listing.itemId]?.slug;
+			const slug = warframeItems.byId[listing.itemId]?.slug;
 			if (slug && !bySlug.has(slug)) bySlug.set(slug, listing);
 		}
 		return bySlug;
 	});
-	let addItems = $state<{ label: string; value: string; ducats?: number }[]>([]);
-	let addItemsLoading = $state(true);
-	let addItemsError = $state(false);
+	const addItems = $derived(warframeItems.addOptions);
+	const addItemsLoading = $derived(!warframeItems.identitiesReady);
+	const addItemsError = $derived(warframeItems.identitiesError);
 	let selectedAddSlug = $state('');
 	let addQuantity = $state(1);
 	const selectedAddItem = $derived(addItems.find((item) => item.value === selectedAddSlug));
 	const canAddItem = $derived(
-		!!selectedAddItem && Number.isSafeInteger(addQuantity) && addQuantity > 0,
+		inventory.ready && !!selectedAddItem && Number.isSafeInteger(addQuantity) && addQuantity > 0,
 	);
-	async function loadAddItems() {
-		const request = ++metadataRequest;
-		addItemsLoading = true;
-		addItemsError = false;
-		try {
-			const dictionaryResponse = await invoke('get_market_dictionary');
-			const dictionary = DictionarySchema.parse(dictionaryResponse);
-			if (request !== metadataRequest) return;
-			addItems = dictionary.items.map((item) => ({
-				label: item.name,
-				value: item.slug,
-				ducats: item.ducats,
-			}));
-			metadataBySlug = Object.fromEntries(
-				dictionary.items.map((item) => [
-					item.slug,
-					{ category: wfmCategory(item.tags), tags: item.tags },
-				]),
-			);
-		} catch (error) {
-			console.error('Could not load items for inventory:', error);
-			if (request === metadataRequest && addItems.length === 0) addItemsError = true;
-		} finally {
-			if (request === metadataRequest) addItemsLoading = false;
-		}
-	}
-
-	function metadataFor(item: InventoryItem): ItemMetadata | undefined {
+	function metadataFor(item: InventoryItem) {
 		const slug = inventoryMarketSlug(item);
 		return slug
-			? (metadataBySlug[slug] ?? metadataBySlug[slug.replace(/_rank_\d+$/, '')])
+			? (warframeItems.bySlug[slug] ?? warframeItems.bySlug[slug.replace(/_rank_\d+$/, '')])
 			: undefined;
 	}
 
 	function categoryFor(item: InventoryItem): string {
-		return metadataFor(item)?.category ?? item.category ?? 'Other';
+		const metadata = metadataFor(item);
+		return metadata ? wfmCategory(metadata.tags) : item.category ?? 'Other';
 	}
 
 	function addSelectedItem() {
@@ -256,143 +223,27 @@
 			: masteredItems.names.has(inventoryNameKey(item.name));
 	}
 
-	async function refreshListings(accountName: string) {
-		const request = ++listingsRequest;
-		listingsLoaded = false;
-		listingsError = null;
-		try {
-			const [orders, details] = await Promise.all([
-				fetchMarketListings(),
-				Object.keys(listingDetails).length
-					? Promise.resolve(listingDetails)
-					: invoke<Record<string, ListingItem>>('market_item_details'),
-			]);
-			if (request !== listingsRequest || marketAccount.session?.ingameName !== accountName) return;
-			listings = orders;
-			listingDetails = details;
-			listingsLoaded = true;
-		} catch (error) {
-			if (request === listingsRequest) listingsError = String(error);
-		}
-	}
-
-	$effect(() => {
-		const accountName = marketAccount.session?.ingameName;
-		if (accountName) untrack(() => void refreshListings(accountName));
-		else {
-			++listingsRequest;
-			listings = [];
-			listingsLoaded = false;
-			listingsError = null;
-		}
-	});
-
 	function openListing(item: InventoryItem, listing: Listing | null) {
 		editingListing = listing;
 		listingItem = item;
 	}
 
-	function applyListingChange(change: ListingChange) {
-		switch (change.kind) {
-			case 'created':
-				if (change.listing) listings = [...listings, change.listing];
-				else if (marketAccount.session) void refreshListings(marketAccount.session.ingameName);
-				break;
-			case 'updated':
-				listings = listings.map((listing) =>
-					listing.id === change.id
-						? { ...listing, platinum: change.platinum, quantity: change.quantity }
-						: listing,
-				);
-				break;
-			case 'visibility':
-				listings = listings.map((listing) =>
-					listing.id === change.id ? { ...listing, visible: change.visible } : listing,
-				);
-				break;
-			case 'deleted':
-				listings = listings.filter((listing) => listing.id !== change.id);
-				break;
-		}
-	}
-
-	onMount(() => {
-		let unlisten: (() => void) | undefined;
-		let disposed = false;
-		(async () => {
-			try {
-				unlisten = await store.onChange<unknown>((key, value) => {
-					if (key === 'items' && Array.isArray(value)) data = value as InventoryItem[];
-					if (key === 'newSlugs' && Array.isArray(value)) newSlugs = value as string[];
-				});
-				if (disposed) {
-					unlisten();
-					return;
-				}
-				await waitForInventorySave().catch(() => undefined);
-				const [items, savedNewSlugs] = await Promise.all([
-					store.get<InventoryItem[]>('items'),
-					store.get<string[]>('newSlugs'),
-				]);
-				if (disposed) return;
-				data = items ?? [];
-				newSlugs = Array.isArray(savedNewSlugs) ? savedNewSlugs : [];
-			} catch (error) {
-				console.error('Could not load inventory:', error);
-			} finally {
-				loading = false;
-			}
-		})();
-		return () => {
-			disposed = true;
-			unlisten?.();
-		};
-	});
-
-	onMount(() => {
-		let disposed = false;
-		let unlistenCatalog: (() => void) | undefined;
-		void loadAddItems();
-		void listen('api_catalogs_fetched', () => {
-			void loadAddItems();
-		})
-			.then((cleanup) => {
-				if (disposed) cleanup();
-				else unlistenCatalog = cleanup;
-			})
-			.catch((error) => console.error('Could not observe item catalog refresh:', error));
-		return () => {
-			disposed = true;
-			metadataRequest++;
-			unlistenCatalog?.();
-		};
-	});
-
 	function saveInventory() {
-		const items = $state.snapshot(data);
-		const savedNewSlugs = [...newSlugs];
-		const save = waitForInventorySave()
-			.catch(() => undefined)
-			.then(async () => {
-				await store.set('items', items);
-				await store.set('newSlugs', savedNewSlugs);
-				await store.save();
-			})
+		void saveInventoryItems($state.snapshot(data), [...newSlugs])
 			.catch((error) => console.error('Could not save inventory:', error));
-		trackInventorySave(save);
 	}
 
 	function updateQuantity(item: InventoryItem, delta: number) {
 		item.quantity += delta;
 		if (item.quantity <= 0) {
-			data = data.filter((entry) => entry !== item);
-			if (item.slug) newSlugs = newSlugs.filter((slug) => slug !== item.slug);
+			inventory.items = data.filter((entry) => entry !== item);
+			if (item.slug) inventory.newSlugs = newSlugs.filter((slug) => slug !== item.slug);
 		}
 		saveInventory();
 	}
 
 	function dismissNewDots() {
-		newSlugs = [];
+		inventory.newSlugs = [];
 		saveInventory();
 	}
 
@@ -441,6 +292,7 @@
 					</Button>{/if}
 				<Button
 					variant="primary"
+					disabled={!inventory.ready}
 					onclick={() => (addOpen = true)}
 					class="inline-flex items-center gap-1.5 text-base"
 				>
@@ -449,183 +301,165 @@
 			</div>
 		</header>
 		<div class="bg-surface my-1 w-full h-px"></div>
-		{#if loading}
-			<div role="status" aria-label="Loading inventory" class="flex flex-col gap-3">
-				<div
-					class="items-end gap-3 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-[minmax(14rem,2fr)_minmax(9rem,1.25fr)_minmax(9rem,1.25fr)_minmax(7rem,0.75fr)_minmax(7rem,0.75fr)]"
+		{#if inventory.error}
+			<p role="alert" class="text-danger text-base">
+				{inventory.error}
+				<button type="button" class="underline cursor-pointer" onclick={reloadInventory}>Retry</button>
+			</p>
+		{/if}
+		{#if listingsError && marketAccount.session}
+			<p role="alert" class="text-danger text-base">
+				Could not load your listings. <button
+					type="button"
+					class="underline cursor-pointer"
+					onclick={refreshWarframeItemListings}
 				>
-					<div class="flex flex-col gap-1">
-						<Skeleton class="flex-1 mb-1.5 w-min text-sm">Search items</Skeleton>
-						<Skeleton class="h-10" />
-					</div>
-					{#each filterControls as filter (filter.id)}
-						<div class="flex flex-col gap-1">
-							<Skeleton class="flex-1 mb-1.5 w-min text-sm">{filter.label}</Skeleton>
-							<Skeleton class="max-w-80 h-10" />
-						</div>
-					{/each}
-				</div>
-				<Skeleton class="w-full h-64" />
+					Retry
+				</button>
+			</p>
+		{/if}
+		<div
+			class="items-end gap-3 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-[minmax(14rem,2fr)_minmax(9rem,1.25fr)_minmax(9rem,1.25fr)_minmax(7rem,0.75fr)_minmax(7rem,0.75fr)]"
+		>
+			<div class="sm:col-span-2 xl:col-span-1 min-w-0">
+				<label
+					for="inventory-search"
+					class="block mb-1.5 font-semibold text-muted-foreground text-sm"
+				>
+					Search items
+				</label>
+				<input
+					id="inventory-search"
+					type="search"
+					bind:value={search}
+					placeholder="Search for an item..."
+					class="bg-background p-2 border focus-visible:border-accent outline-none w-full h-10 text-foreground placeholder:text-muted-foreground"
+				/>
 			</div>
-		{:else}
-			{#if listingsError && marketAccount.session}
-				<p role="alert" class="text-danger text-base">
-					Could not load your listings. <button
-						type="button"
-						class="underline cursor-pointer"
-						onclick={() => refreshListings(marketAccount.session!.ingameName)}
-					>
-						Retry
-					</button>
-				</p>
-			{/if}
-			<div
-				class="items-end gap-3 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-[minmax(14rem,2fr)_minmax(9rem,1.25fr)_minmax(9rem,1.25fr)_minmax(7rem,0.75fr)_minmax(7rem,0.75fr)]"
-			>
-				<div class="sm:col-span-2 xl:col-span-1 min-w-0">
-					<label
-						for="inventory-search"
-						class="block mb-1.5 font-semibold text-muted-foreground text-sm"
-					>
-						Search items
+			{#each filterControls as filter (filter.id)}
+				<div class="min-w-0">
+					<label for={filter.id} class="block mb-1.5 font-semibold text-muted-foreground text-sm">
+						{filter.label}
 					</label>
-					<input
-						id="inventory-search"
-						type="search"
-						bind:value={search}
-						placeholder="Search for an item..."
-						class="bg-background p-2 border focus-visible:border-accent outline-none w-full h-10 text-foreground placeholder:text-muted-foreground"
+					<Select
+						type="single"
+						items={filter.options}
+						bind:value={() => filter.value, filter.setValue}
+						disabled={filter.disabled ?? false}
+						triggerProps={{ id: filter.id, class: 'max-w-none h-10' }}
 					/>
 				</div>
-				{#each filterControls as filter (filter.id)}
-					<div class="min-w-0">
-						<label for={filter.id} class="block mb-1.5 font-semibold text-muted-foreground text-sm">
-							{filter.label}
-						</label>
-						<Select
-							type="single"
-							items={filter.options}
-							bind:value={() => filter.value, filter.setValue}
-							disabled={filter.disabled ?? false}
-							triggerProps={{ id: filter.id, class: 'max-w-none h-10' }}
-						/>
-					</div>
-				{/each}
-			</div>
-			{#if addItemsError}
-				<p role="alert" class="text-danger text-base">
-					Could not load item categories and tags. <button
-						type="button"
-						class="underline cursor-pointer"
-						onclick={loadAddItems}
-					>
-						Retry
-					</button>
-				</p>
-			{/if}
-			{#snippet inventoryRow(item: InventoryItem)}
-				{@const slug = inventoryMarketSlug(item)}
-				<InventoryRow
-					{item}
-					price={priceFor(item)}
-					mastered={isMastered(item)}
-					listing={slug ? listingBySlug.get(slug) : undefined}
-					{listingsLoaded}
-					isNew={!!item.slug && newSlugs.includes(item.slug)}
-					onChangeQuantity={updateQuantity}
-					{onOpenMarket}
-					onOpenListing={openListing}
-				/>
-			{/snippet}
-			<Table
-				{columns}
-				rows={sorted}
-				rowKey={(item) => item.slug ?? item.name}
-				renderRow={inventoryRow}
-				emptyMessage={data.length === 0
-					? 'Your inventory is empty.'
-					: 'No inventory items match these filters.'}
-				{sortColumn}
-				{sortDirection}
-				onSort={setSort}
-				minWidth="920px"
-			/>
-			<CreateListing
-				bind:item={
-					() => listingItem,
-					(value) => {
-						listingItem = value;
-						if (value === null) editingListing = null;
-					}
-				}
-				editing={editingListing}
-				mastered={listingItem ? isMastered(listingItem) : false}
-				onSaved={applyListingChange}
-			/>
-			<p class="text-muted-foreground text-base">Showing {sorted.length} of {data.length} items</p>
-			{#snippet addTitle()}Add inventory item{/snippet}
-			{#snippet addDescription()}Search the market item list and add it to your inventory.{/snippet}
-			{#snippet addClose()}<Button>Cancel</Button>{/snippet}
-			{#snippet addActions()}
-				<Button variant="primary" disabled={!canAddItem} onclick={addSelectedItem}>
-					Add to inventory
-				</Button>
-			{/snippet}
-			<Dialog
-				bind:open={addOpen}
-				title={addTitle}
-				description={addDescription}
-				dialogClose={addClose}
-				dialogActions={addActions}
-				contentProps={{ class: 'h-auto' }}
-			>
-				<div class="flex items-start gap-3 px-6 pb-2">
-					<div class="flex-1 min-w-0">
-						<label
-							for="inventory-add-item"
-							class="block mb-1.5 font-semibold text-muted-foreground text-sm"
-						>
-							Item
-						</label>
-						{#if addItemsLoading && addItems.length === 0}
-							<div role="status" aria-label="Loading market items">
-								<Skeleton class="w-full h-10" />
-							</div>
-						{:else}
-							<Combobox
-								type="single"
-								items={addItems}
-								bind:value={selectedAddSlug}
-								inputValue={selectedAddItem?.label ?? ''}
-								disabled={addItemsLoading || addItemsError}
-								inputProps={{ id: 'inventory-add-item', placeholder: 'Search for an item...' }}
-							/>
-						{/if}
-						{#if addItemsError}
-							<div role="alert" class="flex items-center gap-2 mt-2 text-base">
-								<span>Could not load the item list.</span>
-								<button class="underline cursor-pointer" onclick={loadAddItems}>Retry</button>
-							</div>
-						{/if}
-					</div>
-					<div class="w-28 shrink-0">
-						<label
-							for="inventory-add-quantity"
-							class="block mb-1.5 font-semibold text-muted-foreground text-sm"
-						>
-							Quantity
-						</label>
-						<input
-							id="inventory-add-quantity"
-							type="number"
-							min="1"
-							step="1"
-							bind:value={addQuantity}
-							class="bg-background p-2 border focus-visible:border-accent outline-none w-full text-foreground"
-						/>
-					</div>
-				</div>
-			</Dialog>
+			{/each}
+		</div>
+		{#if addItemsError}
+			<p role="alert" class="text-danger text-base">
+				Could not load item categories and tags. <button
+					type="button"
+					class="underline cursor-pointer"
+					onclick={refreshWarframeItemCatalog}
+				>
+					Retry
+				</button>
+			</p>
 		{/if}
+		{#snippet inventoryRow(item: InventoryItem)}
+			{@const slug = inventoryMarketSlug(item)}
+			<InventoryRow
+				{item}
+				price={priceFor(item)}
+				mastered={isMastered(item)}
+				listing={slug ? listingBySlug.get(slug) : undefined}
+				{listingsLoaded}
+				isNew={!!item.slug && newSlugs.includes(item.slug)}
+				onChangeQuantity={updateQuantity}
+				{onOpenMarket}
+				onOpenListing={openListing}
+			/>
+		{/snippet}
+		<Table
+			{columns}
+			rows={sorted}
+			rowKey={(item) => item.slug ?? item.name}
+			renderRow={inventoryRow}
+			emptyMessage={loading
+				? 'Loading inventory…'
+				: inventory.error || (data.length === 0
+					? 'Your inventory is empty.'
+					: 'No inventory items match these filters.')}
+			{sortColumn}
+			{sortDirection}
+			onSort={setSort}
+			minWidth="920px"
+		/>
+		<CreateListing
+			bind:item={
+				() => listingItem,
+				(value) => {
+					listingItem = value;
+					if (value === null) editingListing = null;
+				}
+			}
+			editing={editingListing}
+			mastered={listingItem ? isMastered(listingItem) : false}
+			onSaved={applyWarframeListingChange}
+		/>
+		<p class="text-muted-foreground text-base">Showing {sorted.length} of {data.length} items</p>
+		{#snippet addTitle()}Add inventory item{/snippet}
+		{#snippet addDescription()}Search the market item list and add it to your inventory.{/snippet}
+		{#snippet addClose()}<Button>Cancel</Button>{/snippet}
+		{#snippet addActions()}
+			<Button variant="primary" disabled={!canAddItem} onclick={addSelectedItem}>
+				Add to inventory
+			</Button>
+		{/snippet}
+		<Dialog
+			bind:open={addOpen}
+			title={addTitle}
+			description={addDescription}
+			dialogClose={addClose}
+			dialogActions={addActions}
+			contentProps={{ class: 'h-auto' }}
+		>
+			<div class="flex items-start gap-3 px-6 pb-2">
+				<div class="flex-1 min-w-0">
+					<label
+						for="inventory-add-item"
+						class="block mb-1.5 font-semibold text-muted-foreground text-sm"
+					>
+						Item
+					</label>
+					<Combobox
+						type="single"
+						items={addItems}
+						bind:value={selectedAddSlug}
+						inputValue={selectedAddItem?.label ?? ''}
+						disabled={addItemsLoading || !!addItemsError || !inventory.ready}
+						inputProps={{ id: 'inventory-add-item', placeholder: 'Search for an item...' }}
+					/>
+					{#if addItemsError}
+						<div role="alert" class="flex items-center gap-2 mt-2 text-base">
+							<span>Could not load the item list.</span>
+							<button class="underline cursor-pointer" onclick={refreshWarframeItemCatalog}>Retry</button>
+						</div>
+					{/if}
+				</div>
+				<div class="w-28 shrink-0">
+					<label
+						for="inventory-add-quantity"
+						class="block mb-1.5 font-semibold text-muted-foreground text-sm"
+					>
+						Quantity
+					</label>
+					<input
+						id="inventory-add-quantity"
+						type="number"
+						min="1"
+						step="1"
+						bind:value={addQuantity}
+						class="bg-background p-2 border focus-visible:border-accent outline-none w-full text-foreground"
+					/>
+				</div>
+			</div>
+		</Dialog>
 	</div>
 </div>

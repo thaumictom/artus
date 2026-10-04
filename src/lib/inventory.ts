@@ -1,5 +1,8 @@
 import { LazyStore } from '@tauri-apps/plugin-store';
 
+// All inventory readers and writers in a window use the same loaded store.
+export const inventoryStore = new LazyStore('inventory.json');
+
 export type InventoryItem = {
 	name: string;
 	slug?: string;
@@ -48,7 +51,7 @@ function saveOcrItemQuantities(changes: OcrQuantityChange[]) {
 				: Number.isSafeInteger(change.quantity) && change.quantity > 0))) {
 			return applied;
 		}
-		const store = new LazyStore('inventory.json');
+		const store = inventoryStore;
 		const [savedItems, savedSlugs] = await Promise.all([
 			store.get<InventoryItem[]>('items'),
 			store.get<string[]>('newSlugs'),
@@ -109,7 +112,7 @@ export function removeOneMarketInventoryItem(slug: string | undefined, name: str
 export function changeMarketInventoryQuantity(slug: string | undefined, name: string, delta: number) {
 	if (!Number.isSafeInteger(delta) || delta === 0) return Promise.resolve();
 	const save = latestSave.catch(() => undefined).then(async () => {
-		const store = new LazyStore('inventory.json');
+		const store = inventoryStore;
 		const [savedItems, savedSlugs] = await Promise.all([
 			store.get<InventoryItem[]>('items'),
 			store.get<string[]>('newSlugs'),
@@ -158,10 +161,20 @@ export function waitForInventorySave() {
 	return latestSave;
 }
 
+export function saveInventoryItems(items: InventoryItem[], newSlugs: string[]) {
+	const save = latestSave.catch(() => undefined).then(async () => {
+		await inventoryStore.set('items', items);
+		await inventoryStore.set('newSlugs', newSlugs);
+		await inventoryStore.save();
+	});
+	trackInventorySave(save);
+	return save;
+}
+
 export function resetInventory() {
 	const previousSave = latestSave;
 	const reset = previousSave.catch(() => undefined).then(async () => {
-		const store = new LazyStore('inventory.json');
+		const store = inventoryStore;
 		await store.set('items', [] as InventoryItem[]);
 		await store.set('newSlugs', [] as string[]);
 		await store.save();

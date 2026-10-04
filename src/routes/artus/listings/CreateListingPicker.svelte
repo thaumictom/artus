@@ -1,13 +1,11 @@
 <script lang="ts">
-	import { invoke } from '@tauri-apps/api/core';
-	import { tick } from 'svelte';
+	import { onDestroy, tick } from 'svelte';
 	import Button from '$lib/components/Button.svelte';
 	import Combobox from '$lib/components/Combobox.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
-	import Skeleton from '$lib/components/Skeleton.svelte';
 	import type { InventoryItem } from '$lib/inventory';
 	import { ownedMarketCount } from '$lib/listing-context';
-	import { DictionarySchema } from '$lib/schemas';
+	import { warframeItems, refreshWarframeItemCatalog } from '$lib/warframe-item.svelte';
 
 	let {
 		open = $bindable(false),
@@ -19,27 +17,16 @@
 		onSelect: (item: InventoryItem) => void;
 	} = $props();
 	let selectedSlug = $state('');
-	let catalogItems = $state<{ label: string; value: string }[]>([]);
-	let loading = $state(false);
-	let error = $state<string | null>(null);
-	let selectedItem = $derived(catalogItems.find((item) => item.value === selectedSlug));
-
-	$effect(() => {
-		if (open && catalogItems.length === 0 && !loading && !error) void loadCatalog();
+	const catalogItems = $derived(warframeItems.addOptions);
+	const loading = $derived(!warframeItems.identitiesReady);
+	const error = $derived(warframeItems.identitiesError);
+	let disposed = false;
+	let selectionFrame = 0;
+	onDestroy(() => {
+		disposed = true;
+		cancelAnimationFrame(selectionFrame);
 	});
-
-	async function loadCatalog() {
-		loading = true;
-		error = null;
-		try {
-			const dictionary = DictionarySchema.parse(await invoke('get_market_dictionary'));
-			catalogItems = dictionary.items.map((item) => ({ label: item.name, value: item.slug }));
-		} catch (cause) {
-			error = String(cause);
-		} finally {
-			loading = false;
-		}
-	}
+	let selectedItem = $derived(catalogItems.find((item) => item.value === selectedSlug));
 
 	async function selectItem() {
 		if (!selectedItem) return;
@@ -47,7 +34,9 @@
 		open = false;
 		selectedSlug = '';
 		await tick();
-		requestAnimationFrame(() => onSelect({
+		if (disposed) return;
+		cancelAnimationFrame(selectionFrame);
+		selectionFrame = requestAnimationFrame(() => onSelect({
 			name: selected.label,
 			slug: selected.value,
 			quantity: ownedMarketCount(inventoryItems, selected.value, selected.label),
@@ -62,11 +51,7 @@
 <Dialog bind:open {title} {description} dialogClose={close} dialogActions={actions} contentProps={{ class: 'h-auto' }}>
 	<div class="px-6">
 		<label for="listing-create-item" class="block mb-1.5 font-semibold text-muted-foreground text-sm">Item</label>
-		{#if loading && catalogItems.length === 0}
-			<div role="status" aria-label="Loading market items"><Skeleton class="w-full h-10" /></div>
-		{:else}
-			<Combobox type="single" items={catalogItems} bind:value={selectedSlug} inputValue={selectedItem?.label ?? ''} disabled={!!error} inputProps={{ id: 'listing-create-item', placeholder: 'Search for an item...' }} />
-		{/if}
-		{#if error}<p role="alert" class="mt-2 text-danger text-base">Could not load items. <button type="button" class="underline cursor-pointer" onclick={loadCatalog}>Retry</button></p>{/if}
+		<Combobox type="single" items={catalogItems} bind:value={selectedSlug} inputValue={selectedItem?.label ?? ''} disabled={loading || !!error} inputProps={{ id: 'listing-create-item', placeholder: 'Search for an item...' }} />
+		{#if error}<p role="alert" class="mt-2 text-danger text-base">Could not load items. <button type="button" class="underline cursor-pointer" onclick={refreshWarframeItemCatalog}>Retry</button></p>{/if}
 	</div>
 </Dialog>
