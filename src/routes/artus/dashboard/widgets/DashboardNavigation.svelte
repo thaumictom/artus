@@ -231,7 +231,7 @@
 									id={`world-state-pin-${view.value}`}
 									{index}
 									aria-label={view.label}
-									class="w-full min-w-0"
+									class="w-full min-w-0 world-state-pin-sortable-item"
 									transitionIn={noTransition}
 									transitionOut={noTransition}
 								>
@@ -352,9 +352,10 @@
 		visibility: hidden;
 	}
 
-	:global(.world-state-pins-sortable .ssl-item[data-is-ghost='true'] > div),
-	:global(.world-state-pins-sortable .ssl-item[data-drag-state*='kbd-drag'] > div) {
-		background-color: var(--color-surface);
+	/* The library portals the dragged copy outside the list, retaining the item's class. */
+	:global(.world-state-pin-sortable-item[data-is-ghost='true'] > div),
+	:global(.world-state-pin-sortable-item[data-drag-state*='kbd-drag'] > div) {
+		background-color: color-mix(in oklab, var(--color-surface) 60%, transparent);
 		border-color: var(--color-accent);
 		box-shadow: 0 4px 12px rgb(0 0 0 / 20%);
 	}

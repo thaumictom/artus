@@ -114,7 +114,7 @@
 			{/if}
 			{#if fissure.isHard}
 				<span
-					class="bg-red-400/20 saturate-25 px-2 py-1 border border-red-400/50 font-medium text-red-400 text-sm"
+					class="bg-red-400/20 saturate-50 px-2 py-1 border border-red-400/50 font-medium text-red-400 text-sm"
 				>
 					Steel Path
 				</span>
