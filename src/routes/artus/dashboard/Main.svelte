@@ -36,9 +36,18 @@
 	}
 
 	onMount(() => {
-		const focusedRefresh = createFocusedRefresh(() => {
-			if (!hasActiveNotificationRules()) return reloadWorldState();
-		}, REFRESH_INTERVAL_MS);
+		const focusedRefresh = createFocusedRefresh(
+			() => {
+				const isStale = dashboard.fetchedAt === null ||
+					Date.now() - dashboard.fetchedAt >= REFRESH_INTERVAL_MS;
+				if (!hasActiveNotificationRules() || isStale) return reloadWorldState();
+			},
+			REFRESH_INTERVAL_MS,
+			{
+				immediate: dashboard.fetchedAt === null,
+				lastRefreshedAt: dashboard.fetchedAt ?? undefined,
+			},
+		);
 		let clock: ReturnType<typeof setInterval> | undefined;
 		let cooldownTimer: ReturnType<typeof setTimeout> | undefined;
 		const updateClock = () => {

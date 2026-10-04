@@ -1,16 +1,18 @@
 type FocusedRefreshOptions = {
 	immediate?: boolean;
+	lastRefreshedAt?: number;
 };
 
 export function createFocusedRefresh(
 	callback: () => void | Promise<void>,
 	intervalMs: number,
-	{ immediate = false }: FocusedRefreshOptions = {},
+	{ immediate = false, lastRefreshedAt }: FocusedRefreshOptions = {},
 ) {
 	let disposed = false;
 	let inFlight = false;
 	let manualRefreshRequested = false;
-	let nextIntervalRefreshAt = immediate ? 0 : Date.now() + intervalMs;
+	// Remounted views keep the cached data's deadline instead of starting a new interval.
+	let nextIntervalRefreshAt = immediate ? 0 : (lastRefreshedAt ?? Date.now()) + intervalMs;
 	let timer: ReturnType<typeof setTimeout> | undefined;
 
 	const hasFocus = () => document.hasFocus() && !document.hidden;
