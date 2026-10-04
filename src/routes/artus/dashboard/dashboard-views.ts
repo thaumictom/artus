@@ -100,6 +100,7 @@ export type DashboardView = (typeof dashboardViews)[number]['value'];
 const unusedViews = [
 	'SyndicateMissions', 'KuvaMissions', 'DarkSectors', 'CommunityCampaign', 'Events',
 	'Arbitration', 'WeeklyChallenges', 'SentientOutposts', 'PersistentEnemies', 'GlobalUpgrades',
+	'Faceoff', 'FlashSales', 'Kinepage', 'Construction',
 ] as const satisfies readonly DashboardView[];
 const unusedViewIds = new Set<string>(unusedViews);
 
@@ -109,24 +110,20 @@ export function isDashboardViewVisible(view: string, showUnused: boolean): boole
 
 const viewGroups = [
 	{
-		label: 'News & Events',
-		views: ['news', 'ClanInitiative'],
+		label: 'General',
+		views: ['WorldCycles', 'news', 'fissures', 'Alerts', 'Invasions'],
 	},
 	{
-		label: 'Missions',
-		views: ['fissures', 'Alerts', 'Invasions'],
+		label: 'Daily & Weekly',
+		views: ['Sortie', 'ArchonHunt', 'Circuit', 'Archimedea', 'Descendia', 'ClanInitiative', 'Calendar'],
 	},
 	{
 		label: 'Challenges',
-		views: ['Sortie', 'ArchonHunt', 'Circuit', 'Archimedea', 'Descendia', 'Nightwave', 'Conclave', 'Faceoff'],
+		views: ['Nightwave', 'Conclave', 'Simaris'],
 	},
 	{
-		label: 'Vendors & Market',
-		views: ['BaroInventory', 'TenetWeapons', 'CodaWeapons', 'Acrithis', 'SteelPath', 'PrimeResurgence', 'DailyDeals', 'FlashSales'],
-	},
-	{
-		label: 'World Activity',
-		views: ['WorldCycles', 'Calendar', 'Kinepage', 'Simaris', 'Construction'],
+		label: 'Vendors',
+		views: ['DailyDeals', 'BaroInventory', 'TenetWeapons', 'CodaWeapons', 'Acrithis', 'SteelPath', 'PrimeResurgence',],
 	},
 	{
 		label: 'Unused',
