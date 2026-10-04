@@ -117,7 +117,7 @@
 	}
 
 	function viewRowClass(value: DashboardView) {
-		return `flex items-center gap-1 hover:bg-surface/50 px-1 border border-transparent rounded w-full min-w-0 h-9 text-base ${
+		return `flex items-center gap-1 hover:bg-surface/50 border border-transparent rounded w-full min-w-0 h-9 text-base ${
 			activeView === value ? 'bg-accent/10 text-accent' : 'bg-background text-foreground'
 		}`;
 	}
@@ -156,13 +156,13 @@
 {/snippet}
 
 {#snippet viewLink(view: (typeof dashboardViews)[number], fromPinned = false)}
-	<div class={viewRowClass(view.value)}>
+	<div class="relative w-full min-w-0">
 		<button
 			type="button"
 			aria-current={activeView === view.value ? 'page' : undefined}
 			title={view.label}
 			onclick={() => selectView(view.value, fromPinned)}
-			class="flex flex-1 items-center gap-1 px-2 rounded focus-visible:outline-2 focus-visible:outline-accent min-w-0 h-7 text-left cursor-pointer"
+			class={`${viewRowClass(view.value)} pl-3 ${editing && !fromPinned ? 'pr-10' : 'pr-3'} focus-visible:outline-2 focus-visible:outline-accent text-left cursor-pointer`}
 		>
 			{@render viewLabel(view)}
 		</button>
@@ -173,7 +173,7 @@
 				title={pins.has(view.value) ? `Unpin ${view.label}` : `Pin ${view.label}`}
 				aria-pressed={pins.has(view.value)}
 				onclick={() => togglePin(view.value)}
-				class="flex justify-center items-center hover:bg-surface rounded focus-visible:outline-2 focus-visible:outline-accent w-7 h-7 text-muted-foreground hover:text-foreground cursor-pointer shrink-0"
+				class="absolute right-1 top-1/2 -translate-y-1/2 flex justify-center items-center hover:bg-surface rounded focus-visible:outline-2 focus-visible:outline-accent w-7 h-7 text-muted-foreground hover:text-foreground cursor-pointer"
 				class:text-accent={pins.has(view.value)}
 			>
 				<Icon icon={pins.has(view.value) ? 'lucide:pin-off' : 'lucide:pin'} class="size-4" />
@@ -247,7 +247,7 @@
 									transitionIn={noTransition}
 									transitionOut={noTransition}
 								>
-									<div class={viewRowClass(view.value)}>
+									<div class={`${viewRowClass(view.value)} px-1`}>
 										<SortableList.ItemHandle
 											class="flex justify-center items-center hover:bg-surface rounded focus-visible:outline-2 focus-visible:outline-accent w-6 h-7 text-muted-foreground cursor-grab active:cursor-grabbing shrink-0"
 										>
