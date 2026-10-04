@@ -214,8 +214,8 @@
 					</span>
 				</div>
 				{#if editing}
-					<p class="px-4 pb-3 text-muted-foreground text-xs">
-						Drag to reorder. Pin views from the navigation below.
+					<p class="px-6 pb-3 text-muted-foreground text-xs">
+						Pin items from the navigation below. Drag pinned items to reorder.
 					</p>
 					<div class="px-3 min-w-0">
 						<SortableList.Root
@@ -269,9 +269,7 @@
 					</ul>
 				{/if}
 				{#if pinnedViews.length === 0}
-					<p class="px-4 py-2.5 text-muted-foreground text-sm">
-						{editing ? 'No pinned views yet.' : 'Use Edit to pin your favorite views.'}
-					</p>
+					<p class="px-6 text-muted-foreground text-sm">No pinned views.</p>
 				{/if}
 				{#if loadError}<p role="alert" class="px-6 py-2.5 text-danger text-sm">{loadError}</p>{/if}
 				{#if saveError}
