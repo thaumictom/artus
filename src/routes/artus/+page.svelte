@@ -2,6 +2,7 @@
 	import { invoke } from '@tauri-apps/api/core';
 	import { listen } from '@tauri-apps/api/event';
 	import { onMount, tick } from 'svelte';
+	import { MediaQuery } from 'svelte/reactivity';
 	import { initializeWorldState, reloadWorldState } from '$lib/worldstate.svelte';
 	import {
 		hasActiveNotificationRules,
@@ -83,6 +84,9 @@
 		},
 	};
 
+	const isNarrowViewport = new MediaQuery('(width < 800px)');
+	let prefersSidebarOpen = $state(true);
+	let isSidebarOpen = $derived(!isNarrowViewport.current && prefersSidebarOpen);
 	let activeSection = $derived(appNavigation.current.section);
 	let dashboardViewLabel = $derived(
 		dashboardViews.find((view) => view.value === appNavigation.current.dashboardView)?.label,
@@ -215,6 +219,7 @@
 
 <div class="flex flex-col bg-surface h-full artus-app-shell">
 	<Header
+		{isSidebarOpen}
 		title={sections[activeSection].label}
 		subtitle={activeSection === 'dashboard' ? dashboardViewLabel : undefined}
 		onOpenNotificationSettings={openNotificationSettings}
@@ -261,7 +266,12 @@
 		value={activeSection}
 		onValueChange={(value) => navigateTo(value)}
 	>
-		<Sidebar {sections}></Sidebar>
+		<Sidebar
+			{sections}
+			{isSidebarOpen}
+			canToggle={!isNarrowViewport.current}
+			onToggle={() => (prefersSidebarOpen = !prefersSidebarOpen)}
+		></Sidebar>
 		{#if activeSection === 'dashboard'}
 			<DashboardMain />
 		{:else}

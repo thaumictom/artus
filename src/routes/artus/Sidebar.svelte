@@ -6,11 +6,16 @@
 
 	let {
 		sections,
+		isSidebarOpen,
+		canToggle,
+		onToggle,
 	}: {
 		sections: Sections;
+		isSidebarOpen: boolean;
+		canToggle: boolean;
+		onToggle: () => void;
 	} = $props();
 
-	let isSidebarOpen = $state(true);
 	const navItemClass = 'group';
 </script>
 
@@ -87,12 +92,13 @@
 			{/if}
 		{/each}
 	</div>
-	<div class="p-3 shrink-0">
+	<div class="p-3 shrink-0 max-[800px]:hidden">
 		<Button.Root
 			class="relative hover:bg-elevated opacity-0 focus-visible:opacity-100 group-focus-within/sidebar:opacity-100 group-hover/sidebar:opacity-100 p-2 rounded focus-visible:outline-2 focus-visible:outline-accent text-muted-foreground hover:text-foreground transition cursor-pointer"
 			aria-label="Toggle sidebar"
 			aria-expanded={isSidebarOpen}
-			onclick={() => (isSidebarOpen = !isSidebarOpen)}
+			disabled={!canToggle}
+			onclick={onToggle}
 		>
 			<Icon
 				icon="material-symbols:left-panel-close-outline-rounded"

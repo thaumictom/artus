@@ -111,7 +111,7 @@ export const config = $state({
 	relic_reward_auto_add: true as boolean,
 	visual_relic_reward_detection: false as boolean,
 	relic_reward_sound: false as boolean,
-	dashboard_view_favorites: [] as string[],
+	dashboard_view_favorites: ['WorldCycles', 'fissures', 'Alerts'] as string[],
 	desktop_notifications_enabled: true as boolean,
 	hide_to_tray_on_close: true as boolean,
 	hide_donate_button: false as boolean,
