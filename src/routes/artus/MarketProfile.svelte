@@ -87,7 +87,7 @@
 		ingame: 'In game',
 	};
 	const dotColor: Record<MarketStatus, string> = {
-		invisible: 'bg-muted-foreground',
+		invisible: 'bg-gray-400',
 		online: 'bg-emerald-500',
 		ingame: 'bg-purple-400',
 	};
@@ -167,10 +167,12 @@
 	>
 		{#snippet trigger()}
 			<Button class="flex items-center gap-1 hover:bg-elevated text-sm" size="small">
-				<Icon icon="material-symbols:account-circle-outline-rounded" class="size-5" />
-				<span
-					class={`rounded-full size-2 ${dotColor[marketAccount.session?.status ?? 'invisible']} ${marketAccount.session?.status === 'ingame' ? 'animate-pulse' : ''}`}
-				></span>
+				<span class="inline-flex relative size-5 market-status-icon shrink-0" aria-hidden="true">
+					<Icon icon="material-symbols:person-outline-rounded" class="size-5" />
+					<span
+						class={`absolute right-0 bottom-px rounded-full size-2.25 ${dotColor[marketAccount.session?.status ?? 'invisible']} ${marketAccount.session?.status === 'ingame' ? 'animate-pulse' : ''}`}
+					></span>
+				</span>
 				<span>{statusLabel[marketAccount.session?.status ?? 'invisible']}</span>
 			</Button>
 		{/snippet}
@@ -368,3 +370,14 @@
 		{#if error}<p role="alert" class="text-danger text-base">{error}</p>{/if}
 	</div>
 </Dialog>
+
+<style>
+	.market-status-icon :global(svg) {
+		/* Cut around the 8px status dot so the gap stays transparent on hover. */
+		mask-image: radial-gradient(
+			circle at calc(100% - 4px) calc(100% - 5px),
+			transparent 7px,
+			#000 7.5px
+		);
+	}
+</style>
