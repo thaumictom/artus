@@ -41,7 +41,7 @@
 	});
 </script>
 
-<div class="flex flex-col gap-4 p-4 border w-full max-w-3xl">
+<div class="page-width flex flex-col gap-4 p-4 border w-full max-w-3xl">
 	<div class="flex items-center gap-4">
 		<img
 			src={`https://warframe.market/static/assets/${itemData.i18n?.en.icon}`}

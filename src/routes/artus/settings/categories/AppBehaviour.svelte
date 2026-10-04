@@ -15,6 +15,19 @@
 <div class="flex flex-col gap-8">
 	<AppThemeSetting />
 	<CommonSetting
+		title="Full-width content"
+		description="Use all available page width instead of centering content within a maximum width."
+	>
+		<Switch
+			id="full-width-content"
+			checked={config.full_width_content}
+			onCheckedChange={(enabled) => {
+				config.full_width_content = enabled;
+				void updateSetting('full_width_content');
+			}}
+		/>
+	</CommonSetting>
+	<CommonSetting
 		title="Keybinds"
 		description="Configure screenshot, navigation, and inventory shortcuts."
 	>

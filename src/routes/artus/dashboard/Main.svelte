@@ -7,6 +7,7 @@
 	import RadioGroup from '$lib/components/RadioGroup.svelte';
 	import { createFocusedRefresh } from '$lib/focused-refresh';
 	import CycleWidgets from './widgets/CycleWidgets.svelte';
+	import WeaponResets from './widgets/WeaponResets.svelte';
 	import DashboardHeader from './widgets/DashboardHeader.svelte';
 	import DashboardViewSettings from './widgets/DashboardViewSettings.svelte';
 	import { dashboardViews, type DashboardView } from './dashboard-views';
@@ -44,6 +45,8 @@
 	let visibleViews = $derived(showAllViews ? expandedViews : collapsedViews);
 	let hasHiddenViews = $derived(collapsedViews.length < dashboardViews.length);
 	let ActiveView = $derived(dashboardViews.find((view) => view.value === activeView)?.component);
+	// Wiki schedules and request limits follow UTC wall time, independent of world-state age.
+	let isWikiView = $derived(activeView === 'TenetWeapons' || activeView === 'CodaWeapons' || activeView === 'Acrithis');
 	let reloadDashboard: () => void | Promise<void> = $state(reloadWorldState);
 	let worldNow = $derived(
 		dashboard.world && dashboard.fetchedAt !== null
@@ -51,9 +54,9 @@
 			: localNow,
 	);
 
-	async function openBaroInventory() {
-		if (!collapsedViews.some((view) => view.value === 'BaroInventory')) showAllViews = true;
-		activeView = 'BaroInventory';
+	async function openDashboardView(target: DashboardView) {
+		if (!collapsedViews.some((view) => view.value === target)) showAllViews = true;
+		activeView = target;
 		await tick();
 		liveViewsElement?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 	}
@@ -98,7 +101,7 @@
 </script>
 
 <div class="flex flex-col items-center gap-4 mx-auto p-8 w-full">
-	<div class="flex flex-col gap-6 w-full max-w-3xl">
+	<div class="page-width flex flex-col gap-6 w-full max-w-3xl">
 		<DashboardHeader
 			loading={dashboard.loading}
 			reloadCoolingDown={isReloadCoolingDown}
@@ -109,9 +112,18 @@
 			onReload={reloadDashboard}
 		/>
 		<div class="bg-surface w-full h-px"></div>
+		<div class="flex flex-col gap-2">
+			{#if dashboard.world}
+				<CycleWidgets world={dashboard.world} now={worldNow} onOpenBaro={() => openDashboardView('BaroInventory')} />
+			{/if}
+			<!-- Fixed UTC rotations use wall time without requesting wiki or world-state data. -->
+			<WeaponResets
+				now={localNow}
+				onOpen={(source) => openDashboardView(source === 'tenet' ? 'TenetWeapons' : 'CodaWeapons')}
+			/>
+		</div>
 		{#if dashboard.world}
 			<div class="flex flex-col gap-12">
-				<CycleWidgets world={dashboard.world} now={worldNow} onOpenBaro={openBaroInventory} />
 				<!-- <div class="bg-surface w-full h-px"></div> -->
 				<div class="flex flex-col gap-4" bind:this={liveViewsElement}>
 					<div class="flex flex-col gap-2">
@@ -147,7 +159,7 @@
 					<div class="bg-surface w-full h-px"></div>
 
 					{#if ActiveView}
-						<ActiveView world={dashboard.world} now={worldNow} />
+						<ActiveView world={dashboard.world} now={isWikiView ? localNow : worldNow} />
 					{/if}
 				</div>
 			</div>

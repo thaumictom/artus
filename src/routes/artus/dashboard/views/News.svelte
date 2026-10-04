@@ -16,7 +16,7 @@
 	}
 </script>
 
-<section class="max-w-3xl">
+<section class="page-width max-w-3xl">
 	<h2 class="mb-3 font-medium text-lg">News</h2>
 	{#if linkError}<p class="mb-3 text-danger text-sm">Could not open the news article.</p>{/if}
 	<ul class="bg-background border border-surface divide-y divide-surface">

@@ -3,7 +3,7 @@
 	import { getCurrentWindow } from '@tauri-apps/api/window';
 	import { Button } from 'bits-ui';
 	import { appNavigation, navigateBack, navigateForward } from '$lib/app-navigation.svelte';
-	import { config } from '$lib/settings.svelte';
+	import { config, updateSetting } from '$lib/settings.svelte';
 	import { windowDrag } from '$lib/window-drag';
 	import NotificationCenter from './NotificationCenter.svelte';
 	import MarketProfile from './MarketProfile.svelte';
@@ -72,6 +72,18 @@
 	</div>
 	<!-- Right controls -->
 	<div class="flex items-center gap-2">
+		<Button.Root
+			aria-label="Full-width content"
+			aria-pressed={config.full_width_content}
+			title={config.full_width_content ? 'Use centered content' : 'Use full-width content'}
+			class="hover:bg-elevated p-1 rounded cursor-pointer focus-visible:outline-2 focus-visible:outline-accent"
+			onclick={() => {
+				config.full_width_content = !config.full_width_content;
+				void updateSetting('full_width_content');
+			}}
+		>
+			<Icon icon={config.full_width_content ? 'lucide:minimize-2' : 'lucide:maximize-2'} class="size-5" />
+		</Button.Root>
 		{#if !config.hide_donate_button}
 			<Button.Root
 				href="https://ko-fi.com/thaumictom"

@@ -38,6 +38,7 @@ export const defaultNotificationRules = (): NotificationRules => ({
 
 type Config = {
 	app_theme: AppTheme;
+	full_width_content: boolean;
 	hotkeys: {
 		[action: string]: string;
 	};
@@ -87,6 +88,7 @@ type Config = {
 // 1. Define the reactive state globally
 export const config = $state({
 	app_theme: 'default' as AppTheme,
+	full_width_content: false as boolean,
 	hotkeys: {
 		screenshot: 'control+Home',
 		screenshot_add_mastery: 'alt+control+Home',

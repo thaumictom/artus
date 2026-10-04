@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { OverlayScrollbarsComponent } from 'overlayscrollbars-svelte';
 	import type { Snippet } from 'svelte';
+	import { config } from '$lib/settings.svelte';
 
 	const scrollbarTheme = 'os-theme-light';
 
@@ -18,9 +19,16 @@
 			options={{ scrollbars: { theme: scrollbarTheme, autoHide: 'move' } }}
 			class="w-full h-full"
 		>
-			<div class="pr-4 min-h-full">
+			<div class="pr-4 min-h-full" class:full-width={config.full_width_content}>
 				{@render children?.()}
 			</div>
 		</OverlayScrollbarsComponent>
 	</div>
 </div>
+
+<style>
+	/* Only page content opts in; controls, skeletons, and popups keep their own limits. */
+	.full-width :global(.page-width) {
+		max-width: none;
+	}
+</style>

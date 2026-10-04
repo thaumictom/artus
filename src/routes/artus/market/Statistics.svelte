@@ -107,7 +107,7 @@
 	});
 </script>
 
-<div class="flex items-center gap-4 w-full max-w-3xl">
+<div class="page-width flex items-center gap-4 w-full max-w-3xl">
 	{#if isGrouped}
 		<Select
 			type="single"
@@ -149,6 +149,6 @@
 		<div class="bg-surface w-full h-px"></div>
 	{/if}
 </div>
-<div class="w-full max-w-5xl">
+<div class="page-width w-full max-w-5xl">
 	<Chart data={chartData} hourly={dataRange === 'chart-48hours'} />
 </div>

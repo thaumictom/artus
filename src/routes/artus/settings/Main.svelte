@@ -29,7 +29,7 @@
 	});
 </script>
 
-<div class="flex mx-auto p-8 w-full max-w-2xl">
+<div class="page-width flex mx-auto p-8 w-full max-w-2xl">
 	<div class="flex-1">
 		{#each components as { name, component: Component }, i}
 			<h1 class="mb-8 font-bold text-lg scroll-mt-8" id={kebabCase(name)}>

@@ -28,6 +28,9 @@ import DarkSectors from './views/DarkSectors.svelte';
 import Kinepage from './views/Kinepage.svelte';
 import Faceoff from './views/Faceoff.svelte';
 import BaroInventory from './views/BaroInventory.svelte';
+import TenetWeapons from './views/TenetWeapons.svelte';
+import CodaWeapons from './views/CodaWeapons.svelte';
+import Acrithis from './views/Acrithis.svelte';
 import SteelPath from './views/SteelPath.svelte';
 import PrimeResurgence from './views/PrimeResurgence.svelte';
 import ClanInitiative from './views/ClanInitiative.svelte';
@@ -37,6 +40,9 @@ export const dashboardViews = [
 	{ value: 'fissures', label: 'Fissure Missions', component: FissureMissions },
 	{ value: 'news', label: 'News', component: News },
 	{ value: 'BaroInventory', label: "Baro Ki'Teer", component: BaroInventory },
+	{ value: 'TenetWeapons', label: 'Tenet Weapons', component: TenetWeapons },
+	{ value: 'CodaWeapons', label: 'Coda Weapons', component: CodaWeapons },
+	{ value: 'Acrithis', label: 'Acrithis', component: Acrithis },
 	{ value: 'Alerts', label: "Alerts", component: Alerts },
 	{ value: 'Invasions', label: "Invasions", component: Invasions },
 	{ value: 'Sortie', label: "Sortie", component: Sortie },

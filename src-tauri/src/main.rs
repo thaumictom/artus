@@ -27,6 +27,7 @@ mod updater;
 mod window_size;
 mod window_watcher;
 mod worldstate;
+mod wiki_offerings;
 
 #[cfg(target_os = "linux")]
 use std::env;
@@ -84,6 +85,7 @@ fn main() {
             market::get_ocr_market_items,
             api::refresh_api_catalogs,
             api::get_api_catalogs_last_fetched,
+            wiki_offerings::get_wiki_offerings,
             market::get_market_orders,
             market::get_market_statistics,
             market_account::market_login,

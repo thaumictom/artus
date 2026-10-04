@@ -211,7 +211,7 @@
 </script>
 
 <div class="flex flex-col items-center gap-4 mx-auto p-8 w-full">
-	<div class="flex flex-col gap-1 w-full max-w-3xl">
+	<div class="page-width flex flex-col gap-1 w-full max-w-3xl">
 		<div class="flex justify-between items-center gap-3">
 			<h1>View prices of any item on warframe.market</h1>
 		</div>
@@ -256,10 +256,10 @@
 	{#if searchError}
 		<p role="alert" class="text-danger text-sm">{searchError}</p>
 	{/if}
-	<div class="bg-surface my-1 w-full max-w-3xl h-px" aria-hidden="true"></div>
+	<div class="page-width bg-surface my-1 w-full max-w-3xl h-px" aria-hidden="true"></div>
 	{#if isSearching || itemData}
 		{#if isSearching}
-			<div role="status" aria-label="Loading market item" class="flex flex-col gap-4 w-full max-w-3xl">
+			<div role="status" aria-label="Loading market item" class="page-width flex flex-col gap-4 w-full max-w-3xl">
 				<div class="flex items-center gap-4 p-4 border">
 					<Skeleton class="size-20 shrink-0" />
 					<div class="flex flex-col gap-3 w-full">
@@ -295,7 +295,7 @@
 			/>
 		{/if}
 	{:else}
-		<section class="flex flex-col gap-3 w-full max-w-3xl" aria-labelledby="most-traded-heading">
+		<section class="page-width flex flex-col gap-3 w-full max-w-3xl" aria-labelledby="most-traded-heading">
 			<div class="flex justify-between items-baseline gap-4">
 				<h2 id="most-traded-heading">Most traded items</h2>
 				<span class="text-muted-foreground text-xs">Sorted by liquidity</span>

@@ -146,7 +146,7 @@
 </script>
 
 <div class="flex flex-col items-center gap-4 mx-auto p-8 w-full">
-	<div class="flex flex-col gap-6 w-full max-w-5xl">
+	<div class="page-width flex flex-col gap-6 w-full max-w-5xl">
 		<TrackedMastery />
 		{#if mastery.loading}
 			<div role="status" aria-label="Loading mastery items" class="flex flex-col gap-4">
