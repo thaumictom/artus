@@ -2,11 +2,12 @@
 	import type { Snippet } from 'svelte';
 	import { Tooltip, type WithoutChildren } from 'bits-ui';
 	import { cn } from '$lib/utils';
-	import { fly, fade } from 'svelte/transition';
 
 	let {
 		children,
+		trigger,
 		content,
+		disabled = false,
 		delayDuration = 200,
 		side = 'top',
 		align = 'center',
@@ -14,8 +15,10 @@
 		triggerProps,
 		triggerTag = 'button',
 	}: {
-		children: Snippet;
+		children?: Snippet;
+		trigger?: NonNullable<Tooltip.TriggerProps['child']>;
 		content: Snippet;
+		disabled?: boolean;
 		delayDuration?: number;
 		side?: 'top' | 'right' | 'bottom' | 'left';
 		align?: 'start' | 'center' | 'end';
@@ -26,7 +29,7 @@
 </script>
 
 <Tooltip.Provider {delayDuration} skipDelayDuration={100}>
-	<Tooltip.Root>
+	<Tooltip.Root {disabled}>
 		<Tooltip.Trigger
 			{...triggerProps}
 			class={cn(
@@ -36,11 +39,14 @@
 			)}
 		>
 			{#snippet child({ props })}
-				{#if triggerTag === 'div'}
+				{#if trigger}
+					<!-- Compose with an existing control without adding another trigger element. -->
+					{@render trigger({ props })}
+				{:else if triggerTag === 'div'}
 					<!-- svelte-ignore a11y_no_noninteractive_tabindex (Keyboard users can focus the container to read its tooltip.) -->
-					<div {...props} tabindex="0">{@render children()}</div>
+					<div {...props} tabindex="0">{@render children?.()}</div>
 				{:else}
-					<button {...props}>{@render children()}</button>
+					<button {...props}>{@render children?.()}</button>
 				{/if}
 			{/snippet}
 		</Tooltip.Trigger>

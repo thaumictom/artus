@@ -68,6 +68,9 @@ importers:
       fuzzball:
         specifier: ^2.2.3
         version: 2.2.3
+      gsap:
+        specifier: ^3.15.0
+        version: 3.15.0
       layerchart:
         specifier: 2.0.0-next.59
         version: 2.0.0-next.59(@sveltejs/kit@2.52.0(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.51.2)(vite@6.4.1(@types/node@26.6.3)(jiti@2.6.1)(lightningcss@1.32.0)))(svelte@5.51.2)(typescript@5.6.3)(vite@6.4.1(@types/node@26.6.3)(jiti@2.6.1)(lightningcss@1.32.0)))(svelte@5.51.2)(zod@4.3.6)
@@ -1283,6 +1286,9 @@ packages:
 
   graceful-fs@4.2.11:
     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
+
+  gsap@3.15.0:
+    resolution: {integrity: sha512-dMW4CWBTUK1AEEDeZc1g4xpPGIrSf9fJF960qbTZmN/QwZIWY5wgliS6JWl9/25fpTGJrMRtSjGtOmPnfjZB+A==}
 
   has-property-descriptors@1.0.2:
     resolution: {integrity: sha512-55JNKuIW+vq4Ke1BjOTjM2YctQIvCT7GFzHwmfZPGo5wnrgkid0YQtnAleFSqumZm4az3n2BS+erby5ipJdgrg==}
@@ -3009,6 +3015,8 @@ snapshots:
   gopd@1.2.0: {}
 
   graceful-fs@4.2.11: {}
+
+  gsap@3.15.0: {}
 
   has-property-descriptors@1.0.2:
     dependencies:

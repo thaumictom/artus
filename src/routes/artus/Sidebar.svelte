@@ -1,9 +1,11 @@
 <script lang="ts">
-	import { Button, Tabs, Tooltip } from 'bits-ui';
+	import { Button, Tabs } from 'bits-ui';
+	import Tooltip from '$lib/components/Tooltip.svelte';
 	import Icon from '@iconify/svelte';
 	import type { Sections } from '$lib/types';
 	import { marketAccount } from '$lib/market-account.svelte';
-	import { is } from 'zod/v4/locales';
+	import { gsap } from 'gsap';
+	import { CustomEase } from 'gsap/CustomEase';
 
 	let {
 		sections,
@@ -18,13 +20,94 @@
 	} = $props();
 
 	const navItemClass = 'group';
+	gsap.registerPlugin(CustomEase);
+	// This curve has a vertical tangent at its midpoint.
+	const pillEase = CustomEase.create('sidebarPill', '1,0,0,1');
+
+	function animateIndicator(node: HTMLDivElement) {
+		const pill = node.querySelector<HTMLElement>('[data-active-indicator]')!;
+		const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+		let targetY: number | null = null;
+		let animation: gsap.core.Timeline | undefined;
+		let playback: gsap.core.Tween | undefined;
+		let frame = 0;
+
+		function positionIndicator() {
+			const marker = node.querySelector<HTMLElement>(
+				'[data-state="active"] [data-sidebar-indicator]',
+			);
+			if (!marker) {
+				playback?.kill();
+				animation?.kill();
+				gsap.set(pill, { opacity: 0 });
+				targetY = null;
+				return;
+			}
+
+			const y = marker.getBoundingClientRect().top - node.getBoundingClientRect().top;
+			if (y === targetY && !reducedMotion.matches) return;
+			playback?.kill();
+			animation?.kill();
+			if (targetY === null || reducedMotion.matches) {
+				gsap.set(pill, { y, height: 16, opacity: 1 });
+			} else {
+				// Stretch during travel, then settle into the selected tab's short pill.
+				const currentY = Number(gsap.getProperty(pill, 'y'));
+				const stretch = Math.min(Math.abs(y - currentY) * 0.3, 16);
+				animation = gsap
+					.timeline({ paused: true, defaults: { ease: 'none' } })
+					.to(pill, {
+						y: (currentY + y) / 2 - stretch / 2,
+						height: 16 + stretch,
+						duration: 0.14,
+					})
+					.to(pill, { y, height: 16, duration: 0.24 });
+				// Ease the playhead once across both phases to avoid a midpoint pause.
+				playback = animation.tweenTo(animation.duration(), { ease: pillEase });
+			}
+			targetY = y;
+		}
+
+		function schedulePosition() {
+			cancelAnimationFrame(frame);
+			frame = requestAnimationFrame(positionIndicator);
+		}
+
+		// Follow the tab state for clicks, keyboard navigation, and external navigation.
+		const observer = new MutationObserver(schedulePosition);
+		observer.observe(node, {
+			subtree: true,
+			childList: true,
+			attributes: true,
+			attributeFilter: ['data-state'],
+		});
+		const resizeObserver = new ResizeObserver(schedulePosition);
+		resizeObserver.observe(node);
+		reducedMotion.addEventListener('change', schedulePosition);
+		schedulePosition();
+
+		return {
+			destroy() {
+				cancelAnimationFrame(frame);
+				observer.disconnect();
+				resizeObserver.disconnect();
+				reducedMotion.removeEventListener('change', schedulePosition);
+				playback?.kill();
+				animation?.kill();
+			},
+		};
+	}
 </script>
 
 {#snippet navLabel(section: Sections[string])}
 	<div class="px-2.5 w-full h-full group-data-[state=active]:text-accent cursor-pointer">
-		<div class="flex items-center gap-2.5 group-data-[state=active]:bg-accent/10 py-2.5 rounded-md">
+		<div
+			class="flex items-center gap-2.5 hover:bg-elevated/50 group-data-[state=active]:bg-accent/10! py-2.5 rounded-md"
+		>
 			<span
-				class="group-data-[state=active]:bg-accent group-hover:bg-accent -ml-px rounded-full w-0.5 h-4"
+				data-sidebar-indicator
+				aria-hidden="true"
+				class="group-data-[state=active]:bg-transparent -ml-px rounded-full w-0.5 h-4 shrink-0"
 			></span>
 			<Icon icon={section.icon} class="size-5 shrink-0" />
 			<span
@@ -45,53 +128,49 @@
 	aria-label="Main navigation"
 	class={`group/sidebar flex flex-col justify-between bg-surface border-border-secondary h-full min-h-0 shrink-0 transition-[width] duration-300 ease-in-out ${isSidebarOpen ? 'w-48' : 'w-16'}`}
 >
-	<div class="flex flex-col min-h-0 overflow-x-hidden overflow-y-auto">
-		{#each Object.entries(sections) as [id, section]}
-			{#if id === 'listings' && !marketAccount.session}
-				<Tooltip.Provider delayDuration={200}>
-					<Tooltip.Root>
-						<Tooltip.Trigger>
-							{#snippet child({ props })}
-								<span
-									{...props}
-									class="block w-full cursor-not-allowed"
-									aria-label="Listings unavailable. Log in to warframe.market first."
-								>
-									<Tabs.Trigger
-										value={id}
-										disabled
-										aria-label={section.label}
-										class={`${navItemClass} opacity-40 pointer-events-none`}
-									>
-										{@render navLabel(section)}
-									</Tabs.Trigger>
-								</span>
-							{/snippet}
-						</Tooltip.Trigger>
-						<Tooltip.Portal>
-							<Tooltip.Content
-								side="right"
-								sideOffset={8}
-								collisionPadding={12}
-								class="z-100 bg-surface shadow-xl p-3 border border-border max-w-64 text-surface-foreground text-base"
+	<div class="flex flex-co min-h-0 overflow-x-hidden overflow-y-auto">
+		<div class="relative flex flex-col gap-y-0.5 w-full shrink-0" use:animateIndicator>
+			<span
+				data-active-indicator
+				aria-hidden="true"
+				class="top-0 left-[9px] z-10 absolute bg-accent opacity-0 rounded-full w-0.5 h-4 pointer-events-none"
+			></span>
+			{#each Object.entries(sections) as [id, section]}
+				{@const unavailable = id === 'listings' && !marketAccount.session}
+				<Tooltip side="right" disabled={isSidebarOpen && !unavailable}>
+					{#snippet trigger({ props })}
+						{#if unavailable}
+							<span
+								{...props}
+								class={`${props.class ?? ''} block w-full cursor-not-allowed`}
+								aria-label="Listings unavailable. Log in to warframe.market first."
 							>
-								Log in to warframe.market first to view your listings.
-								<Tooltip.Arrow class="text-border" />
-							</Tooltip.Content>
-						</Tooltip.Portal>
-					</Tooltip.Root>
-				</Tooltip.Provider>
-			{:else}
-				<Tabs.Trigger
-					value={id}
-					aria-label={section.label}
-					title={!isSidebarOpen ? section.label : undefined}
-					class={navItemClass}
-				>
-					{@render navLabel(section)}
-				</Tabs.Trigger>
-			{/if}
-		{/each}
+								<Tabs.Trigger
+									value={id}
+									disabled
+									aria-label={section.label}
+									class={`${navItemClass} opacity-40 pointer-events-none`}
+								>
+									{@render navLabel(section)}
+								</Tabs.Trigger>
+							</span>
+						{:else}
+							<Tabs.Trigger
+								{...props}
+								value={id}
+								aria-label={section.label}
+								class={`${props.class ?? ''} ${navItemClass}`}
+							>
+								{@render navLabel(section)}
+							</Tabs.Trigger>
+						{/if}
+					{/snippet}
+					{#snippet content()}
+						{section.label}{#if unavailable}: Log in to warframe.market first to view your listings.{/if}
+					{/snippet}
+				</Tooltip>
+			{/each}
+		</div>
 	</div>
 	<div class="max-[800px]:hidden p-3 shrink-0">
 		<Button.Root
