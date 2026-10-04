@@ -25,6 +25,7 @@
 	// import SiteHeader from './SiteHeader.svelte';
 	import SettingsMain from './settings/Main.svelte';
 	import DashboardMain from './dashboard/Main.svelte';
+	import { dashboardViews } from './dashboard/dashboard-views';
 	import InventoryTab from './inventory/Main.svelte';
 	import MarketMain from './market/Main.svelte';
 	import Listings from './listings/Main.svelte';
@@ -66,7 +67,7 @@
 			component: InventoryTab,
 		},
 		market: {
-			label: 'Browse Market',
+			label: 'Market',
 			icon: 'material-symbols:shopping-cart-outline-rounded',
 			component: MarketMain,
 		},
@@ -83,6 +84,9 @@
 	};
 
 	let activeSection = $derived(appNavigation.current.section);
+	let dashboardViewLabel = $derived(
+		dashboardViews.find((view) => view.value === appNavigation.current.dashboardView)?.label,
+	);
 	let handledMarketNavigationId: number | null = null;
 	const CurrentComponent = $derived.by(() => sections[activeSection].component);
 
@@ -212,6 +216,7 @@
 <div class="flex flex-col bg-surface h-full artus-app-shell">
 	<Header
 		title={sections[activeSection].label}
+		subtitle={activeSection === 'dashboard' ? dashboardViewLabel : undefined}
 		onOpenNotificationSettings={openNotificationSettings}
 	></Header>
 	<AlertDialog bind:open={showUpdatePrompt}>
@@ -256,19 +261,21 @@
 		value={activeSection}
 		onValueChange={(value) => navigateTo(value)}
 	>
-		<div>
-			<Sidebar {sections}></Sidebar>
-		</div>
-		<MainContent>
-			{#if activeSection === 'mastery'}
-				<MasteryMain onOpenMarket={openMarket} />
-			{:else if activeSection === 'inventory'}
-				<InventoryTab onOpenMarket={openMarket} />
-			{:else if activeSection === 'listings'}
-				<Listings onOpenMarket={openMarket} />
-			{:else}
-				<CurrentComponent />
-			{/if}
-		</MainContent>
+		<Sidebar {sections}></Sidebar>
+		{#if activeSection === 'dashboard'}
+			<DashboardMain />
+		{:else}
+			<MainContent>
+				{#if activeSection === 'mastery'}
+					<MasteryMain onOpenMarket={openMarket} />
+				{:else if activeSection === 'inventory'}
+					<InventoryTab onOpenMarket={openMarket} />
+				{:else if activeSection === 'listings'}
+					<Listings onOpenMarket={openMarket} />
+				{:else}
+					<CurrentComponent />
+				{/if}
+			</MainContent>
+		{/if}
 	</Tabs.Root>
 </div>

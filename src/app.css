@@ -123,6 +123,52 @@ body {
 	scroll-behavior: smooth;
 }
 
+.os-scrollbar.os-theme-light,
+.os-scrollbar.os-theme-dark {
+	--os-handle-perpendicular-size: 50%;
+	--os-handle-perpendicular-size-hover: 50%;
+	--os-handle-perpendicular-size-active: 50%;
+	/* Restore the 3px removed from the handle to its invisible drag area. */
+	--os-handle-interactive-area-offset: 7px;
+}
+
+.os-scrollbar.os-scrollbar-vertical.os-theme-light,
+.os-scrollbar.os-scrollbar-vertical.os-theme-dark {
+	/* Add 2px at each end to the theme's existing 2px axis padding. */
+	--os-padding-axis: 4px;
+}
+
+/* Native scrollbars keep a full-width hit area around the thinner painted thumb. */
+::-webkit-scrollbar {
+	width: 16px;
+	height: 16px;
+}
+
+::-webkit-scrollbar-thumb {
+	border: 4px solid transparent;
+	border-radius: 16px;
+	background-color: rgb(255 255 255 / 44%);
+	background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background-color: rgb(255 255 255 / 55%);
+}
+
+::-webkit-scrollbar-thumb:active {
+	background-color: rgb(255 255 255 / 66%);
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+	background: transparent;
+}
+
+::-webkit-scrollbar-track:vertical {
+	margin-top: 2px;
+	margin-bottom: 2px;
+}
+
 /* Alerts */
 .artus-app-shell {
 	border-radius: 0;

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import Button from '$lib/components/Button.svelte';
 	import { timeAgo } from '$lib/date';
 	import Icon from '@iconify/svelte';
@@ -11,6 +12,7 @@
 		fetchedAt,
 		now,
 		onReload,
+		children,
 	}: {
 		loading: boolean;
 		reloadCoolingDown: boolean;
@@ -19,28 +21,34 @@
 		fetchedAt: number | null;
 		now: number;
 		onReload: () => void | Promise<void>;
+		children?: Snippet;
 	} = $props();
 </script>
 
-<div class="flex justify-between items-center gap-3">
-	<Button
-		onclick={onReload}
-		disabled={loading || reloadCoolingDown}
-		class="flex items-center gap-1 text-base"
-	>
-		<Icon icon="material-symbols:refresh" class={loading ? 'size-4 animate-spin' : 'size-4'} />
-		{loading ? 'Refreshing...' : 'Reload world state'}
-	</Button>
-	<div class="text-right leading-0">
+<div class="flex flex-col gap-3">
+	{#if error}<p class="text-danger text-sm wrap-break-word">{error}</p>{/if}
+	<div class="flex flex-col text-muted-foreground text-sm">
 		{#if fetchedAt !== null}
-			<div class="text-muted-foreground text-base">fetched {timeAgo(fetchedAt, now)}</div>
+			<div>fetched {timeAgo(fetchedAt, now)}</div>
 		{/if}
 		{#if worldTimestamp}
-			<time class="text-muted-foreground text-sm" datetime={worldTimestamp.toISOString()}>
+			<time datetime={worldTimestamp.toISOString()} class="text-xs">
 				snapshot: {worldTimestamp.toLocaleTimeString()}
 			</time>
 		{/if}
 	</div>
+	<div class="flex items-stretch gap-2">
+		<Button
+			onclick={onReload}
+			disabled={loading || reloadCoolingDown}
+			class="flex flex-1 justify-center items-center gap-1 px-2 min-w-0 text-sm"
+		>
+			<Icon
+				icon="material-symbols:refresh"
+				class={loading ? 'size-4 shrink-0 animate-spin' : 'size-4 shrink-0'}
+			/>
+			{loading ? 'Refreshing...' : 'Reload state'}
+		</Button>
+		{@render children?.()}
+	</div>
 </div>
-
-{#if error}<p class="text-danger text-base">{error}</p>{/if}

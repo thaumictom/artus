@@ -21,7 +21,7 @@
 	} from '$lib/wiki-offerings';
 	import type { DashboardViewProps } from './view-types';
 
-	let { source, now }: DashboardViewProps & { source: WikiSource } = $props();
+	let { source, now }: Pick<DashboardViewProps, 'world' | 'now'> & { source: WikiSource } = $props();
 	let data = $state<WikiOfferings | null>(null);
 	let loading = $state(false);
 	let error = $state('');

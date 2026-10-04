@@ -1,20 +1,19 @@
 <script lang="ts">
 	import { formatTimeLeft } from '$lib/date';
 	import RadioGroup from '$lib/components/RadioGroup.svelte';
+	import ToggleGroup from '$lib/components/ToggleGroup.svelte';
 	import type { DashboardViewProps } from './view-types';
 
 	const fissureFilterOptions = [
-		{ value: 'all', label: 'All' },
-		{ value: 'noVoidStorms', label: 'No Void Storms' },
 		{ value: 'normal', label: 'Normal' },
 		{ value: 'steelPath', label: 'Steel Path' },
-		{ value: 'voidStorm', label: 'Void Storm' },
+		{ value: 'voidStorm', label: 'Void Storms' },
 	] as const;
 	type FissureFilter = (typeof fissureFilterOptions)[number]['value'];
 
 	let { world, now }: DashboardViewProps = $props();
 	let fissures = $derived(world.fissures);
-	let fissureFilter = $state<FissureFilter>('noVoidStorms');
+	let fissureFilter = $state<FissureFilter[]>(['normal', 'steelPath']);
 	let eraFilter = $state('all');
 	let activeEras = $derived.by(() => {
 		const eras = new Map<string, number>();
@@ -34,11 +33,8 @@
 		fissures
 			.filter((fissure) => fissure.expiry && fissure.expiry.getTime() > now)
 			.filter((fissure) => {
-				if (fissureFilter === 'noVoidStorms') return !fissure.isStorm;
-				if (fissureFilter === 'normal') return !fissure.isHard && !fissure.isStorm;
-				if (fissureFilter === 'steelPath') return fissure.isHard;
-				if (fissureFilter === 'voidStorm') return fissure.isStorm;
-				return true;
+				const category = fissure.isStorm ? 'voidStorm' : fissure.isHard ? 'steelPath' : 'normal';
+				return fissureFilter.includes(category);
 			})
 			.filter((fissure) => eraFilter === 'all' || fissure.tier === eraFilter)
 			.sort(
@@ -73,7 +69,7 @@
 	<div class="flex flex-wrap items-center gap-2">
 		<div class="flex flex-col gap-1">
 			<div class="font-semibold text-muted-foreground text-sm">Mission category</div>
-			<RadioGroup
+			<ToggleGroup
 				label="Filter fissure mission type"
 				options={fissureFilterOptions}
 				bind:value={fissureFilter}

@@ -1,4 +1,7 @@
 import type { Component } from 'svelte';
+import type { WorldState } from 'warframe-worldstate-parser';
+import { isBaroActive } from './baro';
+import { isCurrent } from './views/view-types';
 import type { DashboardViewProps } from './views/view-types';
 import FissureMissions from './views/FissureMissions.svelte';
 import News from './views/News.svelte';
@@ -35,15 +38,23 @@ import SteelPath from './views/SteelPath.svelte';
 import PrimeResurgence from './views/PrimeResurgence.svelte';
 import ClanInitiative from './views/ClanInitiative.svelte';
 import CommunityCampaign from './views/CommunityCampaign.svelte';
+import WorldCycles from './views/WorldCycles.svelte';
 
 export const dashboardViews = [
+	{ value: 'WorldCycles', label: 'World cycles', component: WorldCycles },
 	{ value: 'fissures', label: 'Fissure Missions', component: FissureMissions },
 	{ value: 'news', label: 'News', component: News },
-	{ value: 'BaroInventory', label: "Baro Ki'Teer", component: BaroInventory },
+	{
+		value: 'BaroInventory', label: "Baro Ki'Teer", component: BaroInventory,
+		statusLabel: (world, now) => isBaroActive(world.voidTrader, now) ? 'Active' : undefined,
+	},
 	{ value: 'TenetWeapons', label: 'Tenet Weapons', component: TenetWeapons },
 	{ value: 'CodaWeapons', label: 'Coda Weapons', component: CodaWeapons },
 	{ value: 'Acrithis', label: 'Acrithis', component: Acrithis },
-	{ value: 'Alerts', label: "Alerts", component: Alerts },
+	{
+		value: 'Alerts', label: "Alerts", component: Alerts,
+		itemCount: (world, now) => (world.alerts ?? []).filter((item) => isCurrent(item, now)).length,
+	},
 	{ value: 'Invasions', label: "Invasions", component: Invasions },
 	{ value: 'Sortie', label: "Sortie", component: Sortie },
 	{ value: 'ArchonHunt', label: "Archon Hunt", component: ArchonHunt },
@@ -72,11 +83,21 @@ export const dashboardViews = [
 	{ value: 'PrimeResurgence', label: "Prime Resurgence", component: PrimeResurgence },
 	{ value: 'ClanInitiative', label: "Clan Initiative", component: ClanInitiative },
 	{ value: 'CommunityCampaign', label: "Community Campaign", component: CommunityCampaign },
-] as const satisfies readonly { value: string; label: string; component: Component<DashboardViewProps> }[];
+] as const satisfies readonly {
+	value: string;
+	label: string;
+	component: Component<DashboardViewProps>;
+	itemCount?: (world: WorldState, now: number) => number;
+	statusLabel?: (world: WorldState, now: number) => string | undefined;
+}[];
 
 export type DashboardView = (typeof dashboardViews)[number]['value'];
 
 const viewGroups = [
+	{
+		label: 'News & Events',
+		views: ['news', 'Events', 'Kinepage', 'ClanInitiative', 'CommunityCampaign'],
+	},
 	{
 		label: 'Missions',
 		views: ['fissures', 'Alerts', 'Invasions', 'SyndicateMissions', 'KuvaMissions', 'DarkSectors'],
@@ -91,12 +112,9 @@ const viewGroups = [
 	},
 	{
 		label: 'World Activity',
-		views: ['Calendar', 'SentientOutposts', 'Simaris', 'PersistentEnemies', 'Construction', 'GlobalUpgrades'],
+		views: ['WorldCycles', 'Calendar', 'SentientOutposts', 'Simaris', 'PersistentEnemies', 'Construction', 'GlobalUpgrades'],
 	},
-	{
-		label: 'News & Events',
-		views: ['news', 'Events', 'Kinepage', 'ClanInitiative', 'CommunityCampaign'],
-	},
+
 ] satisfies { label: string; views: DashboardView[] }[];
 
 export const dashboardViewGroups = viewGroups.map((group) => ({

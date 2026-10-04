@@ -1,7 +1,10 @@
 import type { Reward, WorldState } from 'warframe-worldstate-parser';
+import type { DashboardView } from '../dashboard-views';
 export type DashboardViewProps = {
 	world: WorldState;
 	now: number;
+	localNow: number;
+	onSelect: (view: DashboardView) => void;
 };
 export type ViewRow = {
 	title: string;

@@ -207,11 +207,14 @@ pub async fn get_wiki_offerings(app: AppHandle, source: String) -> AppResult<Wik
         .copied()
         .filter(|attempt| attempt.div_euclid(DAY) >= now.div_euclid(DAY))
     {
-        return Ok(cache.get(&source).cloned().unwrap_or_else(|| WikiOfferings {
-            attempted_at: Some(attempt),
-            error: Some("This page was already requested today. Wiki responses are kept for this app session only; reopen this view after midnight UTC to fetch again.".into()),
-            ..Default::default()
-        }));
+        return Ok(cache
+            .get(&source)
+            .cloned()
+            .unwrap_or_else(|| WikiOfferings {
+                attempted_at: Some(attempt),
+                error: Some("There was a problem loading the wiki offerings.".into()),
+                ..Default::default()
+            }));
     }
 
     // Record before requesting: HTTP failures, parse failures and restarts must not bypass the daily limit.

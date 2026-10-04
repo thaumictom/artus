@@ -37,21 +37,22 @@
 
 	let {
 		title = 'Artus',
+		subtitle,
 		onOpenNotificationSettings,
-	}: { title?: string; onOpenNotificationSettings?: () => void } = $props();
+	}: { title?: string; subtitle?: string; onOpenNotificationSettings?: () => void } = $props();
 </script>
 
 <header class="flex justify-between items-center w-full" use:windowDrag>
 	<!-- Left title -->
 	<div class="flex items-center select-none">
-		<div class="flex items-center w-44 shrink-0">
-			<div class="flex items-center gap-1 px-2">
+		<div class="flex items-center w-48 shrink-0">
+			<div class="flex items-center pl-1.5">
 				<Button.Root
 					aria-label="Go back"
 					title="Back"
 					onclick={navigateBack}
 					disabled={appNavigation.index === 0}
-					class="hover:bg-elevated disabled:opacity-40 p-1 rounded cursor-pointer disabled:cursor-default"
+					class="hover:bg-elevated disabled:opacity-40 p-0.75 rounded cursor-pointer disabled:cursor-default"
 				>
 					<Icon icon="material-symbols:arrow-back-rounded" class="size-5" />
 				</Button.Root>
@@ -60,17 +61,21 @@
 					title="Forward"
 					onclick={navigateForward}
 					disabled={appNavigation.index === appNavigation.entries.length - 1}
-					class="hover:bg-elevated disabled:opacity-40 p-1 rounded cursor-pointer disabled:cursor-default"
+					class="hover:bg-elevated disabled:opacity-40 p-0.75 rounded cursor-pointer disabled:cursor-default"
 				>
 					<Icon icon="material-symbols:arrow-forward-rounded" class="size-5" />
 				</Button.Root>
 			</div>
-			<div class="px-2 font-expanded font-black text-accent text-trim text-center uppercase">
+			<div class="flex-1 pr-1 font-expanded font-black text-accent text-sm text-center uppercase">
 				Artus
 			</div>
 		</div>
-		<div class="bg-muted rounded-full w-0.5 h-4 text-sm"></div>
+		<div class="bg-muted -ml-px rounded-full w-0.5 h-4 text-sm rotate-12"></div>
 		<div class="px-4">{title}</div>
+		{#if subtitle}
+			<div class="bg-muted -ml-px rounded-full w-0.5 h-4 text-sm rotate-12"></div>
+			<div class="px-4">{subtitle}</div>
+		{/if}
 	</div>
 	<!-- Right controls -->
 	<div class="flex items-center gap-2">

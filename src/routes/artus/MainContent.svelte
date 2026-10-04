@@ -8,7 +8,7 @@
 	let { children }: { children: Snippet } = $props();
 </script>
 
-<div class="relative flex-1">
+<div class="relative flex-1 min-w-0 min-h-0">
 	<div
 		class="right-4 left-0 absolute inset-y-0 bg-background rounded-t-md pointer-events-none"
 	></div>

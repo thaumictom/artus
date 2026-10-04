@@ -7,8 +7,8 @@ use tauri_plugin_store::StoreExt;
 use crate::state::AppState;
 
 const STORE_PATH: &str = "window-state.json";
-const MIN_WIDTH: f64 = 550.0;
-const MIN_HEIGHT: f64 = 350.0;
+const MIN_WIDTH: f64 = 720.0;
+const MIN_HEIGHT: f64 = 480.0;
 
 #[derive(Deserialize)]
 struct SavedSize {

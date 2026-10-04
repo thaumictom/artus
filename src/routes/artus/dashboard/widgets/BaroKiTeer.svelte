@@ -42,7 +42,7 @@
 					class="inline-flex items-center gap-1 border-0 text-sm"
 					onclick={onOpenInventory}
 				>
-					View inventory <Icon icon="lucide:arrow-right" class="size-3.5" aria-hidden="true" />
+					View <Icon icon="lucide:arrow-right" class="size-3.5" aria-hidden="true" />
 				</Button>
 			{:else if arrival}
 				<span>
