@@ -1,6 +1,6 @@
-//! On-demand wiki snapshots. Only the request ledger is persisted, never wiki responses.
+//! Rotation-aware wiki snapshots, persisted across app restarts.
 
-use std::{collections::HashMap, time::Duration};
+use std::{collections::HashMap, path::Path, time::Duration};
 
 use chrono::{NaiveDate, NaiveDateTime, TimeZone, Utc};
 use scraper::{ElementRef, Html, Selector};
@@ -13,8 +13,9 @@ use crate::{
 };
 
 const DAY: i64 = 86_400_000;
+const RETRY_INTERVAL: i64 = 5 * 60_000;
 
-#[derive(Clone, Default, Serialize)]
+#[derive(Clone, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WikiOfferings {
     items: Vec<Offering>,
@@ -27,7 +28,7 @@ pub struct WikiOfferings {
     error: Option<String>,
 }
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct Offering {
     name: String,
@@ -35,9 +36,46 @@ struct Offering {
     bonus: Option<f64>,
 }
 
-#[derive(Default, Deserialize, Serialize)]
-struct RequestLedger {
-    attempts: HashMap<String, i64>,
+fn rotation(source: &str, now: i64) -> (i64, &'static str) {
+    // Keep these UTC rotation anchors aligned with src/lib/wiki-offerings.ts.
+    let (year, month, day, days) = match source {
+        "tenet" => (2015, 12, 3, 4),
+        "coda" => (2025, 3, 18, 4),
+        "acrithis" => (1970, 1, 5, 7),
+        _ => unreachable!("validated wiki source"),
+    };
+    let seed = NaiveDate::from_ymd_opt(year, month, day)
+        .unwrap()
+        .and_hms_opt(0, 0, 0)
+        .unwrap()
+        .and_utc()
+        .timestamp_millis();
+    let cycle = (now - seed).div_euclid(days * DAY);
+    (
+        seed + cycle * days * DAY,
+        if cycle.rem_euclid(2) == 0 { "A" } else { "B" },
+    )
+}
+
+fn current_report(offerings: &WikiOfferings, source: &str, now: i64) -> bool {
+    let (start, batch) = rotation(source, now);
+    !offerings.items.is_empty()
+        && offerings.fetched_at.is_some_and(|time| time >= start)
+        && match source {
+            "acrithis" => offerings
+                .observed_at
+                .is_some_and(|time| time >= start && time <= now),
+            "coda" => offerings.reported_batch.as_deref() == Some(batch),
+            _ => true,
+        }
+}
+
+fn save_offerings(path: &Path, offerings: &WikiOfferings) -> AppResult<()> {
+    // Replace only after the full snapshot is written, preserving the saved report on interruption.
+    let temporary_path = path.with_extension("json.tmp");
+    std::fs::write(&temporary_path, serde_json::to_vec(offerings)?)?;
+    std::fs::rename(temporary_path, path)?;
+    Ok(())
 }
 
 fn selector(value: &str) -> Selector {
@@ -185,6 +223,30 @@ fn parse_offerings(html: &str, source: &str) -> AppResult<WikiOfferings> {
 
 #[tauri::command]
 pub async fn get_wiki_offerings(app: AppHandle, source: String) -> AppResult<WikiOfferings> {
+    fetch_offerings(&app, source, false).await
+}
+
+/// Maintenance explicitly refreshes all three reports, even within the retry interval.
+pub async fn refresh_offerings(app: &AppHandle) -> AppResult<()> {
+    let mut errors = Vec::new();
+    for source in ["tenet", "coda", "acrithis"] {
+        match fetch_offerings(app, source.into(), true).await {
+            Ok(result) => {
+                if let Some(error) = result.error {
+                    errors.push(format!("{source}: {error}"));
+                }
+            }
+            Err(error) => errors.push(format!("{source}: {error}")),
+        }
+    }
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(AppError::msg(errors.join("; ")))
+    }
+}
+
+async fn fetch_offerings(app: &AppHandle, source: String, force: bool) -> AppResult<WikiOfferings> {
     let path = match source.as_str() {
         "tenet" => "Tenet_Weapons",
         "coda" => "Coda_Weapons",
@@ -195,32 +257,30 @@ pub async fn get_wiki_offerings(app: AppHandle, source: String) -> AppResult<Wik
     let mut cache = state.wiki_offerings.lock().await;
     let now = Utc::now().timestamp_millis();
     let directory = app.path().app_data_dir().map_err(AppError::msg)?;
-    let ledger_path = directory.join("wiki-request-ledger.json");
-    let mut ledger: RequestLedger = match std::fs::read(&ledger_path) {
-        Ok(bytes) => serde_json::from_slice(&bytes)?,
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => RequestLedger::default(),
-        Err(error) => return Err(error.into()),
-    };
-    if let Some(attempt) = ledger
-        .attempts
-        .get(&source)
-        .copied()
-        .filter(|attempt| attempt.div_euclid(DAY) >= now.div_euclid(DAY))
-    {
-        return Ok(cache
-            .get(&source)
-            .cloned()
-            .unwrap_or_else(|| WikiOfferings {
-                attempted_at: Some(attempt),
-                error: Some("There was a problem loading the wiki offerings.".into()),
-                ..Default::default()
-            }));
+    let cache_path = directory.join(format!("wiki-offerings-{source}.json"));
+    // Restore reports and the latest attempt time before deciding whether to refresh.
+    if !cache.contains_key(&source) {
+        match std::fs::read(&cache_path) {
+            Ok(bytes) => {
+                cache.insert(source.clone(), serde_json::from_slice(&bytes)?);
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(error.into()),
+        }
+    }
+    if !force {
+        if let Some(saved) = cache.get(&source) {
+            if current_report(saved, &source, now)
+                || saved
+                    .attempted_at
+                    .is_some_and(|attempt| now - attempt < RETRY_INTERVAL)
+            {
+                return Ok(saved.clone());
+            }
+        }
     }
 
-    // Record before requesting: HTTP failures, parse failures and restarts must not bypass the daily limit.
-    ledger.attempts.insert(source.clone(), now);
     std::fs::create_dir_all(directory)?;
-    std::fs::write(&ledger_path, serde_json::to_vec(&ledger)?)?;
     let fetched = async {
         let html = state
             .http_client
@@ -234,7 +294,7 @@ pub async fn get_wiki_offerings(app: AppHandle, source: String) -> AppResult<Wik
         parse_offerings(&html, &source)
     }
     .await;
-    let result = match fetched {
+    let mut result = match fetched {
         Ok(mut result) => {
             result.fetched_at = Some(Utc::now().timestamp_millis());
             result.attempted_at = Some(now);
@@ -244,11 +304,19 @@ pub async fn get_wiki_offerings(app: AppHandle, source: String) -> AppResult<Wik
             let mut result = cache.get(&source).cloned().unwrap_or_default();
             result.attempted_at = Some(now);
             result.error = Some(format!(
-                "Could not read wiki offerings: {error}. Next request allowed at midnight UTC."
+                "Could not read wiki offerings: {error}. Automatic retries are limited to once every five minutes."
             ));
             result
         }
     };
+    // Failed refreshes retain the last successful report and persist the failure details as well.
+    if let Err(error) = save_offerings(&cache_path, &result) {
+        let message = format!("Could not save wiki offerings locally: {error}.");
+        result.error = Some(match result.error.take() {
+            Some(previous) => format!("{previous} {message}"),
+            None => message,
+        });
+    }
     cache.insert(source, result.clone());
     Ok(result)
 }

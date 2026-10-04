@@ -7,6 +7,7 @@
 		columns,
 		rows,
 		renderRow,
+		renderHeader,
 		rowKey,
 		emptyMessage = 'No items to show.',
 		sortColumn,
@@ -17,6 +18,7 @@
 		columns: TableColumn[];
 		rows: Row[];
 		renderRow: Snippet<[row: Row]>;
+		renderHeader?: Snippet<[column: TableColumn]>;
 		rowKey: (row: Row) => string;
 		emptyMessage?: string;
 		sortColumn?: string;
@@ -42,7 +44,9 @@
 								: 'none'
 							: undefined}
 					>
-						{#if column.sortable}
+						{#if renderHeader}
+							{@render renderHeader(column)}
+						{:else if column.sortable}
 							<button
 							class={`inline-flex w-full items-center gap-1.5 hover:text-foreground focus-visible:outline-2 focus-visible:outline-accent cursor-pointer ${column.align === 'right' ? 'justify-end' : ''}`}
 							onclick={() => onSort(column.key)}

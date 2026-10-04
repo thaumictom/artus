@@ -11,7 +11,7 @@
 	import { warframeItems, initializeWarframeItems } from '$lib/warframe-item.svelte';
 	import { formatTimeLeft } from '$lib/date';
 	import {
-		UTC_DAY,
+		WIKI_RETRY_INTERVAL,
 		wikiSources,
 		wikiRotation,
 		wikiOfferingsSchema,
@@ -28,7 +28,8 @@
 	let linkError = $state('');
 	let mounted = $state(false);
 	let request = 0;
-	let requestedDay = -1;
+	let requestedAt = 0;
+	let requestedRotation = -1;
 	let currentSource: WikiSource | undefined;
 	const config = $derived(wikiSources[source]);
 	const rotation = $derived(wikiRotation(source, now));
@@ -36,6 +37,9 @@
 	const batchMatches = $derived(source !== 'coda' || data?.reportedBatch === rotation.batch);
 	const reportCurrent = $derived(
 		data?.observedAt != null && data.observedAt >= rotation.start && data.observedAt <= now,
+	);
+	const needsRefresh = $derived(
+		!data?.items.length || !sameRotation || !batchMatches || (source === 'acrithis' && !reportCurrent),
 	);
 	const rows = $derived<WikiOffering[]>(
 		source === 'coda' && (!batchMatches || !sameRotation)
@@ -92,10 +96,13 @@
 
 	async function load() {
 		const id = ++request;
+		const requestedSource = source;
+		requestedAt = now;
+		requestedRotation = rotation.start;
 		loading = true;
 		error = '';
 		try {
-			const result = wikiOfferingsSchema.parse(await invoke('get_wiki_offerings', { source }));
+			const result = wikiOfferingsSchema.parse(await invoke('get_wiki_offerings', { source: requestedSource }));
 			if (mounted && id === request) data = result;
 		} catch (cause) {
 			if (mounted && id === request) error = String(cause);
@@ -124,11 +131,10 @@
 	});
 	$effect(() => {
 		if (!mounted) return;
-		const day = Math.floor(now / UTC_DAY);
-		if (source !== currentSource || day !== requestedDay) {
+		if (source !== currentSource || (!loading && needsRefresh &&
+			(rotation.start !== requestedRotation || now - requestedAt >= WIKI_RETRY_INTERVAL))) {
 			if (source !== currentSource) data = null;
 			currentSource = source;
-			requestedDay = day;
 			void load();
 		}
 	});
@@ -155,6 +161,18 @@
 	</tr>
 {/snippet}
 
+{#snippet header(column: TableColumn)}
+	{#if column.key === 'bonus'}
+		<Tooltip class="inline-flex items-center gap-1.5 uppercase hover:text-foreground" triggerProps={{ 'aria-label': 'About weapon bonuses' }}>
+			{column.label}
+			<Icon icon="lucide:info" class="size-3.5" aria-hidden="true" />
+			{#snippet content()}
+				<p class="font-normal normal-case tracking-normal">Bonus is the weapon’s extra damage. Max fusions estimates how many Valence Fusions are needed to reach 60%. Bonuses of 58% or higher round up to 60%.</p>
+			{/snippet}
+		</Tooltip>
+	{:else}{column.label}{/if}
+{/snippet}
+
 <section class="flex flex-col gap-3 min-w-0" aria-label={config.title}>
 	<div class="flex flex-wrap justify-between items-start gap-3">
 		<div>
@@ -170,30 +188,17 @@
 					{#snippet content()}
 						<div class="flex flex-col gap-2">
 							{#if source === 'tenet'}
-								<p>
-									Ergo Glast offers weapons for 40 Corrupted Holokeys each. Offerings reset every
-									four days at midnight UTC.
-								</p>
+								<p>40 Corrupted Holokeys per weapon. Rotates every four days.</p>
 							{:else if source === 'coda'}
-								<p>
-									Eleanor offers weapons for 10 Live Heartcells each. Batches A and B alternate
-									every four days at midnight UTC.
-								</p>
+								<p>10 Live Heartcells per weapon. Batches alternate every four days.</p>
 							{:else}
-								<p>Acrithis offerings reset weekly on Monday at midnight UTC.</p>
+								<p>Offerings rotate every Monday.</p>
 							{/if}
-							<p>
-								Offerings and bonuses are player-reported and may be incomplete or inaccurate.
-								Weapon reports have no observation date, so their freshness is unconfirmed.
-							</p>
-							{#if source !== 'acrithis'}
-								<p>Max fusions shows the maximum number needed to reach 60.0% from the reported bonus. Values of 58.0% or higher automatically round up to 60.0%.</p>
-							{/if}
+							<p>Community reports may be outdated or inaccurate.</p>
 							{#if data?.fetchedAt != null}<p>Last fetched: {utc(data.fetchedAt)}</p>{/if}
 							{#if data?.pageUpdatedAt != null}<p>
-									Wiki page last edited: {utc(data.pageUpdatedAt)} (may include unrelated edits).
+									Last edited: {utc(data.pageUpdatedAt)}
 								</p>{/if}
-							<p>Each page is requested at most once per day and cached.</p>
 						</div>
 					{/snippet}
 				</Tooltip>
@@ -246,7 +251,7 @@
 	{#if error || data?.error}<p class="text-danger text-base" role="alert">
 			{error || data?.error}
 		</p>{/if}
-	{#if error}<Button onclick={load} disabled={loading}>Read cached status</Button>{/if}
+	{#if error}<Button onclick={() => load()} disabled={loading}>Read cached status</Button>{/if}
 	{#if linkError}<p class="text-danger text-base" role="alert">{linkError}</p>{/if}
 	{#if data?.items.length && (source === 'acrithis' ? !reportCurrent : !sameRotation || !batchMatches)}
 		<p class="text-muted-foreground text-base">
@@ -260,6 +265,7 @@
 		{rows}
 		rowKey={(item) => item.name}
 		renderRow={row}
+		renderHeader={header}
 		minWidth={source === 'acrithis' ? '280px' : '540px'}
 		emptyMessage={loading ? 'Loading offerings…' : 'No reported offerings available.'}
 	/>

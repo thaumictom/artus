@@ -16,6 +16,7 @@ export const wikiOfferingsSchema = z.object({
 export type WikiOfferings = z.infer<typeof wikiOfferingsSchema>;
 export type WikiOffering = WikiOfferings['items'][number];
 export const UTC_DAY = 86_400_000;
+export const WIKI_RETRY_INTERVAL = 5 * 60_000;
 
 export function wikiRotation(source: WikiSource, now: number) {
 	const { seed, days } = wikiSources[source];

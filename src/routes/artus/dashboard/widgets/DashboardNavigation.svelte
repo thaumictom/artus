@@ -11,6 +11,7 @@
 	import Button from '$lib/components/Button.svelte';
 	import Collapsible from '$lib/components/Collapsible.svelte';
 	import { config, loadSettings, updateSetting } from '$lib/settings.svelte';
+	import { initializeAlertCompletions } from '$lib/alert-completions.svelte';
 	import { dashboardViewGroups, dashboardViews, type DashboardView } from '../dashboard-views';
 
 	let {
@@ -47,6 +48,9 @@
 	let pins = $derived(new Set(pinnedViews.map((view) => view.value)));
 
 	onMount(() => {
+		void initializeAlertCompletions().catch((error) => {
+			console.error('Could not load alert completions for navigation:', error);
+		});
 		void loadSettings()
 			.then(() => (pinsReady = true))
 			.catch((error) => {
@@ -127,7 +131,7 @@
 	{@const count = world && 'itemCount' in view ? view.itemCount(world, now) : undefined}
 	{@const status = world && 'statusLabel' in view ? view.statusLabel(world, now) : undefined}
 	<span class="min-w-0 truncate">{view.label}</span>
-	{#if count !== undefined && !editing}
+	{#if count !== undefined && count > 0 && !editing}
 		<span
 			class="flex justify-center items-center bg-surface ml-1 px-1.25 border rounded-full tabular-nums text-muted-foreground text-trim text-xs shrink-0"
 		>

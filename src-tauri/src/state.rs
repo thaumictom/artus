@@ -58,7 +58,7 @@ pub struct AppState {
 
     /// Shared HTTP client for all outgoing requests.
     pub http_client: reqwest::Client,
-    /// Daily wiki requests are serialized across all windows; responses stay in memory.
+    /// Rotation-aware wiki requests are serialized across windows; snapshots are also saved locally.
     pub wiki_offerings: tokio::sync::Mutex<HashMap<String, crate::wiki_offerings::WikiOfferings>>,
     /// Short-lived warframe.market item orders and historical statistics.
     pub market_responses: Mutex<crate::market::MarketResponseCaches>,

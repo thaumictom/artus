@@ -12,7 +12,7 @@
 	let refreshStatus = $state<string | null>(null);
 	let lastFetchedAt = $state<number | null>(null);
 	let description = $derived(
-		`Reload item data and prices now. Last fetched: ${lastFetchedAt === null ? 'Never' : new Date(lastFetchedAt).toLocaleString()}.`,
+		`Reload item data, prices and wiki offerings now. Last fetched: ${lastFetchedAt === null ? 'Never' : new Date(lastFetchedAt).toLocaleString()}.`,
 	);
 	let cooldownTimer: ReturnType<typeof setTimeout> | undefined;
 	onMount(() => {
@@ -50,7 +50,7 @@
 		try {
 			await invoke('refresh_api_catalogs');
 		} catch (error) {
-			refreshStatus = `Some API catalogs could not be refreshed: ${String(error)}`;
+			refreshStatus = `Some catalogs or wiki offerings could not be refreshed: ${String(error)}`;
 		} finally {
 			refreshing = false;
 		}

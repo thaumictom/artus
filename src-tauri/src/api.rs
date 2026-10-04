@@ -176,7 +176,21 @@ pub fn get_api_catalogs_last_fetched(app: AppHandle) -> AppResult<Option<u64>> {
 
 #[tauri::command]
 pub async fn refresh_api_catalogs(app: AppHandle) -> AppResult<()> {
-    tauri::async_runtime::spawn_blocking(move || refresh_catalogs(&app))
+    let handle = app.clone();
+    let catalogs = tauri::async_runtime::spawn_blocking(move || refresh_catalogs(&handle));
+    let wiki = crate::wiki_offerings::refresh_offerings(&app).await;
+    let catalogs = catalogs
         .await
-        .map_err(AppError::msg)?
+        .map_err(AppError::msg)
+        .and_then(|result| result);
+    let errors: Vec<_> = [catalogs, wiki]
+        .into_iter()
+        .filter_map(Result::err)
+        .map(|error| error.to_string())
+        .collect();
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(AppError::msg(errors.join("; ")))
+    }
 }

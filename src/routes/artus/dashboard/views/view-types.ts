@@ -7,6 +7,7 @@ export type DashboardViewProps = {
 	onSelect: (view: DashboardView) => void;
 };
 export type ViewRow = {
+	id?: string;
 	title: string;
 	description?: string;
 	details?: string[];

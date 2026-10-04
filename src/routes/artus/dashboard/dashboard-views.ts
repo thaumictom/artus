@@ -1,5 +1,6 @@
 import type { Component } from 'svelte';
 import type { WorldState } from 'warframe-worldstate-parser';
+import { alertCompletions } from '$lib/alert-completions.svelte';
 import { isBaroActive } from './baro';
 import { isCurrent } from './views/view-types';
 import type { DashboardViewProps } from './views/view-types';
@@ -53,7 +54,10 @@ export const dashboardViews = [
 	{ value: 'Acrithis', label: 'Acrithis', component: Acrithis },
 	{
 		value: 'Alerts', label: "Alerts", component: Alerts,
-		itemCount: (world, now) => (world.alerts ?? []).filter((item) => isCurrent(item, now)).length,
+		itemCount: (world, now) => alertCompletions.loaded
+			? (world.alerts ?? []).filter((item) => isCurrent(item, now)
+				&& (!item.id || !alertCompletions.completedIds.includes(item.id))).length
+			: 0,
 	},
 	{ value: 'Invasions', label: "Invasions", component: Invasions },
 	{ value: 'Sortie', label: "Sortie", component: Sortie },
