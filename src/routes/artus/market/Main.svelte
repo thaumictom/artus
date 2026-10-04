@@ -269,30 +269,33 @@
 				</div>
 				<Skeleton class="w-full h-56" />
 			</div>
-		{:else if itemData}
-			<InfoCard
-				{itemData}
-				catalogItem={catalog[itemGameRef(itemData.gameRef)]}
-				{relatedItems}
-				onSelectItem={handleValueChange}
-			/>
-			{#if catalogError}
-				<p class="text-muted-foreground text-base">
-					Extra item details are unavailable. Restart while online to refresh them.
-				</p>
-			{/if}
-			<Statistics slug={itemData.slug} />
-			<Orders
-				slug={itemData.slug}
-				itemName={itemData.i18n?.en.name}
-				bulkTradable={itemData.bulkTradable ?? false}
-				highlightSince={marketNavigation.target?.slug === itemData.slug
-					? marketNavigation.target.since
-					: undefined}
-				initialOrderType={marketNavigation.target?.slug === itemData.slug
-					? marketNavigation.target.orderType
-					: undefined}
-			/>
+		{:else}
+			<!-- Keep child props valid during teardown/outros after itemData is cleared. -->
+			{#each itemData ? [itemData] : [] as activeItem (activeItem.slug)}
+				<InfoCard
+					itemData={activeItem}
+					catalogItem={catalog[itemGameRef(activeItem.gameRef)]}
+					{relatedItems}
+					onSelectItem={handleValueChange}
+				/>
+				{#if catalogError}
+					<p class="text-muted-foreground text-base">
+						Extra item details are unavailable. Restart while online to refresh them.
+					</p>
+				{/if}
+				<Statistics slug={activeItem.slug} />
+				<Orders
+					slug={activeItem.slug}
+					itemName={activeItem.i18n?.en.name}
+					bulkTradable={activeItem.bulkTradable ?? false}
+					highlightSince={marketNavigation.target?.slug === activeItem.slug
+						? marketNavigation.target.since
+						: undefined}
+					initialOrderType={marketNavigation.target?.slug === activeItem.slug
+						? marketNavigation.target.orderType
+						: undefined}
+				/>
+			{/each}
 		{/if}
 	{:else}
 		<section class="page-width flex flex-col gap-3 w-full max-w-3xl" aria-labelledby="most-traded-heading">
