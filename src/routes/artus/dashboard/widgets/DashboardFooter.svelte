@@ -47,7 +47,7 @@
 				icon="material-symbols:refresh"
 				class={loading ? 'size-4 shrink-0 animate-spin' : 'size-4 shrink-0'}
 			/>
-			{loading ? 'Refreshing...' : 'Reload state'}
+			{loading ? 'Refreshing...' : 'Reload'}
 		</Button>
 		{@render children?.()}
 	</div>

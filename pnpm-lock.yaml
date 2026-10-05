@@ -80,6 +80,9 @@ importers:
       overlayscrollbars-svelte:
         specifier: ^0.5.5
         version: 0.5.5(overlayscrollbars@2.15.1)(svelte@5.51.2)
+      paneforge:
+        specifier: ^1.0.2
+        version: 1.0.2(svelte@5.51.2)
       reflect-metadata:
         specifier: 0.2.2
         version: 0.2.2
@@ -1619,6 +1622,11 @@ packages:
   pako@1.0.11:
     resolution: {integrity: sha512-4hLB8Py4zZce5s4yd9XzopqwVv/yGNhV1Bl8NTmCq1763HeK2+EwVTv+leGeL13Dnh2wfbqowVPXCIO0z4taYw==}
 
+  paneforge@1.0.2:
+    resolution: {integrity: sha512-KzmIXQH1wCfwZ4RsMohD/IUtEjVhteR+c+ulb/CHYJHX8SuDXoJmChtsc/Xs5Wl8NHS4L5Q7cxL8MG40gSU1bA==}
+    peerDependencies:
+      svelte: ^5.29.0
+
   parse-asn1@5.1.9:
     resolution: {integrity: sha512-fIYNuZ/HastSb80baGOuPRo1O9cf4baWw5WsAp7dBuUzeTD/BoaG8sVTdlPFksBE2lF21dN+A1AnrpIjSWqHHg==}
     engines: {node: '>= 0.10'}
@@ -1714,8 +1722,18 @@ packages:
     engines: {node: '>=18.0.0', npm: '>=8.0.0'}
     hasBin: true
 
+  runed@0.23.4:
+    resolution: {integrity: sha512-9q8oUiBYeXIDLWNK5DfCWlkL0EW3oGbk845VdKlPeia28l751VpfesaB/+7pI6rnbx1I6rqoZ2fZxptOJLxILA==}
+    peerDependencies:
+      svelte: ^5.7.0
+
   runed@0.28.0:
     resolution: {integrity: sha512-k2xx7RuO9hWcdd9f+8JoBeqWtYrm5CALfgpkg2YDB80ds/QE4w0qqu34A7fqiAwiBBSBQOid7TLxwxVC27ymWQ==}
+    peerDependencies:
+      svelte: ^5.7.0
+
+  runed@0.29.2:
+    resolution: {integrity: sha512-0cq6cA6sYGZwl/FvVqjx9YN+1xEBu9sDDyuWdDW1yWX7JF2wmvmVKfH+hVCZs+csW+P3ARH92MjI3H9QTagOQA==}
     peerDependencies:
       svelte: ^5.7.0
 
@@ -1841,6 +1859,12 @@ packages:
 
   svelte-toolbelt@0.10.6:
     resolution: {integrity: sha512-YWuX+RE+CnWYx09yseAe4ZVMM7e7GRFZM6OYWpBKOb++s+SQ8RBIMMe+Bs/CznBMc0QPLjr+vDBxTAkozXsFXQ==}
+    engines: {node: '>=18', pnpm: '>=8.7.0'}
+    peerDependencies:
+      svelte: ^5.30.2
+
+  svelte-toolbelt@0.9.3:
+    resolution: {integrity: sha512-HCSWxCtVmv+c6g1ACb8LTwHVbDqLKJvHpo6J8TaqwUme2hj9ATJCpjCPNISR1OCq2Q4U1KT41if9ON0isINQZw==}
     engines: {node: '>=18', pnpm: '>=8.7.0'}
     peerDependencies:
       svelte: ^5.30.2
@@ -3358,6 +3382,12 @@ snapshots:
 
   pako@1.0.11: {}
 
+  paneforge@1.0.2(svelte@5.51.2):
+    dependencies:
+      runed: 0.23.4(svelte@5.51.2)
+      svelte: 5.51.2
+      svelte-toolbelt: 0.9.3(svelte@5.51.2)
+
   parse-asn1@5.1.9:
     dependencies:
       asn1.js: 4.10.1
@@ -3493,7 +3523,17 @@ snapshots:
       '@rollup/rollup-win32-x64-msvc': 4.57.1
       fsevents: 2.3.3
 
+  runed@0.23.4(svelte@5.51.2):
+    dependencies:
+      esm-env: 1.2.2
+      svelte: 5.51.2
+
   runed@0.28.0(svelte@5.51.2):
+    dependencies:
+      esm-env: 1.2.2
+      svelte: 5.51.2
+
+  runed@0.29.2(svelte@5.51.2):
     dependencies:
       esm-env: 1.2.2
       svelte: 5.51.2
@@ -3650,6 +3690,13 @@ snapshots:
       svelte: 5.51.2
     transitivePeerDependencies:
       - '@sveltejs/kit'
+
+  svelte-toolbelt@0.9.3(svelte@5.51.2):
+    dependencies:
+      clsx: 2.1.1
+      runed: 0.29.2(svelte@5.51.2)
+      style-to-object: 1.0.14
+      svelte: 5.51.2
 
   svelte@5.51.2:
     dependencies:

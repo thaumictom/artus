@@ -184,7 +184,7 @@
 
 <nav
 	aria-label="World state views"
-	class="flex flex-col bg-background mr-0.5 rounded-t-md w-60 h-full min-h-0 world-state-navigation shrink-0"
+	class="flex flex-col bg-background rounded-t-md w-full h-full min-h-0 world-state-navigation"
 >
 	<OverlayScrollbarsComponent
 		bind:this={scrollbars}

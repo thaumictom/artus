@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Button, Tabs } from 'bits-ui';
+	import { Tabs } from 'bits-ui';
 	import Tooltip from '$lib/components/Tooltip.svelte';
 	import TooltipProvider from '$lib/components/TooltipProvider.svelte';
 	import Icon from '@iconify/svelte';
@@ -21,6 +21,73 @@
 	} = $props();
 
 	const navItemClass = 'group';
+	const DRAG_THRESHOLD = 24;
+	let drag = $state<{
+		pointerId: number;
+		startX: number;
+		anchorX: number;
+		targetOpen: boolean;
+		moved: boolean;
+		triggered: boolean;
+	} | null>(null);
+
+	function startDrag(event: PointerEvent) {
+		if (!canToggle || drag || event.button !== 0) return;
+		const handle = event.currentTarget as HTMLButtonElement;
+		event.preventDefault();
+		drag = {
+			pointerId: event.pointerId,
+			startX: event.clientX,
+			anchorX: event.clientX,
+			targetOpen: isSidebarOpen,
+			moved: false,
+			triggered: false,
+		};
+		handle.setPointerCapture(event.pointerId);
+	}
+
+	function moveDrag(event: PointerEvent) {
+		if (!drag || event.pointerId !== drag.pointerId) return;
+		const distance = event.clientX - drag.startX;
+		if (Math.abs(distance) >= 4) drag.moved = true;
+		// Follow the furthest point so reversing 24px can interrupt the animation
+		// immediately, even during the same held drag.
+		drag.anchorX = drag.targetOpen
+			? Math.max(drag.anchorX, event.clientX)
+			: Math.min(drag.anchorX, event.clientX);
+		const directionalDistance = drag.targetOpen
+			? drag.anchorX - event.clientX
+			: event.clientX - drag.anchorX;
+		if (directionalDistance >= DRAG_THRESHOLD) {
+			drag.triggered = true;
+			drag.targetOpen = !drag.targetOpen;
+			drag.anchorX = event.clientX;
+			if (canToggle && isSidebarOpen !== drag.targetOpen) onToggle();
+		}
+	}
+
+	function endDrag(event: PointerEvent) {
+		if (!drag || event.pointerId !== drag.pointerId) return;
+		moveDrag(event);
+		const clicked = !drag.moved && !drag.triggered;
+		cancelDrag();
+		if (canToggle && clicked) onToggle();
+	}
+
+	function cancelDrag() {
+		drag = null;
+	}
+
+	function resizeWithKeyboard(event: KeyboardEvent) {
+		if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+		event.preventDefault();
+		if (canToggle && (event.key === 'ArrowRight') !== isSidebarOpen) onToggle();
+	}
+
+	$effect(() => {
+		if (!canToggle) cancelDrag();
+	});
+
 	gsap.registerPlugin(CustomEase);
 	// This curve has a vertical tangent at its midpoint.
 	const pillEase = CustomEase.create('sidebarPill', '1,0,0,1');
@@ -101,7 +168,7 @@
 </script>
 
 {#snippet navLabel(section: Sections[string])}
-	<div class="px-2.5 w-full h-full group-data-[state=active]:text-accent cursor-pointer">
+	<div class="px-2.5 w-full min-w-0 h-full group-data-[state=active]:text-accent cursor-pointer">
 		<div
 			class="flex items-center gap-2.5 hover:bg-elevated/50 group-data-[state=active]:bg-accent/10! py-2.5 rounded-md"
 		>
@@ -114,9 +181,9 @@
 			<span
 				aria-hidden={!isSidebarOpen}
 				class={{
-					'overflow-hidden text-base whitespace-nowrap transition-opacity text-left': true,
-					'opacity-100 flex-1': isSidebarOpen,
-					'opacity-0 w-0': !isSidebarOpen,
+					'overflow-hidden min-w-0 text-base whitespace-nowrap transition-opacity duration-200 motion-reduce:transition-none text-left flex-1': true,
+					'opacity-100': isSidebarOpen,
+					'opacity-0': !isSidebarOpen,
 				}}
 			>
 				{section.label}
@@ -125,80 +192,108 @@
 	</div>
 {/snippet}
 
-<Tabs.List
-	aria-label="Main navigation"
-	class={`group/sidebar flex flex-col justify-between bg-surface border-border-secondary h-full min-h-0 shrink-0 transition-[width] duration-300 ease-in-out ${isSidebarOpen ? 'w-48' : 'w-16'}`}
+<div
+	class="group/sidebar relative h-full min-h-0 sidebar shrink-0"
+	data-dragging={drag ? '' : undefined}
+	style:width={isSidebarOpen ? '12rem' : '4rem'}
 >
-	<div class="flex flex-co min-h-0 overflow-x-hidden overflow-y-auto">
-		<div class="relative flex flex-col gap-y-0.5 w-full shrink-0" use:animateIndicator>
-			<span
-				data-active-indicator
-				aria-hidden="true"
-				class="top-0 left-[9px] z-10 absolute bg-accent opacity-0 rounded-full w-0.5 h-4 pointer-events-none"
-			></span>
-			<TooltipProvider delayDuration={600} skipDelayDuration={200}>
-				{#each Object.entries(sections) as [id, section]}
-					{@const unavailable = id === 'listings' && !marketAccount.session}
-					<Tooltip side="right" disabled={isSidebarOpen && !unavailable}>
-						{#snippet trigger({ props })}
-							{#if unavailable}
-								<span
-									{...props}
-									class={`${props.class ?? ''} block w-full cursor-not-allowed`}
-									aria-label="Listings unavailable. Log in to warframe.market first."
-								>
+	<Tabs.List
+		aria-label="Main navigation"
+		class="flex flex-col justify-between bg-surface border-border-secondary w-full h-full min-h-0 overflow-hidden"
+	>
+		<div class="flex flex-co min-h-0 overflow-x-hidden overflow-y-auto">
+			<div class="relative flex flex-col gap-y-0.5 w-full shrink-0" use:animateIndicator>
+				<span
+					data-active-indicator
+					aria-hidden="true"
+					class="top-0 left-[9px] z-10 absolute bg-accent opacity-0 rounded-full w-0.5 h-4 pointer-events-none"
+				></span>
+				<TooltipProvider delayDuration={600} skipDelayDuration={200}>
+					{#each Object.entries(sections) as [id, section]}
+						{@const unavailable = id === 'listings' && !marketAccount.session}
+						<Tooltip side="right" disabled={isSidebarOpen && !unavailable}>
+							{#snippet trigger({ props })}
+								{#if unavailable}
+									<span
+										{...props}
+										class={`${props.class ?? ''} block w-full cursor-not-allowed`}
+										aria-label="Listings unavailable. Log in to warframe.market first."
+									>
+										<Tabs.Trigger
+											value={id}
+											disabled
+											aria-label={section.label}
+											class={`${navItemClass} opacity-40 pointer-events-none`}
+										>
+											{@render navLabel(section)}
+										</Tabs.Trigger>
+									</span>
+								{:else}
 									<Tabs.Trigger
+										{...props}
 										value={id}
-										disabled
 										aria-label={section.label}
-										class={`${navItemClass} opacity-40 pointer-events-none`}
+										class={`${props.class ?? ''} ${navItemClass}`}
 									>
 										{@render navLabel(section)}
 									</Tabs.Trigger>
-								</span>
-							{:else}
-								<Tabs.Trigger
-									{...props}
-									value={id}
-									aria-label={section.label}
-									class={`${props.class ?? ''} ${navItemClass}`}
-								>
-									{@render navLabel(section)}
-								</Tabs.Trigger>
-							{/if}
-						{/snippet}
-						{#snippet content()}
-							{section.label}{#if unavailable}: Log in to warframe.market first to view your listings.{/if}
-						{/snippet}
-					</Tooltip>
-				{/each}
-			</TooltipProvider>
+								{/if}
+							{/snippet}
+							{#snippet content()}
+								{section.label}{#if unavailable}: Log in to warframe.market first to view your
+									listings.{/if}
+							{/snippet}
+						</Tooltip>
+					{/each}
+				</TooltipProvider>
+			</div>
 		</div>
-	</div>
-	<div class="max-[800px]:hidden p-3 shrink-0">
-		<Button.Root
-			class="relative hover:bg-elevated opacity-0 focus-visible:opacity-100 group-focus-within/sidebar:opacity-100 group-hover/sidebar:opacity-100 p-2 rounded focus-visible:outline-2 focus-visible:outline-accent text-muted-foreground hover:text-foreground transition cursor-pointer"
-			aria-label="Toggle sidebar"
+	</Tabs.List>
+	{#if canToggle}
+		<button
+			type="button"
+			aria-label={isSidebarOpen
+				? 'Close sidebar: click or drag left'
+				: 'Open sidebar: click or drag right'}
 			aria-expanded={isSidebarOpen}
-			disabled={!canToggle}
-			onclick={onToggle}
+			class="-right-1 z-20 absolute inset-y-0 rounded focus-visible:outline-2 focus-visible:outline-accent w-2 touch-none cursor-ew-resize sidebar-resizer"
+			onpointerdown={startDrag}
+			onpointermove={moveDrag}
+			onpointerup={endDrag}
+			onpointercancel={cancelDrag}
+			onlostpointercapture={cancelDrag}
+			onkeydown={resizeWithKeyboard}
+			onclick={(event) => {
+				if (event.detail === 0) onToggle();
+			}}
 		>
-			<Icon
-				icon="material-symbols:left-panel-close-outline-rounded"
-				class={{
-					'size-6 absolute transition': true,
-					'opacity-100': isSidebarOpen,
-					'opacity-0': !isSidebarOpen,
-				}}
-			/>
-			<Icon
-				icon="material-symbols:left-panel-open-outline-rounded"
-				class={{
-					'size-6 transition': true,
-					'opacity-100': !isSidebarOpen,
-					'opacity-0': isSidebarOpen,
-				}}
-			/>
-		</Button.Root>
-	</div>
-</Tabs.List>
+			<span
+				class="left-1/2 absolute inset-y-3 bg-accent opacity-0 rounded w-0.5 transition-opacity pointer-events-none"
+			></span>
+		</button>
+	{/if}
+</div>
+
+<style>
+	.sidebar {
+		transition: width 220ms cubic-bezier(0.2, 0, 0, 1);
+	}
+
+	.sidebar-resizer:hover span,
+	.sidebar-resizer:focus-visible span,
+	.sidebar[data-dragging] .sidebar-resizer span {
+		opacity: 0.6;
+	}
+
+	:global(body:has(.sidebar[data-dragging])),
+	:global(body:has(.sidebar[data-dragging]) *) {
+		cursor: ew-resize !important;
+		user-select: none !important;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.sidebar {
+			transition: none;
+		}
+	}
+</style>

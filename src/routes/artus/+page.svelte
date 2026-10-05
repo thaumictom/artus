@@ -8,7 +8,7 @@
 		hasActiveNotificationRules,
 		initializeNotificationCenter,
 	} from '$lib/notifications.svelte';
-	import { loadSettings } from '$lib/settings.svelte';
+	import { config, loadSettings, updateSetting } from '$lib/settings.svelte';
 	import { loadMarketSession } from '$lib/market-account.svelte';
 	import { ocrDebug } from '$lib/ocr-debug.svelte';
 	import { initializeMarketNotifications } from '$lib/market-notifications.svelte';
@@ -85,8 +85,16 @@
 	};
 
 	const isNarrowViewport = new MediaQuery('(width < 800px)');
-	let prefersSidebarOpen = $state(true);
-	let isSidebarOpen = $derived(!isNarrowViewport.current && prefersSidebarOpen);
+	let settingsReady = $state(false);
+	let isSidebarOpen = $derived(!isNarrowViewport.current && config.sidebar_open);
+
+	function toggleSidebar() {
+		if (!settingsReady || isNarrowViewport.current) return;
+		config.sidebar_open = !config.sidebar_open;
+		void updateSetting('sidebar_open').catch((error) => {
+			console.error('Could not save sidebar state:', error);
+		});
+	}
 	let activeSection = $derived(appNavigation.current.section);
 	let dashboardViewLabel = $derived(
 		dashboardViews.find((view) => view.value === appNavigation.current.dashboardView)?.label,
@@ -137,7 +145,9 @@
 		// page mount or fail independently while world state is still usable.
 		initializeWorldState();
 		const stopWarframeItems = initializeWarframeItems();
-		void loadSettings().catch((error) => console.error('Could not load settings:', error));
+		void loadSettings()
+			.catch((error) => console.error('Could not load settings:', error))
+			.finally(() => { if (!disposed) settingsReady = true; });
 		void loadMarketSession().catch((error) =>
 			console.error('Could not load market session:', error),
 		);
@@ -269,8 +279,8 @@
 		<Sidebar
 			{sections}
 			{isSidebarOpen}
-			canToggle={!isNarrowViewport.current}
-			onToggle={() => (prefersSidebarOpen = !prefersSidebarOpen)}
+			canToggle={settingsReady && !isNarrowViewport.current}
+			onToggle={toggleSidebar}
 		></Sidebar>
 		{#if activeSection === 'dashboard'}
 			<DashboardMain />

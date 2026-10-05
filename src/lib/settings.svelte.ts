@@ -39,6 +39,7 @@ export const defaultNotificationRules = (): NotificationRules => ({
 type Config = {
 	app_theme: AppTheme;
 	full_width_content: boolean;
+	sidebar_open: boolean;
 	hotkeys: {
 		[action: string]: string;
 	};
@@ -48,6 +49,7 @@ type Config = {
 	visual_relic_reward_detection: boolean;
 	relic_reward_sound: boolean;
 	dashboard_view_favorites: string[];
+	dashboard_navigation_width: number;
 	show_unused_dashboard_views: boolean;
 	desktop_notifications_enabled: boolean;
 	hide_to_tray_on_close: boolean;
@@ -90,6 +92,7 @@ type Config = {
 export const config = $state({
 	app_theme: 'default' as AppTheme,
 	full_width_content: false as boolean,
+	sidebar_open: true as boolean,
 	hotkeys: {
 		screenshot: 'control+Home',
 		screenshot_add_mastery: 'alt+control+Home',
@@ -113,6 +116,7 @@ export const config = $state({
 	visual_relic_reward_detection: false as boolean,
 	relic_reward_sound: false as boolean,
 	dashboard_view_favorites: ['WorldCycles', 'fissures', 'Alerts'] as string[],
+	dashboard_navigation_width: 240,
 	desktop_notifications_enabled: true as boolean,
 	hide_to_tray_on_close: true as boolean,
 	hide_donate_button: false as boolean,
