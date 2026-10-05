@@ -9,6 +9,7 @@ import { LazyStore } from '@tauri-apps/plugin-store';
 import type { WorldState } from 'warframe-worldstate-parser';
 import { config, type FissureNotificationCategory } from '$lib/settings.svelte';
 import { openMarketNotificationTarget } from '$lib/market-navigation.svelte';
+import { hasOnlyExcludedInvasionRewards } from '$lib/invasion-rewards';
 
 export type NotificationSource =
 	| 'fissure'
@@ -343,27 +344,6 @@ function invasionKey(invasion: WorldState['invasions'][number]) {
 	return invasion.id || `${invasion.nodeKey}:${dateKey(invasion.activation)}`;
 }
 
-const excludedInvasionRewards = new Set([
-	'fieldron',
-	'detonite injector',
-	'mutagen mass',
-	'mutalist alad v nav coordinate',
-]);
-
-function hasOnlyExcludedInvasionRewards(invasion: WorldState['invasions'][number]) {
-	// Keep invasions that offer any other item on either side.
-	const rewards = [invasion.attacker.reward, invasion.defender.reward].flatMap((reward) =>
-		reward?.countedItems?.length
-			? reward.countedItems.map((item) => item.type)
-			: (reward?.items ?? []),
-	);
-	return (
-		rewards.length > 0 &&
-		rewards.every((item) =>
-			excludedInvasionRewards.has(item.trim().replace(/\s+/g, ' ').toLowerCase()),
-		)
-	);
-}
 
 function dailyDealKey(deal: WorldState['dailyDeals'][number]) {
 	return deal.id || `${deal.uniqueName}:${dateKey(deal.expiry)}`;

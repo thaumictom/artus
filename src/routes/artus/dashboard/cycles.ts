@@ -1,4 +1,5 @@
 import type { WorldState } from 'warframe-worldstate-parser';
+import { factionColors } from '$lib/faction-colors';
 
 const MINUTE_MS = 60_000;
 type CycleKey =
@@ -46,8 +47,8 @@ const cycleDefinitions: readonly CycleDefinition[] = [
 		key: 'zarimanCycle',
 		label: 'Zariman',
 		states: [
-			{ value: 'corpus', color: '#5B83B8' },
-			{ value: 'grineer', color: '#8FA075' },
+			{ value: 'corpus', color: factionColors.corpus },
+			{ value: 'grineer', color: factionColors.grineer },
 		],
 		durations: { corpus: 150 * MINUTE_MS, grineer: 150 * MINUTE_MS },
 	},

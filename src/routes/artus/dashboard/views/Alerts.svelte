@@ -1,11 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import Icon from '@iconify/svelte';
-	import Checkbox from '$lib/components/Checkbox.svelte';
 	import Button from '$lib/components/Button.svelte';
 	import ViewToolbar from '$lib/components/ViewToolbar.svelte';
-	import ViewCard from '$lib/components/ViewCard.svelte';
-	import WorldStateReward from '$lib/components/WorldStateReward.svelte';
+	import WorldStateMissionCard from '$lib/components/WorldStateMissionCard.svelte';
 	import {
 		isAlertCompleted,
 		loadAlertCompletions,
@@ -66,42 +64,27 @@
 	</ViewToolbar>
 	{#if error}<p role="alert" class="text-danger text-sm">{error}</p>{/if}
 	<ul class="flex flex-col gap-3">
-		{#each alerts as alert}
+		{#each alerts as alert (alert)}
 			{@const completed = isAlertCompleted(alert.id)}
 			{@const mission = alert.mission}
-			<ViewCard {completed} expiry={alert.expiry} {now}
+			<WorldStateMissionCard
+				node={mission.node}
+				reward={mission.reward}
+				{completed}
+				expiry={alert.expiry}
+				{now}
 				disabled={!loaded || saving || !alert.id}
-				onActivate={() => { if (alert.id) void toggleCompleted([alert.id], !completed); }}>
-				<WorldStateReward reward={mission.reward} {completed} />
-				{#snippet action()}
-					<label
-						class="flex shrink-0 items-center gap-2 text-sm cursor-pointer {completed
-							? 'text-accent'
-							: 'text-muted-foreground'}"
-					>
-						<Checkbox
-							checked={completed}
-							disabled={!loaded || saving || !alert.id}
-							aria-label={`Mark ${mission.node} as completed`}
-							onCheckedChange={(checked) => {
-								if (alert.id) void toggleCompleted([alert.id], checked);
-							}}
-						/>
-						<span class="sr-only sm:not-sr-only">{completed ? 'Completed' : 'Complete'}</span>
-					</label>
+				onCompletedChange={(checked) => {
+					if (alert.id) void toggleCompleted([alert.id], checked);
+				}}
+			>
+				{#snippet details()}
+					{mission.type} · {mission.faction} ·
+					<span class="tabular-nums whitespace-nowrap">
+						Level {mission.minEnemyLevel}–{mission.maxEnemyLevel}
+					</span>
 				{/snippet}
-				{#snippet footer()}
-					<h3 class="font-medium text-sm break-words {completed ? 'text-muted-foreground' : ''}">
-						{mission.node}
-					</h3>
-					<p class="mt-1 text-muted-foreground text-sm break-words">
-						{mission.type} · {mission.faction} ·
-						<span class="tabular-nums whitespace-nowrap">
-							Level {mission.minEnemyLevel}–{mission.maxEnemyLevel}
-						</span>
-					</p>
-				{/snippet}
-			</ViewCard>
+			</WorldStateMissionCard>
 		{:else}
 			<li class="p-6 border border-surface text-muted-foreground text-sm text-center">
 				No active alerts in this snapshot.

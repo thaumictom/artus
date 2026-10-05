@@ -36,6 +36,16 @@ export const CatalogItemSchema = z.object({
 export const MarketCatalogSchema = z.record(z.string(), CatalogItemSchema);
 export type CatalogItem = z.infer<typeof CatalogItemSchema>;
 
+const weaponCategories = new Set([
+	'primary', 'secondary', 'melee', 'arch-gun', 'arch-melee', 'sentinelweapons',
+]);
+
+export function isWeaponCatalogItem(metadata?: { category?: string | null; type?: string | null }): boolean {
+	const category = metadata?.category?.trim().toLowerCase() ?? '';
+	const type = metadata?.type?.trim().toLowerCase() ?? '';
+	return weaponCategories.has(category) || type === 'companion weapon' || type === 'sentinel weapon';
+}
+
 export function sanitizeItemDescription(text: string): string {
 	return text.replaceAll('\\n', '\n').replace(/<[^>]*>/g, '').trim();
 }
