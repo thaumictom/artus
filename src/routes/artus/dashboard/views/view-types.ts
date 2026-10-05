@@ -1,7 +1,8 @@
-import type { Reward, WorldState } from 'warframe-worldstate-parser';
+import type { Reward } from 'warframe-worldstate-parser';
+import type { ArtusWorldState } from '$lib/worldstate.svelte';
 import type { DashboardView } from '../dashboard-views';
 export type DashboardViewProps = {
-	world: WorldState;
+	world: ArtusWorldState;
 	now: number;
 	localNow: number;
 	onSelect: (view: DashboardView) => void;

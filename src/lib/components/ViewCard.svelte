@@ -29,7 +29,9 @@
 <!-- Card clicks supplement the keyboard-accessible control supplied in the action slot. -->
 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
 <li onclick={activate} class:cursor-pointer={!!onActivate && !disabled}
-	class="border transition-colors {completed ? 'bg-accent/5 border-accent/25' : 'bg-background border-border-secondary'}">
+	class="border transition-colors {completed ? 'bg-accent/5 border-accent/25' : 'bg-background border-border-secondary'} {!!onActivate && !disabled
+		? completed ? 'hover:bg-accent/10 hover:border-accent/40' : 'hover:bg-surface/30 hover:border-border'
+		: ''}">
 	<div class="flex items-start justify-between gap-4 p-4">
 		<div class="min-w-0 flex-1">{@render children()}</div>
 		{#if action}{@render action()}{/if}

@@ -3,8 +3,15 @@ import 'reflect-metadata';
 import { WorldState, type InitialWorldState } from 'warframe-worldstate-parser';
 import { processWorldStateNotifications } from '$lib/notifications.svelte';
 
+type RawWorldState = Omit<InitialWorldState, 'Events'> & {
+	Events: (InitialWorldState['Events'][number] & { Community?: boolean })[];
+};
+export type ArtusWorldState = Omit<WorldState, 'news'> & {
+	news: (WorldState['news'][number] & { community: boolean })[];
+};
+
 export const dashboard = $state({
-	world: null as WorldState | null,
+	world: null as ArtusWorldState | null,
 	fetchedAt: null as number | null,
 	loading: false,
 	error: null as string | null,
@@ -18,10 +25,20 @@ export function reloadWorldState(): Promise<void> {
 	dashboard.error = null;
 	pending = (async () => {
 		try {
-			const raw = await invoke<InitialWorldState>('get_world_state');
+			const raw = await invoke<RawWorldState>('get_world_state');
 			const previousWorld = dashboard.world;
 			const world = new WorldState(raw, { locale: 'en' });
-			dashboard.world = world;
+			// The parser filters news by locale and drops Community; join by ID,
+			// rather than array position, to preserve the API's classification.
+			const communityById = new Map((raw.Events ?? []).flatMap((event) => {
+				const id = event._id?.$oid || event._id?.$id;
+				return id ? [[id, event.Community === true] as const] : [];
+			}));
+			dashboard.world = Object.assign(world, {
+				news: world.news.map((article) => Object.assign(article, {
+					community: Boolean(article.id && communityById.get(article.id)),
+				})),
+			});
 			dashboard.fetchedAt = Date.now();
 			await processWorldStateNotifications(world, previousWorld);
 		} catch (error) {
