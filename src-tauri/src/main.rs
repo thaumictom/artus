@@ -45,6 +45,10 @@ fn main() {
     let is_wayland = apply_wayland_workarounds();
 
     tauri::Builder::default()
+        // A second launch forwards to this instance before running any other setup.
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            tray::show_artus(app);
+        }))
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_updater::Builder::new()

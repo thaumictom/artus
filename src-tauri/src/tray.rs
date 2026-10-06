@@ -44,10 +44,10 @@ pub fn init(app: &App) -> tauri::Result<()> {
     Ok(())
 }
 
-fn show_artus(app: &AppHandle) {
+pub fn show_artus(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("artus") {
-        if let Err(error) = window.show().and_then(|_| window.set_focus()) {
-            log::warn!("could not show Artus from tray: {error}");
+        if let Err(error) = window.show().and_then(|_| window.unminimize()).and_then(|_| window.set_focus()) {
+            log::warn!("could not show Artus: {error}");
         }
     }
 }
