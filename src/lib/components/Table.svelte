@@ -35,18 +35,23 @@
 	let header: HTMLTableSectionElement;
 	let scrollElement = $state<HTMLElement | null>(null);
 	let fallbackAll = $state(false);
+	const keyAt = (currentRows: Row[], index: number) =>
+		index >= 0 && index < currentRows.length ? rowKey(currentRows[index]) : `missing-row-${index}`;
 	const rowVirtualizer = createVirtualizer<HTMLElement, HTMLTableRowElement>({
 		count: 0,
 		getScrollElement: () => scrollElement,
 		estimateSize: () => 76,
-		getItemKey: (index) => rowKey(rows[index]),
+		getItemKey: (index) => keyAt(rows, index),
 		overscan: 6,
 		enabled: false,
 	});
 	const virtualRows = $derived($rowVirtualizer.getVirtualItems());
-	const topPadding = $derived(virtualRows.length ? virtualRows[0].start - $rowVirtualizer.options.scrollMargin : 0);
-	const bottomPadding = $derived(virtualRows.length
-		? $rowVirtualizer.getTotalSize() - (virtualRows[virtualRows.length - 1].end - $rowVirtualizer.options.scrollMargin)
+	// Props can change before the virtualizer publishes its new indices and keys.
+	const visibleVirtualRows = $derived(virtualRows.filter(({ index, key }) =>
+		index < rows.length && key === keyAt(rows, index)));
+	const topPadding = $derived(visibleVirtualRows.length ? visibleVirtualRows[0].start - $rowVirtualizer.options.scrollMargin : 0);
+	const bottomPadding = $derived(visibleVirtualRows.length
+		? $rowVirtualizer.getTotalSize() - (visibleVirtualRows[visibleVirtualRows.length - 1].end - $rowVirtualizer.options.scrollMargin)
 		: 0);
 	const measureRow = (element: HTMLTableRowElement) => $rowVirtualizer.measureElement(element);
 
@@ -56,7 +61,7 @@
 		// Updating the store must not make this effect depend on its own publication.
 		untrack(() => $rowVirtualizer.setOptions({
 			count: currentRows.length,
-			getItemKey: (index) => rowKey(currentRows[index]),
+			getItemKey: (index) => keyAt(currentRows, index),
 		}));
 	});
 
@@ -130,9 +135,9 @@
 			</tr>
 		</thead>
 		<tbody>
-			{#if virtualize && rows.length && scrollElement && virtualRows.length}
+			{#if virtualize && rows.length && scrollElement && visibleVirtualRows.length}
 				{#if topPadding > 0}<tr aria-hidden="true"><td colspan={columns.length} style:height={`${topPadding}px`} class="!p-0 !border-0"></td></tr>{/if}
-				{#each virtualRows as virtualRow (virtualRow.key)}
+				{#each visibleVirtualRows as virtualRow (virtualRow.key)}
 					{@render renderRow(rows[virtualRow.index], virtualRow.index, measureRow)}
 				{/each}
 				{#if bottomPadding > 0}<tr aria-hidden="true"><td colspan={columns.length} style:height={`${bottomPadding}px`} class="!p-0 !border-0"></td></tr>{/if}
