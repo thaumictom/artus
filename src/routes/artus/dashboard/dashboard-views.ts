@@ -2,6 +2,7 @@ import type { Component } from 'svelte';
 import type { WorldState } from 'warframe-worldstate-parser';
 import { alertCompletions, isAlertCompleted } from '$lib/alert-completions.svelte';
 import { calendarCompletions, getCalendarDays, hasCalendarTodo, isCalendarDayCompleted } from '$lib/calendar-completions.svelte';
+import { clanInitiativeCompletions, getClanInitiativeRewards, isClanInitiativeRewardCompleted } from '$lib/clan-initiative-completions.svelte';
 import { isBaroActive } from './baro';
 import { isCurrent } from './views/view-types';
 import type { DashboardViewProps } from './views/view-types';
@@ -42,8 +43,10 @@ import PrimeResurgence from './views/PrimeResurgence.svelte';
 import ClanInitiative from './views/ClanInitiative.svelte';
 import CommunityCampaign from './views/CommunityCampaign.svelte';
 import WorldCycles from './views/WorldCycles.svelte';
+import Home from './views/Home.svelte';
 
 export const dashboardViews = [
+	{ value: 'Home', label: 'Home', component: Home },
 	{ value: 'WorldCycles', label: 'World Cycles', component: WorldCycles },
 	{ value: 'fissures', label: 'Fissure Missions', component: FissureMissions },
 	{ value: 'news', label: 'News', component: News },
@@ -94,7 +97,12 @@ export const dashboardViews = [
 	{ value: 'Faceoff', label: "Faceoff Bonus", component: Faceoff },
 	{ value: 'SteelPath', label: "Steel Path Honors", component: SteelPath },
 	{ value: 'PrimeResurgence', label: "Prime Resurgence", component: PrimeResurgence },
-	{ value: 'ClanInitiative', label: "Clan Initiative", component: ClanInitiative },
+	{
+		value: 'ClanInitiative', label: "Clan Initiative", component: ClanInitiative,
+		itemCount: (world, now) => clanInitiativeCompletions.loaded && isCurrent(world.clanWeeklyInitiative, now)
+			? getClanInitiativeRewards(world.clanWeeklyInitiative).filter(({ id }) => !isClanInitiativeRewardCompleted(id)).length
+			: 0,
+	},
 	{ value: 'CommunityCampaign', label: "Community Campaign", component: CommunityCampaign },
 ] as const satisfies readonly {
 	value: string;
@@ -120,7 +128,7 @@ export function isDashboardViewVisible(view: string, showUnused: boolean): boole
 const viewGroups = [
 	{
 		label: 'General',
-		views: ['WorldCycles', 'news', 'Events', 'Alerts', 'fissures', 'Arbitration', 'Invasions'],
+		views: ['Home', 'WorldCycles', 'news', 'Events', 'Alerts', 'fissures', 'Arbitration', 'Invasions'],
 	},
 	{
 		label: 'Daily & Weekly',

@@ -11,6 +11,8 @@ const bountySchema = z.object({
 });
 const snapshotSchema = z.object({
 	expiry: z.number().nullable(),
+	rot: z.enum(['A', 'B', 'C']).nullable(),
+	vaultRot: z.enum(['A', 'B', 'C']).nullable(),
 	bounties: z.record(z.string(), z.array(bountySchema)),
 	error: z.string().nullable(),
     arbitration: z.object({ node: z.string(), missionType: z.string(), faction: z.string(), expiry: z.number() }).nullable(),

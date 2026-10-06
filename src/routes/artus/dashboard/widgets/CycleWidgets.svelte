@@ -2,16 +2,13 @@
 	import type { WorldState } from 'warframe-worldstate-parser';
 	import { formatTimeLeft } from '$lib/date';
 	import { getDashboardCycles } from '../cycles';
-	import BaroKiTeer from './BaroKiTeer.svelte';
 
 	let {
 		world,
 		now,
-		onOpenBaro,
 	}: {
 		world: WorldState;
 		now: number;
-		onOpenBaro: () => void;
 	} = $props();
 
 	let cycles = $derived(getDashboardCycles(world, now));
@@ -25,7 +22,7 @@
 <div class="@container/cycles min-w-0">
 	<section
 		aria-label="World cycles"
-		class="gap-2 grid grid-cols-1 @[32rem]/cycles:grid-cols-2 @[48rem]/cycles:grid-cols-3 @[80rem]/cycles:grid-cols-6"
+		class="gap-2 grid grid-cols-1 @[32rem]/cycles:grid-cols-2 @[48rem]/cycles:grid-cols-3 @[80rem]/cycles:grid-cols-5"
 	>
 		{#each cycles as { key, label, cycle } (key)}
 			<div class="bg-background p-3 border border-surface min-w-0">
@@ -64,6 +61,5 @@
 				</div>
 			</div>
 		{/each}
-		<BaroKiTeer trader={world.voidTrader} {now} onOpenInventory={onOpenBaro} />
 	</section>
 </div>

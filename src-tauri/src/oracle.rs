@@ -30,6 +30,8 @@ pub struct OracleCache {
 #[serde(rename_all = "camelCase")]
 pub struct OracleBounties {
     expiry: Option<i64>,
+    rot: Option<String>,
+    vault_rot: Option<String>,
     bounties: HashMap<String, Vec<Bounty>>,
     error: Option<String>,
     arbitration: Option<Value>,
@@ -54,6 +56,8 @@ fn nonempty(value: Option<&Value>) -> bool {
 
 fn valid_rotation(data: &Value, now: i64) -> bool {
     data["expiry"].as_i64().is_some_and(|expiry| expiry > now)
+        && matches!(data["rot"].as_str(), Some("A" | "B" | "C"))
+        && matches!(data["vaultRot"].as_str(), Some("A" | "B" | "C"))
         && matches!(data["zarimanFaction"].as_str(), Some("FC_CORPUS" | "FC_GRINEER"))
         && FACTIONS.iter().all(|faction| {
             data["bounties"][faction].as_array().is_some_and(|entries| {
@@ -192,13 +196,15 @@ async fn fetch_bounties(app: &AppHandle, force: bool) -> AppResult<OracleBountie
     let state = app.state::<AppState>();
     // Serialize requests across windows, including Maintenance, to coalesce refreshes.
     let mut cache = state.oracle_bounties.lock().await;
-    let result: AppResult<(i64, HashMap<String, Vec<Bounty>>)> = async {
+    let result: AppResult<(i64, String, String, HashMap<String, Vec<Bounty>>)> = async {
         let rotation = document(&state.http_client, &mut cache, "rotation", force).await?;
         let regions = document(&state.http_client, &mut cache, "ExportRegions", force).await?;
         let challenges = document(&state.http_client, &mut cache, "ExportChallenges", force).await?;
         let dict = document(&state.http_client, &mut cache, "dict.en", force).await?;
         match display_bounties(&rotation, &regions, &challenges, &dict) {
-            Ok(bounties) => Ok((rotation["expiry"].as_i64().unwrap(), bounties)),
+            Ok(bounties) => Ok((rotation["expiry"].as_i64().unwrap(),
+                rotation["rot"].as_str().unwrap().to_owned(),
+                rotation["vaultRot"].as_str().unwrap().to_owned(), bounties)),
             Err(error) => {
                 // Metadata can be structurally valid yet omit a new node or challenge.
                 for source in ["ExportRegions", "ExportChallenges", "dict.en"] {
@@ -243,10 +249,10 @@ async fn fetch_bounties(app: &AppHandle, force: bool) -> AppResult<OracleBountie
     }
     let arbitration = arbitration_result.ok();
     match result {
-        Ok((expiry, bounties)) => Ok(OracleBounties {
-            expiry: Some(expiry), bounties, arbitration, field_bounties, invasions,
+        Ok((expiry, rot, vault_rot, bounties)) => Ok(OracleBounties {
+            expiry: Some(expiry), rot: Some(rot), vault_rot: Some(vault_rot), bounties, arbitration, field_bounties, invasions,
             error: arbitration_error.or_else(|| cache.documents.values().filter_map(|doc| doc.error.clone()).next()),
         }),
-        Err(error) => Ok(OracleBounties { expiry: None, bounties: HashMap::new(), arbitration, field_bounties, invasions, error: Some(error.to_string()) }),
+        Err(error) => Ok(OracleBounties { expiry: None, rot: None, vault_rot: None, bounties: HashMap::new(), arbitration, field_bounties, invasions, error: Some(error.to_string()) }),
     }
 }

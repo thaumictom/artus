@@ -1,5 +1,6 @@
 <script lang="ts">
 	import RadioGroup from '$lib/components/RadioGroup.svelte';
+	import BountyRotationRewards from '$lib/components/BountyRotationRewards.svelte';
 	import { formatTimeLeft } from '$lib/date';
 	import { oracleBounties } from '$lib/oracle-bounties.svelte';
 	import { languageString } from 'warframe-worldstate-data/utilities';
@@ -88,6 +89,11 @@
 					</span>
 				{/if}
 			</div>
+			{#if currentOracle && category === 'Ostrons' && snapshot?.rot}
+				<BountyRotationRewards kind="cetus" rotation={snapshot.rot} />
+			{:else if currentOracle && category === 'Entrati' && snapshot?.vaultRot}
+				<BountyRotationRewards kind="vault" rotation={snapshot.vaultRot} />
+			{/if}
 		</div>
 	{/snippet}
 </ViewPanel>
