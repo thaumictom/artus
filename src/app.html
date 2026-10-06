@@ -4,6 +4,25 @@
     <meta charset="utf-8" />
     <link rel="icon" href="%sveltekit.assets%/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script>
+      if (location.pathname.startsWith('/artus')) {
+        const root = document.documentElement;
+        root.classList.add('artus-document');
+        try {
+          const saved = JSON.parse(localStorage.getItem('artus-startup-theme') || 'null');
+          if (saved && typeof saved.theme === 'string' && /^[a-z-]+$/.test(saved.theme) && saved.theme !== 'default') {
+            root.classList.add(`theme-${saved.theme}`);
+            root.dataset.startupTheme = saved.theme;
+          }
+          if (saved && typeof saved.background === 'string' && CSS.supports('color', saved.background)) {
+            root.style.setProperty('--artus-startup-background', saved.background);
+          }
+        } catch { /* The native window color remains the fallback. */ }
+      }
+    </script>
+    <style>
+      html.artus-document, html.artus-document body:not(:has(.artus-app-shell)) { background: var(--artus-startup-background, #11131b) !important; color-scheme: dark; }
+    </style>
     <title>Tauri + SvelteKit + Typescript App</title>
     %sveltekit.head%
   </head>

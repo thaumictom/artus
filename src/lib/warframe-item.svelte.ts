@@ -206,8 +206,16 @@ function startWarframeItems() {
 		if (!active || generation !== current) stop();
 		else stops.push(stop);
 	};
-	void listen('api_catalogs_fetched', () => { void refreshWarframeItemCatalog(); }).then(keep)
-		.catch((error) => console.error('Could not observe shared item catalog:', error));
+	void listen('api_catalogs_fetched', () => { void refreshWarframeItemCatalog(); })
+		.then((stop) => {
+			keep(stop);
+			// Read after subscribing so a fast startup refresh cannot be missed.
+			if (active && generation === current) void refreshWarframeItemCatalog();
+		})
+		.catch((error) => {
+			console.error('Could not observe shared item catalog:', error);
+			if (active && generation === current) void refreshWarframeItemCatalog();
+		});
 	void listen('market_listings_changed', () => {
 		// Listing rows already receive their live order; refresh the shared snapshot on leaving that tab.
 		if (appNavigation.current.section === 'listings') {
@@ -217,7 +225,6 @@ function startWarframeItems() {
 		clearTimeout(listingTimer);
 		listingTimer = setTimeout(() => { void refreshWarframeItemListings(); }, 500);
 	}).then(keep).catch((error) => console.error('Could not observe shared item listings:', error));
-	void refreshWarframeItemCatalog();
 	const stopEffect = $effect.root(() => {
 		$effect(() => {
 			marketAccount.session?.ingameName;

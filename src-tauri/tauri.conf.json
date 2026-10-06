@@ -19,7 +19,8 @@
 				"height": 600,
 				"minWidth": 720,
 				"minHeight": 480,
-				"decorations": false
+				"decorations": false,
+				"backgroundColor": "#11131b"
 			},
 			{
 				"title": "artus-overlay",

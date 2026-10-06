@@ -139,6 +139,20 @@ export function initializeMastery() {
 	if (startPromise) return startPromise;
 	startPromise = (async () => {
 		try {
+			// A first-run catalog may arrive after the window opens; subscribe before reading it.
+			unlistenPrices ??= await listen('api_catalogs_fetched', () => {
+				const refresh = () => {
+					if (mastery.error) {
+						mastery.loading = true;
+						void initializeMastery();
+					} else {
+						void loadTradeablePrices();
+					}
+				};
+				// The event can arrive while the first catalog read is still settling.
+				if (startPromise) void startPromise.then(refresh);
+				else refresh();
+			});
 			const [checked, automatic, otherXp, response] = await Promise.all([
 				store.get<string[]>('checked'),
 				store.get<string[]>('automatic'),
@@ -193,10 +207,9 @@ export function initializeMastery() {
 			unlisten = await listen<{ words: { mastery_key?: string }[]; is_mastery_add?: boolean }>('ocr_result', (event) => {
 				if (event.payload.is_mastery_add) markOcrWords(event.payload.words);
 			});
-			unlistenPrices = await listen('api_catalogs_fetched', () => { void loadTradeablePrices(); });
 			mastery.error = '';
 		} catch (error) {
-			mastery.error = 'Could not load mastery items. Restart Artus after the item catalog has loaded.';
+			mastery.error = 'Could not load mastery items. They will retry when the item catalog refreshes.';
 			startPromise = null;
 			console.error('Could not initialize mastery:', error);
 		} finally {

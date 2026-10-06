@@ -158,13 +158,13 @@ pub fn refresh_catalogs(app: &AppHandle) -> AppResult<()> {
 pub fn start_refresh_loop(app: AppHandle) {
     tauri::async_runtime::spawn(async move {
         loop {
-            tokio::time::sleep(REFRESH_INTERVAL).await;
             let handle = app.clone();
             match tauri::async_runtime::spawn_blocking(move || refresh_catalogs(&handle)).await {
                 Ok(Ok(())) => log::info!("catalog refresh complete"),
                 Ok(Err(error)) => log::warn!("catalog refresh incomplete: {error}"),
                 Err(error) => log::warn!("catalog refresh failed: {error}"),
             }
+            tokio::time::sleep(REFRESH_INTERVAL).await;
         }
     });
 }

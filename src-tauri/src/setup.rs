@@ -55,9 +55,7 @@ pub fn init(app: &mut App, is_wayland: bool) -> Result<(), Box<dyn std::error::E
         Err(err) => error!("failed to load primary themes: {err}"),
     }
 
-    if let Err(error) = api::refresh_catalogs(app.handle()) {
-        error!("catalog refresh incomplete: {error}");
-    }
+    // Network catalogs can take tens of seconds; keep the setup hook free of HTTP work.
     api::start_refresh_loop(app.handle().clone());
 
     // Spawn background tasks

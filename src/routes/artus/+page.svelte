@@ -128,6 +128,9 @@
 	onMount(() => {
 		let disposed = false;
 		let unlistenDebug: (() => void) | undefined;
+		let stopWarframeItems: (() => void) | undefined;
+		let startupTimer: ReturnType<typeof setTimeout> | undefined;
+		let updateTimer: ReturnType<typeof setTimeout> | undefined;
 		void listen<OcrDebugImagePayload>('ocr_debug_image', ({ payload }) => {
 			if (disposed) return;
 			if (ocrDebug.imageUrl) URL.revokeObjectURL(ocrDebug.imageUrl);
@@ -155,23 +158,30 @@
 		window.addEventListener('mousedown', preventSideButtonDefault, true);
 		window.addEventListener('mouseup', handleSideButton, true);
 		window.addEventListener('auxclick', preventSideButtonDefault, true);
-		// Dashboard data must not depend on the settings stores being available.
-		// In particular, a first-run store initialization can be slower than the
-		// page mount or fail independently while world state is still usable.
-		initializeWorldState();
-		const stopWarframeItems = initializeWarframeItems();
 		void loadSettings()
 			.catch((error) => console.error('Could not load settings:', error))
 			.finally(() => { if (!disposed) settingsReady = true; });
-		void loadMarketSession().catch((error) =>
-			console.error('Could not load market session:', error),
-		);
-		void initializeNotificationCenter();
-		void initializeMarketNotifications();
-		void initializeMastery();
-		void checkForUpdate();
+		// Let the shell paint before starting independent catalog, account and notification work.
+		const startupFrame = requestAnimationFrame(() => {
+			startupTimer = setTimeout(() => {
+				if (disposed) return;
+				// World state must stay independent of settings-store initialization.
+				initializeWorldState();
+				stopWarframeItems = initializeWarframeItems();
+				void loadMarketSession().catch((error) =>
+					console.error('Could not load market session:', error),
+				);
+				void initializeNotificationCenter();
+				void initializeMarketNotifications();
+				void initializeMastery();
+				updateTimer = setTimeout(() => { void checkForUpdate(); }, 2000);
+			}, 0);
+		});
 		return () => {
 			disposed = true;
+			cancelAnimationFrame(startupFrame);
+			clearTimeout(startupTimer);
+			clearTimeout(updateTimer);
 			unlistenDebug?.();
 			if (ocrDebug.imageUrl) URL.revokeObjectURL(ocrDebug.imageUrl);
 			ocrDebug.imageUrl = null;
@@ -179,7 +189,7 @@
 			window.removeEventListener('mouseup', handleSideButton, true);
 			window.removeEventListener('auxclick', preventSideButtonDefault, true);
 			stopMasteryListener();
-			stopWarframeItems();
+			stopWarframeItems?.();
 		};
 	});
 
