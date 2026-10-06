@@ -45,8 +45,10 @@
 	];
 </script>
 
-{#snippet listingRow(order: Listing)}
+{#snippet listingRow(order: Listing, index: number, measureRow: (element: HTMLTableRowElement) => void)}
 	<ListingRow
+		virtualIndex={index}
+		{measureRow}
 		{order}
 		{itemDetails}
 		{inventoryItems}
@@ -65,6 +67,7 @@
 	rows={orders}
 	rowKey={(order) => order.id}
 	renderRow={listingRow}
+	virtualize
 	{sortColumn}
 	{sortDirection}
 	{onSort}

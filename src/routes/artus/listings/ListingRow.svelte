@@ -8,6 +8,8 @@
 
 	let {
 		order,
+		virtualIndex,
+		measureRow,
 		itemDetails,
 		inventoryItems,
 		busy,
@@ -19,6 +21,8 @@
 		onOpenMarket,
 	}: {
 		order: Listing;
+		virtualIndex: number;
+		measureRow: (element: HTMLTableRowElement) => void;
 		itemDetails: Record<string, ListingItem>;
 		inventoryItems: InventoryItem[];
 		busy: boolean;
@@ -39,6 +43,8 @@
 </script>
 
 <tr
+	data-index={virtualIndex}
+	use:measureRow
 	class="hover:bg-surface/70 border-border-secondary border-t transition-colors cursor-pointer"
 	onclick={handleRowClick}
 	onkeydown={(event) => {
