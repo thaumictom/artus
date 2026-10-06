@@ -14,6 +14,8 @@
 
 	let {
 		item,
+		virtualIndex,
+		measureRow,
 		price,
 		mastered,
 		listing,
@@ -24,6 +26,8 @@
 		onOpenListing,
 	}: {
 		item: InventoryItem;
+		virtualIndex: number;
+		measureRow: (element: HTMLTableRowElement) => void;
 		price?: { median: number; from_current_offers: boolean };
 		mastered: boolean;
 		listing?: Listing;
@@ -44,7 +48,7 @@
 	}
 </script>
 
-<tr class="border-t border-border-secondary transition-colors hover:bg-surface/70">
+<tr data-index={virtualIndex} use:measureRow class="border-t border-border-secondary transition-colors hover:bg-surface/70">
 	<td class="px-3 py-3.5 font-semibold text-foreground min-w-48">
 		<WarframeItem item={marketSlug ?? ''} name={item.name}
 			{mastered} hideOwned={true} listing={listing ?? null} tradable={!!marketSlug} {onOpenMarket}>

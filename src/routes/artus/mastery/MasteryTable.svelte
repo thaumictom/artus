@@ -51,8 +51,10 @@
 	);
 </script>
 
-{#snippet masteryRow({ item, parentName }: MasteryTableRow)}
+{#snippet masteryRow({ item, parentName }: MasteryTableRow, index: number, measureRow: (element: HTMLTableRowElement) => void)}
 	<MasteryRow
+		virtualIndex={index}
+		{measureRow}
 		{item}
 		{parentName}
 		ownedCount={parentName ? ownedComponentCount(item, parentName) : 0}
@@ -72,6 +74,7 @@
 	{rows}
 	rowKey={({ item }) => item.key}
 	renderRow={masteryRow}
+	virtualize
 	emptyMessage="No mastery items match these filters."
 	{sortColumn}
 	{sortDirection}

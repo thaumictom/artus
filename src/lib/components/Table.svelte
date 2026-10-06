@@ -1,6 +1,8 @@
 <script lang="ts" generics="Row">
 	import Icon from '@iconify/svelte';
 	import type { Snippet } from 'svelte';
+	import { onMount, untrack } from 'svelte';
+	import { createVirtualizer } from '@tanstack/svelte-virtual';
 	import type { TableColumn } from './table-types';
 
 	let {
@@ -14,10 +16,11 @@
 		sortDirection = 'asc',
 		onSort = () => {},
 		minWidth = '640px',
+		virtualize = false,
 	}: {
 		columns: TableColumn[];
 		rows: Row[];
-		renderRow: Snippet<[row: Row]>;
+		renderRow: Snippet<[row: Row, index: number, measureRow: (element: HTMLTableRowElement) => void]>;
 		renderHeader?: Snippet<[column: TableColumn]>;
 		rowKey: (row: Row) => string;
 		emptyMessage?: string;
@@ -25,12 +28,68 @@
 		sortDirection?: 'asc' | 'desc';
 		onSort?: (key: string) => void;
 		minWidth?: string;
+		virtualize?: boolean;
 	} = $props();
+
+	let container: HTMLDivElement;
+	let header: HTMLTableSectionElement;
+	let scrollElement = $state<HTMLElement | null>(null);
+	let mounted = $state(false);
+	const rowVirtualizer = createVirtualizer<HTMLElement, HTMLTableRowElement>({
+		count: 0,
+		getScrollElement: () => scrollElement,
+		estimateSize: () => 76,
+		getItemKey: (index) => rowKey(rows[index]),
+		overscan: 6,
+		enabled: false,
+	});
+	const virtualRows = $derived($rowVirtualizer.getVirtualItems());
+	const topPadding = $derived(virtualRows.length ? virtualRows[0].start - $rowVirtualizer.options.scrollMargin : 0);
+	const bottomPadding = $derived(virtualRows.length
+		? $rowVirtualizer.getTotalSize() - (virtualRows[virtualRows.length - 1].end - $rowVirtualizer.options.scrollMargin)
+		: 0);
+	const measureRow = (element: HTMLTableRowElement) => $rowVirtualizer.measureElement(element);
+
+	$effect(() => {
+		if (!virtualize) return;
+		const currentRows = rows;
+		// Updating the store must not make this effect depend on its own publication.
+		untrack(() => $rowVirtualizer.setOptions({
+			count: currentRows.length,
+			getItemKey: (index) => rowKey(currentRows[index]),
+		}));
+	});
+
+	onMount(() => {
+		if (!virtualize) return;
+		// OverlayScrollbars uses this existing element as its viewport after initialization.
+		scrollElement = container.closest<HTMLElement>('[data-overlayscrollbars-contents]');
+		if (!scrollElement) {
+			mounted = true;
+			return;
+		}
+		const updateMargin = () => {
+			const margin = header.getBoundingClientRect().bottom - scrollElement!.getBoundingClientRect().top + scrollElement!.scrollTop;
+			if (margin !== $rowVirtualizer.options.scrollMargin)
+				$rowVirtualizer.setOptions({ scrollMargin: margin });
+		};
+		updateMargin();
+		$rowVirtualizer.setOptions({ getScrollElement: () => scrollElement, enabled: true });
+		mounted = true;
+		const observer = new ResizeObserver(updateMargin);
+		observer.observe(header);
+		observer.observe(container.parentElement!);
+		scrollElement.addEventListener('scroll', updateMargin, { passive: true });
+		return () => {
+			observer.disconnect();
+			scrollElement?.removeEventListener('scroll', updateMargin);
+		};
+	});
 </script>
 
-<div class="bg-card/50 border border-border-secondary w-full min-w-0 overflow-x-auto">
+<div bind:this={container} class="bg-card/50 border border-border-secondary w-full min-w-0 overflow-x-auto">
 	<table class="w-full text-base text-left" style:min-width={minWidth}>
-		<thead class="bg-surface/80 text-muted-foreground text-sm uppercase tracking-wider">
+		<thead bind:this={header} class="bg-surface/80 text-muted-foreground text-sm uppercase tracking-wider">
 			<tr>
 				{#each columns as column (column.key)}
 					<th
@@ -67,15 +126,23 @@
 			</tr>
 		</thead>
 		<tbody>
-			{#each rows as row (rowKey(row))}
-				{@render renderRow(row)}
+			{#if virtualize && rows.length && scrollElement && virtualRows.length}
+				{#if topPadding > 0}<tr aria-hidden="true"><td colspan={columns.length} style:height={`${topPadding}px`} class="!p-0 !border-0"></td></tr>{/if}
+				{#each virtualRows as virtualRow (virtualRow.key)}
+					{@render renderRow(rows[virtualRow.index], virtualRow.index, measureRow)}
+				{/each}
+				{#if bottomPadding > 0}<tr aria-hidden="true"><td colspan={columns.length} style:height={`${bottomPadding}px`} class="!p-0 !border-0"></td></tr>{/if}
+			{:else if rows.length}
+				{#each virtualize && !mounted ? rows.slice(0, 20) : rows as row, index (rowKey(row))}
+					{@render renderRow(row, index, measureRow)}
+				{/each}
 			{:else}
 				<tr>
 					<td colspan={columns.length} class="px-4 py-10 text-muted-foreground text-center">
 						{emptyMessage}
 					</td>
 				</tr>
-			{/each}
+			{/if}
 		</tbody>
 	</table>
 </div>

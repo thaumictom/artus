@@ -362,9 +362,11 @@
 				</button>
 			</p>
 		{/if}
-		{#snippet inventoryRow(item: InventoryItem)}
+		{#snippet inventoryRow(item: InventoryItem, index: number, measureRow: (element: HTMLTableRowElement) => void)}
 			{@const slug = inventoryMarketSlug(item)}
 			<InventoryRow
+				virtualIndex={index}
+				{measureRow}
 				{item}
 				price={priceFor(item)}
 				mastered={isMastered(item)}
@@ -381,6 +383,7 @@
 			rows={sorted}
 			rowKey={(item) => item.slug ?? item.name}
 			renderRow={inventoryRow}
+			virtualize
 			emptyMessage={loading
 				? 'Loading inventory…'
 				: inventory.error || (data.length === 0

@@ -7,6 +7,8 @@
 
 	let {
 		item,
+		virtualIndex,
+		measureRow,
 		parentName,
 		ownedCount = 0,
 		completedComponents = 0,
@@ -18,6 +20,8 @@
 		onBuy = () => {},
 	}: {
 		item: MasteryItem;
+		virtualIndex: number;
+		measureRow: (element: HTMLTableRowElement) => void;
 		parentName?: string;
 		ownedCount?: number;
 		completedComponents?: number;
@@ -78,6 +82,8 @@
 {/snippet}
 
 <tr
+	data-index={virtualIndex}
+	use:measureRow
 	class={isComponent
 		? `border-t border-border-secondary/50 bg-surface/35 text-muted-foreground transition-colors hover:bg-surface/65 ${hasComponents ? 'cursor-pointer focus-visible:outline-2 focus-visible:outline-accent' : ''}`
 		: `border-t border-border-secondary transition-colors hover:bg-surface/70 ${expanded ? 'bg-surface/55' : ''} ${hasComponents ? 'cursor-pointer focus-visible:outline-2 focus-visible:outline-accent' : ''}`}
