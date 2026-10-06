@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import 'reflect-metadata';
-import { WorldEvent, WorldState, type InitialWorldState } from 'warframe-worldstate-parser';
+import { SyndicateJob, SyndicateMission, WorldEvent, WorldState, type InitialWorldState } from 'warframe-worldstate-parser';
 import { processWorldStateNotifications } from '$lib/notifications.svelte';
 
 type RawWorldState = Omit<InitialWorldState, 'Events'> & {
@@ -31,6 +31,16 @@ export function reloadWorldState(): Promise<void> {
 			// The synchronous constructor leaves events empty; parse Goals locally without
 			// the async builder's additional bounty reward requests.
 			world.events = (raw.Goals ?? []).map((event) => new WorldEvent(event, { locale: 'en' }));
+			world.syndicateMissions = (raw.SyndicateMissions ?? []).map((mission) => {
+				const syndicate = new SyndicateMission(mission, { locale: 'en' });
+				// Jobs are present in the raw world state; their external reward pools are not.
+				const expiry = syndicate.expiry;
+				if (expiry instanceof Date && Number.isFinite(expiry.getTime())) {
+					syndicate.jobs = (mission.Jobs ?? []).map((job) =>
+						new SyndicateJob(job, expiry, { locale: 'en' }));
+				}
+				return syndicate;
+			});
 			// The parser filters news by locale and drops Community; join by ID,
 			// rather than array position, to preserve the API's classification.
 			const communityById = new Map((raw.Events ?? []).flatMap((event) => {

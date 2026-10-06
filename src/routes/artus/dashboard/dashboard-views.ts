@@ -13,6 +13,7 @@ import Sortie from './views/Sortie.svelte';
 import ArchonHunt from './views/ArchonHunt.svelte';
 import Nightwave from './views/Nightwave.svelte';
 import SyndicateMissions from './views/SyndicateMissions.svelte';
+import Bounties from './views/Bounties.svelte';
 import Arbitration from './views/Arbitration.svelte';
 import KuvaMissions from './views/KuvaMissions.svelte';
 import Events from './views/Events.svelte';
@@ -43,7 +44,7 @@ import CommunityCampaign from './views/CommunityCampaign.svelte';
 import WorldCycles from './views/WorldCycles.svelte';
 
 export const dashboardViews = [
-	{ value: 'WorldCycles', label: 'World cycles', component: WorldCycles },
+	{ value: 'WorldCycles', label: 'World Cycles', component: WorldCycles },
 	{ value: 'fissures', label: 'Fissure Missions', component: FissureMissions },
 	{ value: 'news', label: 'News', component: News },
 	{
@@ -64,7 +65,8 @@ export const dashboardViews = [
 	{ value: 'Sortie', label: "Sortie", component: Sortie },
 	{ value: 'ArchonHunt', label: "Archon Hunt", component: ArchonHunt },
 	{ value: 'Nightwave', label: "Nightwave", component: Nightwave },
-	{ value: 'SyndicateMissions', label: "Syndicates & Bounties", component: SyndicateMissions },
+	{ value: 'SyndicateMissions', label: "Syndicates", component: SyndicateMissions },
+	{ value: 'Bounties', label: "Bounties", component: Bounties },
 	{ value: 'Arbitration', label: "Arbitration", component: Arbitration },
 	{ value: 'KuvaMissions', label: "Kuva Missions", component: KuvaMissions },
 	{ value: 'Events', label: "Events", component: Events },
@@ -105,7 +107,7 @@ export const dashboardViews = [
 export type DashboardView = (typeof dashboardViews)[number]['value'];
 
 const unusedViews = [
-	'SyndicateMissions', 'KuvaMissions', 'DarkSectors', 'CommunityCampaign',
+	'KuvaMissions', 'DarkSectors', 'CommunityCampaign',
 	'Arbitration', 'WeeklyChallenges', 'SentientOutposts', 'PersistentEnemies', 'GlobalUpgrades',
 	'Faceoff', 'FlashSales', 'Kinepage', 'Construction',
 ] as const satisfies readonly DashboardView[];
@@ -118,11 +120,11 @@ export function isDashboardViewVisible(view: string, showUnused: boolean): boole
 const viewGroups = [
 	{
 		label: 'General',
-		views: ['WorldCycles', 'news', 'fissures', 'Alerts', 'Invasions', 'Events'],
+		views: ['WorldCycles', 'news', 'Events', 'Alerts', 'fissures', 'Invasions'],
 	},
 	{
 		label: 'Daily & Weekly',
-		views: ['Sortie', 'ArchonHunt', 'Circuit', 'Archimedea', 'Descendia', 'ClanInitiative', 'Calendar'],
+		views: ['Sortie', 'ArchonHunt', 'SyndicateMissions', 'Bounties', 'Circuit', 'Archimedea', 'Descendia', 'ClanInitiative', 'Calendar'],
 	},
 	{
 		label: 'Challenges',
