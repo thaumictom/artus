@@ -199,7 +199,7 @@
 >
 	<Tabs.List
 		aria-label="Main navigation"
-		class="flex flex-col justify-between bg-surface border-border-secondary w-full h-full min-h-0 overflow-hidden"
+		class="flex flex-col justify-between border-border-secondary w-full h-full min-h-0 overflow-hidden"
 	>
 		<div class="flex flex-co min-h-0 overflow-x-hidden overflow-y-auto">
 			<div class="relative flex flex-col gap-y-0.5 w-full shrink-0" use:animateIndicator>

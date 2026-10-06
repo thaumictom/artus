@@ -1,16 +1,17 @@
 <script lang="ts">
 	import Button from '$lib/components/Button.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
-	import { mastery, dismissMasteryDots, setOtherMasteryXp } from '$lib/mastery.svelte';
+	import { mastery, dismissMasteryDots, isVisibleMasteryItem, setOtherMasteryXp } from '$lib/mastery.svelte';
 	import { masteryRankProgress, masteryXpFor } from '$lib/mastery-xp';
 
 	let dialogOpen = $state(false);
 	let draftXp = $state('');
 	let inputError = $state('');
 	const checked = $derived(new Set(mastery.checked));
-	const checkedCount = $derived(mastery.items.filter((item) => checked.has(item.key)).length);
+	const visibleItems = $derived(mastery.items.filter(isVisibleMasteryItem));
+	const checkedCount = $derived(visibleItems.filter((item) => checked.has(item.key)).length);
 	const gearXp = $derived(
-		mastery.items.reduce(
+		visibleItems.reduce(
 			(total, item) => total + (checked.has(item.key) ? masteryXpFor(item) : 0),
 			0,
 		),
@@ -39,7 +40,7 @@
 	<div class="flex justify-between items-baseline gap-3">
 		<span class="font-semibold">{rankProgress.label} · tracked mastery</span>
 		<span class="text-muted-foreground text-sm">
-			{checkedCount} / {mastery.items.length} checked
+			{checkedCount} / {visibleItems.length} checked
 		</span>
 	</div>
 	<div

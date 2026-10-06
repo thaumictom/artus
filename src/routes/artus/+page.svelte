@@ -104,7 +104,9 @@
 		readyTableSection = null;
 		let timer: ReturnType<typeof setTimeout> | undefined;
 		const frame = requestAnimationFrame(() => {
-			timer = setTimeout(() => { readyTableSection = section; }, 0);
+			timer = setTimeout(() => {
+				readyTableSection = section;
+			}, 0);
 		});
 		return () => {
 			cancelAnimationFrame(frame);
@@ -160,7 +162,9 @@
 		window.addEventListener('auxclick', preventSideButtonDefault, true);
 		void loadSettings()
 			.catch((error) => console.error('Could not load settings:', error))
-			.finally(() => { if (!disposed) settingsReady = true; });
+			.finally(() => {
+				if (!disposed) settingsReady = true;
+			});
 		// Let the shell paint before starting independent catalog, account and notification work.
 		const startupFrame = requestAnimationFrame(() => {
 			startupTimer = setTimeout(() => {
@@ -174,7 +178,9 @@
 				void initializeNotificationCenter();
 				void initializeMarketNotifications();
 				void initializeMastery();
-				updateTimer = setTimeout(() => { void checkForUpdate(); }, 2000);
+				updateTimer = setTimeout(() => {
+					void checkForUpdate();
+				}, 2000);
 			}, 0);
 		});
 		return () => {
@@ -253,13 +259,17 @@
 </script>
 
 {#snippet tableSkeleton()}
-	<div role="status" aria-label="Loading table" class="page-width flex flex-col gap-4 mx-auto p-8 w-full max-w-5xl">
+	<div
+		role="status"
+		aria-label="Loading table"
+		class="flex flex-col gap-4 mx-auto p-8 w-full max-w-5xl page-width"
+	>
 		<Skeleton class="w-full h-20" />
 		<div class="flex flex-wrap gap-3">
 			<Skeleton class="flex-1 min-w-56 h-10" />
 			{#each Array(3) as _}<Skeleton class="w-36 h-10" />{/each}
 		</div>
-		<div class="border border-border-secondary divide-y divide-border-secondary">
+		<div class="border border-border-secondary divide-border-secondary divide-y">
 			{#each Array(6) as _}<Skeleton class="w-full h-14" />{/each}
 		</div>
 	</div>

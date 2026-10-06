@@ -92,7 +92,7 @@ type Config = {
 export const config = $state({
 	app_theme: 'default' as AppTheme,
 	full_width_content: false as boolean,
-	sidebar_open: true as boolean,
+	sidebar_open: false as boolean,
 	hotkeys: {
 		screenshot: 'control+Home',
 		screenshot_add_mastery: 'alt+control+Home',

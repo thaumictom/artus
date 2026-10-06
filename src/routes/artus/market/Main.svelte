@@ -224,6 +224,7 @@
 					bind:value={selectedSlug}
 					disabled={isLoadingDictionary || isSearching}
 					inputProps={{
+						'data-item-search': '',
 						placeholder: isLoadingDictionary ? 'Loading items...' : 'Search for an item...',
 					}}
 				></Combobox>

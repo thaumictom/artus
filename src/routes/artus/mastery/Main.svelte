@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { inventory } from '$lib/inventory.svelte';
 	import { inventoryMarketSlug, inventoryNameKey } from '$lib/inventory';
-	import { isOwnedMasteryComponent, mastery, type MasteryItem } from '$lib/mastery.svelte';
+	import { isOwnedMasteryComponent, isVisibleMasteryItem, mastery, type MasteryItem } from '$lib/mastery.svelte';
 	import Select from '$lib/components/Select.svelte';
 	import Skeleton from '$lib/components/Skeleton.svelte';
 	import MasteryTable from './MasteryTable.svelte';
@@ -49,6 +49,7 @@
 	}
 	const checked = $derived(new Set(mastery.checked));
 	const automatic = $derived(new Set(mastery.automatic));
+	const visibleItems = $derived(mastery.items.filter(isVisibleMasteryItem));
 	function completedComponentCount(item: MasteryItem) {
 		return item.components.filter(
 			(part) =>
@@ -58,7 +59,7 @@
 	}
 	const categories = $derived([
 		'All',
-		...new Set(mastery.items.map((item) => item.category ?? 'Other')),
+		...new Set(visibleItems.map((item) => item.category ?? 'Other')),
 	]);
 	const tags = $derived([
 		'All',
@@ -67,7 +68,7 @@
 			'Non-prime',
 			'Tradeable',
 			'Has components',
-			...mastery.items.flatMap((item) => item.tags ?? []),
+			...visibleItems.flatMap((item) => item.tags ?? []),
 		]),
 	]);
 	const categoryOptions = $derived(categories.map((value) => ({ value, label: value })));
@@ -79,7 +80,7 @@
 		{ value: 'In progress', label: 'In progress' },
 	];
 	const filtered = $derived(
-		mastery.items.filter((item) => {
+		visibleItems.filter((item) => {
 			if (category !== 'All' && (item.category ?? 'Other') !== category) return false;
 			const isPrime = item.name.includes('Prime');
 			if (tag === 'Prime' && !isPrime) return false;
@@ -176,6 +177,7 @@
 					</label>
 					<input
 						id="mastery-search"
+						data-item-search
 						type="search"
 						value={search}
 						oninput={updateSearch}

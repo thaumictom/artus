@@ -20,10 +20,7 @@
 
 <!-- Query this widget's available width, independently of the viewport. -->
 <div class="@container/cycles min-w-0">
-	<section
-		aria-label="World cycles"
-		class="gap-2 grid grid-cols-1 @[32rem]/cycles:grid-cols-2 @[48rem]/cycles:grid-cols-3 @[80rem]/cycles:grid-cols-5"
-	>
+	<section aria-label="World cycles" class="gap-2 grid grid-cols-1 @[64rem]/cycles:grid-cols-5">
 		{#each cycles as { key, label, cycle } (key)}
 			<div class="bg-background p-3 border border-surface min-w-0">
 				<p class="text-muted-foreground text-sm truncate">{label}</p>

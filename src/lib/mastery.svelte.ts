@@ -31,6 +31,8 @@ export type MasteryItem = Omit<z.infer<typeof catalogItemSchema>, 'components'> 
 	components: MasteryItem[];
 };
 
+const scanOnlyMasteryNames = new Set(['Excalibur Prime', 'Lato Prime', 'Skana Prime']);
+
 export function isOwnedMasteryComponent(item: MasteryItem, ownedCount: number) {
 	// Crafting resources remain manual even when the inventory has enough of them.
 	return item.type?.toLowerCase() !== 'resource'
@@ -43,12 +45,17 @@ export const mastery = $state({
 	items: [] as MasteryItem[],
 	checked: [] as string[],
 	automatic: [] as string[],
+	scannedRestricted: [] as string[],
 	otherXp: 0,
 	prices: {} as z.infer<typeof tradeablePriceSchema>,
 	ducats: {} as Record<string, number>,
 	loading: true,
 	error: ''
 });
+
+export function isVisibleMasteryItem(item: MasteryItem) {
+	return !scanOnlyMasteryNames.has(item.name) || mastery.scannedRestricted.includes(item.key);
+}
 
 let startPromise: Promise<void> | null = null;
 let unlisten: UnlistenFn | undefined;
@@ -79,11 +86,13 @@ function buildOverlaySlugIndex(items: MasteryItem[]) {
 function persist() {
 	const checked = [...mastery.checked];
 	const automatic = [...mastery.automatic];
+	const scannedRestricted = [...mastery.scannedRestricted];
 	const otherXp = mastery.otherXp;
 	const masteredSlugs = [...new Set(checked.flatMap((key) => overlaySlugsByMasteryKey.get(key) ?? []))];
 	saveQueue = saveQueue.then(async () => {
 		await store.set('checked', checked);
 		await store.set('automatic', automatic);
+		await store.set('scannedRestricted', scannedRestricted);
 		await store.set('otherXp', otherXp);
 		await store.set('masteredSlugs', masteredSlugs);
 		await store.save();
@@ -107,6 +116,7 @@ export function dismissMasteryDots() {
 export function resetMasteryItems() {
 	mastery.checked = [];
 	mastery.automatic = [];
+	mastery.scannedRestricted = [];
 	persist();
 }
 
@@ -122,6 +132,13 @@ function markOcrWords(words: { mastery_key?: string }[]) {
 	if (found.size === 0) return;
 	mastery.checked = [...new Set([...mastery.checked, ...found])];
 	mastery.automatic = [...new Set([...mastery.automatic, ...found])];
+	// Keep scan-only items visible after their automatic dot is dismissed.
+	mastery.scannedRestricted = [...new Set([
+		...mastery.scannedRestricted,
+		...mastery.items
+			.filter((item) => scanOnlyMasteryNames.has(item.name) && found.has(item.key))
+			.map((item) => item.key),
+	])];
 	persist();
 }
 
@@ -153,14 +170,16 @@ export function initializeMastery() {
 				if (startPromise) void startPromise.then(refresh);
 				else refresh();
 			});
-			const [checked, automatic, otherXp, response] = await Promise.all([
+			const [checked, automatic, scannedRestricted, otherXp, response] = await Promise.all([
 				store.get<string[]>('checked'),
 				store.get<string[]>('automatic'),
+				store.get<string[]>('scannedRestricted'),
 				store.get<number>('otherXp'),
 				invoke<Record<string, unknown>>('get_cached_market_items')
 			]);
 			mastery.checked = Array.isArray(checked) ? checked : [];
 			mastery.automatic = Array.isArray(automatic) ? automatic : [];
+			mastery.scannedRestricted = Array.isArray(scannedRestricted) ? scannedRestricted : [];
 			mastery.otherXp = typeof otherXp === 'number' && Number.isSafeInteger(otherXp) && otherXp >= 0 ? otherXp : 0;
 			const catalog = new Map<string, z.infer<typeof catalogItemSchema>>();
 			for (const [key, value] of Object.entries(response)) {

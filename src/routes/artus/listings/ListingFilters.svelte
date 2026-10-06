@@ -36,6 +36,7 @@
 			/>
 			<input
 				id="listings-search"
+				data-item-search
 				type="search"
 				bind:value={search}
 				placeholder="Search by item name or keyword..."

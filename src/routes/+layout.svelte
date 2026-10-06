@@ -11,11 +11,23 @@
 	let { children }: { children?: Snippet } = $props();
 	let themeReady = $state(false);
 	onMount(() => {
+		function focusItemSearch(event: KeyboardEvent) {
+			if (!event.ctrlKey || event.altKey || event.metaKey || event.shiftKey || event.key.toLowerCase() !== 'f') return;
+			event.preventDefault();
+			const dialog = document.querySelector('[role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"]');
+			const search = (dialog ?? document).querySelector<HTMLInputElement>('input[data-item-search]:not(:disabled)');
+			search?.focus();
+			search?.select();
+		}
+		window.addEventListener('keydown', focusItemSearch, true);
 		void loadSettings()
 			.then(() => { themeReady = true; })
 			.catch((error) => console.error('Could not load theme:', error));
 		const unwatch = watchAppTheme();
-		return () => { void unwatch.then((stop) => stop()); };
+		return () => {
+			window.removeEventListener('keydown', focusItemSearch, true);
+			void unwatch.then((stop) => stop());
+		};
 	});
 	$effect(() => {
 		if (!themeReady) return;

@@ -330,6 +330,7 @@
 				</label>
 				<input
 					id="inventory-search"
+					data-item-search
 					type="search"
 					bind:value={search}
 					placeholder="Search for an item..."
