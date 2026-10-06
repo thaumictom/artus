@@ -108,7 +108,7 @@ export type DashboardView = (typeof dashboardViews)[number]['value'];
 
 const unusedViews = [
 	'KuvaMissions', 'DarkSectors', 'CommunityCampaign',
-	'Arbitration', 'WeeklyChallenges', 'SentientOutposts', 'PersistentEnemies', 'GlobalUpgrades',
+	'WeeklyChallenges', 'SentientOutposts', 'PersistentEnemies', 'GlobalUpgrades',
 	'Faceoff', 'FlashSales', 'Kinepage', 'Construction',
 ] as const satisfies readonly DashboardView[];
 const unusedViewIds = new Set<string>(unusedViews);
@@ -120,7 +120,7 @@ export function isDashboardViewVisible(view: string, showUnused: boolean): boole
 const viewGroups = [
 	{
 		label: 'General',
-		views: ['WorldCycles', 'news', 'Events', 'Alerts', 'fissures', 'Invasions'],
+		views: ['WorldCycles', 'news', 'Events', 'Alerts', 'fissures', 'Arbitration', 'Invasions'],
 	},
 	{
 		label: 'Daily & Weekly',

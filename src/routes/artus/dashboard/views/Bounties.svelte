@@ -1,6 +1,7 @@
 <script lang="ts">
 	import RadioGroup from '$lib/components/RadioGroup.svelte';
 	import { oracleBounties } from '$lib/oracle-bounties.svelte';
+	import { languageString } from 'warframe-worldstate-data/utilities';
 	import ViewPanel from './ViewPanel.svelte';
 	import { isCurrent, type DashboardViewProps, type ViewRow } from './view-types';
 
@@ -14,7 +15,18 @@
 		{ value: 'HexSyndicate', label: 'Hex' },
 	] as const;
 	let category = $state<string>(categories[0].value);
+	let bountySource = $state('hub');
+	const sources = [{ value: 'hub', label: 'Hub bounties' }, { value: 'field', label: 'Field bounties' }];
+	const fieldTags: Record<string, 'CetusSyndicate' | 'SolarisSyndicate' | 'EntratiSyndicate'> = { Ostrons: 'CetusSyndicate', 'Solaris United': 'SolarisSyndicate', Entrati: 'EntratiSyndicate' };
+	let field = $derived(oracleBounties.snapshot?.fieldBounties);
+	let currentField = $derived(field && field.expiry > localNow ? field : null);
+	let fieldRows: ViewRow[] = $derived(currentField && fieldTags[category]
+		? Object.entries(currentField[fieldTags[category]]).map(([location, jobs]) => ({
+			title: location.replace(/^Bounty/, '').replace(/([a-z])([A-Z])/g, '$1 $2'),
+			details: jobs.map((job) => languageString(job, 'en')),
+		})) : []);
 	let isOracleCategory = $derived(['ZarimanSyndicate', 'EntratiLabSyndicate', 'HexSyndicate'].includes(category));
+	let showField = $derived(!isOracleCategory && bountySource === 'field');
 	let selectedLabel = $derived(categories.find((item) => item.value === category)?.label ?? category);
 	let snapshot = $derived(oracleBounties.snapshot);
 	let currentOracle = $derived(snapshot?.expiry != null && snapshot.expiry > localNow);
@@ -45,17 +57,20 @@
 			})));
 </script>
 
-{#if isOracleCategory && oracleBounties.error}
+{#if (isOracleCategory || showField) && oracleBounties.error}
 	<p role="status" class="mb-4 text-danger text-sm">
 		Could not refresh current bounties. Automatic retries are limited to once every five minutes.
 	</p>
 {/if}
-<ViewPanel title="Bounties" countLabel="bounties" {rows} now={isOracleCategory ? localNow : now}
-	expiry={isOracleCategory && currentOracle && snapshot?.expiry ? new Date(snapshot.expiry) : undefined}
-	empty={isOracleCategory && oracleBounties.loading
+<ViewPanel title="Bounties" countLabel={showField ? 'field locations' : 'bounties'} rows={showField ? fieldRows : rows} now={isOracleCategory || showField ? localNow : now}
+	expiry={showField && currentField ? new Date(currentField.expiry) : isOracleCategory && currentOracle && snapshot?.expiry ? new Date(snapshot.expiry) : undefined}
+	empty={(isOracleCategory || showField) && oracleBounties.loading
 		? 'Loading current bounties…' : `No current bounties for ${selectedLabel} in this snapshot.`}
 >
 	{#snippet headerAction()}
 		<RadioGroup label="Bounty faction" variant="segmented" options={categories} bind:value={category} class="max-w-full" />
+		{#if !isOracleCategory}
+			<RadioGroup label="Bounty source" variant="segmented" options={sources} bind:value={bountySource} />
+		{/if}
 	{/snippet}
 </ViewPanel>

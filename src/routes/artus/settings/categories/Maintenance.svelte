@@ -13,7 +13,7 @@
 	let refreshStatus = $state<string | null>(null);
 	let lastFetchedAt = $state<number | null>(null);
 	let description = $derived(
-		`Reload item data, prices, wiki offerings and bounty rotations now. Last fetched: ${lastFetchedAt === null ? 'Never' : new Date(lastFetchedAt).toLocaleString()}.`,
+		`Reload item data, prices, wiki offerings, bounties, Arbitration and invasion missions now. Last fetched: ${lastFetchedAt === null ? 'Never' : new Date(lastFetchedAt).toLocaleString()}.`,
 	);
 	let cooldownTimer: ReturnType<typeof setTimeout> | undefined;
 	onMount(() => {
@@ -51,7 +51,7 @@
 		try {
 			await invoke('refresh_api_catalogs');
 		} catch (error) {
-			refreshStatus = `Some catalogs, wiki offerings or bounty rotations could not be refreshed: ${String(error)}`;
+			refreshStatus = `Some catalogs, wiki offerings or Oracle missions could not be refreshed: ${String(error)}`;
 		} finally {
 			await reloadOracleBounties();
 			refreshing = false;

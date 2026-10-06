@@ -5,8 +5,15 @@
 	import WorldStateReward from '$lib/components/WorldStateReward.svelte';
 	import { hasInvasionReward, invasionRewardOpportunities } from '$lib/invasion-rewards';
 	import { factionColor } from '$lib/faction-colors';
+	import { oracleBounties } from '$lib/oracle-bounties.svelte';
 	import type { DashboardViewProps } from './view-types';
-	let { world, now }: DashboardViewProps = $props();
+	let { world, now, localNow }: DashboardViewProps = $props();
+	let rotation = $derived(oracleBounties.snapshot?.invasions);
+	let missions = $derived(rotation && rotation.expiry * 1000 > localNow ? rotation.invasions : []);
+	const factionTags: Record<string, string> = { Grineer: 'FC_GRINEER', Corpus: 'FC_CORPUS', Infested: 'FC_INFESTATION' };
+	function missionName(value: string) {
+		return ({ Exterminate: 'Extermination', Territory: 'Interception', MobileDefense: 'Mobile Defense' } as Record<string, string>)[value] ?? value;
+	}
 	let invasions = $derived((world.invasions ?? []).filter((item) => !item.completed));
 	let opportunities = $derived(invasions.flatMap(invasionRewardOpportunities));
 
@@ -28,6 +35,7 @@
 			<WorldStateMissionCard node={invasion.node} {now}>
 				<div class="gap-4 grid grid-cols-1 sm:grid-cols-2">
 					{#each [invasion.attacker, invasion.defender].sort((a, b) => Number(hasInvasionReward(b.reward)) - Number(hasInvasionReward(a.reward))) as side, index}
+						{@const mission = missions.find((entry) => entry.id === invasion.id && entry.ally === factionTags[side.factionKey])}
 						<div
 							class="min-w-0 {index === 1
 								? 'border-t border-border-secondary pt-4 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-4'
@@ -36,6 +44,9 @@
 							<p class="mb-2 font-medium text-muted-foreground text-xs uppercase tracking-widest">
 								{side.faction}
 							</p>
+							{#if mission}
+								<p class="mb-2 text-sm text-muted-foreground">{missionName(mission.missions[0])}</p>
+							{/if}
 							{#if side.reward}
 								<WorldStateReward reward={side.reward} />
 							{:else}

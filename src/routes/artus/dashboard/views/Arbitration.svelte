@@ -1,11 +1,13 @@
 <script lang="ts">
 	import ViewPanel from './ViewPanel.svelte';
-	import { isCurrent, type DashboardViewProps, type ViewRow } from './view-types';
-	let { world, now }: DashboardViewProps = $props();
-	let rows: ViewRow[] = $derived(world.arbitration?.node && world.arbitration.nodeKey !== 'SolNode000' && isCurrent(world.arbitration, now) ? [{
-			title: world.arbitration.node, description: [world.arbitration.type, world.arbitration.enemy].filter(Boolean).join(' · '),
-			details: world.arbitration.archwing ? ['Archwing required'] : [], expiry: world.arbitration.expiry,
-		}] : []);
+	import { oracleBounties } from '$lib/oracle-bounties.svelte';
+	import type { DashboardViewProps, ViewRow } from './view-types';
+	let { localNow }: DashboardViewProps = $props();
+	let arbitration = $derived(oracleBounties.snapshot?.arbitration);
+	let current = $derived(arbitration && arbitration.expiry > localNow ? arbitration : null);
+	let rows: ViewRow[] = $derived(current ? [{ title: current.node, description: [current.missionType, current.faction].filter(Boolean).join(' · ') }] : []);
 </script>
 
-<ViewPanel title="Arbitration" {rows} {now} empty="Arbitration data is unavailable in this snapshot." />
+<ViewPanel title="Arbitration" {rows} now={localNow} headerSummary="Current Arbitration"
+	expiry={current ? new Date(current.expiry) : undefined}
+	empty={oracleBounties.loading ? 'Loading current Arbitration…' : 'Arbitration is unavailable. Automatic retries are limited to once every five minutes.'} />

@@ -13,6 +13,9 @@ const snapshotSchema = z.object({
 	expiry: z.number().nullable(),
 	bounties: z.record(z.string(), z.array(bountySchema)),
 	error: z.string().nullable(),
+    arbitration: z.object({ node: z.string(), missionType: z.string(), faction: z.string(), expiry: z.number() }).nullable(),
+    fieldBounties: z.object({ expiry: z.number(), CetusSyndicate: z.record(z.string(), z.array(z.string())), SolarisSyndicate: z.record(z.string(), z.array(z.string())), EntratiSyndicate: z.record(z.string(), z.array(z.string())) }).nullable(),
+    invasions: z.object({ activation: z.number(), expiry: z.number(), invasions: z.array(z.object({ id: z.string(), ally: z.string(), missions: z.array(z.string()) })) }).nullable(),
 });
 type Snapshot = z.infer<typeof snapshotSchema>;
 

@@ -32,6 +32,9 @@ pub struct OracleBounties {
     expiry: Option<i64>,
     bounties: HashMap<String, Vec<Bounty>>,
     error: Option<String>,
+    arbitration: Option<Value>,
+    field_bounties: Option<Value>,
+    invasions: Option<Value>,
 }
 
 #[derive(Serialize)]
@@ -80,16 +83,32 @@ async fn document(
         }
     }
     saved.attempted_at = Some(now);
-    let url = if source == "rotation" {
-        "https://oracle.browse.wf/bounty-cycle".to_owned()
+    let url = if matches!(source, "rotation" | "arbitration" | "location-bounties" | "invasions") {
+        format!("https://oracle.browse.wf/{}", if source == "rotation" { "bounty-cycle" } else { source })
     } else {
         format!("https://browse.wf/warframe-public-export-plus/{source}.json")
     };
     let fetched: AppResult<Value> = async {
-        let data: Value = client.get(url).timeout(Duration::from_secs(20))
-            .send().await?.error_for_status()?.json().await?;
+        let response = client.get(url).timeout(Duration::from_secs(20))
+            .send().await?.error_for_status()?;
+        let data: Value = if source == "arbitration" {
+            let node = response.text().await?.trim().to_owned();
+            serde_json::json!({"node": node, "expiry": (now / 3_600_000 + 1) * 3_600_000})
+        } else { response.json().await? };
         let valid = if source == "rotation" {
             valid_rotation(&data, Utc::now().timestamp_millis())
+        } else if source == "arbitration" {
+            data["node"].as_str().is_some_and(|node| node.starts_with("SolNode") && node.len() > 7 && node[7..].chars().all(|c| c.is_ascii_digit()))
+        } else if source == "location-bounties" {
+            data["expiry"].as_i64().is_some_and(|expiry| expiry > now)
+                && ["CetusSyndicate", "SolarisSyndicate", "EntratiSyndicate"].iter().all(|tag|
+                    data[tag].as_object().is_some_and(|locations| !locations.is_empty() && locations.values().all(|jobs|
+                        jobs.as_array().is_some_and(|jobs| !jobs.is_empty() && jobs.iter().all(|job| nonempty(Some(job)))))))
+        } else if source == "invasions" {
+            data["expiry"].as_i64().is_some_and(|expiry| expiry * 1000 > now)
+                && data["invasions"].as_array().is_some_and(|entries| !entries.is_empty() && entries.iter().all(|entry|
+                    nonempty(entry.get("id")) && nonempty(entry.get("ally")) && entry["missions"].as_array().is_some_and(|missions|
+                        missions.len() == 2 && missions.iter().all(|mission| nonempty(Some(mission))))))
         } else {
             data.as_object().is_some_and(|entries| !entries.is_empty())
         };
@@ -98,9 +117,10 @@ async fn document(
     }.await;
     match fetched {
         Ok(data) => {
-            saved.expires_at = if source == "rotation" {
+            saved.expires_at = if matches!(source, "rotation" | "arbitration" | "location-bounties") {
                 data["expiry"].as_i64().expect("validated rotation expiry")
-            } else { Utc::now().timestamp_millis() + METADATA_LIFETIME };
+            } else if source == "invasions" { data["expiry"].as_i64().unwrap() * 1000 }
+            else { Utc::now().timestamp_millis() + METADATA_LIFETIME };
             saved.data = Some(data.clone());
             saved.error = None;
             Ok(data)
@@ -192,11 +212,41 @@ async fn fetch_bounties(app: &AppHandle, force: bool) -> AppResult<OracleBountie
             }
         }
     }.await;
+    // Independent feeds remain available when another rotation fails.
+    let field_bounties = document(&state.http_client, &mut cache, "location-bounties", force).await.ok();
+    let invasions = document(&state.http_client, &mut cache, "invasions", force).await.ok();
+    let arbitration_result: AppResult<Value> = async {
+        let raw = document(&state.http_client, &mut cache, "arbitration", force).await?;
+        let regions = document(&state.http_client, &mut cache, "ExportRegions", false).await?;
+        let dict = document(&state.http_client, &mut cache, "dict.en", false).await?;
+        let region = &regions[raw["node"].as_str().unwrap()];
+        Ok(serde_json::json!({
+            "node": format!("{} ({})", translated(&dict, region, "name")?, translated(&dict, region, "systemName")?),
+            "missionType": translated(&dict, region, "missionName")?,
+            "faction": match region["faction"].as_str() { Some("FC_GRINEER") => "Grineer", Some("FC_CORPUS") => "Corpus", Some("FC_INFESTATION") => "Infested", Some("FC_OROKIN") => "Corrupted", _ => "" },
+            "expiry": raw["expiry"],
+        }))
+    }.await;
+    let arbitration_error = arbitration_result.as_ref().err().map(ToString::to_string);
+    if let Some(error) = arbitration_error.as_ref().filter(|_| cache.documents.get("arbitration")
+        .is_some_and(|saved| saved.expires_at > Utc::now().timestamp_millis())) {
+        // Retry unresolved node metadata on the same five-minute schedule.
+        for source in ["ExportRegions", "dict.en"] {
+            if let Some(saved) = cache.documents.get_mut(source) {
+                if saved.expires_at > Utc::now().timestamp_millis() {
+                    saved.expires_at = 0;
+                    saved.attempted_at = Some(Utc::now().timestamp_millis());
+                    saved.error = Some(error.clone());
+                }
+            }
+        }
+    }
+    let arbitration = arbitration_result.ok();
     match result {
         Ok((expiry, bounties)) => Ok(OracleBounties {
-            expiry: Some(expiry), bounties,
-            error: cache.documents.values().filter_map(|doc| doc.error.clone()).next(),
+            expiry: Some(expiry), bounties, arbitration, field_bounties, invasions,
+            error: arbitration_error.or_else(|| cache.documents.values().filter_map(|doc| doc.error.clone()).next()),
         }),
-        Err(error) => Ok(OracleBounties { expiry: None, bounties: HashMap::new(), error: Some(error.to_string()) }),
+        Err(error) => Ok(OracleBounties { expiry: None, bounties: HashMap::new(), arbitration, field_bounties, invasions, error: Some(error.to_string()) }),
     }
 }
