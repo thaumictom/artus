@@ -7,5 +7,4 @@
 		}] : []);
 </script>
 
-<ViewPanel title="Simaris" {rows} {now} />
-
+<ViewPanel title="Simaris" countLabel="synthesis targets" {rows} {now} />

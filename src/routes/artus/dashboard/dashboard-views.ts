@@ -1,6 +1,7 @@
 import type { Component } from 'svelte';
 import type { WorldState } from 'warframe-worldstate-parser';
 import { alertCompletions, isAlertCompleted } from '$lib/alert-completions.svelte';
+import { calendarCompletions, getCalendarDays, hasCalendarTodo, isCalendarDayCompleted } from '$lib/calendar-completions.svelte';
 import { isBaroActive } from './baro';
 import { isCurrent } from './views/view-types';
 import type { DashboardViewProps } from './views/view-types';
@@ -73,7 +74,13 @@ export const dashboardViews = [
 	{ value: 'Circuit', label: "The Circuit", component: Circuit },
 	{ value: 'Archimedea', label: "Archimedea", component: Archimedea },
 	{ value: 'Descendia', label: "Descendia", component: Descendia },
-	{ value: 'Calendar', label: "1999 Calendar", component: Calendar },
+	{
+		value: 'Calendar', label: "1999 Calendar", component: Calendar,
+		itemCount: (world) => calendarCompletions.loaded
+			? getCalendarDays(world.calendar).filter((day) => hasCalendarTodo(day.events)
+				&& !isCalendarDayCompleted(day.id)).length
+			: 0,
+	},
 	{ value: 'SentientOutposts', label: "Sentient Outposts", component: SentientOutposts },
 	{ value: 'Simaris', label: "Simaris", component: Simaris },
 	{ value: 'Conclave', label: "Conclave Challenges", component: Conclave },
@@ -83,7 +90,7 @@ export const dashboardViews = [
 	{ value: 'DarkSectors', label: "Dark Sectors", component: DarkSectors },
 	{ value: 'Kinepage', label: "Kinepage", component: Kinepage },
 	{ value: 'Faceoff', label: "Faceoff Bonus", component: Faceoff },
-	{ value: 'SteelPath', label: "Steel Path", component: SteelPath },
+	{ value: 'SteelPath', label: "Steel Path Honors", component: SteelPath },
 	{ value: 'PrimeResurgence', label: "Prime Resurgence", component: PrimeResurgence },
 	{ value: 'ClanInitiative', label: "Clan Initiative", component: ClanInitiative },
 	{ value: 'CommunityCampaign', label: "Community Campaign", component: CommunityCampaign },
@@ -98,7 +105,7 @@ export const dashboardViews = [
 export type DashboardView = (typeof dashboardViews)[number]['value'];
 
 const unusedViews = [
-	'SyndicateMissions', 'KuvaMissions', 'DarkSectors', 'CommunityCampaign', 'Events',
+	'SyndicateMissions', 'KuvaMissions', 'DarkSectors', 'CommunityCampaign',
 	'Arbitration', 'WeeklyChallenges', 'SentientOutposts', 'PersistentEnemies', 'GlobalUpgrades',
 	'Faceoff', 'FlashSales', 'Kinepage', 'Construction',
 ] as const satisfies readonly DashboardView[];
@@ -111,7 +118,7 @@ export function isDashboardViewVisible(view: string, showUnused: boolean): boole
 const viewGroups = [
 	{
 		label: 'General',
-		views: ['WorldCycles', 'news', 'fissures', 'Alerts', 'Invasions'],
+		views: ['WorldCycles', 'news', 'fissures', 'Alerts', 'Invasions', 'Events'],
 	},
 	{
 		label: 'Daily & Weekly',

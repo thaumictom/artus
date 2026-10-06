@@ -1,8 +1,9 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 
-	let { stats, loading = false, loadingText = 'Loading…', actions }: {
-		stats: { value: number; label: string }[];
+	let { stats = [], summary, loading = false, loadingText = 'Loading…', actions }: {
+		stats?: { value: number; label: string }[];
+		summary?: Snippet;
 		loading?: boolean;
 		loadingText?: string;
 		actions?: Snippet;
@@ -12,7 +13,9 @@
 <div class="flex flex-col gap-4">
 	<header class="flex flex-wrap justify-between items-center gap-4 w-full">
 		<div class="flex flex-wrap items-center divide-border-secondary divide-x text-base tabular-nums" aria-live="polite">
-			{#if loading}
+			{#if summary}
+				{@render summary()}
+			{:else if loading}
 				<p class="text-muted-foreground">{loadingText}</p>
 			{:else}
 				{#each stats as stat, index}

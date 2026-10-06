@@ -4,9 +4,8 @@
 	let { world, now }: DashboardViewProps = $props();
 	let rows: ViewRow[] = $derived(isCurrent(world.descendia, now) ? (world.descendia?.challenges ?? []).map((item) => ({
 		title: `${item.index + 1}. ${item.type}`, description: [item.challenge, item.level].filter(Boolean).join(' · '),
-		details: [...item.specs.map((spec) => spec.name), ...item.auras.map((aura) => aura.name)], expiry: world.descendia?.expiry,
+		details: [...item.specs.map((spec) => spec.name), ...item.auras.map((aura) => aura.name)],
 	})) : []);
 </script>
 
-<ViewPanel title="Descendia" {rows} {now} />
-
+<ViewPanel title="Descendia" countLabel="floors" {rows} {now} expiry={world.descendia?.expiry} />

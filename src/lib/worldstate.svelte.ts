@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import 'reflect-metadata';
-import { WorldState, type InitialWorldState } from 'warframe-worldstate-parser';
+import { WorldEvent, WorldState, type InitialWorldState } from 'warframe-worldstate-parser';
 import { processWorldStateNotifications } from '$lib/notifications.svelte';
 
 type RawWorldState = Omit<InitialWorldState, 'Events'> & {
@@ -28,6 +28,9 @@ export function reloadWorldState(): Promise<void> {
 			const raw = await invoke<RawWorldState>('get_world_state');
 			const previousWorld = dashboard.world;
 			const world = new WorldState(raw, { locale: 'en' });
+			// The synchronous constructor leaves events empty; parse Goals locally without
+			// the async builder's additional bounty reward requests.
+			world.events = (raw.Goals ?? []).map((event) => new WorldEvent(event, { locale: 'en' }));
 			// The parser filters news by locale and drops Community; join by ID,
 			// rather than array position, to preserve the API's classification.
 			const communityById = new Map((raw.Events ?? []).flatMap((event) => {

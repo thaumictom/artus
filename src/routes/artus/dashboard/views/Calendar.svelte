@@ -1,14 +1,17 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import Icon from '@iconify/svelte';
 	import type { DayEvent } from 'warframe-worldstate-parser';
-	import Tooltip from '$lib/components/Tooltip.svelte';
+	import Button from '$lib/components/Button.svelte';
+	import WorldStateMissionCard from '$lib/components/WorldStateMissionCard.svelte';
+	import ViewToolbar from '$lib/components/ViewToolbar.svelte';
+	import WarframeItem from '$lib/components/WarframeItem.svelte';
+	import {
+		calendarCompletions, getCalendarDays, hasCalendarTodo, initializeCalendarCompletions,
+		isCalendarDayCompleted, setCalendarDaysCompleted,
+	} from '$lib/calendar-completions.svelte';
 	import type { DashboardViewProps } from './view-types';
 
-	const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-	const MONTH_FORMATTER = new Intl.DateTimeFormat(undefined, {
-		month: 'long',
-		timeZone: 'UTC',
-	});
 	const DATE_FORMATTER = new Intl.DateTimeFormat(undefined, {
 		weekday: 'long',
 		month: 'long',
@@ -17,70 +20,38 @@
 		timeZone: 'UTC',
 	});
 
-	type CalendarDay = {
-		date: string;
-		events: DayEvent[];
-	};
-	type CalendarCell = {
-		day: number;
-		date: Date;
-		events: DayEvent[];
-	};
-	type CalendarMonth = {
-		key: string;
-		label: string;
-		cells: (CalendarCell | null)[];
-	};
-
-	let { world }: DashboardViewProps = $props();
+	let { world, now }: DashboardViewProps = $props();
 	let calendar = $derived(world.calendar);
-	let months = $derived(buildMonths(calendar?.days ?? [], calendar?.season));
+	let days = $derived(getCalendarDays(calendar));
+	let todosOnly = $state(false);
+	let visibleDays = $derived(todosOnly
+		? days.map((day) => ({ ...day, events: day.events.filter((event) => hasCalendarTodo([event])) }))
+			.filter((day) => day.events.length > 0)
+		: days);
+	let uncheckedIds = $derived(days.filter((day) => hasCalendarTodo(day.events)
+		&& !isCalendarDayCompleted(day.id)).map((day) => day.id));
+	let saving = $state(false);
+	let error = $state('');
 
-	function seasonStartMonth(season?: string) {
-		const value = season?.toLowerCase() ?? '';
-		if (value.includes('spring')) return 3;
-		if (value.includes('summer')) return 6;
-		if (value.includes('fall') || value.includes('autumn')) return 9;
-		return 0;
-	}
-
-	function dateKey(date: Date) {
-		return date.toISOString().slice(0, 10);
-	}
-
-	function buildMonths(days: CalendarDay[], season?: string): CalendarMonth[] {
-		const eventsByDate = new Map<string, DayEvent[]>();
-		const validDates: Date[] = [];
-
-		for (const day of days) {
-			const date = new Date(day.date);
-			if (!Number.isFinite(date.getTime())) continue;
-			validDates.push(date);
-			const key = dateKey(date);
-			eventsByDate.set(key, [...(eventsByDate.get(key) ?? []), ...day.events]);
-		}
-
-		validDates.sort((a, b) => a.getTime() - b.getTime());
-		const startMonth = validDates[0]?.getUTCMonth() ?? seasonStartMonth(season);
-
-		return Array.from({ length: 3 }, (_, offset) => {
-			const month = startMonth + offset;
-			const firstDate = new Date(Date.UTC(1999, month, 1));
-			const daysInMonth = new Date(Date.UTC(1999, month + 1, 0)).getUTCDate();
-			const cells: (CalendarCell | null)[] = Array(firstDate.getUTCDay()).fill(null);
-
-			for (let day = 1; day <= daysInMonth; day += 1) {
-				const date = new Date(Date.UTC(1999, month, day));
-				cells.push({ day, date, events: eventsByDate.get(dateKey(date)) ?? [] });
-			}
-			while (cells.length % 7 !== 0) cells.push(null);
-
-			return {
-				key: dateKey(firstDate),
-				label: MONTH_FORMATTER.format(firstDate),
-				cells,
-			};
+	onMount(() => {
+		void initializeCalendarCompletions().catch((cause) => {
+			console.error('Could not load calendar completions:', cause);
+			error = 'Could not load completed To Dos. Reopen the calendar to try again.';
 		});
+	});
+
+	async function toggleCompleted(ids: string[], completed: boolean) {
+		if (!calendarCompletions.loaded || saving || ids.length === 0) return;
+		saving = true;
+		error = '';
+		try {
+			await setCalendarDaysCompleted(ids, completed);
+		} catch (cause) {
+			console.error('Could not save calendar completion:', cause);
+			error = 'Could not save completed To Dos. Please try again.';
+		} finally {
+			saving = false;
+		}
 	}
 
 	function eventTitle(event: DayEvent) {
@@ -95,6 +66,17 @@
 
 	function eventDescription(event: DayEvent) {
 		return event.challenge?.description || event.upgrade?.description || event.dialogueConvo;
+	}
+
+	function eventGroups(events: DayEvent[]): DayEvent[][] {
+		const groups = new Map<string, DayEvent[]>();
+		for (const event of events) {
+			const key = event.type.toLowerCase();
+			const group = groups.get(key);
+			if (group) group.push(event);
+			else groups.set(key, [event]);
+		}
+		return [...groups.values()];
 	}
 
 	function eventAppearance(type: string) {
@@ -116,83 +98,82 @@
 	}
 </script>
 
-<section aria-labelledby="calendar-heading" class="flex flex-col gap-5">
-	<header class="flex justify-between items-end gap-4">
-		<div>
-			<h2 id="calendar-heading" class="font-expanded font-medium text-xl">1999 Calendar</h2>
+<section aria-label="1999 Calendar" class="flex flex-col gap-4 min-w-0">
+	<ViewToolbar>
+		{#snippet summary()}
 			{#if calendar}
-				<p class="mt-1 text-muted-foreground text-base">
-					{calendar.season} · Loop {calendar.yearIteration}
-				</p>
+				<span class="pr-4">{calendar.season}</span>
+				<span class="pl-4 text-muted-foreground">Loop {calendar.yearIteration}</span>
 			{/if}
-		</div>
-		<p class="text-muted-foreground text-sm">Hover an event for details</p>
-	</header>
-
-	<div class="flex flex-col gap-6">
-		{#each months as month (month.key)}
-			<article class="bg-surface border border-surface overflow-hidden">
-				<h3 class="bg-background px-4 py-3 border-surface border-b font-expanded font-medium">
-					{month.label} 1999
-				</h3>
-				<div class="gap-px grid grid-cols-7 bg-surface border-surface border-b">
-					{#each WEEKDAYS as weekday}
-						<div class="bg-background/80 px-2 py-1.5 text-muted-foreground text-sm text-center">
-							{weekday}
+		{/snippet}
+		{#snippet actions()}
+			<Button
+				variant={todosOnly ? 'surface' : 'default'}
+				class="inline-flex items-center gap-1.5 text-base"
+				aria-pressed={todosOnly}
+				onclick={() => (todosOnly = !todosOnly)}
+			>
+				<Icon icon="lucide:list-filter" class="size-4" /> To Dos only
+			</Button>
+			<Button
+				variant="primary"
+				class="inline-flex items-center gap-1.5 text-base"
+				disabled={!calendarCompletions.loaded || saving || uncheckedIds.length === 0}
+				onclick={() => toggleCompleted(uncheckedIds, true)}
+			>
+				<Icon icon="lucide:check" class="size-4" /> Complete all
+			</Button>
+		{/snippet}
+	</ViewToolbar>
+	{#if error}<p role="alert" class="text-danger text-sm">{error}</p>{/if}
+	<ul class="flex flex-col gap-3">
+		{#each visibleDays as { id, date, events } (id)}
+			{@const hasTodo = hasCalendarTodo(events)}
+			<WorldStateMissionCard
+				node={DATE_FORMATTER.format(date)}
+				{now}
+				completed={hasTodo && isCalendarDayCompleted(id)}
+				disabled={hasTodo && (!calendarCompletions.loaded || saving)}
+				onCompletedChange={hasTodo ? (checked) => void toggleCompleted([id], checked) : undefined}
+			>
+				<div class="divide-y divide-surface">
+					{#each eventGroups(events) as group}
+						{@const type = group[0].type}
+						{@const appearance = eventAppearance(type)}
+						{@const sideBySide = ['big prize!', 'override'].includes(type.toLowerCase())}
+						<div class="py-4 first:pt-0 last:pb-0">
+							<div class="flex items-center gap-2 mb-3">
+								<Icon icon={appearance.icon} class={`size-4 shrink-0 ${appearance.color}`} />
+								<p class="font-medium text-muted-foreground text-xs uppercase tracking-widest">{type}</p>
+							</div>
+							<div class="grid gap-4 grid-cols-1 {sideBySide && group.length > 1
+								? group.length === 2 ? 'sm:grid-cols-2' : 'sm:grid-cols-3'
+								: ''}">
+								{#each group as event, index}
+									<div class="min-w-0 {index > 0
+										? sideBySide
+											? 'border-t border-border-secondary pt-4 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-4'
+											: 'border-t border-surface pt-4'
+										: ''}">
+										{#if event.uniqueName}
+											<WarframeItem item={event.uniqueName} name={eventTitle(event)} />
+										{:else}
+											<h3 class="font-semibold break-words">{eventTitle(event)}</h3>
+										{/if}
+										{#if eventDescription(event)}
+											<p class="mt-2 text-muted-foreground text-sm whitespace-pre-line break-words">{eventDescription(event)}</p>
+										{/if}
+									</div>
+								{/each}
+							</div>
 						</div>
 					{/each}
 				</div>
-				<div class="gap-px grid grid-cols-7 bg-surface">
-					{#each month.cells as cell}
-						{#if cell}
-							<div class="bg-background p-2 min-h-24 min-w-0">
-								<time
-									class="block mb-1.5 text-muted-foreground text-sm tabular-nums"
-									datetime={dateKey(cell.date)}
-								>
-									{cell.day}
-								</time>
-								<div class="flex flex-col gap-1">
-									{#each cell.events as event, eventIndex (`${event.type}-${eventIndex}`)}
-										{@const appearance = eventAppearance(event.type)}
-										<Tooltip
-											class="flex items-center gap-1 hover:bg-surface px-1 py-0.5 w-full min-w-0 text-left"
-										>
-											{#snippet children()}
-												<Icon
-													icon={appearance.icon}
-													class={`size-3.5 shrink-0 ${appearance.color}`}
-												/>
-												<span class="text-sm truncate">{eventTitle(event)}</span>
-											{/snippet}
-											{#snippet content()}
-												<div class="flex items-start gap-2">
-													<Icon
-														icon={appearance.icon}
-														class={`mt-0.5 size-4 shrink-0 ${appearance.color}`}
-													/>
-													<div class="min-w-0">
-														<p class="text-muted-foreground text-sm">{event.type}</p>
-														<p class="font-medium">{eventTitle(event)}</p>
-														{#if eventDescription(event)}
-															<p class="mt-1 text-muted-foreground">{eventDescription(event)}</p>
-														{/if}
-														<p class="mt-2 text-muted-foreground text-sm">
-															{DATE_FORMATTER.format(cell.date)}
-														</p>
-													</div>
-												</div>
-											{/snippet}
-										</Tooltip>
-									{/each}
-								</div>
-							</div>
-						{:else}
-							<div aria-hidden="true" class="bg-background/35 min-h-24"></div>
-						{/if}
-					{/each}
-				</div>
-			</article>
+			</WorldStateMissionCard>
+		{:else}
+			<li class="p-6 border border-surface text-muted-foreground text-sm text-center">
+				{todosOnly ? 'No To Dos in this snapshot.' : 'No calendar events in this snapshot.'}
+			</li>
 		{/each}
-	</div>
+	</ul>
 </section>

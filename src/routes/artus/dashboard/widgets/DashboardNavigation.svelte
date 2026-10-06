@@ -12,6 +12,7 @@
 	import Collapsible from '$lib/components/Collapsible.svelte';
 	import { config, loadSettings, updateSetting } from '$lib/settings.svelte';
 	import { initializeAlertCompletions } from '$lib/alert-completions.svelte';
+	import { initializeCalendarCompletions } from '$lib/calendar-completions.svelte';
 	import { dashboardViewGroups, dashboardViews, isDashboardViewVisible, type DashboardView } from '../dashboard-views';
 
 	let {
@@ -52,6 +53,9 @@
 	let pins = $derived(new Set(pinnedViews.map((view) => view.value)));
 
 	onMount(() => {
+		void initializeCalendarCompletions().catch((error) => {
+			console.error('Could not load calendar completions for navigation:', error);
+		});
 		void initializeAlertCompletions().catch((error) => {
 			console.error('Could not load alert completions for navigation:', error);
 		});
