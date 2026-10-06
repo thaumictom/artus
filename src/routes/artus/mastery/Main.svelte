@@ -18,7 +18,6 @@
 	type SortColumn = 'name' | 'median' | 'ducats';
 	let sortColumn = $state<SortColumn>('name');
 	let sortDirection = $state<'asc' | 'desc'>('asc');
-	let visibleCount = $state(150);
 	let expanded = $state<string[]>([]);
 	const inventoryItems = $derived(inventory.items);
 	const ownedComponents = $derived.by(() => {
@@ -33,21 +32,28 @@
 		}
 		return { bySlug, byName };
 	});
-	function ownedComponentCount(component: { marketSlug?: string | null; name: string }, parentName: string) {
+	function ownedComponentCount(
+		component: { marketSlug?: string | null; name: string },
+		parentName: string,
+	) {
 		const componentName = inventoryNameKey(component.name);
 		const parent = inventoryNameKey(parentName);
 		const fullName = componentName.startsWith(`${parent} `)
 			? componentName
 			: inventoryNameKey(`${parentName} ${component.name}`);
-		return (component.marketSlug ? ownedComponents.bySlug.get(component.marketSlug) : undefined)
-			?? ownedComponents.byName.get(fullName)
-			?? 0;
+		return (
+			(component.marketSlug ? ownedComponents.bySlug.get(component.marketSlug) : undefined) ??
+			ownedComponents.byName.get(fullName) ??
+			0
+		);
 	}
 	const checked = $derived(new Set(mastery.checked));
 	const automatic = $derived(new Set(mastery.automatic));
 	function completedComponentCount(item: MasteryItem) {
-		return item.components.filter((part) =>
-			checked.has(part.key) || isOwnedMasteryComponent(part, ownedComponentCount(part, item.name))
+		return item.components.filter(
+			(part) =>
+				checked.has(part.key) ||
+				isOwnedMasteryComponent(part, ownedComponentCount(part, item.name)),
 		).length;
 	}
 	const categories = $derived([
@@ -88,7 +94,11 @@
 				return false;
 			if (progress === 'Checked' && !checked.has(item.key)) return false;
 			if (progress === 'Unchecked' && checked.has(item.key)) return false;
-			if (progress === 'In progress' && (checked.has(item.key) || completedComponentCount(item) === 0)) return false;
+			if (
+				progress === 'In progress' &&
+				(checked.has(item.key) || completedComponentCount(item) === 0)
+			)
+				return false;
 			return !searchQuery || item.name.toLowerCase().includes(searchQuery);
 		}),
 	);
@@ -109,7 +119,6 @@
 			);
 		});
 	});
-	const visible = $derived(sorted.slice(0, visibleCount));
 	function toggle(key: string) {
 		expanded = expanded.includes(key)
 			? expanded.filter((entry) => entry !== key)
@@ -130,12 +139,11 @@
 	}
 	function updateSearch(event: Event & { currentTarget: HTMLInputElement }) {
 		search = event.currentTarget.value;
-		visibleCount = 150;
 	}
 </script>
 
 <div class="flex flex-col items-center gap-4 mx-auto p-8 w-full">
-	<div class="page-width flex flex-col gap-6 w-full max-w-5xl">
+	<div class="flex flex-col gap-6 w-full max-w-5xl page-width">
 		<TrackedMastery />
 		{#if mastery.loading}
 			<div role="status" aria-label="Loading mastery items" class="flex flex-col gap-4">
@@ -143,7 +151,7 @@
 					<Skeleton class="flex-1 min-w-56 h-10" />
 					{#each Array(3) as _}<Skeleton class="w-36 h-10" />{/each}
 				</div>
-				<div class="bg-card/50 border border-border-secondary divide-y divide-border-secondary">
+				<div class="bg-card/50 border border-border-secondary divide-border-secondary divide-y">
 					{#each Array(7) as _}
 						<div class="flex items-center gap-4 px-3 py-3.5 h-14">
 							<Skeleton class="flex-1 max-w-64 h-4" />
@@ -216,7 +224,7 @@
 				</div>
 			</div>
 			<MasteryTable
-				items={visible}
+				items={sorted}
 				{checked}
 				{automatic}
 				{expanded}
@@ -229,15 +237,7 @@
 				{ownedComponentCount}
 				{completedComponentCount}
 			/>
-			<div class="flex justify-between items-center text-muted-foreground text-base">
-				<span>Showing {visible.length} of {filtered.length} items</span>
-				{#if visible.length < filtered.length}<button
-						class="hover:bg-muted px-3 py-1.5 border border-border rounded text-foreground"
-						onclick={() => (visibleCount += 80)}
-					>
-						Show more
-					</button>{/if}
-			</div>
+			<p class="text-muted-foreground text-base">Showing {filtered.length} items</p>
 		{/if}
 	</div>
 </div>

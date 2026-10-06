@@ -34,7 +34,7 @@
 	let container: HTMLDivElement;
 	let header: HTMLTableSectionElement;
 	let scrollElement = $state<HTMLElement | null>(null);
-	let mounted = $state(false);
+	let fallbackAll = $state(false);
 	const rowVirtualizer = createVirtualizer<HTMLElement, HTMLTableRowElement>({
 		count: 0,
 		getScrollElement: () => scrollElement,
@@ -65,7 +65,7 @@
 		// OverlayScrollbars uses this existing element as its viewport after initialization.
 		scrollElement = container.closest<HTMLElement>('[data-overlayscrollbars-contents]');
 		if (!scrollElement) {
-			mounted = true;
+			fallbackAll = true;
 			return;
 		}
 		const updateMargin = () => {
@@ -75,12 +75,16 @@
 		};
 		updateMargin();
 		$rowVirtualizer.setOptions({ getScrollElement: () => scrollElement, enabled: true });
-		mounted = true;
+		// Keep the first paint small while OverlayScrollbars finishes initializing.
+		const fallbackTimer = window.setTimeout(() => {
+			if ($rowVirtualizer.getVirtualItems().length === 0) fallbackAll = true;
+		}, 500);
 		const observer = new ResizeObserver(updateMargin);
 		observer.observe(header);
 		observer.observe(container.parentElement!);
 		scrollElement.addEventListener('scroll', updateMargin, { passive: true });
 		return () => {
+			clearTimeout(fallbackTimer);
 			observer.disconnect();
 			scrollElement?.removeEventListener('scroll', updateMargin);
 		};
@@ -133,9 +137,12 @@
 				{/each}
 				{#if bottomPadding > 0}<tr aria-hidden="true"><td colspan={columns.length} style:height={`${bottomPadding}px`} class="!p-0 !border-0"></td></tr>{/if}
 			{:else if rows.length}
-				{#each virtualize && !mounted ? rows.slice(0, 20) : rows as row, index (rowKey(row))}
+				{#each virtualize && !fallbackAll ? rows.slice(0, 20) : rows as row, index (rowKey(row))}
 					{@render renderRow(row, index, measureRow)}
 				{/each}
+				{#if virtualize && !fallbackAll && rows.length > 20}
+					<tr aria-hidden="true"><td colspan={columns.length} style:height={`${(rows.length - 20) * 76}px`} class="!p-0 !border-0"></td></tr>
+				{/if}
 			{:else}
 				<tr>
 					<td colspan={columns.length} class="px-4 py-10 text-muted-foreground text-center">

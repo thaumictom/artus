@@ -41,6 +41,7 @@
 	import AlertDialog from '$lib/components/AlertDialog.svelte';
 
 	import Button from '$lib/components/Button.svelte';
+	import Skeleton from '$lib/components/Skeleton.svelte';
 
 	type UpdateAvailablePayload = {
 		version: string;
@@ -96,6 +97,20 @@
 		});
 	}
 	let activeSection = $derived(appNavigation.current.section);
+	let readyTableSection = $state<string | null>(null);
+	$effect(() => {
+		const section = activeSection;
+		if (section !== 'mastery' && section !== 'inventory') return;
+		readyTableSection = null;
+		let timer: ReturnType<typeof setTimeout> | undefined;
+		const frame = requestAnimationFrame(() => {
+			timer = setTimeout(() => { readyTableSection = section; }, 0);
+		});
+		return () => {
+			cancelAnimationFrame(frame);
+			clearTimeout(timer);
+		};
+	});
 	let dashboardViewLabel = $derived(
 		dashboardViews.find((view) => view.value === appNavigation.current.dashboardView)?.label,
 	);
@@ -227,6 +242,19 @@
 	}
 </script>
 
+{#snippet tableSkeleton()}
+	<div role="status" aria-label="Loading table" class="page-width flex flex-col gap-4 mx-auto p-8 w-full max-w-5xl">
+		<Skeleton class="w-full h-20" />
+		<div class="flex flex-wrap gap-3">
+			<Skeleton class="flex-1 min-w-56 h-10" />
+			{#each Array(3) as _}<Skeleton class="w-36 h-10" />{/each}
+		</div>
+		<div class="border border-border-secondary divide-y divide-border-secondary">
+			{#each Array(6) as _}<Skeleton class="w-full h-14" />{/each}
+		</div>
+	</div>
+{/snippet}
+
 <div class="flex flex-col bg-surface h-full artus-app-shell">
 	<Header
 		{isSidebarOpen}
@@ -287,9 +315,13 @@
 		{:else}
 			<MainContent>
 				{#if activeSection === 'mastery'}
-					<MasteryMain onOpenMarket={openMarket} />
+					{#if readyTableSection === 'mastery'}
+						<MasteryMain onOpenMarket={openMarket} />
+					{:else}{@render tableSkeleton()}{/if}
 				{:else if activeSection === 'inventory'}
-					<InventoryTab onOpenMarket={openMarket} />
+					{#if readyTableSection === 'inventory'}
+						<InventoryTab onOpenMarket={openMarket} />
+					{:else}{@render tableSkeleton()}{/if}
 				{:else if activeSection === 'listings'}
 					<Listings onOpenMarket={openMarket} />
 				{:else}
