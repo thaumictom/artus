@@ -1,13 +1,14 @@
 <script lang="ts" generics="T extends ViewRow">
 	import type { Snippet } from 'svelte';
 	import ViewCard from '$lib/components/ViewCard.svelte';
+	import CompletionToggle from '$lib/components/CompletionToggle.svelte';
 	import ViewToolbar from '$lib/components/ViewToolbar.svelte';
 	import { formatTimeLeft } from '$lib/date';
 	import { validDate, type ViewRow } from './view-types';
 
 	let {
 		title, rows, now, summary, header, headerSummary, expiry, rowAction, headerAction, rowContent, rowFooter, rowFooterVisible, rowTitle,
-		countLabel = 'entries', stats, empty = 'No active entries in this snapshot.',
+		countLabel = 'entries', stats, rowCompleted, onRowCompletedChange, completionDisabled = false, empty = 'No active entries in this snapshot.',
 	}: {
 		title: string;
 		rows: T[];
@@ -24,6 +25,9 @@
 		rowTitle?: Snippet<[T]>;
 		countLabel?: string;
 		stats?: { value: number; label: string }[];
+		rowCompleted?: (row: T) => boolean;
+		onRowCompletedChange?: (row: T, completed: boolean) => void;
+		completionDisabled?: boolean;
 		empty?: string;
 	} = $props();
 </script>
@@ -54,6 +58,7 @@
 	{#if summary}<p class="text-muted-foreground text-sm break-words">{summary}</p>{/if}
 	<ul class="flex flex-col gap-3">
 		{#each rows as row}
+			{@const completed = rowCompleted?.(row) ?? false}
 			{#snippet details()}
 				{#if rowFooter}
 					{@render rowFooter(row)}
@@ -65,7 +70,9 @@
 					</div>
 				{/if}
 			{/snippet}
-			<ViewCard {now} expiry={row.expiry} footer={(rowFooter ? (rowFooterVisible?.(row) ?? true) : row.details?.length) ? details : undefined}>
+			<ViewCard {now} {completed} disabled={completionDisabled}
+				onActivate={onRowCompletedChange ? () => onRowCompletedChange?.(row, !completed) : undefined}
+				expiry={row.expiry} footer={(rowFooter ? (rowFooterVisible?.(row) ?? true) : row.details?.length) ? details : undefined}>
 				{#if rowTitle}
 					{@render rowTitle(row)}
 				{:else}
@@ -81,6 +88,10 @@
 							<span class="inline-flex items-center rounded-full border border-border-secondary bg-surface/30 px-2.5 py-1 text-sm font-medium text-muted-foreground tabular-nums whitespace-nowrap">{row.value}</span>
 						{/if}
 						{#if rowAction}{@render rowAction(row)}{/if}
+						{#if onRowCompletedChange}
+							<CompletionToggle {completed} disabled={completionDisabled} label={row.title}
+								onCompletedChange={(checked) => onRowCompletedChange?.(row, checked)} />
+						{/if}
 					</div>
 				{/snippet}
 			</ViewCard>

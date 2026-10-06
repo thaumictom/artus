@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import type { Reward } from 'warframe-worldstate-parser';
-	import Checkbox from './Checkbox.svelte';
+	import CompletionToggle from './CompletionToggle.svelte';
 	import ViewCard from './ViewCard.svelte';
 	import WorldStateReward from './WorldStateReward.svelte';
 
@@ -36,20 +36,7 @@
 		{#if customAction}
 			{@render customAction()}
 		{:else if onCompletedChange}
-			<label
-				class="inline-flex shrink-0 items-center gap-2 rounded-full border px-2.5 py-1 text-sm font-medium transition-colors {completed
-					? 'border-accent/30 bg-accent/10 text-accent hover:bg-accent/15'
-					: 'border-border-secondary bg-surface/30 text-muted-foreground hover:bg-surface hover:text-foreground'} {disabled ? 'cursor-not-allowed' : 'cursor-pointer'}"
-			>
-				<Checkbox
-					checked={completed}
-					class="data-[state=checked]:bg-transparent data-[state=checked]:border-accent/40 rounded-sm size-4 data-[state=checked]:text-accent"
-					{disabled}
-					aria-label={`Mark ${node} as ${completed ? 'incomplete' : 'completed'}`}
-					onCheckedChange={(checked) => onCompletedChange?.(checked)}
-				/>
-				<span class="sr-only sm:not-sr-only">{completed ? 'Completed' : 'Complete'}</span>
-			</label>
+			<CompletionToggle {completed} {disabled} label={node} {onCompletedChange} />
 		{/if}
 	{/snippet}
 	{#snippet footer()}
