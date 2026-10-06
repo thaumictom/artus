@@ -1,5 +1,6 @@
 <script lang="ts">
 	import RadioGroup from '$lib/components/RadioGroup.svelte';
+	import { formatTimeLeft } from '$lib/date';
 	import { oracleBounties } from '$lib/oracle-bounties.svelte';
 	import { languageString } from 'warframe-worldstate-data/utilities';
 	import ViewPanel from './ViewPanel.svelte';
@@ -30,6 +31,8 @@
 	let selectedLabel = $derived(categories.find((item) => item.value === category)?.label ?? category);
 	let snapshot = $derived(oracleBounties.snapshot);
 	let currentOracle = $derived(snapshot?.expiry != null && snapshot.expiry > localNow);
+	let expiry = $derived(showField && currentField ? new Date(currentField.expiry)
+		: isOracleCategory && currentOracle && snapshot?.expiry ? new Date(snapshot.expiry) : undefined);
 	let rows: ViewRow[] = $derived(isOracleCategory
 		? currentOracle ? (snapshot?.bounties[category] ?? []).map((bounty, index) => ({
 			title: `${index + 1}. ${bounty.node}`,
@@ -62,15 +65,29 @@
 		Could not refresh current bounties. Automatic retries are limited to once every five minutes.
 	</p>
 {/if}
-<ViewPanel title="Bounties" countLabel={showField ? 'field locations' : 'bounties'} rows={showField ? fieldRows : rows} now={isOracleCategory || showField ? localNow : now}
-	expiry={showField && currentField ? new Date(currentField.expiry) : isOracleCategory && currentOracle && snapshot?.expiry ? new Date(snapshot.expiry) : undefined}
+<ViewPanel title="Bounties" rows={showField ? fieldRows : rows} now={isOracleCategory || showField ? localNow : now}
 	empty={(isOracleCategory || showField) && oracleBounties.loading
 		? 'Loading current bounties…' : `No current bounties for ${selectedLabel} in this snapshot.`}
 >
-	{#snippet headerAction()}
-		<RadioGroup label="Bounty faction" variant="segmented" options={categories} bind:value={category} class="max-w-full" />
-		{#if !isOracleCategory}
-			<RadioGroup label="Bounty source" variant="segmented" options={sources} bind:value={bountySource} />
-		{/if}
+	{#snippet header()}
+		<div class="@container/filters flex flex-col gap-2">
+			<div class="flex flex-wrap @max-[52rem]/filters:justify-between items-center gap-x-8 gap-y-4">
+				<div class="flex flex-col gap-1">
+					<div class="font-semibold text-muted-foreground text-sm">Faction</div>
+					<RadioGroup label="Bounty faction" variant="segmented" options={categories} bind:value={category} class="max-w-full" />
+				</div>
+				{#if !isOracleCategory}
+					<div class="flex flex-col gap-1">
+						<div class="font-semibold text-muted-foreground text-sm">Bounty source</div>
+						<RadioGroup label="Bounty source" variant="segmented" options={sources} bind:value={bountySource} />
+					</div>
+				{/if}
+				{#if expiry}
+					<span class="ml-auto text-sm text-muted-foreground tabular-nums whitespace-nowrap">
+						Ends in <time datetime={expiry.toISOString()} title={expiry.toLocaleString()}>{formatTimeLeft(expiry, localNow)}</time>
+					</span>
+				{/if}
+			</div>
+		</div>
 	{/snippet}
 </ViewPanel>

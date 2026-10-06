@@ -6,19 +6,21 @@
 	import { validDate, type ViewRow } from './view-types';
 
 	let {
-		title, rows, now, summary, headerSummary, expiry, rowAction, headerAction, rowContent, rowFooter, rowTitle,
+		title, rows, now, summary, header, headerSummary, expiry, rowAction, headerAction, rowContent, rowFooter, rowFooterVisible, rowTitle,
 		countLabel = 'entries', stats, empty = 'No active entries in this snapshot.',
 	}: {
 		title: string;
 		rows: T[];
 		now: number;
 		summary?: string;
+		header?: Snippet;
 		headerSummary?: string;
 		expiry?: Date;
 		rowAction?: Snippet<[T]>;
 		headerAction?: Snippet;
 		rowContent?: Snippet<[T]>;
 		rowFooter?: Snippet<[T]>;
+		rowFooterVisible?: (row: T) => boolean;
 		rowTitle?: Snippet<[T]>;
 		countLabel?: string;
 		stats?: { value: number; label: string }[];
@@ -40,11 +42,15 @@
 		{/if}
 		{#if headerAction}{@render headerAction()}{/if}
 	{/snippet}
-	<ViewToolbar
-		stats={stats ?? [{ value: rows.length, label: countLabel }]}
-		summary={headerSummary ? toolbarSummary : undefined}
-		actions={headerAction || validDate(expiry) ? toolbarActions : undefined}
-	/>
+	{#if header}
+		{@render header()}
+	{:else}
+		<ViewToolbar
+			stats={stats ?? [{ value: rows.length, label: countLabel }]}
+			summary={headerSummary ? toolbarSummary : undefined}
+			actions={headerAction || validDate(expiry) ? toolbarActions : undefined}
+		/>
+	{/if}
 	{#if summary}<p class="text-muted-foreground text-sm break-words">{summary}</p>{/if}
 	<ul class="flex flex-col gap-3">
 		{#each rows as row}
@@ -59,7 +65,7 @@
 					</div>
 				{/if}
 			{/snippet}
-			<ViewCard {now} expiry={row.expiry} footer={rowFooter || row.details?.length ? details : undefined}>
+			<ViewCard {now} expiry={row.expiry} footer={(rowFooter ? (rowFooterVisible?.(row) ?? true) : row.details?.length) ? details : undefined}>
 				{#if rowTitle}
 					{@render rowTitle(row)}
 				{:else}
