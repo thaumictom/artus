@@ -20,22 +20,16 @@
 	$effect(() => {
 		if (!themeReady) return;
 		const root = document.documentElement;
-		if (root.dataset.startupTheme) {
-			root.classList.remove(`theme-${root.dataset.startupTheme}`);
-			delete root.dataset.startupTheme;
-		}
 		root.classList.remove(...appThemes.filter(({ value }) => value !== 'default').map(({ value }) => `theme-${value}`));
 		if (config.app_theme !== 'default') root.classList.add(`theme-${config.app_theme}`);
 		root.style.colorScheme = 'dark';
-		if (!root.classList.contains('artus-document')) return;
+		if (!root.classList.contains('artus-document') || root.classList.contains('artus-theme-ready')) return;
+		let revealFrame = 0;
 		const frame = requestAnimationFrame(() => {
-			const background = getComputedStyle(document.body).backgroundColor;
-			try {
-				localStorage.setItem('artus-startup-theme', JSON.stringify({ theme: config.app_theme, background }));
-				root.style.setProperty('--artus-startup-background', background);
-			} catch { /* The startup fallback still works if storage is unavailable. */ }
+			// Give the fixed startup color one painted frame before the theme takes over.
+			revealFrame = requestAnimationFrame(() => root.classList.add('artus-theme-ready'));
 		});
-		return () => cancelAnimationFrame(frame);
+		return () => { cancelAnimationFrame(frame); cancelAnimationFrame(revealFrame); };
 	});
 </script>
 

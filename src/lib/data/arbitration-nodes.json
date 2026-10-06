@@ -1,0 +1,618 @@
+{
+  "ClanNode0": {
+    "node": "Romula",
+    "planet": "Venus",
+    "mission": "Defense",
+    "faction": "Infestation",
+    "tier": "F"
+  },
+  "ClanNode1": {
+    "node": "Malva",
+    "planet": "Venus",
+    "mission": "Survival",
+    "faction": "Infestation",
+    "tier": "F"
+  },
+  "ClanNode10": {
+    "node": "Memphis",
+    "planet": "Phobos",
+    "mission": "Defection",
+    "faction": "Infestation",
+    "tier": "F"
+  },
+  "ClanNode11": {
+    "node": "Zeugma",
+    "planet": "Phobos",
+    "mission": "Survival",
+    "faction": "Infestation",
+    "tier": "F"
+  },
+  "ClanNode12": {
+    "node": "Caracol",
+    "planet": "Saturn",
+    "mission": "Defection",
+    "faction": "Infestation",
+    "tier": "F"
+  },
+  "ClanNode13": {
+    "node": "Piscinas",
+    "planet": "Saturn",
+    "mission": "Survival",
+    "faction": "Infestation",
+    "tier": "F"
+  },
+  "ClanNode14": {
+    "node": "Amarna",
+    "planet": "Sedna",
+    "mission": "Survival",
+    "faction": "Infestation",
+    "tier": "F"
+  },
+  "ClanNode15": {
+    "node": "Sangeru",
+    "planet": "Sedna",
+    "mission": "Defense",
+    "faction": "Infestation",
+    "tier": "D"
+  },
+  "ClanNode16": {
+    "node": "Ur",
+    "planet": "Uranus",
+    "mission": "Disruption",
+    "faction": "Infestation",
+    "tier": "F"
+  },
+  "ClanNode17": {
+    "node": "Assur",
+    "planet": "Uranus",
+    "mission": "Survival",
+    "faction": "Infestation",
+    "tier": "F"
+  },
+  "ClanNode18": {
+    "node": "Akkad",
+    "planet": "Eris",
+    "mission": "Defense",
+    "faction": "Infestation",
+    "tier": "B"
+  },
+  "ClanNode19": {
+    "node": "Zabala",
+    "planet": "Eris",
+    "mission": "Survival",
+    "faction": "Infestation",
+    "tier": "F"
+  },
+  "ClanNode2": {
+    "node": "Coba",
+    "planet": "Earth",
+    "mission": "Defense",
+    "faction": "Infestation",
+    "tier": "C"
+  },
+  "ClanNode20": {
+    "node": "Yursa",
+    "planet": "Neptune",
+    "mission": "Defection",
+    "faction": "Infestation",
+    "tier": "F"
+  },
+  "ClanNode21": {
+    "node": "Kelashin",
+    "planet": "Neptune",
+    "mission": "Survival",
+    "faction": "Infestation",
+    "tier": "F"
+  },
+  "ClanNode22": {
+    "node": "Seimeni",
+    "planet": "Ceres",
+    "mission": "Defense",
+    "faction": "Infestation",
+    "tier": "B"
+  },
+  "ClanNode23": {
+    "node": "Gabii",
+    "planet": "Ceres",
+    "mission": "Survival",
+    "faction": "Infestation",
+    "tier": "F"
+  },
+  "ClanNode24": {
+    "node": "Sechura",
+    "planet": "Pluto",
+    "mission": "Defense",
+    "faction": "Infestation",
+    "tier": "B"
+  },
+  "ClanNode25": {
+    "node": "Hieracon",
+    "planet": "Pluto",
+    "mission": "Excavation",
+    "faction": "Infestation",
+    "tier": "F"
+  },
+  "ClanNode3": {
+    "node": "Tikal",
+    "planet": "Earth",
+    "mission": "Excavation",
+    "faction": "Infestation",
+    "tier": "F"
+  },
+  "ClanNode4": {
+    "node": "Sinai",
+    "planet": "Jupiter",
+    "mission": "Defense",
+    "faction": "Infestation",
+    "tier": "D"
+  },
+  "ClanNode5": {
+    "node": "Cameria",
+    "planet": "Jupiter",
+    "mission": "Survival",
+    "faction": "Infestation",
+    "tier": "F"
+  },
+  "ClanNode6": {
+    "node": "Larzac",
+    "planet": "Europa",
+    "mission": "Defense",
+    "faction": "Infestation",
+    "tier": "C"
+  },
+  "ClanNode7": {
+    "node": "Cholistan",
+    "planet": "Europa",
+    "mission": "Excavation",
+    "faction": "Infestation",
+    "tier": "F"
+  },
+  "ClanNode8": {
+    "node": "Kadesh",
+    "planet": "Mars",
+    "mission": "Defense",
+    "faction": "Infestation",
+    "tier": "C"
+  },
+  "ClanNode9": {
+    "node": "Wahiba",
+    "planet": "Mars",
+    "mission": "Survival",
+    "faction": "Infestation",
+    "tier": "F"
+  },
+  "SettlementNode11": {
+    "node": "Gulliver",
+    "planet": "Phobos",
+    "mission": "Defense",
+    "faction": "Corpus",
+    "tier": "F"
+  },
+  "SettlementNode3": {
+    "node": "Stickney",
+    "planet": "Phobos",
+    "mission": "Survival",
+    "faction": "Corpus",
+    "tier": "F"
+  },
+  "SolNode100": {
+    "node": "Elara",
+    "planet": "Jupiter",
+    "mission": "Survival",
+    "faction": "Corpus",
+    "tier": "F"
+  },
+  "SolNode101": {
+    "node": "Kiliken",
+    "planet": "Venus",
+    "mission": "Excavation",
+    "faction": "Corpus",
+    "tier": "F"
+  },
+  "SolNode106": {
+    "node": "Alator",
+    "planet": "Mars",
+    "mission": "Interception",
+    "faction": "Grineer",
+    "tier": "S"
+  },
+  "SolNode118": {
+    "node": "Laomedeia",
+    "planet": "Neptune",
+    "mission": "Disruption",
+    "faction": "Corpus",
+    "tier": "F"
+  },
+  "SolNode122": {
+    "node": "Stephano",
+    "planet": "Uranus",
+    "mission": "Defense",
+    "faction": "Grineer",
+    "tier": "C"
+  },
+  "SolNode123": {
+    "node": "V Prime",
+    "planet": "Venus",
+    "mission": "Survival",
+    "faction": "Corpus",
+    "tier": "F"
+  },
+  "SolNode125": {
+    "node": "Io",
+    "planet": "Jupiter",
+    "mission": "Defense",
+    "faction": "Corpus",
+    "tier": "D"
+  },
+  "SolNode130": {
+    "node": "Lares",
+    "planet": "Mercury",
+    "mission": "Defense",
+    "faction": "Infestation",
+    "tier": "D"
+  },
+  "SolNode146": {
+    "node": "Draco",
+    "planet": "Ceres",
+    "mission": "Survival",
+    "faction": "Grineer",
+    "tier": "F"
+  },
+  "SolNode147": {
+    "node": "Cinxia",
+    "planet": "Ceres",
+    "mission": "Interception",
+    "faction": "Grineer",
+    "tier": "A"
+  },
+  "SolNode149": {
+    "node": "Casta",
+    "planet": "Ceres",
+    "mission": "Defense",
+    "faction": "Grineer",
+    "tier": "B"
+  },
+  "SolNode16": {
+    "node": "Augustus",
+    "planet": "Mars",
+    "mission": "Excavation",
+    "faction": "Grineer",
+    "tier": "F"
+  },
+  "SolNode164": {
+    "node": "Kala-azar",
+    "planet": "Eris",
+    "mission": "Defense",
+    "faction": "Infestation",
+    "tier": "B"
+  },
+  "SolNode166": {
+    "node": "Nimus",
+    "planet": "Eris",
+    "mission": "Survival",
+    "faction": "Infestation",
+    "tier": "F"
+  },
+  "SolNode167": {
+    "node": "Oestrus",
+    "planet": "Eris",
+    "mission": "Infested Salvage",
+    "faction": "Infestation",
+    "tier": "B"
+  },
+  "SolNode17": {
+    "node": "Proteus",
+    "planet": "Neptune",
+    "mission": "Defense",
+    "faction": "Corpus",
+    "tier": "F"
+  },
+  "SolNode172": {
+    "node": "Xini",
+    "planet": "Eris",
+    "mission": "Interception",
+    "faction": "Infestation",
+    "tier": "A"
+  },
+  "SolNode177": {
+    "node": "Kappa",
+    "planet": "Sedna",
+    "mission": "Disruption",
+    "faction": "Grineer",
+    "tier": "F"
+  },
+  "SolNode18": {
+    "node": "Rhea",
+    "planet": "Saturn",
+    "mission": "Interception",
+    "faction": "Grineer",
+    "tier": "D"
+  },
+  "SolNode185": {
+    "node": "Berehynia",
+    "planet": "Sedna",
+    "mission": "Interception",
+    "faction": "Grineer",
+    "tier": "F"
+  },
+  "SolNode187": {
+    "node": "Selkie",
+    "planet": "Sedna",
+    "mission": "Survival",
+    "faction": "Grineer",
+    "tier": "F"
+  },
+  "SolNode195": {
+    "node": "Hydron",
+    "planet": "Sedna",
+    "mission": "Defense",
+    "faction": "Grineer",
+    "tier": "B"
+  },
+  "SolNode211": {
+    "node": "Ose",
+    "planet": "Europa",
+    "mission": "Interception",
+    "faction": "Corpus",
+    "tier": "B"
+  },
+  "SolNode212": {
+    "node": "Paimon",
+    "planet": "Europa",
+    "mission": "Defense",
+    "faction": "Corpus",
+    "tier": "C"
+  },
+  "SolNode216": {
+    "node": "Valefor",
+    "planet": "Europa",
+    "mission": "Excavation",
+    "faction": "Corpus",
+    "tier": "F"
+  },
+  "SolNode22": {
+    "node": "Tessera",
+    "planet": "Venus",
+    "mission": "Defense",
+    "faction": "Corpus",
+    "tier": "C"
+  },
+  "SolNode224": {
+    "node": "Odin",
+    "planet": "Mercury",
+    "mission": "Interception",
+    "faction": "Grineer",
+    "tier": "C"
+  },
+  "SolNode23": {
+    "node": "Cytherean",
+    "planet": "Venus",
+    "mission": "Interception",
+    "faction": "Corpus",
+    "tier": "A"
+  },
+  "SolNode230": {
+    "node": "Everview Arc",
+    "planet": "Zariman",
+    "mission": "Void Flood",
+    "faction": "Grineer",
+    "tier": "F"
+  },
+  "SolNode232": {
+    "node": "Tuvul Commons",
+    "planet": "Zariman",
+    "mission": "Void Cascade",
+    "faction": "Grineer",
+    "tier": "F"
+  },
+  "SolNode233": {
+    "node": "Oro Works",
+    "planet": "Zariman",
+    "mission": "Void Armageddon",
+    "faction": "Grineer",
+    "tier": "F"
+  },
+  "SolNode25": {
+    "node": "Callisto",
+    "planet": "Jupiter",
+    "mission": "Interception",
+    "faction": "Corpus",
+    "tier": "S"
+  },
+  "SolNode26": {
+    "node": "Lith",
+    "planet": "Earth",
+    "mission": "Defense",
+    "faction": "Grineer",
+    "tier": "C"
+  },
+  "SolNode30": {
+    "node": "Olympus",
+    "planet": "Mars",
+    "mission": "Disruption",
+    "faction": "Grineer",
+    "tier": "F"
+  },
+  "SolNode302": {
+    "node": "Tycho",
+    "planet": "Lua",
+    "mission": "Survival",
+    "faction": "Corpus",
+    "tier": "F"
+  },
+  "SolNode305": {
+    "node": "Stöfler",
+    "planet": "Lua",
+    "mission": "Defense",
+    "faction": "Grineer",
+    "tier": "D"
+  },
+  "SolNode308": {
+    "node": "Apollo",
+    "planet": "Lua",
+    "mission": "Disruption",
+    "faction": "Corpus",
+    "tier": "F"
+  },
+  "SolNode309": {
+    "node": "Yuvarium",
+    "planet": "Lua",
+    "mission": "Conjunction Survival",
+    "faction": "Corrupted",
+    "tier": "F"
+  },
+  "SolNode39": {
+    "node": "Everest",
+    "planet": "Earth",
+    "mission": "Excavation",
+    "faction": "Grineer",
+    "tier": "F"
+  },
+  "SolNode402": {
+    "node": "Taranis",
+    "planet": "Void",
+    "mission": "Defense",
+    "faction": "Corrupted",
+    "tier": "B"
+  },
+  "SolNode405": {
+    "node": "Ani",
+    "planet": "Void",
+    "mission": "Survival",
+    "faction": "Corrupted",
+    "tier": "F"
+  },
+  "SolNode408": {
+    "node": "Belenus",
+    "planet": "Void",
+    "mission": "Defense",
+    "faction": "Corrupted",
+    "tier": "B"
+  },
+  "SolNode409": {
+    "node": "Mot",
+    "planet": "Void",
+    "mission": "Survival",
+    "faction": "Corrupted",
+    "tier": "F"
+  },
+  "SolNode412": {
+    "node": "Mithra",
+    "planet": "Void",
+    "mission": "Interception",
+    "faction": "Corrupted",
+    "tier": "C"
+  },
+  "SolNode42": {
+    "node": "Helene",
+    "planet": "Saturn",
+    "mission": "Defense",
+    "faction": "Grineer",
+    "tier": "B"
+  },
+  "SolNode43": {
+    "node": "Cerberus",
+    "planet": "Pluto",
+    "mission": "Interception",
+    "faction": "Corpus",
+    "tier": "F"
+  },
+  "SolNode450": {
+    "node": "Tyana Pass",
+    "planet": "Mars",
+    "mission": "Mirror Defense",
+    "faction": "Corpus",
+    "tier": "S"
+  },
+  "SolNode46": {
+    "node": "Spear",
+    "planet": "Mars",
+    "mission": "Defense",
+    "faction": "Grineer",
+    "tier": "C"
+  },
+  "SolNode6": {
+    "node": "Despina",
+    "planet": "Neptune",
+    "mission": "Excavation",
+    "faction": "Corpus",
+    "tier": "F"
+  },
+  "SolNode64": {
+    "node": "Umbriel",
+    "planet": "Uranus",
+    "mission": "Interception",
+    "faction": "Grineer",
+    "tier": "S"
+  },
+  "SolNode707": {
+    "node": "Hyf",
+    "planet": "Deimos",
+    "mission": "Defense",
+    "faction": "Infestation",
+    "tier": "B"
+  },
+  "SolNode711": {
+    "node": "Terrorem",
+    "planet": "Deimos",
+    "mission": "Survival",
+    "faction": "Infestation",
+    "tier": "F"
+  },
+  "SolNode718": {
+    "node": "Cambire",
+    "planet": "Deimos",
+    "mission": "Alchemy",
+    "faction": "The Murmur",
+    "tier": "F"
+  },
+  "SolNode719": {
+    "node": "Munio",
+    "planet": "Deimos",
+    "mission": "Mirror Defense",
+    "faction": "The Murmur",
+    "tier": "S"
+  },
+  "SolNode72": {
+    "node": "Outer Terminus",
+    "planet": "Pluto",
+    "mission": "Defense",
+    "faction": "Corpus",
+    "tier": "C"
+  },
+  "SolNode81": {
+    "node": "Palus",
+    "planet": "Pluto",
+    "mission": "Survival",
+    "faction": "Corpus",
+    "tier": "F"
+  },
+  "SolNode85": {
+    "node": "Gaia",
+    "planet": "Earth",
+    "mission": "Interception",
+    "faction": "Grineer",
+    "tier": "D"
+  },
+  "SolNode87": {
+    "node": "Ganymede",
+    "planet": "Jupiter",
+    "mission": "Disruption",
+    "faction": "Corpus",
+    "tier": "F"
+  },
+  "SolNode94": {
+    "node": "Apollodorus",
+    "planet": "Mercury",
+    "mission": "Survival",
+    "faction": "Infestation",
+    "tier": "F"
+  },
+  "SolNode96": {
+    "node": "Titan",
+    "planet": "Saturn",
+    "mission": "Survival",
+    "faction": "Grineer",
+    "tier": "F"
+  }
+}
