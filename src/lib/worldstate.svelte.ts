@@ -2,6 +2,7 @@ import { invoke } from '@tauri-apps/api/core';
 import 'reflect-metadata';
 import { SyndicateJob, SyndicateMission, WorldEvent, WorldState, type InitialWorldState } from 'warframe-worldstate-parser';
 import { processWorldStateNotifications } from '$lib/notifications.svelte';
+import { reloadOracleBounties } from '$lib/oracle-bounties.svelte';
 
 type RawWorldState = Omit<InitialWorldState, 'Events'> & {
 	Events: (InitialWorldState['Events'][number] & { Community?: boolean })[];
@@ -21,6 +22,8 @@ let pending: Promise<void> | null = null;
 
 export function reloadWorldState(): Promise<void> {
 	if (pending) return pending;
+	// Oracle has its own shared rotation cache and must not delay or fail the world state.
+	void reloadOracleBounties();
 	dashboard.loading = true;
 	dashboard.error = null;
 	pending = (async () => {

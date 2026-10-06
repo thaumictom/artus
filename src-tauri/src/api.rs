@@ -179,11 +179,12 @@ pub async fn refresh_api_catalogs(app: AppHandle) -> AppResult<()> {
     let handle = app.clone();
     let catalogs = tauri::async_runtime::spawn_blocking(move || refresh_catalogs(&handle));
     let wiki = crate::wiki_offerings::refresh_offerings(&app).await;
+    let oracle = crate::oracle::refresh_bounties(&app).await;
     let catalogs = catalogs
         .await
         .map_err(AppError::msg)
         .and_then(|result| result);
-    let errors: Vec<_> = [catalogs, wiki]
+    let errors: Vec<_> = [catalogs, wiki, oracle]
         .into_iter()
         .filter_map(Result::err)
         .map(|error| error.to_string())

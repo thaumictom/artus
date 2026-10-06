@@ -60,6 +60,8 @@ pub struct AppState {
     pub http_client: reqwest::Client,
     /// Rotation-aware wiki requests are serialized across windows; snapshots are also saved locally.
     pub wiki_offerings: tokio::sync::Mutex<HashMap<String, crate::wiki_offerings::WikiOfferings>>,
+    /// Oracle rotations and display metadata, shared by all windows for this session.
+    pub oracle_bounties: tokio::sync::Mutex<crate::oracle::OracleCache>,
     /// Short-lived warframe.market item orders and historical statistics.
     pub market_responses: Mutex<crate::market::MarketResponseCaches>,
     /// warframe.market credentials are never kept here; only the active JWT and socket handle.
@@ -93,6 +95,7 @@ impl Default for AppState {
                 .expect("shared HTTP client"),
             market_responses: Mutex::new(crate::market::MarketResponseCaches::default()),
             wiki_offerings: tokio::sync::Mutex::new(HashMap::new()),
+            oracle_bounties: tokio::sync::Mutex::new(crate::oracle::OracleCache::default()),
             market_session: Mutex::new(None),
             market_status_operation: tokio::sync::Mutex::new(()),
         }

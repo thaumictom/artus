@@ -3,6 +3,7 @@
 	import { listen } from '@tauri-apps/api/event';
 	import { onMount } from 'svelte';
 	import Button from '$lib/components/Button.svelte';
+	import { reloadOracleBounties } from '$lib/oracle-bounties.svelte';
 	import CommonSetting from '$lib/components/ui/CommonSetting.svelte';
 	import ResetMasteryItems from '../components/ResetMasteryItems.svelte';
 	import ResetInventory from '../components/ResetInventory.svelte';
@@ -12,7 +13,7 @@
 	let refreshStatus = $state<string | null>(null);
 	let lastFetchedAt = $state<number | null>(null);
 	let description = $derived(
-		`Reload item data, prices and wiki offerings now. Last fetched: ${lastFetchedAt === null ? 'Never' : new Date(lastFetchedAt).toLocaleString()}.`,
+		`Reload item data, prices, wiki offerings and bounty rotations now. Last fetched: ${lastFetchedAt === null ? 'Never' : new Date(lastFetchedAt).toLocaleString()}.`,
 	);
 	let cooldownTimer: ReturnType<typeof setTimeout> | undefined;
 	onMount(() => {
@@ -50,8 +51,9 @@
 		try {
 			await invoke('refresh_api_catalogs');
 		} catch (error) {
-			refreshStatus = `Some catalogs or wiki offerings could not be refreshed: ${String(error)}`;
+			refreshStatus = `Some catalogs, wiki offerings or bounty rotations could not be refreshed: ${String(error)}`;
 		} finally {
+			await reloadOracleBounties();
 			refreshing = false;
 		}
 	}
