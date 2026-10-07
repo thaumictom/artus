@@ -132,9 +132,6 @@ importers:
       '@tauri-apps/cli':
         specifier: ^2
         version: 2.10.0
-      '@types/culori':
-        specifier: ^4.0.1
-        version: 4.0.1
       '@types/d3-scale':
         specifier: ^4.0.9
         version: 4.0.9
@@ -147,12 +144,6 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
-      culori:
-        specifier: ^4.0.2
-        version: 4.0.2
-      dittotones:
-        specifier: 0.13.0
-        version: 0.13.0
       simple-git-hooks:
         specifier: ^2.13.1
         version: 2.13.1
@@ -833,9 +824,6 @@ packages:
   '@types/cookie@0.6.0':
     resolution: {integrity: sha512-4Kh9a6B2bQciAhf7FSuMRRkUWecJgJu9nPnx3yzpsfXX/c50REIqpHY4C82bXP90qrLtXtkDxTZosYO3UpOwlA==}
 
-  '@types/culori@4.0.1':
-    resolution: {integrity: sha512-43M51r/22CjhbOXyGT361GZ9vncSVQ39u62x5eJdBQFviI8zWp2X5jzqg7k4M6PVgDQAClpy2bUe2dtwEgEDVQ==}
-
   '@types/d3-array@3.2.2':
     resolution: {integrity: sha512-hOLWVbm7uRza0BYXpIIW5pxfrKe0W+D5lrFiAEYR+pb6w3N2SwSMaJbXdUfSEv+dT4MfHBLtn5js0LAWaO6otw==}
 
@@ -1022,10 +1010,6 @@ packages:
     resolution: {integrity: sha512-r4ESw/IlusD17lgQi1O20Fa3qNnsckR126TdUuBgAu7GBYSIPvdNyONd3Zrxh0xCwA4+6w/TDArBPsMvhur+KQ==}
     engines: {node: '>= 0.10'}
 
-  culori@4.0.2:
-    resolution: {integrity: sha512-1+BhOB8ahCn4O0cep0Sh2l9KCOfOdY+BXJnKMHFFzDEouSr/el18QwXEMRlOj9UY5nCeA8UN3a/82rUWRBeyBw==}
-    engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
-
   d3-array@2.12.1:
     resolution: {integrity: sha512-B0ErZK/66mHtEsR1TkPEEkwdy+WDesimkM5gpZr5Dsg54BiTA5RXtYW5qTLIAcekaS9xfZrzBLF/OAkB3Qn1YQ==}
 
@@ -1180,9 +1164,6 @@ packages:
 
   diffie-hellman@5.0.3:
     resolution: {integrity: sha512-kqag/Nl+f3GwyK25fhUMYj81BUOrZ9IuJsjIcDE5icNM9FJHAVm3VcUDxdLPoQtTuUylWm6ZIknYJwwaPxsUzg==}
-
-  dittotones@0.13.0:
-    resolution: {integrity: sha512-QD7x288MvgcxVwt3/SM2NCHRzuywk/mbfKZB7m/e28vPIfRmgb2HP7zlqIQlk993f8NTF4I/J8HM4mRWFWB8jA==}
 
   domain-browser@4.22.0:
     resolution: {integrity: sha512-IGBwjF7tNk3cwypFNH/7bfzBcgSCbaMOD3GsaY1AU/JRrnHnYgEM0+9kQt52iZxjNsjBtJYtao146V+f8jFZNw==}
@@ -2525,8 +2506,6 @@ snapshots:
 
   '@types/cookie@0.6.0': {}
 
-  '@types/culori@4.0.1': {}
-
   '@types/d3-array@3.2.2': {}
 
   '@types/d3-contour@3.0.6':
@@ -2762,8 +2741,6 @@ snapshots:
       randombytes: 2.1.0
       randomfill: 1.0.4
 
-  culori@4.0.2: {}
-
   d3-array@2.12.1:
     dependencies:
       internmap: 1.0.1
@@ -2912,11 +2889,6 @@ snapshots:
       bn.js: 4.12.5
       miller-rabin: 4.0.1
       randombytes: 2.1.0
-
-  dittotones@0.13.0:
-    dependencies:
-      '@types/culori': 4.0.1
-      culori: 4.0.2
 
   domain-browser@4.22.0: {}
 

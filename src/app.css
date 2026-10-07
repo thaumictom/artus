@@ -1,7 +1,5 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
-@import './css/themes/darkening.css';
-@import './css/themes/palettes.css';
 @import './css/themes/variants.css';
 @import '@fontsource-variable/archivo';
 @import '@fontsource-variable/archivo/wdth.css';

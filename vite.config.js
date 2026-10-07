@@ -3,7 +3,6 @@ import { sveltekit } from "@sveltejs/kit/vite";
 import { execSync } from "node:child_process";
 import tailwindcss from '@tailwindcss/vite';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
-import { appPalettesPlugin } from './vite-app-palettes.js';
 
 const host = process.env.TAURI_DEV_HOST;
 const COMMIT_HASH_LENGTH = 7;
@@ -77,7 +76,6 @@ const appVersion = resolveAppVersion();
 // https://vite.dev/config/
 export default defineConfig(async () => ({
 	plugins: [
-		appPalettesPlugin(),
 		bundleWorldstateDataJson(),
 		nodePolyfills({ include: ['crypto', 'stream', 'vm'] }),
 		tailwindcss(),

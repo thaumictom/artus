@@ -1,210 +1,559 @@
-/* Map each Warframe palette to Artus's semantic colors. */
+/* Tune darkness and saturation by Tailwind shade for the Warframe app themes. */
 @layer base {
-	html.theme-vitruvian {
-		--theme-background: var(--color-wf-vitruvian-primary-950);
-		--theme-surface: var(--color-wf-vitruvian-primary-900);
-		--theme-elevated: var(--color-wf-vitruvian-primary-800);
-		--theme-muted: var(--color-wf-vitruvian-primary-700);
-		--theme-foreground: var(--color-wf-vitruvian-primary-50);
-		--theme-surface-foreground: var(--color-wf-vitruvian-primary-100);
-		--theme-elevated-foreground: var(--color-wf-vitruvian-primary-200);
-		--theme-muted-foreground: var(--color-wf-vitruvian-primary-300);
-		--theme-accent: var(--color-wf-vitruvian-highlight-500);
-		--theme-accent-foreground: var(--theme-background);
+	/* Saturation: 0% grayscale, 50% palette color, 100% double chroma. Default stays unchanged. */
+	:root {
+		--theme-darken-50: 0%;
+		--theme-darken-100: 0%;
+		--theme-darken-200: 0%;
+		--theme-darken-300: 0%;
+		--theme-darken-400: 0%;
+		--theme-darken-500: 0%;
+		--theme-darken-600: 20%;
+		--theme-darken-700: 25%;
+		--theme-darken-800: 30%;
+		--theme-darken-900: 40%;
+		--theme-darken-950: 35%;
+
+		--theme-desature-50: 50%;
+		--theme-desature-100: 50%;
+		--theme-desature-200: 50%;
+		--theme-desature-300: 50%;
+		--theme-desature-400: 50%;
+		--theme-desature-500: 50%;
+		--theme-desature-600: 48%;
+		--theme-desature-700: 46%;
+		--theme-desature-800: 44%;
+		--theme-desature-900: 42%;
+		--theme-desature-950: 40%;
 	}
 
 	html.theme-stalker {
-		--theme-background: var(--color-wf-stalker-primary-950);
-		--theme-surface: var(--color-wf-stalker-primary-900);
-		--theme-elevated: var(--color-wf-stalker-primary-800);
-		--theme-muted: var(--color-wf-stalker-primary-700);
-		--theme-foreground: var(--color-wf-stalker-primary-50);
-		--theme-surface-foreground: var(--color-wf-stalker-primary-100);
-		--theme-elevated-foreground: var(--color-wf-stalker-primary-200);
-		--theme-muted-foreground: var(--color-wf-stalker-primary-300);
-		--theme-accent: var(--color-wf-stalker-highlight-500);
-		--theme-accent-foreground: var(--theme-background);
-	}
-
-	html.theme-baruuk {
-		--theme-background: var(--color-wf-baruuk-primary-950);
-		--theme-surface: var(--color-wf-baruuk-primary-900);
-		--theme-elevated: var(--color-wf-baruuk-primary-800);
-		--theme-muted: var(--color-wf-baruuk-primary-700);
-		--theme-foreground: var(--color-wf-baruuk-primary-50);
-		--theme-surface-foreground: var(--color-wf-baruuk-primary-100);
-		--theme-elevated-foreground: var(--color-wf-baruuk-primary-200);
-		--theme-muted-foreground: var(--color-wf-baruuk-primary-300);
-		--theme-accent: var(--color-wf-baruuk-highlight-500);
-		--theme-accent-foreground: var(--theme-background);
-	}
-
-	html.theme-corpus {
-		--theme-background: var(--color-wf-corpus-primary-950);
-		--theme-surface: var(--color-wf-corpus-primary-900);
-		--theme-elevated: var(--color-wf-corpus-primary-800);
-		--theme-muted: var(--color-wf-corpus-primary-700);
-		--theme-foreground: var(--color-wf-corpus-primary-50);
-		--theme-surface-foreground: var(--color-wf-corpus-primary-100);
-		--theme-elevated-foreground: var(--color-wf-corpus-primary-200);
-		--theme-muted-foreground: var(--color-wf-corpus-primary-300);
-		--theme-accent: var(--color-wf-corpus-highlight-500);
-		--theme-accent-foreground: var(--theme-background);
-	}
-
-	html.theme-fortuna {
-		--theme-background: var(--color-wf-fortuna-primary-950);
-		--theme-surface: var(--color-wf-fortuna-primary-900);
-		--theme-elevated: var(--color-wf-fortuna-primary-800);
-		--theme-muted: var(--color-wf-fortuna-primary-700);
-		--theme-foreground: var(--color-wf-fortuna-primary-50);
-		--theme-surface-foreground: var(--color-wf-fortuna-primary-100);
-		--theme-elevated-foreground: var(--color-wf-fortuna-primary-200);
-		--theme-muted-foreground: var(--color-wf-fortuna-primary-300);
-		--theme-accent: var(--color-wf-fortuna-highlight-500);
-		--theme-accent-foreground: var(--theme-background);
-	}
-
-	html.theme-grineer {
-		--theme-background: var(--color-wf-grineer-primary-950);
-		--theme-surface: var(--color-wf-grineer-primary-900);
-		--theme-elevated: var(--color-wf-grineer-primary-800);
-		--theme-muted: var(--color-wf-grineer-primary-700);
-		--theme-foreground: var(--color-wf-grineer-primary-50);
-		--theme-surface-foreground: var(--color-wf-grineer-primary-100);
-		--theme-elevated-foreground: var(--color-wf-grineer-primary-200);
-		--theme-muted-foreground: var(--color-wf-grineer-primary-300);
-		--theme-accent: var(--color-wf-grineer-highlight-500);
-		--theme-accent-foreground: var(--theme-background);
-	}
-
-	html.theme-lotus {
-		--theme-background: var(--color-wf-lotus-primary-950);
-		--theme-surface: var(--color-wf-lotus-primary-900);
-		--theme-elevated: var(--color-wf-lotus-primary-800);
-		--theme-muted: var(--color-wf-lotus-primary-700);
-		--theme-foreground: var(--color-wf-lotus-primary-50);
-		--theme-surface-foreground: var(--color-wf-lotus-primary-100);
-		--theme-elevated-foreground: var(--color-wf-lotus-primary-200);
-		--theme-muted-foreground: var(--color-wf-lotus-primary-300);
-		--theme-accent: var(--color-wf-lotus-highlight-500);
-		--theme-accent-foreground: var(--theme-background);
-	}
-
-	html.theme-nidus {
-		--theme-background: var(--color-wf-nidus-primary-950);
-		--theme-surface: var(--color-wf-nidus-primary-900);
-		--theme-elevated: var(--color-wf-nidus-primary-800);
-		--theme-muted: var(--color-wf-nidus-primary-700);
-		--theme-foreground: var(--color-wf-nidus-primary-50);
-		--theme-surface-foreground: var(--color-wf-nidus-primary-100);
-		--theme-elevated-foreground: var(--color-wf-nidus-primary-200);
-		--theme-muted-foreground: var(--color-wf-nidus-primary-300);
-		--theme-accent: var(--color-wf-nidus-highlight-500);
-		--theme-accent-foreground: var(--theme-background);
-	}
-
-	html.theme-orokin {
-		--theme-background: var(--color-wf-orokin-primary-950);
-		--theme-surface: var(--color-wf-orokin-primary-900);
-		--theme-elevated: var(--color-wf-orokin-primary-800);
-		--theme-muted: var(--color-wf-orokin-primary-700);
-		--theme-foreground: var(--color-wf-orokin-primary-50);
-		--theme-surface-foreground: var(--color-wf-orokin-primary-100);
-		--theme-elevated-foreground: var(--color-wf-orokin-primary-200);
-		--theme-muted-foreground: var(--color-wf-orokin-primary-300);
-		--theme-accent: var(--color-wf-orokin-highlight-500);
-		--theme-accent-foreground: var(--theme-background);
-	}
-
-	html.theme-tenno {
-		--theme-background: var(--color-wf-tenno-primary-950);
-		--theme-surface: var(--color-wf-tenno-primary-900);
-		--theme-elevated: var(--color-wf-tenno-primary-800);
-		--theme-muted: var(--color-wf-tenno-primary-700);
-		--theme-foreground: var(--color-wf-tenno-primary-50);
-		--theme-surface-foreground: var(--color-wf-tenno-primary-100);
-		--theme-elevated-foreground: var(--color-wf-tenno-primary-200);
-		--theme-muted-foreground: var(--color-wf-tenno-primary-300);
-		--theme-accent: var(--color-wf-tenno-highlight-500);
+		--theme-background: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-red-950) l 0 h),
+				oklch(from var(--color-red-950) l calc(c * 2) h) var(--theme-desature-950)
+			),
+			black var(--theme-darken-950)
+		);
+		--theme-surface: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-red-900) l 0 h),
+				oklch(from var(--color-red-900) l calc(c * 2) h) var(--theme-desature-900)
+			),
+			black var(--theme-darken-900)
+		);
+		--theme-elevated: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-red-800) l 0 h),
+				oklch(from var(--color-red-800) l calc(c * 2) h) var(--theme-desature-800)
+			),
+			black var(--theme-darken-800)
+		);
+		--theme-muted: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-red-700) l 0 h),
+				oklch(from var(--color-red-700) l calc(c * 2) h) var(--theme-desature-700)
+			),
+			black var(--theme-darken-700)
+		);
+		--theme-foreground: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-red-50) l 0 h),
+				oklch(from var(--color-red-50) l calc(c * 2) h) var(--theme-desature-50)
+			),
+			black var(--theme-darken-50)
+		);
+		--theme-surface-foreground: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-red-100) l 0 h),
+				oklch(from var(--color-red-100) l calc(c * 2) h) var(--theme-desature-100)
+			),
+			black var(--theme-darken-100)
+		);
+		--theme-elevated-foreground: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-red-200) l 0 h),
+				oklch(from var(--color-red-200) l calc(c * 2) h) var(--theme-desature-200)
+			),
+			black var(--theme-darken-200)
+		);
+		--theme-muted-foreground: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-red-300) l 0 h),
+				oklch(from var(--color-red-300) l calc(c * 2) h) var(--theme-desature-300)
+			),
+			black var(--theme-darken-300)
+		);
+		--theme-accent: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-red-500) l 0 h),
+				oklch(from var(--color-red-500) l calc(c * 2) h) var(--theme-desature-500)
+			),
+			black var(--theme-darken-500)
+		);
 		--theme-accent-foreground: var(--theme-background);
 	}
 
 	html.theme-high-contrast {
-		--theme-background: var(--color-wf-high-contrast-primary-950);
-		--theme-surface: var(--color-wf-high-contrast-primary-900);
-		--theme-elevated: var(--color-wf-high-contrast-primary-800);
-		--theme-muted: var(--color-wf-high-contrast-primary-700);
-		--theme-foreground: var(--color-wf-high-contrast-primary-50);
-		--theme-surface-foreground: var(--color-wf-high-contrast-primary-100);
-		--theme-elevated-foreground: var(--color-wf-high-contrast-primary-200);
-		--theme-muted-foreground: var(--color-wf-high-contrast-primary-300);
-		--theme-accent: var(--color-wf-high-contrast-highlight-500);
+		--theme-background: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-sky-950) l 0 h),
+				oklch(from var(--color-sky-950) l calc(c * 2) h) var(--theme-desature-950)
+			),
+			black var(--theme-darken-950)
+		);
+		--theme-surface: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-sky-900) l 0 h),
+				oklch(from var(--color-sky-900) l calc(c * 2) h) var(--theme-desature-900)
+			),
+			black var(--theme-darken-900)
+		);
+		--theme-elevated: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-sky-800) l 0 h),
+				oklch(from var(--color-sky-800) l calc(c * 2) h) var(--theme-desature-800)
+			),
+			black var(--theme-darken-800)
+		);
+		--theme-muted: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-sky-700) l 0 h),
+				oklch(from var(--color-sky-700) l calc(c * 2) h) var(--theme-desature-700)
+			),
+			black var(--theme-darken-700)
+		);
+		--theme-foreground: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-sky-50) l 0 h),
+				oklch(from var(--color-sky-50) l calc(c * 2) h) var(--theme-desature-50)
+			),
+			black var(--theme-darken-50)
+		);
+		--theme-surface-foreground: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-sky-100) l 0 h),
+				oklch(from var(--color-sky-100) l calc(c * 2) h) var(--theme-desature-100)
+			),
+			black var(--theme-darken-100)
+		);
+		--theme-elevated-foreground: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-sky-200) l 0 h),
+				oklch(from var(--color-sky-200) l calc(c * 2) h) var(--theme-desature-200)
+			),
+			black var(--theme-darken-200)
+		);
+		--theme-muted-foreground: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-sky-300) l 0 h),
+				oklch(from var(--color-sky-300) l calc(c * 2) h) var(--theme-desature-300)
+			),
+			black var(--theme-darken-300)
+		);
+		--theme-accent: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-yellow-300) l 0 h),
+				oklch(from var(--color-yellow-300) l calc(c * 2) h) var(--theme-desature-300)
+			),
+			black var(--theme-darken-300)
+		);
 		--theme-accent-foreground: var(--theme-background);
 	}
 
-	html.theme-legacy {
-		--theme-background: var(--color-wf-legacy-primary-950);
-		--theme-surface: var(--color-wf-legacy-primary-900);
-		--theme-elevated: var(--color-wf-legacy-primary-800);
-		--theme-muted: var(--color-wf-legacy-primary-700);
-		--theme-foreground: var(--color-wf-legacy-primary-50);
-		--theme-surface-foreground: var(--color-wf-legacy-primary-100);
-		--theme-elevated-foreground: var(--color-wf-legacy-primary-200);
-		--theme-muted-foreground: var(--color-wf-legacy-primary-300);
-		--theme-accent: var(--color-wf-legacy-highlight-500);
+	html.theme-baruuk {
+		--theme-background: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-amber-950) l 0 h),
+				oklch(from var(--color-amber-950) l calc(c * 2) h) var(--theme-desature-950)
+			),
+			black var(--theme-darken-950)
+		);
+		--theme-surface: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-amber-900) l 0 h),
+				oklch(from var(--color-amber-900) l calc(c * 2) h) var(--theme-desature-900)
+			),
+			black var(--theme-darken-900)
+		);
+		--theme-elevated: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-amber-800) l 0 h),
+				oklch(from var(--color-amber-800) l calc(c * 2) h) var(--theme-desature-800)
+			),
+			black var(--theme-darken-800)
+		);
+		--theme-muted: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-amber-700) l 0 h),
+				oklch(from var(--color-amber-700) l calc(c * 2) h) var(--theme-desature-700)
+			),
+			black var(--theme-darken-700)
+		);
+		--theme-foreground: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-amber-50) l 0 h),
+				oklch(from var(--color-amber-50) l calc(c * 2) h) var(--theme-desature-50)
+			),
+			black var(--theme-darken-50)
+		);
+		--theme-surface-foreground: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-amber-100) l 0 h),
+				oklch(from var(--color-amber-100) l calc(c * 2) h) var(--theme-desature-100)
+			),
+			black var(--theme-darken-100)
+		);
+		--theme-elevated-foreground: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-amber-200) l 0 h),
+				oklch(from var(--color-amber-200) l calc(c * 2) h) var(--theme-desature-200)
+			),
+			black var(--theme-darken-200)
+		);
+		--theme-muted-foreground: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-amber-300) l 0 h),
+				oklch(from var(--color-amber-300) l calc(c * 2) h) var(--theme-desature-300)
+			),
+			black var(--theme-darken-300)
+		);
+		--theme-accent: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-amber-400) l 0 h),
+				oklch(from var(--color-amber-400) l calc(c * 2) h) var(--theme-desature-400)
+			),
+			black var(--theme-darken-400)
+		);
 		--theme-accent-foreground: var(--theme-background);
 	}
 
-	html.theme-equinox {
-		--theme-background: var(--color-wf-equinox-primary-950);
-		--theme-surface: var(--color-wf-equinox-primary-900);
-		--theme-elevated: var(--color-wf-equinox-primary-800);
-		--theme-muted: var(--color-wf-equinox-primary-700);
-		--theme-foreground: var(--color-wf-equinox-primary-50);
-		--theme-surface-foreground: var(--color-wf-equinox-primary-100);
-		--theme-elevated-foreground: var(--color-wf-equinox-primary-200);
-		--theme-muted-foreground: var(--color-wf-equinox-primary-300);
-		--theme-accent: var(--color-wf-equinox-highlight-500);
+	html.theme-fortuna {
+		--theme-background: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-blue-950) l 0 h),
+				oklch(from var(--color-blue-950) l calc(c * 2) h) var(--theme-desature-950)
+			),
+			black var(--theme-darken-950)
+		);
+		--theme-surface: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-blue-900) l 0 h),
+				oklch(from var(--color-blue-900) l calc(c * 2) h) var(--theme-desature-900)
+			),
+			black var(--theme-darken-900)
+		);
+		--theme-elevated: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-blue-800) l 0 h),
+				oklch(from var(--color-blue-800) l calc(c * 2) h) var(--theme-desature-800)
+			),
+			black var(--theme-darken-800)
+		);
+		--theme-muted: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-blue-700) l 0 h),
+				oklch(from var(--color-blue-700) l calc(c * 2) h) var(--theme-desature-700)
+			),
+			black var(--theme-darken-700)
+		);
+		--theme-foreground: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-blue-50) l 0 h),
+				oklch(from var(--color-blue-50) l calc(c * 2) h) var(--theme-desature-50)
+			),
+			black var(--theme-darken-50)
+		);
+		--theme-surface-foreground: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-blue-100) l 0 h),
+				oklch(from var(--color-blue-100) l calc(c * 2) h) var(--theme-desature-100)
+			),
+			black var(--theme-darken-100)
+		);
+		--theme-elevated-foreground: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-blue-200) l 0 h),
+				oklch(from var(--color-blue-200) l calc(c * 2) h) var(--theme-desature-200)
+			),
+			black var(--theme-darken-200)
+		);
+		--theme-muted-foreground: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-blue-300) l 0 h),
+				oklch(from var(--color-blue-300) l calc(c * 2) h) var(--theme-desature-300)
+			),
+			black var(--theme-darken-300)
+		);
+		--theme-accent: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-fuchsia-400) l 0 h),
+				oklch(from var(--color-fuchsia-400) l calc(c * 2) h) var(--theme-desature-400)
+			),
+			black var(--theme-darken-400)
+		);
 		--theme-accent-foreground: var(--theme-background);
 	}
 
-	html.theme-dark-lotus {
-		--theme-background: var(--color-wf-dark-lotus-primary-950);
-		--theme-surface: var(--color-wf-dark-lotus-primary-900);
-		--theme-elevated: var(--color-wf-dark-lotus-primary-800);
-		--theme-muted: var(--color-wf-dark-lotus-primary-700);
-		--theme-foreground: var(--color-wf-dark-lotus-primary-50);
-		--theme-surface-foreground: var(--color-wf-dark-lotus-primary-100);
-		--theme-elevated-foreground: var(--color-wf-dark-lotus-primary-200);
-		--theme-muted-foreground: var(--color-wf-dark-lotus-primary-300);
-		--theme-accent: var(--color-wf-dark-lotus-highlight-500);
+	html.theme-corpus {
+		--theme-background: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-cyan-950) l 0 h),
+				oklch(from var(--color-cyan-950) l calc(c * 2) h) var(--theme-desature-950)
+			),
+			black var(--theme-darken-950)
+		);
+		--theme-surface: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-cyan-900) l 0 h),
+				oklch(from var(--color-cyan-900) l calc(c * 2) h) var(--theme-desature-900)
+			),
+			black var(--theme-darken-900)
+		);
+		--theme-elevated: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-cyan-800) l 0 h),
+				oklch(from var(--color-cyan-800) l calc(c * 2) h) var(--theme-desature-800)
+			),
+			black var(--theme-darken-800)
+		);
+		--theme-muted: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-cyan-700) l 0 h),
+				oklch(from var(--color-cyan-700) l calc(c * 2) h) var(--theme-desature-700)
+			),
+			black var(--theme-darken-700)
+		);
+		--theme-foreground: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-cyan-50) l 0 h),
+				oklch(from var(--color-cyan-50) l calc(c * 2) h) var(--theme-desature-50)
+			),
+			black var(--theme-darken-50)
+		);
+		--theme-surface-foreground: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-cyan-100) l 0 h),
+				oklch(from var(--color-cyan-100) l calc(c * 2) h) var(--theme-desature-100)
+			),
+			black var(--theme-darken-100)
+		);
+		--theme-elevated-foreground: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-cyan-200) l 0 h),
+				oklch(from var(--color-cyan-200) l calc(c * 2) h) var(--theme-desature-200)
+			),
+			black var(--theme-darken-200)
+		);
+		--theme-muted-foreground: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-cyan-300) l 0 h),
+				oklch(from var(--color-cyan-300) l calc(c * 2) h) var(--theme-desature-300)
+			),
+			black var(--theme-darken-300)
+		);
+		--theme-accent: color-mix(
+			in oklch,
+			color-mix(
+				in oklch,
+				oklch(from var(--color-cyan-400) l 0 h),
+				oklch(from var(--color-cyan-400) l calc(c * 2) h) var(--theme-desature-400)
+			),
+			black var(--theme-darken-400)
+		);
 		--theme-accent-foreground: var(--theme-background);
 	}
 
-	html.theme-zephyr {
-		--theme-background: var(--color-wf-zephyr-primary-950);
-		--theme-surface: var(--color-wf-zephyr-primary-900);
-		--theme-elevated: var(--color-wf-zephyr-primary-800);
-		--theme-muted: var(--color-wf-zephyr-primary-700);
-		--theme-foreground: var(--color-wf-zephyr-primary-50);
-		--theme-surface-foreground: var(--color-wf-zephyr-primary-100);
-		--theme-elevated-foreground: var(--color-wf-zephyr-primary-200);
-		--theme-muted-foreground: var(--color-wf-zephyr-primary-300);
-		--theme-accent: var(--color-wf-zephyr-highlight-500);
+	/* Use the same shade roles as Default's mist palette. */
+	html.theme-slate {
+		--theme-background: var(--color-slate-900);
+		--theme-surface: var(--color-slate-800);
+		--theme-elevated: var(--color-slate-700);
+		--theme-muted: var(--color-slate-600);
+		--theme-foreground: var(--color-slate-50);
+		--theme-surface-foreground: var(--color-slate-100);
+		--theme-elevated-foreground: var(--color-slate-200);
+		--theme-muted-foreground: var(--color-slate-400);
+		--theme-accent: var(--color-emerald-500);
 		--theme-accent-foreground: var(--theme-background);
 	}
 
-	html.theme-lunar-renewal {
-		--theme-background: var(--color-wf-lunar-renewal-primary-950);
-		--theme-surface: var(--color-wf-lunar-renewal-primary-900);
-		--theme-elevated: var(--color-wf-lunar-renewal-primary-800);
-		--theme-muted: var(--color-wf-lunar-renewal-primary-700);
-		--theme-foreground: var(--color-wf-lunar-renewal-primary-50);
-		--theme-surface-foreground: var(--color-wf-lunar-renewal-primary-100);
-		--theme-elevated-foreground: var(--color-wf-lunar-renewal-primary-200);
-		--theme-muted-foreground: var(--color-wf-lunar-renewal-primary-300);
-		--theme-accent: var(--color-wf-lunar-renewal-highlight-500);
+	html.theme-gray {
+		--theme-background: var(--color-gray-900);
+		--theme-surface: var(--color-gray-800);
+		--theme-elevated: var(--color-gray-700);
+		--theme-muted: var(--color-gray-600);
+		--theme-foreground: var(--color-gray-50);
+		--theme-surface-foreground: var(--color-gray-100);
+		--theme-elevated-foreground: var(--color-gray-200);
+		--theme-muted-foreground: var(--color-gray-400);
+		--theme-accent: var(--color-emerald-500);
+		--theme-accent-foreground: var(--theme-background);
+	}
+
+	html.theme-zinc {
+		--theme-background: var(--color-zinc-900);
+		--theme-surface: var(--color-zinc-800);
+		--theme-elevated: var(--color-zinc-700);
+		--theme-muted: var(--color-zinc-600);
+		--theme-foreground: var(--color-zinc-50);
+		--theme-surface-foreground: var(--color-zinc-100);
+		--theme-elevated-foreground: var(--color-zinc-200);
+		--theme-muted-foreground: var(--color-zinc-400);
+		--theme-accent: var(--color-emerald-500);
+		--theme-accent-foreground: var(--theme-background);
+	}
+
+	html.theme-neutral {
+		--theme-background: var(--color-neutral-900);
+		--theme-surface: var(--color-neutral-800);
+		--theme-elevated: var(--color-neutral-700);
+		--theme-muted: var(--color-neutral-600);
+		--theme-foreground: var(--color-neutral-50);
+		--theme-surface-foreground: var(--color-neutral-100);
+		--theme-elevated-foreground: var(--color-neutral-200);
+		--theme-muted-foreground: var(--color-neutral-400);
+		--theme-accent: var(--color-emerald-500);
+		--theme-accent-foreground: var(--theme-background);
+	}
+
+	html.theme-stone {
+		--theme-background: var(--color-stone-900);
+		--theme-surface: var(--color-stone-800);
+		--theme-elevated: var(--color-stone-700);
+		--theme-muted: var(--color-stone-600);
+		--theme-foreground: var(--color-stone-50);
+		--theme-surface-foreground: var(--color-stone-100);
+		--theme-elevated-foreground: var(--color-stone-200);
+		--theme-muted-foreground: var(--color-stone-400);
+		--theme-accent: var(--color-emerald-500);
+		--theme-accent-foreground: var(--theme-background);
+	}
+
+	html.theme-taupe {
+		--theme-background: var(--color-taupe-900);
+		--theme-surface: var(--color-taupe-800);
+		--theme-elevated: var(--color-taupe-700);
+		--theme-muted: var(--color-taupe-600);
+		--theme-foreground: var(--color-taupe-50);
+		--theme-surface-foreground: var(--color-taupe-100);
+		--theme-elevated-foreground: var(--color-taupe-200);
+		--theme-muted-foreground: var(--color-taupe-400);
+		--theme-accent: var(--color-emerald-500);
+		--theme-accent-foreground: var(--theme-background);
+	}
+
+	html.theme-mauve {
+		--theme-background: var(--color-mauve-900);
+		--theme-surface: var(--color-mauve-800);
+		--theme-elevated: var(--color-mauve-700);
+		--theme-muted: var(--color-mauve-600);
+		--theme-foreground: var(--color-mauve-50);
+		--theme-surface-foreground: var(--color-mauve-100);
+		--theme-elevated-foreground: var(--color-mauve-200);
+		--theme-muted-foreground: var(--color-mauve-400);
+		--theme-accent: var(--color-emerald-500);
+		--theme-accent-foreground: var(--theme-background);
+	}
+
+	html.theme-olive {
+		--theme-background: var(--color-olive-900);
+		--theme-surface: var(--color-olive-800);
+		--theme-elevated: var(--color-olive-700);
+		--theme-muted: var(--color-olive-600);
+		--theme-foreground: var(--color-olive-50);
+		--theme-surface-foreground: var(--color-olive-100);
+		--theme-elevated-foreground: var(--color-olive-200);
+		--theme-muted-foreground: var(--color-olive-400);
+		--theme-accent: var(--color-emerald-500);
 		--theme-accent-foreground: var(--theme-background);
 	}
 }
