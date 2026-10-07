@@ -107,7 +107,7 @@
 {#snippet relicImageTitle()}Relic selection capture{/snippet}
 {#snippet relicImageDescription()}Scroll to inspect the full-size filtered image.{/snippet}
 
-<div class="flex flex-col gap-8">
+<div class="flex flex-col">
 	<CommonSetting
 		title="Show unused dashboard views"
 		description="Show the Unused group and its pinned views in dashboard navigation. These views may have no useful information yet."

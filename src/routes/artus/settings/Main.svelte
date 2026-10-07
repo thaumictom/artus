@@ -105,11 +105,11 @@
 		</nav>
 	{/snippet}
 	<MainContent onScroll={updateActiveSection}>
-		<div class="mx-auto px-6 py-12 w-full max-w-2xl page-width">
+		<div class="mx-auto px-6 py-12 w-full max-w-2xl settings-content page-width">
 			<div class="w-full min-w-0">
 				{#each sections as { name, id, component: Component }, i (id)}
 					<section aria-labelledby={id}>
-						<h1 class="mb-8 font-bold text-xl scroll-mt-16" {id}>{name}</h1>
+						<h1 class="pb-4 font-bold text-xl scroll-mt-16" {id}>{name}</h1>
 						{#if id === 'about'}
 							<MetaInformation
 								onVersionTripleClick={() => setDebugVisibility(!config.show_debug_settings)}
@@ -119,10 +119,19 @@
 						{/if}
 					</section>
 					{#if i < sections.length - 1}
-						<Separator.Root class="my-16 bg-border h-px" />
+						<Separator.Root class="bg-surface my-16 h-px" />
 					{/if}
 				{/each}
 			</div>
 		</div>
 	</MainContent>
 </ResizableNavigationLayout>
+
+<style>
+	.settings-content :global([data-setting-row]) {
+		border: 1px solid var(--theme-elevated);
+		padding: 1.25rem 1rem;
+		/* Share adjoining borders, including rows inside component wrappers. */
+		margin-bottom: -1px;
+	}
+</style>

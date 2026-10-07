@@ -25,7 +25,7 @@
 	}
 </script>
 
-<div class="flex flex-col gap-8">
+<div class="flex flex-col">
 	<CommonSetting
 		title="Always hide quicklists first"
 		description="Create quicklist orders as hidden listings until you make them visible."

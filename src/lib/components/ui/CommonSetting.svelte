@@ -22,6 +22,7 @@
 </script>
 
 <div
+	data-setting-row
 	class={{
 		'cursor-not-allowed': disabled,
 	}}

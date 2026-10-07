@@ -3,7 +3,7 @@
 	import NotificationSoundSetting from '../components/NotificationSoundSetting.svelte';
 </script>
 
-<div class="flex flex-col gap-8">
+<div class="flex flex-col">
 	<DesktopNotificationsSetting />
 	<NotificationSoundSetting />
 </div>

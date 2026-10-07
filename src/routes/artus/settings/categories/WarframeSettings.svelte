@@ -3,7 +3,7 @@
 	import WarframeTheme from '../components/WarframeTheme.svelte';
 </script>
 
-<div class="flex flex-col gap-8">
+<div class="flex flex-col">
 	<WarframeTheme />
 	<RelicRewardDetection />
 </div>

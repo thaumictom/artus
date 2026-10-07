@@ -59,7 +59,7 @@
 	}
 </script>
 
-<div class="flex flex-col gap-8">
+<div class="flex flex-col">
 	<div>
 		<CommonSetting title="Refresh API catalogs" {description}>
 			<Button onclick={refreshApis} disabled={refreshing || coolingDown} class="whitespace-nowrap">

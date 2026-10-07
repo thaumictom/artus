@@ -8,7 +8,7 @@
 	const isWindows = platform() === 'windows';
 </script>
 
-<div class="flex flex-col gap-8">
+<div class="flex flex-col">
 	<HideOverlayOnFocusLossSetting />
 	<CleanupOnFocusLossSetting />
 	{#if isWindows}

@@ -12,7 +12,7 @@
 	const scrollbarTheme = 'os-theme-light';
 </script>
 
-<div class="flex flex-col gap-8">
+<div class="flex flex-col">
 	<AppThemeSetting />
 	<CommonSetting
 		title="Full-width content"

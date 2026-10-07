@@ -4,7 +4,7 @@
 	import ThresholdSettings from '../components/ThresholdSettings.svelte';
 </script>
 
-<div class="flex flex-col gap-8">
+<div class="flex flex-col">
 	<RelatedPriceSettings />
 	<ThresholdSettings />
 	<CaptureModsSetting />
