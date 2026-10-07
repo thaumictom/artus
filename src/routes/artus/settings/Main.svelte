@@ -23,11 +23,11 @@
 		{ name: 'Overlay Behaviour', component: OverlayBehaviour },
 		{ name: 'Quicklist', component: Quicklist },
 		{ name: 'Maintenance', component: Maintenance },
-		{ name: 'Debug', component: DebugSettings },
+		{ name: 'Developer', component: DebugSettings },
 		{ name: 'About', component: MetaInformation },
 	].map((section) => ({ ...section, id: kebabCase(section.name) }));
 	let sections = $derived(
-		allSections.filter((section) => section.id !== 'debug' || config.show_debug_settings),
+		allSections.filter((section) => section.id !== 'developer' || config.show_debug_settings),
 	);
 
 	let activeSection = $state(allSections[0].id);
@@ -87,7 +87,7 @@
 								type="button"
 								aria-current={activeSection === section.id ? 'location' : undefined}
 								onclick={(event) => {
-									if (section.id === 'debug' && event.detail === 2) {
+									if (section.id === 'developer' && event.detail === 2) {
 										setDebugVisibility(false);
 										scrollToSection('about');
 										return;
