@@ -3,6 +3,7 @@
 	import Icon from '@iconify/svelte';
 	import Button from '$lib/components/Button.svelte';
 	import Table from '$lib/components/Table.svelte';
+	import ToggleGroup from '$lib/components/ToggleGroup.svelte';
 	import type { TableColumn } from '$lib/components/table-types';
 	import scheduleText from '$lib/data/arbys.txt?raw';
 	import nodeDetails from '$lib/data/arbitration-nodes.json';
@@ -24,6 +25,11 @@
 		{ key: 'faction', label: 'Faction' },
 		{ key: 'tier', label: 'Tier', class: 'w-16' },
 	];
+	const rankOptions = (['S', 'A', 'B', 'C', 'D', 'F'] as const).map((rank) => ({
+		value: rank,
+		label: rank,
+	}));
+	type Rank = (typeof rankOptions)[number]['value'];
 	const startsFormat = new Intl.DateTimeFormat(undefined, {
 		weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
 	});
@@ -41,7 +47,12 @@
 
 	let { localNow }: DashboardViewProps = $props();
 	let currentHour = $derived(Math.floor(localNow / 3_600_000));
-	let upcoming = $derived(schedule.slice(firstAfter(currentHour * 3_600_000)));
+	let selectedRanks = $state<Rank[]>(rankOptions.map(({ value }) => value));
+	let upcoming = $derived(
+		schedule
+			.slice(firstAfter(currentHour * 3_600_000))
+			.filter((entry) => selectedRanks.some((rank) => rank === nodeDetails[entry.nodeKey].tier)),
+	);
 	let linkError = $state(false);
 	async function openSchedule() {
 		try {
@@ -73,6 +84,10 @@
 
 <section class="mt-6 flex flex-col gap-3" aria-label="Upcoming Arbitrations">
 	<h2 class="text-lg font-semibold">Upcoming Arbitrations</h2>
+	<div class="flex flex-col gap-1">
+		<div class="font-semibold text-muted-foreground text-sm">Rank</div>
+		<ToggleGroup label="Filter Arbitration ranks" options={rankOptions} bind:value={selectedRanks} />
+	</div>
 	{#snippet arbitrationRow(entry: ScheduleEntry, index: number, measureRow: (element: HTMLTableRowElement) => void)}
 		{@const detail = nodeDetails[entry.nodeKey]}
 		<tr data-index={index} use:measureRow class="hover:bg-surface/30 border-border-secondary border-t">
@@ -85,5 +100,8 @@
 		</tr>
 	{/snippet}
 	<Table {columns} rows={upcoming} rowKey={(entry) => String(entry.startsAt)} renderRow={arbitrationRow}
-		minWidth="760px" virtualize emptyMessage="No more Arbitrations in the downloaded schedule." />
+		minWidth="760px" virtualize
+		emptyMessage={selectedRanks.length === rankOptions.length
+			? 'No more Arbitrations in the downloaded schedule.'
+			: 'No upcoming Arbitrations match the selected ranks.'} />
 </section>
