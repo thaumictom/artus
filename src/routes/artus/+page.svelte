@@ -2,7 +2,9 @@
 	import { invoke } from '@tauri-apps/api/core';
 	import { listen } from '@tauri-apps/api/event';
 	import { onMount, tick } from 'svelte';
+	import { cubicIn, expoOut, linear } from 'svelte/easing';
 	import { MediaQuery } from 'svelte/reactivity';
+	import type { TransitionConfig } from 'svelte/transition';
 	import { initializeWorldState, reloadWorldState } from '$lib/worldstate.svelte';
 	import {
 		hasActiveNotificationRules,
@@ -97,6 +99,25 @@
 		});
 	}
 	let activeSection = $derived(appNavigation.current.section);
+	let showContent = $state(false);
+	function startupFly(node: Element): TransitionConfig {
+		const style = getComputedStyle(node);
+		const transform = style.transform === 'none' ? '' : style.transform;
+		const filter = style.filter === 'none' ? '' : `${style.filter} `;
+		const opacity = Number(style.opacity);
+		return {
+			duration: 600,
+			easing: linear,
+			css: (t) => {
+				const colorProgress = cubicIn(Math.min(1, t * 2));
+				return `
+					transform: ${transform} translateY(${(1 - expoOut(t)) * 500}px);
+					opacity: ${opacity * colorProgress};
+					filter: ${filter}saturate(${colorProgress});
+				`;
+			},
+		};
+	}
 	let readyTableSection = $state<string | null>(null);
 	$effect(() => {
 		const section = activeSection;
@@ -128,6 +149,7 @@
 	const NOTIFICATION_REFRESH_INTERVAL_MS = 3 * 60_000;
 
 	onMount(() => {
+		showContent = true;
 		let disposed = false;
 		let unlistenDebug: (() => void) | undefined;
 		let stopWarframeItems: (() => void) | undefined;
@@ -330,24 +352,28 @@
 			canToggle={settingsReady && !isNarrowViewport.current}
 			onToggle={toggleSidebar}
 		></Sidebar>
-		{#if activeSection === 'dashboard'}
-			<DashboardMain />
-		{:else}
-			<MainContent>
-				{#if activeSection === 'mastery'}
-					{#if readyTableSection === 'mastery'}
-						<MasteryMain onOpenMarket={openMarket} />
-					{:else}{@render tableSkeleton()}{/if}
-				{:else if activeSection === 'inventory'}
-					{#if readyTableSection === 'inventory'}
-						<InventoryTab onOpenMarket={openMarket} />
-					{:else}{@render tableSkeleton()}{/if}
-				{:else if activeSection === 'listings'}
-					<Listings onOpenMarket={openMarket} />
+		{#if showContent}
+			<div class="flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden" in:startupFly>
+				{#if activeSection === 'dashboard'}
+					<DashboardMain />
 				{:else}
-					<CurrentComponent />
+					<MainContent>
+						{#if activeSection === 'mastery'}
+							{#if readyTableSection === 'mastery'}
+								<MasteryMain onOpenMarket={openMarket} />
+							{:else}{@render tableSkeleton()}{/if}
+						{:else if activeSection === 'inventory'}
+							{#if readyTableSection === 'inventory'}
+								<InventoryTab onOpenMarket={openMarket} />
+							{:else}{@render tableSkeleton()}{/if}
+						{:else if activeSection === 'listings'}
+							<Listings onOpenMarket={openMarket} />
+						{:else}
+							<CurrentComponent />
+						{/if}
+					</MainContent>
 				{/if}
-			</MainContent>
+			</div>
 		{/if}
 	</Tabs.Root>
 </div>

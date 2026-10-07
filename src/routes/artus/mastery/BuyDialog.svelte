@@ -70,7 +70,16 @@
 </script>
 
 {#snippet title()}Buy item{/snippet}
-{#snippet description()}{item?.name ?? ''}{/snippet}
+{#snippet description()}
+	<span class="flex justify-between items-center gap-3 min-w-0">
+		<span class="min-w-0 truncate" title={itemName}>{itemName}</span>
+		<span class="flex items-center gap-3 shrink-0 whitespace-nowrap">
+			<span class="bg-border-secondary w-px h-5" aria-hidden="true"></span>
+			<span class="tabular-nums">Median: {median === null ? '—' : median.toLocaleString(undefined, { maximumFractionDigits: 1 })}</span>
+			{#if median !== null}<img src="/icons/platinum.png" class="size-3.5 -ml-2" alt="platinum" />{/if}
+		</span>
+	</span>
+{/snippet}
 {#snippet dialogClose()}<Button>Close</Button>{/snippet}
 <Dialog bind:open={() => open, (value) => { if (!value) item = null; }} {title} {description} {dialogClose}
 	contentProps={{ class: 'h-auto max-h-[calc(100vh-2rem)]' }}>
@@ -78,52 +87,55 @@
 		<div class="flex flex-wrap justify-between items-center gap-3 mb-3">
 			<h3 class="font-semibold text-base">Cheapest in-game sell orders</h3>
 			<div class="flex items-center gap-3 text-muted-foreground">
+				{#if ordersRefresh.fetchedAt !== null}
+					<span class="tabular-nums text-base whitespace-nowrap">fetched {ordersRefresh.fetchedAgo}</span>
+				{/if}
 				<Button onclick={() => ordersRefresh.reload()} disabled={ordersRefresh.refreshing || ordersRefresh.coolingDown} class="flex items-center gap-1 text-base">
 					<Icon icon="material-symbols:refresh" class={ordersRefresh.refreshing ? 'size-4 animate-spin' : 'size-4'} />
 					{ordersRefresh.refreshing ? 'Refreshing...' : 'Reload orders'}
 				</Button>
-				{#if ordersRefresh.fetchedAt !== null}
-					<span class="tabular-nums text-base whitespace-nowrap">fetched {ordersRefresh.fetchedAgo}</span>
-				{/if}
 			</div>
 		</div>
 		{#if ordersRefresh.fetchedAt === null && !error}
 			<div role="status" aria-label="Loading current orders" class="border border-border-secondary divide-y divide-border-secondary">
 				{#each Array(6) as _}
 					<div class="flex items-center gap-3 px-3 py-2.5 h-12">
-						<div class="flex flex-col flex-1 gap-1.5 min-w-0">
-							<Skeleton class="w-2/5 h-3" />
-							<Skeleton class="w-1/3 h-2.5" />
-						</div>
+						<Skeleton class="flex-1 h-3" />
+						<Skeleton class="w-12 h-3" />
+						<Skeleton class="w-10 h-3" />
 						<Skeleton class="w-10 h-3" />
 						<Skeleton class="w-8 h-8" />
 					</div>
 				{/each}
-				<div class="flex justify-between items-center px-3 py-3">
-					<Skeleton class="w-28 h-3" />
-					<Skeleton class="w-12 h-3" />
-				</div>
 			</div>
 		{:else if error && ordersRefresh.fetchedAt === null}
 			<p role="alert" class="text-danger text-base">Could not load sell orders. {error}</p>
 		{:else if orders.length === 0}
 			<p class="text-muted-foreground text-base">No sell orders available.</p>
 		{:else}
-			<div class="border border-border-secondary divide-y divide-border-secondary">
-				{#each orders as order (order.id)}
-					<div class="flex items-center gap-3 px-3 py-2 text-base">
-						<div class="min-w-0 flex-1">
-							<div class="truncate font-medium">{order.user.ingameName}</div>
-							<div class="text-muted-foreground text-sm">{order.user.status} · {order.quantity} available</div>
-						</div>
-						<div class="flex items-center gap-1 tabular-nums font-semibold"><span>{order.platinum}</span><img src="/icons/platinum.png" class="size-3.5" alt="platinum" /></div>
-						<CopyTradeMessage {order} {itemName} {bulkTradable} variantProperty={variantProperty(order)} />
-					</div>
-				{/each}
-				<div class="flex items-center justify-between px-3 py-2 text-base font-semibold">
-					<span>Median sell price</span>
-					<span class="flex items-center gap-1 tabular-nums">{median}<img src="/icons/platinum.png" class="size-3.5" alt="platinum" /></span>
-				</div>
+			<div class="border border-border-secondary overflow-x-auto">
+				<table class="w-full min-w-[28rem] text-base text-left">
+					<thead class="bg-surface/80 text-muted-foreground text-sm">
+						<tr>
+							<th scope="col" class="px-3 py-2 font-medium">Name</th>
+							<th scope="col" class="px-3 py-2 font-medium text-right">Quantity</th>
+							<th scope="col" class="px-3 py-2 font-medium text-right">Rep</th>
+							<th scope="col" class="px-3 py-2 font-medium text-right">Plat</th>
+							<th scope="col" class="px-3 py-2 font-medium text-right">Copy</th>
+						</tr>
+					</thead>
+					<tbody class="divide-y divide-border-secondary">
+						{#each orders as order (order.id)}
+							<tr>
+								<td class="px-3 py-2 max-w-0 truncate font-medium" title={order.user.ingameName}>{order.user.ingameName}</td>
+								<td class="px-3 py-2 text-right tabular-nums">{order.quantity}</td>
+								<td class="px-3 py-2 text-right tabular-nums" class:text-muted-foreground={order.user.reputation < 5}>{order.user.reputation}</td>
+								<td class="px-3 py-2 font-semibold text-right tabular-nums"><span class="inline-flex items-center justify-end gap-1">{order.platinum}<img src="/icons/platinum.png" class="size-3.5" alt="platinum" /></span></td>
+								<td class="px-3 py-2 text-right"><CopyTradeMessage {order} {itemName} {bulkTradable} variantProperty={variantProperty(order)} /></td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
 			</div>
 		{/if}
 		{#if error && ordersRefresh.fetchedAt !== null}

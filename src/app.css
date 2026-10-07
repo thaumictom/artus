@@ -189,8 +189,8 @@ html.artus-document:not(.artus-theme-ready) .artus-app-shell {
 
 html.artus-document body {
 	transition:
-		background-color 350ms ease-out,
-		color 350ms ease-out;
+		background-color 400ms ease-out,
+		color 400ms ease-out;
 }
 
 .artus-modal-overlay[data-state='open'] {
