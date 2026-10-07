@@ -61,7 +61,7 @@ export function warframeItemName(item: CatalogItem | undefined, marketName: stri
 }
 
 export function itemMetadataDetails(item?: CatalogItem, fallbackMaxRank?: number) {
-	const rows: { label: string; value: string }[] = [];
+	const rows: { label: string; value: string | number; currency?: 'credits' }[] = [];
 	if (!item) return rows;
 	const number = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
 	const add = (label: string, value: string | number | null | undefined, suffix = '') => {
@@ -85,7 +85,9 @@ export function itemMetadataDetails(item?: CatalogItem, fallbackMaxRank?: number
 	add('Status chance', item.procChance == null ? null : item.procChance * 100, '%');
 	add('Magazine', item.magazineSize);
 	add('Reload', item.reloadTime, ' s');
-	add('Build cost', item.buildPrice, ' credits');
+	if (item.buildPrice != null && Number.isFinite(item.buildPrice)) {
+		rows.push({ label: 'Build cost', value: item.buildPrice, currency: 'credits' });
+	}
 	add('Build time', item.buildTime == null ? null : item.buildTime / 3600, ' h');
 	add('Released', item.releaseDate);
 	if (item.tradable != null) add('Tradeable', item.tradable ? 'Yes' : 'No');

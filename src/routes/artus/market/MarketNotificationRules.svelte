@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Currency from '$lib/components/Currency.svelte';
 	import Icon from '@iconify/svelte';
 	import { OverlayScrollbarsComponent } from 'overlayscrollbars-svelte';
 	import Button from '$lib/components/Button.svelte';
@@ -82,12 +83,6 @@
 		} finally {
 			saving = false;
 		}
-	}
-
-	function ruleDescription(rule: (typeof marketNotificationState.rules)[number]) {
-		return rule.intent === 'sell'
-			? `Sell when a buy order reaches at least ${rule.price.toLocaleString()} platinum`
-			: `Buy when a sell order reaches at most ${rule.price.toLocaleString()} platinum`;
 	}
 
 	function expiryDescription(rule: (typeof marketNotificationState.rules)[number]) {
@@ -201,7 +196,7 @@
 									placeholder="Platinum"
 									class="bg-transparent px-3 outline-none w-full h-full text-base"
 								/>
-								<img src="/icons/platinum.png" alt="Platinum" class="mr-3 size-4" />
+								<Currency value={undefined} currency="platinum" showValue={false} class="mr-3" iconClass="size-4" />
 							</div>
 						</div>
 						<div>
@@ -273,7 +268,7 @@
 						<article class="flex justify-between items-center gap-3 p-3 border">
 							<div class="min-w-0">
 								<h4 class="font-medium text-base truncate">{rule.itemName}</h4>
-								<p class="text-muted-foreground text-sm">{ruleDescription(rule)}</p>
+								<p class="text-muted-foreground text-sm">{rule.intent === 'sell' ? 'Sell when a buy order reaches at least' : 'Buy when a sell order reaches at most'} <Currency value={rule.price} currency="platinum" /></p>
 								<p class="mt-1 text-[11px] text-muted-foreground">
 									{expiryDescription(rule)}{rule.notifyOnce !== false ? ' • First match only' : ''}
 								</p>

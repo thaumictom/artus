@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Currency from '$lib/components/Currency.svelte';
 	import { invoke } from '@tauri-apps/api/core';
 	import { untrack } from 'svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
@@ -39,7 +40,6 @@
 		weightedAverage: number | null;
 		volume: number | null;
 	};
-	const priceFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
 	const volumeFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
 
 	function selectTopOrders(
@@ -395,10 +395,7 @@
 		<h3 class="mb-2 font-semibold text-base">{title}</h3>
 		{#each orders as order (order.id)}
 			<div class="flex justify-between items-center gap-2 py-0.5 tabular-nums text-base">
-				<span class="flex items-center gap-1">
-					{priceFormatter.format(order.platinum)}
-					<img src="/icons/platinum.png" alt="platinum" class="size-3.5" />
-				</span>
+				<Currency class="flex items-center gap-1" value={order.platinum} currency="platinum" />
 				{#if showQuantity}<span class="text-muted-foreground">
 						×{volumeFormatter.format(order.quantity)}
 					</span>{/if}
@@ -482,17 +479,13 @@
 					<div class="px-2">
 						<div class="text-muted-foreground text-sm">Median</div>
 						<div class="font-semibold tabular-nums text-base">
-							{todayStatistics?.median == null
-								? '—'
-								: `${priceFormatter.format(todayStatistics.median)}p`}
+							<Currency value={todayStatistics?.median} currency="platinum" />
 						</div>
 					</div>
 					<div class="px-2">
 						<div class="text-muted-foreground text-sm">Weighted avg</div>
 						<div class="font-semibold tabular-nums text-base">
-							{todayStatistics?.weightedAverage == null
-								? '—'
-								: `${priceFormatter.format(todayStatistics.weightedAverage)}p`}
+							<Currency value={todayStatistics?.weightedAverage} currency="platinum" />
 						</div>
 					</div>
 					<div class="px-2">

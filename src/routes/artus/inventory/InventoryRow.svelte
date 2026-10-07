@@ -1,9 +1,5 @@
-<script module lang="ts">
-	// Formatting is identical across rows; one formatter avoids native allocations per item/mount.
-	const platinumFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
-</script>
-
 <script lang="ts">
+	import Currency from '$lib/components/Currency.svelte';
 	import Icon from '@iconify/svelte';
 	import { inventoryMarketSlug, type InventoryItem } from '$lib/inventory';
 	import { marketAccount } from '$lib/market-account.svelte';
@@ -68,25 +64,22 @@
 	</td>
 	<td class="px-3 py-3.5 text-right tabular-nums">
 		{#if price}
-			<span class="inline-flex items-center justify-end gap-1" title={price.from_current_offers ? 'Current offer median; recent trades exist' : 'Recent trade median'}>
-				{platinumFormatter.format(price.median)}
-				<img src="/icons/platinum.png" class="size-3.5" alt="platinum" />
-			</span>
+			<Currency class="inline-flex items-center justify-end gap-1" title={price.from_current_offers ? 'Current offer median; recent trades exist' : 'Recent trade median'} value={price.median} currency="platinum" />
 		{:else}<span class="text-muted-foreground">—</span>{/if}
 	</td>
 	<td class="px-3 py-3.5 text-right tabular-nums">
 		{#if item.ducats != null}
-			<span class="inline-flex items-center justify-end gap-1">{item.ducats.toLocaleString()}<img src="/icons/ducats.png" class="size-3.5" alt="ducats" /></span>
+			<Currency class="inline-flex items-center justify-end gap-1" value={item.ducats} currency="ducats" />
 		{:else}<span class="text-muted-foreground">—</span>{/if}
 	</td>
 	<td class="px-3 py-3.5 text-right tabular-nums font-semibold">
 		{#if price}
-			<span class="inline-flex items-center justify-end gap-1">{platinumFormatter.format(price.median * item.quantity)}<img src="/icons/platinum.png" class="size-3.5" alt="platinum" /></span>
+			<Currency class="inline-flex items-center justify-end gap-1" value={price.median * item.quantity} currency="platinum" />
 		{:else}<span class="text-muted-foreground font-normal">—</span>{/if}
 	</td>
 	<td class="px-3 py-3.5 text-right tabular-nums font-semibold">
 		{#if item.ducats != null}
-			<span class="inline-flex items-center justify-end gap-1">{(item.ducats * item.quantity).toLocaleString()}<img src="/icons/ducats.png" class="size-3.5" alt="ducats" /></span>
+			<Currency class="inline-flex items-center justify-end gap-1" value={(item.ducats * item.quantity)} currency="ducats" />
 		{:else}<span class="text-muted-foreground font-normal">—</span>{/if}
 	</td>
 	<td class="px-3 py-3.5 text-right">

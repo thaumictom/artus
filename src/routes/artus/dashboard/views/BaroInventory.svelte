@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Currency from '$lib/components/Currency.svelte';
 	import { onMount } from 'svelte';
 	import { formatTimeLeft } from '$lib/date';
 	import Button from '$lib/components/Button.svelte';
@@ -44,7 +45,6 @@
 		{ key: 'ducats', label: 'Ducats', sortable: true, align: 'right', class: 'w-28' },
 		{ key: 'credits', label: 'Credits', sortable: true, align: 'right', class: 'w-36' },
 	];
-	const formatter = new Intl.NumberFormat();
 	const nameFor = (item: InventoryItem) => resolveWarframeItem(item.uniqueName, item.item).name;
 	let rows = $derived.by(() =>
 		inventory
@@ -87,13 +87,10 @@
 			<WarframeItem item={item.uniqueName} name={item.item} />
 		</td>
 		<td class="px-3 py-3.5 tabular-nums text-right">
-			<span class="inline-flex justify-end items-center gap-1.5">
-				{Number.isFinite(item.ducats) ? formatter.format(item.ducats) : '—'}
-				<img src="/icons/ducats.png" class="size-3.5" alt="ducats" />
-			</span>
+			<Currency class="inline-flex justify-end items-center gap-1.5" value={item.ducats} currency="ducats" />
 		</td>
 		<td class="px-3 py-3.5 tabular-nums text-right">
-			{Number.isFinite(item.credits) ? formatter.format(item.credits) : '—'}
+			<Currency value={item.credits} currency="credits" />
 		</td>
 	</tr>
 {/snippet}

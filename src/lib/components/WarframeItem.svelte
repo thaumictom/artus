@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Currency from './Currency.svelte';
 	import Icon from '@iconify/svelte';
 	import { onMount, type Snippet } from 'svelte';
 	import Button from './Button.svelte';
@@ -141,7 +142,10 @@
 					<dl class="gap-x-3 gap-y-1 grid grid-cols-[auto_1fr]">
 						{#each metadataDetails as detail}
 							<dt class="text-muted-foreground">{detail.label}</dt>
-							<dd class="text-right break-words">{detail.value}</dd>
+							<dd class="text-right break-words">
+								{#if detail.currency}<Currency value={detail.value} currency={detail.currency} />
+								{:else}{detail.value}{/if}
+							</dd>
 						{/each}
 					</dl>
 				{/if}

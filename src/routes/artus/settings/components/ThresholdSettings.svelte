@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Currency from '$lib/components/Currency.svelte';
 	import { config, updateSetting } from '$lib/settings.svelte';
 	import Slider from '$lib/components/Slider.svelte';
 	import { Label } from 'bits-ui';
@@ -42,7 +43,7 @@
 				{#each [100, 65, 45, 25, 15] as tier}
 					{@const key = `threshold_${tier}` as keyof typeof config}
 					<div class="flex flex-col">
-						<p>{tier} Ducat Item</p>
+						<p><Currency value={tier} currency="ducats" /> Item</p>
 						<Slider
 							min={1}
 							max={25}
@@ -52,7 +53,7 @@
 							bind:value={config[key] as any}
 						>
 							{#snippet thumbLabel({ value })}
-								{value}p
+								<Currency value={typeof value === 'number' ? value : undefined} currency="platinum" iconClass="size-3" />
 							{/snippet}
 						</Slider>
 					</div>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Currency from '$lib/components/Currency.svelte';
 	import { invoke } from '@tauri-apps/api/core';
 	import { z } from 'zod';
 	import { untrack } from 'svelte';
@@ -88,16 +89,7 @@
 		<span class="min-w-0 truncate" title={itemName}>{itemName}</span>
 		<span class="flex items-center gap-3 whitespace-nowrap shrink-0">
 			<span class="bg-border-secondary w-px h-5" aria-hidden="true"></span>
-			<span class="tabular-nums">
-				Median: {median === null
-					? '—'
-					: median.toLocaleString(undefined, { maximumFractionDigits: 1 })}
-			</span>
-			{#if median !== null}<img
-					src="/icons/platinum.png"
-					class="-ml-2 size-3.5"
-					alt="platinum"
-				/>{/if}
+			<span>Median: <Currency value={median} currency="platinum" /></span>
 		</span>
 	</span>
 {/snippet}
@@ -171,10 +163,7 @@
 							{order.user.reputation}
 						</td>
 						<td class="px-3 py-2 font-semibold tabular-nums text-right">
-							<span class="inline-flex justify-end items-center gap-1">
-								{order.platinum}
-								<img src="/icons/platinum.png" class="size-3.5" alt="platinum" />
-							</span>
+							<Currency class="inline-flex justify-end items-center gap-1" value={order.platinum} currency="platinum" />
 						</td>
 						<td class="px-3 py-2 text-right">
 							<CopyTradeMessage

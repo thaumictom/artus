@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Currency from '$lib/components/Currency.svelte';
 	import Slider from '$lib/components/Slider.svelte';
 	import { GetOrdersResponseSchema, type OrderWithUserSchema } from '$lib/schemas';
 	import { RadioGroup } from 'bits-ui';
@@ -28,7 +29,6 @@
 	const FILTER_PROPERTIES = ['rank', 'charges', 'subtype', 'amberStars', 'cyanStars'] as const;
 	type FilterProp = (typeof FILTER_PROPERTIES)[number];
 	type Order = z.infer<typeof OrderWithUserSchema>;
-	const priceFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
 	const platformNames: Record<string, string> = {
 		pc: 'PC',
 		ps4: 'PlayStation',
@@ -303,12 +303,11 @@
 					</td>
 					<td align="right">
 						<div class="flex justify-end items-center gap-1">
-							<span>{priceFormatter.format(unitPrice(order))}</span>
-							<img src="/icons/platinum.png" alt="Platinum" class="size-3" />
+							<Currency value={unitPrice(order)} currency="platinum" iconClass="size-3" />
 						</div>
 						{#if quantityPerTrade(order) > 1}
 							<div class="text-muted-foreground text-sm">
-								{priceFormatter.format(order.platinum)} total
+								<Currency value={order.platinum} currency="platinum" iconClass="size-3" /> total
 							</div>
 						{/if}
 					</td>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Currency from '$lib/components/Currency.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
 	import Button from '$lib/components/Button.svelte';
 	import Switch from '$lib/components/Switch.svelte';
@@ -50,14 +51,14 @@
 	{#snippet description()}Preview where your listing appears among five example sell orders.{/snippet}
 	<div class="space-y-4 px-6 min-h-0 overflow-y-auto">
 		<div class="bg-card/50 p-4 border border-border-secondary text-base">
-			<p class="mb-2 font-semibold">Median: {exampleMedian}p</p>
+			<p class="mb-2 font-semibold">Median: <Currency value={exampleMedian} currency="platinum" /></p>
 			{#each preview as offer, index (`${offer.price}-${offer.yours}-${index}`)}
 				<div
 					class:font-semibold={offer.yours}
 					class:text-accent={offer.yours}
 					class="py-0.5 tabular-nums"
 				>
-					{offer.price}p{offer.yours ? ' — your listing' : ''}
+					<Currency value={offer.price} currency="platinum" />{offer.yours ? ' — your listing' : ''}
 				</div>
 			{/each}
 		</div>

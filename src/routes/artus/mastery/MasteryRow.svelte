@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Currency from '$lib/components/Currency.svelte';
 	import Icon from '@iconify/svelte';
 	import Button from '$lib/components/Button.svelte';
 	import Checkbox from '$lib/components/Checkbox.svelte';
@@ -133,18 +134,12 @@
 	</td>
 	<td class="px-3 py-3.5 text-right align-middle tabular-nums">
 		{#if price}
-			<span class="inline-flex items-center justify-end gap-1" title={price.from_current_offers ? 'Current offer median; recent trades exist' : 'Recent trade median'}>
-				{price.median.toLocaleString(undefined, { maximumFractionDigits: 1 })}
-				<img src="/icons/platinum.png" class="size-3.5" alt="platinum" />
-			</span>
+			<Currency class="inline-flex items-center justify-end gap-1" title={price.from_current_offers ? 'Current offer median; recent trades exist' : 'Recent trade median'} value={price.median} currency="platinum" />
 		{:else}<span class="text-muted-foreground">—</span>{/if}
 	</td>
 	<td class="px-3 py-3.5 text-right align-middle tabular-nums">
 		{#if ducats != null}
-			<span class="inline-flex items-center justify-end gap-1">
-				{ducats.toLocaleString()}
-				<img src="/icons/ducats.png" class="size-3.5" alt="ducats" />
-			</span>
+			<Currency class="inline-flex items-center justify-end gap-1" value={ducats} currency="ducats" />
 		{:else}<span class="text-muted-foreground">—</span>{/if}
 	</td>
 	<td class="px-3 py-3.5 text-right align-middle">

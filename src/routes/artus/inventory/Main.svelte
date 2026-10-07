@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Currency from '$lib/components/Currency.svelte';
 	import Icon from '@iconify/svelte';
 	import Table from '$lib/components/Table.svelte';
 	import type { TableColumn } from '$lib/components/table-types';
@@ -193,7 +194,6 @@
 	const totalDucats = $derived(
 		data.reduce((sum, item) => sum + (item.ducats ?? 0) * item.quantity, 0),
 	);
-	const platinumFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
 	const masteredItems = $derived(masteredMarketItems(mastery.items, mastery.checked));
 	function priceFor(item: InventoryItem) {
 		return item.slug ? mastery.prices[item.slug] : undefined;
@@ -252,12 +252,10 @@
 						{/if}
 					</div>
 					<div class="flex items-center gap-1.5 px-4 tabular-nums">
-						{platinumFormatter.format(totalPlatinum)}
-						<img src="/icons/platinum.png" class="size-4" alt="platinum" />
+						<Currency value={totalPlatinum} currency="platinum" iconClass="size-4" />
 					</div>
 					<div class="flex items-center gap-1.5 pl-4 tabular-nums">
-						{totalDucats.toLocaleString()}
-						<img src="/icons/ducats.png" class="size-4" alt="ducats" />
+						<Currency value={totalDucats} currency="ducats" iconClass="size-4" />
 					</div>
 				</section>
 			</div>

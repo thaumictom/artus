@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Currency from '$lib/components/Currency.svelte';
 	import Icon from '@iconify/svelte';
 	import Button from '$lib/components/Button.svelte';
 	import WarframeItem from '$lib/components/WarframeItem.svelte';
@@ -36,7 +37,6 @@
 
 	const name = $derived(listingName(order, itemDetails));
 	const owned = $derived(listingOwned(order, itemDetails, inventoryItems));
-	const priceFormatter = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
 	function handleRowClick(event: MouseEvent) {
 		if (!(event.target as HTMLElement).closest('button, a')) onEdit(order);
 	}
@@ -87,22 +87,16 @@
 	</td>
 	<td class="px-3 py-3.5 tabular-nums text-right">
 		{#if median && Number.isFinite(median.median)}
-			<span
+			<Currency
 				class="inline-flex justify-end items-center gap-1"
 				title={median.from_current_offers
 					? 'Current offer median; recent trades exist'
 					: 'Recent trade median'}
-			>
-				{priceFormatter.format(median.median)}
-				<img src="/icons/platinum.png" class="size-3.5" alt="platinum" />
-			</span>
+			 value={median.median} currency="platinum" />
 		{:else}<span class="text-muted-foreground">—</span>{/if}
 	</td>
 	<td class="px-3 py-3.5 font-semibold tabular-nums text-right">
-		<span class="inline-flex justify-end items-center gap-1.5">
-			{order.platinum}
-			<img src="/icons/platinum.png" class="size-3.5" alt="platinum" />
-		</span>
+		<Currency class="inline-flex justify-end items-center gap-1.5" value={order.platinum} currency="platinum" />
 	</td>
 	<td class="px-3 py-3.5 font-semibold tabular-nums text-right">{order.quantity}</td>
 	<td class="px-3 py-3.5 text-right">

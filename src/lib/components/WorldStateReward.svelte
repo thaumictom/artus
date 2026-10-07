@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Currency from '$lib/components/Currency.svelte';
 	import type { Reward } from 'warframe-worldstate-parser';
 	import WarframeItem from './WarframeItem.svelte';
 
@@ -23,7 +24,7 @@
 {/each}
 {#if reward && reward.credits > 0}
 	<p class="tabular-nums text-muted-foreground text-sm">
-		{reward.credits.toLocaleString()} credits
+		<Currency value={reward.credits} currency="credits" />
 	</p>
 {:else if !reward || !reward.countedItems.length}
 	<p class="text-muted-foreground text-sm">Reward unavailable</p>

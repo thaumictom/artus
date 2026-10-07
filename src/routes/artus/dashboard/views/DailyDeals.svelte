@@ -1,7 +1,8 @@
 <script lang="ts">
+	import Currency from '$lib/components/Currency.svelte';
 	import WarframeItem from '$lib/components/WarframeItem.svelte';
 	import ViewPanel from './ViewPanel.svelte';
-	import { isCurrent, amount, type DashboardViewProps } from './view-types';
+	import { isCurrent, type DashboardViewProps } from './view-types';
 	let { world, now }: DashboardViewProps = $props();
 	let rows = $derived((world.dailyDeals ?? []).filter((item) => isCurrent(item, now)).map((item) => ({
 		title: item.item,
@@ -20,9 +21,9 @@
 	{#snippet rowAction(row)}
 		<div class="flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-sm tabular-nums">
 			{#if row.originalPrice !== undefined && row.salePrice !== undefined && row.originalPrice > row.salePrice}
-				<del class="text-muted-foreground"><span class="sr-only">Original price: </span>{amount(row.originalPrice, 'platinum')}</del>
+				<del class="text-muted-foreground"><span class="sr-only">Original price: </span><Currency value={row.originalPrice} currency="platinum" /></del>
 			{/if}
-			<span class="font-semibold text-accent"><span class="sr-only">Sale price: </span>{amount(row.salePrice, 'platinum')}</span>
+			<span class="font-semibold text-accent"><span class="sr-only">Sale price: </span><Currency value={row.salePrice} currency="platinum" /></span>
 			{#if row.discount}<span class="text-muted-foreground">{row.discount}% off</span>{/if}
 		</div>
 	{/snippet}

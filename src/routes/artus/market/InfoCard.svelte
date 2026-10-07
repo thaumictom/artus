@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Currency from '$lib/components/Currency.svelte';
 	import type { ItemSchema } from '$lib/schemas';
 	import type z from 'zod';
 	import { itemMetadataDetails, sanitizeItemDescription, type CatalogItem } from '$lib/market-catalog';
@@ -36,7 +37,6 @@
 	let statusLabels = $derived.by(() => {
 		const labels: string[] = [];
 		if (itemData.vaulted) labels.push('Vaulted');
-		if (itemData.ducats != null) labels.push(`${itemData.ducats} Ducats`);
 		return labels;
 	});
 </script>
@@ -53,9 +53,11 @@
 				<h1 class="sr-only">{itemData.i18n?.en.name}</h1>
 				<WarframeItem item={itemData.slug} name={itemData.i18n?.en.name}
 					clickable={false} nameClass="font-medium text-xl" />
-				{#if statusLabels.length}
-					<div class="text-muted-foreground text-sm uppercase">
+				{#if statusLabels.length || itemData.ducats != null}
+					<div class="flex items-center gap-1 text-muted-foreground text-sm uppercase">
 						{statusLabels.join(' · ')}
+						{#if statusLabels.length && itemData.ducats != null}<span aria-hidden="true">·</span>{/if}
+						{#if itemData.ducats != null}<Currency value={itemData.ducats} currency="ducats" />{/if}
 					</div>
 				{/if}
 			</div>
@@ -128,7 +130,10 @@
 								{#each details as detail (detail.label)}
 									<div>
 										<dt class="text-muted-foreground text-sm">{detail.label}</dt>
-										<dd>{detail.value}</dd>
+										<dd>
+											{#if detail.currency}<Currency value={detail.value} currency={detail.currency} />
+											{:else}{detail.value}{/if}
+										</dd>
 									</div>
 								{/each}
 							</dl>

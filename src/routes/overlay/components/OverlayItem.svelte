@@ -1,4 +1,5 @@
 <script lang="ts">
+	import Currency from '$lib/components/Currency.svelte';
 	import Icon from '@iconify/svelte';
 	import { fade } from 'svelte/transition';
 	import { config } from '$lib/settings.svelte';
@@ -186,7 +187,7 @@
 					{#if listing}
 						<span class="text-accent">
 							<Icon icon="material-symbols:sell-outline" class="inline size-3" />
-							{countFormatter.format(listing.platinum)}p
+							<Currency value={listing.platinum} currency="platinum" iconClass="size-3" />
 						</span>
 						{#if listing.status === 'hidden'}(hidden){/if}
 					{/if}
@@ -201,14 +202,12 @@
 							class:col-span-2={trades24h === undefined}
 							class="flex justify-center items-center gap-1"
 						>
-							<div>{pricePrefix}{medianFormatter.format(displayPrice)}</div>
-							<img src="/icons/platinum.png" alt="" class="size-3" />
+							<Currency value={displayPrice} currency="platinum" prefix={pricePrefix} iconClass="size-3" />
 						</div>
 					{/if}
 					{#if ducats !== undefined}
 						<div class="flex justify-center items-center gap-1">
-							<div>{countFormatter.format(ducats)}</div>
-							<img src="/icons/ducats.png" alt="" class="size-3" />
+							<Currency value={ducats} currency="ducats" iconClass="size-3" />
 						</div>
 					{/if}
 					{#if displayPrice !== undefined && ducats !== undefined && ducats > 0}
@@ -231,12 +230,7 @@
 			<div class="flex flex-col items-center px-2 py-1 border-t font-medium">
 				<div class="font-bold text-[10px] text-muted-foreground">maxed</div>
 				<div class="flex justify-center items-center gap-1">
-					<div>
-						{word.maxed_arcane_price_from_current_offers ? '~' : ''}{medianFormatter.format(
-							maxedArcanePrice,
-						)}
-					</div>
-					<img src="/icons/platinum.png" alt="" class="size-3" />
+					<Currency value={maxedArcanePrice} currency="platinum" prefix={word.maxed_arcane_price_from_current_offers ? '~' : ''} iconClass="size-3" />
 				</div>
 				{#if maxedArcaneVolume !== undefined}
 					<div class="text-xs">volume: {countFormatter.format(maxedArcaneVolume)}</div>
@@ -248,17 +242,11 @@
 				<div class="font-bold text-[10px] text-muted-foreground">set</div>
 				<div class="flex justify-around gap-1 w-full">
 					<div class="flex justify-center items-center gap-1">
-						<div>
-							{word.prime_set_price_from_current_offers ? '~' : ''}{medianFormatter.format(
-								primeSetPrice,
-							)}
-						</div>
-						<img src="/icons/platinum.png" alt="" class="size-3" />
+						<Currency value={primeSetPrice} currency="platinum" prefix={word.prime_set_price_from_current_offers ? '~' : ''} iconClass="size-3" />
 					</div>
 					{#if primeSetDucats !== undefined}
 						<div class="flex justify-center items-center gap-1">
-							<div>{countFormatter.format(primeSetDucats)}</div>
-							<img src="/icons/ducats.png" alt="" class="size-3" />
+							<Currency value={primeSetDucats} currency="ducats" iconClass="size-3" />
 						</div>
 					{/if}
 					{#if primeSetDucats !== undefined && primeSetDucats > 0}
