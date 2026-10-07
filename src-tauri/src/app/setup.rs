@@ -5,28 +5,30 @@ use tauri::{App, Manager};
 
 use crate::state::AppState;
 use crate::store_ext::SettingsExt;
-use crate::{api, hotkeys, layer_shell, ocr, window_watcher};
+use crate::{data::api, desktop::hotkeys, desktop::layer_shell, desktop::window_watcher, ocr};
 
 #[cfg(target_os = "windows")]
-use crate::relic_rewards;
+use crate::relics::dbwin as relic_rewards;
 #[cfg(any(target_os = "windows", target_os = "linux"))]
-use crate::relic_visual_detection;
+use crate::relics::visual_detection as relic_visual_detection;
 
 /// Called by Tauri during startup to configure windows, load data, and spawn
 /// background tasks.
 pub fn init(app: &mut App, is_wayland: bool) -> Result<(), Box<dyn std::error::Error>> {
     // Config disables developer tools during window creation; restore only an explicit opt-in.
-    let developer_console_enabled = app.handle().get_setting_bool("developer_console_enabled", false);
+    let developer_console_enabled = app
+        .handle()
+        .get_setting_bool("developer_console_enabled", false);
     if developer_console_enabled {
         let handle = app.handle().clone();
         tauri::async_runtime::spawn(async move {
-            if let Err(error) = crate::developer_console::apply(&handle, true).await {
+            if let Err(error) = crate::app::developer_console::apply(&handle, true).await {
                 error!("could not enable developer console: {error}");
             }
         });
     }
-    crate::window_size::restore_artus_size(app);
-    crate::tray::init(app)?;
+    crate::desktop::window_size::restore_artus_size(app);
+    crate::desktop::tray::init(app)?;
     let overlay = app
         .get_webview_window("overlay")
         .ok_or("overlay window not found")?;
@@ -39,7 +41,7 @@ pub fn init(app: &mut App, is_wayland: bool) -> Result<(), Box<dyn std::error::E
     if !is_wayland {
         let _ = overlay.set_ignore_cursor_events(true);
         let _ = overlay.set_focusable(false);
-        
+
         #[cfg(target_os = "windows")]
         if let Ok(hwnd) = overlay.hwnd() {
             unsafe {

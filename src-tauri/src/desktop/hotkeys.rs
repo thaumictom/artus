@@ -13,7 +13,7 @@ use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut}
 use tauri_plugin_store::StoreExt;
 
 use crate::error::{AppError, AppResult};
-use crate::market_account;
+use crate::market::account as market_account;
 use crate::ocr;
 use crate::state::AppState;
 use crate::store_ext::{SettingsExt, SETTINGS_STORE_PATH};
@@ -241,7 +241,10 @@ pub fn register_overlay_hotkeys<R: Runtime>(app: &AppHandle<R>) {
     with_hotkey_entries(app, |action, shortcut| {
         if is_overlay_action(action)
             && (action != LISTING_CONFIRM_ACTION
-                || app.state::<AppState>().overlay_listing_dialog_open.load(Ordering::Acquire))
+                || app
+                    .state::<AppState>()
+                    .overlay_listing_dialog_open
+                    .load(Ordering::Acquire))
             && (action != CREATE_SELL_LISTING_ACTION && action != QUICKLIST_ACTION
                 || market_account::is_logged_in(&app.state::<AppState>()))
             && !app.global_shortcut().is_registered(shortcut)
@@ -258,7 +261,9 @@ fn register_listing_space_alias<R: Runtime>(app: &AppHandle<R>) {
     let state = app.state::<AppState>();
     if !state.overlay_listing_dialog_open.load(Ordering::Acquire)
         || !state.warframe_focused.load(Ordering::Acquire)
-        || app.global_shortcut().is_registered(LISTING_CONFIRM_SPACE_ALIAS)
+        || app
+            .global_shortcut()
+            .is_registered(LISTING_CONFIRM_SPACE_ALIAS)
     {
         return;
     }
@@ -272,10 +277,21 @@ fn unregister_listing_space_alias<R: Runtime>(app: &AppHandle<R>) {
         .state::<AppState>()
         .hotkeys
         .lock()
-        .map(|hotkeys| hotkeys.values().any(|shortcut| shortcut == LISTING_CONFIRM_SPACE_ALIAS))
+        .map(|hotkeys| {
+            hotkeys
+                .values()
+                .any(|shortcut| shortcut == LISTING_CONFIRM_SPACE_ALIAS)
+        })
         .unwrap_or(true);
-    if !is_configured && app.global_shortcut().is_registered(LISTING_CONFIRM_SPACE_ALIAS) {
-        if let Err(err) = app.global_shortcut().unregister(LISTING_CONFIRM_SPACE_ALIAS) {
+    if !is_configured
+        && app
+            .global_shortcut()
+            .is_registered(LISTING_CONFIRM_SPACE_ALIAS)
+    {
+        if let Err(err) = app
+            .global_shortcut()
+            .unregister(LISTING_CONFIRM_SPACE_ALIAS)
+        {
             error!("unregister listing confirmation alias 'Space' failed: {err}");
         }
     }
@@ -283,10 +299,16 @@ fn unregister_listing_space_alias<R: Runtime>(app: &AppHandle<R>) {
 
 pub fn sync_sell_listing_hotkey<R: Runtime>(app: &AppHandle<R>) {
     let state = app.state::<AppState>();
-    let shortcuts = state.hotkeys.lock().map(|hotkeys| {
-        [CREATE_SELL_LISTING_ACTION, QUICKLIST_ACTION]
-            .iter().filter_map(|action| hotkeys.get(*action).cloned()).collect::<Vec<_>>()
-    }).unwrap_or_default();
+    let shortcuts = state
+        .hotkeys
+        .lock()
+        .map(|hotkeys| {
+            [CREATE_SELL_LISTING_ACTION, QUICKLIST_ACTION]
+                .iter()
+                .filter_map(|action| hotkeys.get(*action).cloned())
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
     let should_register = market_account::is_logged_in(&state)
         && state.overlay_controls_active.load(Ordering::Acquire)
         && state.warframe_focused.load(Ordering::Acquire);
@@ -323,7 +345,9 @@ pub fn unregister_overlay_hotkeys<R: Runtime>(app: &AppHandle<R>) {
 #[tauri::command]
 pub fn set_overlay_listing_dialog_open<R: Runtime>(app: AppHandle<R>, open: bool) -> AppResult<()> {
     let state = app.state::<AppState>();
-    let shortcut = state.hotkeys.lock()?
+    let shortcut = state
+        .hotkeys
+        .lock()?
         .get(LISTING_CONFIRM_ACTION)
         .cloned()
         .unwrap_or_else(|| "Enter".to_string());
@@ -335,17 +359,27 @@ pub fn set_overlay_listing_dialog_open<R: Runtime>(app: AppHandle<R>, open: bool
         if state.warframe_focused.load(Ordering::Acquire)
             && !app.global_shortcut().is_registered(shortcut.as_str())
         {
-            app.global_shortcut().register(shortcut.as_str())
-                .map_err(|err| AppError::msg(format!("failed to register listing confirmation: {err}")))?;
+            app.global_shortcut()
+                .register(shortcut.as_str())
+                .map_err(|err| {
+                    AppError::msg(format!("failed to register listing confirmation: {err}"))
+                })?;
         }
-        state.overlay_listing_dialog_open.store(true, Ordering::Release);
+        state
+            .overlay_listing_dialog_open
+            .store(true, Ordering::Release);
         register_listing_space_alias(&app);
         ocr::capture::bump_overlay_sequence(&app)?;
     } else {
-        state.overlay_listing_dialog_open.store(false, Ordering::Release);
+        state
+            .overlay_listing_dialog_open
+            .store(false, Ordering::Release);
         if app.global_shortcut().is_registered(shortcut.as_str()) {
-            app.global_shortcut().unregister(shortcut.as_str())
-                .map_err(|err| AppError::msg(format!("failed to unregister listing confirmation: {err}")))?;
+            app.global_shortcut()
+                .unregister(shortcut.as_str())
+                .map_err(|err| {
+                    AppError::msg(format!("failed to unregister listing confirmation: {err}"))
+                })?;
         }
         unregister_listing_space_alias(&app);
         if state.overlay_controls_active.load(Ordering::Acquire)
@@ -367,21 +401,34 @@ pub fn on_shortcut<R: Runtime>(
     let pressed = shortcut.into_string();
 
     if pressed == LISTING_CONFIRM_SPACE_ALIAS
-        && app.state::<AppState>().overlay_listing_dialog_open.load(Ordering::Acquire)
+        && app
+            .state::<AppState>()
+            .overlay_listing_dialog_open
+            .load(Ordering::Acquire)
     {
-        let _ = app.emit("overlay_hotkey", serde_json::json!({
-            "action": LISTING_CONFIRM_ACTION,
-            "pressed": shortcut_state == tauri_plugin_global_shortcut::ShortcutState::Pressed,
-        }));
+        let _ = app.emit(
+            "overlay_hotkey",
+            serde_json::json!({
+                "action": LISTING_CONFIRM_ACTION,
+                "pressed": shortcut_state == tauri_plugin_global_shortcut::ShortcutState::Pressed,
+            }),
+        );
         return;
     }
 
     if pressed == "Escape" {
         if shortcut_state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
-            if app.state::<AppState>().overlay_listing_dialog_open.load(Ordering::Acquire) {
-                let _ = app.emit("overlay_hotkey", serde_json::json!({
-                    "action": "listing_cancel", "pressed": true,
-                }));
+            if app
+                .state::<AppState>()
+                .overlay_listing_dialog_open
+                .load(Ordering::Acquire)
+            {
+                let _ = app.emit(
+                    "overlay_hotkey",
+                    serde_json::json!({
+                        "action": "listing_cancel", "pressed": true,
+                    }),
+                );
             } else {
                 let handle = app.clone();
                 tauri::async_runtime::spawn_blocking(move || {
@@ -406,7 +453,10 @@ pub fn on_shortcut<R: Runtime>(
         }
         Some(HOTKEY_ACTION_SCREENSHOT_ADD_TO_MASTERY) => {
             if shortcut_state == tauri_plugin_global_shortcut::ShortcutState::Pressed
-                && !app.state::<AppState>().overlay_listing_dialog_open.load(Ordering::Acquire)
+                && !app
+                    .state::<AppState>()
+                    .overlay_listing_dialog_open
+                    .load(Ordering::Acquire)
             {
                 spawn_ocr_task(app, ocr::capture_active_window_mastery);
             }
@@ -417,7 +467,10 @@ pub fn on_shortcut<R: Runtime>(
                 .overlay_controls_active
                 .load(Ordering::Acquire)
                 && (action != LISTING_CONFIRM_ACTION
-                    || app.state::<AppState>().overlay_listing_dialog_open.load(Ordering::Acquire))
+                    || app
+                        .state::<AppState>()
+                        .overlay_listing_dialog_open
+                        .load(Ordering::Acquire))
                 && (action != CREATE_SELL_LISTING_ACTION && action != QUICKLIST_ACTION
                     || market_account::is_logged_in(&app.state::<AppState>()))
                 && app

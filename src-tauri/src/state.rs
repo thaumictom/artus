@@ -40,7 +40,7 @@ pub struct AppState {
     /// OCR dictionary entries fetched from the remote API on startup.
     pub ocr_dictionary: Mutex<Vec<OcrDictionaryEntry>>,
     /// Catalog payloads shared by all windows and lookup commands.
-    pub catalogs: Mutex<crate::api::CatalogCache>,
+    pub catalogs: Mutex<crate::data::api::CatalogCache>,
     /// Prevent overlapping scheduled and manual catalog refreshes.
     pub catalog_refresh: Mutex<()>,
 
@@ -59,13 +59,14 @@ pub struct AppState {
     /// Shared HTTP client for all outgoing requests.
     pub http_client: reqwest::Client,
     /// Rotation-aware wiki requests are serialized across windows; snapshots are also saved locally.
-    pub wiki_offerings: tokio::sync::Mutex<HashMap<String, crate::wiki_offerings::WikiOfferings>>,
+    pub wiki_offerings:
+        tokio::sync::Mutex<HashMap<String, crate::data::wiki_offerings::WikiOfferings>>,
     /// Oracle rotations and display metadata, shared by all windows for this session.
-    pub oracle_bounties: tokio::sync::Mutex<crate::oracle::OracleCache>,
+    pub oracle_bounties: tokio::sync::Mutex<crate::data::oracle::OracleCache>,
     /// Short-lived warframe.market item orders and historical statistics.
     pub market_responses: Mutex<crate::market::MarketResponseCaches>,
     /// warframe.market credentials are never kept here; only the active JWT and socket handle.
-    pub market_session: Mutex<Option<crate::market_account::MarketSession>>,
+    pub market_session: Mutex<Option<crate::market::account::MarketSession>>,
     /// Serializes manual, scheduled, and exit-time market status changes.
     pub market_status_operation: tokio::sync::Mutex<()>,
 }
@@ -83,19 +84,19 @@ impl Default for AppState {
             overlay_was_visible: AtomicBool::new(false),
             ocr_theme_colors: Mutex::new(HashMap::new()),
             ocr_dictionary: Mutex::new(Vec::new()),
-            catalogs: Mutex::new(crate::api::CatalogCache::default()),
+            catalogs: Mutex::new(crate::data::api::CatalogCache::default()),
             catalog_refresh: Mutex::new(()),
             mastery_dictionary: Mutex::new(Vec::new()),
             ocr_tradeable_prices: Mutex::new(HashMap::new()),
             warframe_focused: AtomicBool::new(false),
             warframe_running: AtomicBool::new(false),
             http_client: reqwest::Client::builder()
-                .user_agent(crate::api::USER_AGENT)
+                .user_agent(crate::data::api::USER_AGENT)
                 .build()
                 .expect("shared HTTP client"),
             market_responses: Mutex::new(crate::market::MarketResponseCaches::default()),
             wiki_offerings: tokio::sync::Mutex::new(HashMap::new()),
-            oracle_bounties: tokio::sync::Mutex::new(crate::oracle::OracleCache::default()),
+            oracle_bounties: tokio::sync::Mutex::new(crate::data::oracle::OracleCache::default()),
             market_session: Mutex::new(None),
             market_status_operation: tokio::sync::Mutex::new(()),
         }

@@ -12,7 +12,7 @@ use log::info;
 use sysinfo::{Pid, System};
 use tauri::{AppHandle, Manager};
 
-use crate::hotkeys;
+use crate::desktop::hotkeys;
 use crate::state::AppState;
 use crate::store_ext::SettingsExt;
 

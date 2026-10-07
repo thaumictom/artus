@@ -13,15 +13,15 @@ use sysinfo::System;
 use tauri::{AppHandle, Manager, Runtime};
 use xcap::Window;
 
+use crate::desktop::window_watcher::is_warframe_process;
 use crate::error::{AppError, AppResult};
 use crate::ocr::{
     apply_morphology, binary_target_filter, group_words, resolve_tessdata, OcrWord,
     DEFAULT_OCR_TARGET_RGB, OCR_WHITELIST,
 };
-use crate::relic_reward_capture;
+use crate::relics::capture as relic_reward_capture;
 use crate::state::AppState;
 use crate::store_ext::SettingsExt;
-use crate::window_watcher::is_warframe_process;
 
 const SETTING_KEY: &str = "visual_relic_reward_detection";
 const SCAN_INTERVAL: Duration = Duration::from_millis(300);

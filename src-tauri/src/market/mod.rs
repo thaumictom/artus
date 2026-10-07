@@ -1,11 +1,14 @@
 //! Cached item lookups and live order/statistics commands.
 
 use serde_json::Value;
+pub mod account;
+pub mod notifications;
+
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Manager, State};
 
-use crate::api;
+use crate::data::api;
 use crate::error::{AppError, AppResult};
 use crate::state::AppState;
 
@@ -180,7 +183,11 @@ async fn fetch_json_request(request: reqwest::RequestBuilder) -> AppResult<Value
 /// Returns the search list already loaded from /wfm-items.
 #[tauri::command]
 pub fn get_market_dictionary(state: State<'_, AppState>) -> AppResult<Value> {
-    state.catalogs.lock()?.wfm_items.clone()
+    state
+        .catalogs
+        .lock()?
+        .wfm_items
+        .clone()
         .ok_or_else(|| AppError::msg("market dictionary unavailable"))
 }
 
@@ -200,7 +207,11 @@ pub fn get_most_traded_items(state: State<'_, AppState>) -> AppResult<Vec<MostTr
         items: Vec<MostTradedItem>,
     }
 
-    let response = state.catalogs.lock()?.tradeable_items.clone()
+    let response = state
+        .catalogs
+        .lock()?
+        .tradeable_items
+        .clone()
         .ok_or_else(|| AppError::msg("tradeable items unavailable"))?;
     let mut items = serde_json::from_value::<Feed>(response)?.items;
     items.retain(|item| item.liquidity.is_some_and(|value| value.is_finite()));
@@ -279,11 +290,25 @@ pub fn get_cached_wfm_item(state: State<'_, AppState>, slug: String) -> AppResul
 #[tauri::command]
 pub fn get_ocr_market_items(state: State<'_, AppState>, slugs: Vec<String>) -> AppResult<Value> {
     let cache = state.catalogs.lock()?;
-    let items = slugs.into_iter().filter_map(|slug| {
-        let base = slug.strip_suffix("_intact").or_else(|| slug.strip_suffix("_radiant")).unwrap_or(&slug);
-        cache.wfm_by_slug.get(&slug).or_else(|| cache.wfm_by_slug.get(base))
-            .map(|item| (slug, serde_json::json!({ "id": item["id"], "maxRank": item["maxRank"] })))
-    }).collect::<serde_json::Map<String, Value>>();
+    let items = slugs
+        .into_iter()
+        .filter_map(|slug| {
+            let base = slug
+                .strip_suffix("_intact")
+                .or_else(|| slug.strip_suffix("_radiant"))
+                .unwrap_or(&slug);
+            cache
+                .wfm_by_slug
+                .get(&slug)
+                .or_else(|| cache.wfm_by_slug.get(base))
+                .map(|item| {
+                    (
+                        slug,
+                        serde_json::json!({ "id": item["id"], "maxRank": item["maxRank"] }),
+                    )
+                })
+        })
+        .collect::<serde_json::Map<String, Value>>();
     Ok(Value::Object(items))
 }
 
@@ -297,7 +322,11 @@ pub async fn get_market_orders(
     fetch_market_orders(&state, &slug, force_refresh.unwrap_or(false)).await
 }
 
-pub(crate) async fn fetch_market_orders(state: &AppState, slug: &str, force_refresh: bool) -> AppResult<Value> {
+pub(crate) async fn fetch_market_orders(
+    state: &AppState,
+    slug: &str,
+    force_refresh: bool,
+) -> AppResult<Value> {
     let generation = {
         let mut caches = state.market_responses.lock()?;
         if !force_refresh {
@@ -321,10 +350,13 @@ pub(crate) async fn fetch_market_orders(state: &AppState, slug: &str, force_refr
     }
     let mut caches = state.market_responses.lock()?;
     if caches.orders_generation == generation {
-        caches.orders.insert(slug.to_owned(), CachedResponse {
-            fetched_at: Instant::now(),
-            value: response.clone(),
-        });
+        caches.orders.insert(
+            slug.to_owned(),
+            CachedResponse {
+                fetched_at: Instant::now(),
+                value: response.clone(),
+            },
+        );
     }
     Ok(response)
 }
@@ -344,9 +376,12 @@ pub async fn get_market_statistics(state: State<'_, AppState>, slug: String) -> 
     if !response.get("payload").is_some_and(Value::is_object) {
         return Err(AppError::msg("Invalid item statistics response"));
     }
-    state.market_responses.lock()?.statistics.insert(slug, CachedResponse {
-        fetched_at: Instant::now(),
-        value: response.clone(),
-    });
+    state.market_responses.lock()?.statistics.insert(
+        slug,
+        CachedResponse {
+            fetched_at: Instant::now(),
+            value: response.clone(),
+        },
+    );
     Ok(response)
 }

@@ -61,7 +61,7 @@ pub const MAX_OCR_DICTIONARY_MATCH_THRESHOLD: f64 = 1.0;
 
 // ── Embedded data ─────────────────────────────────────────────────────────────
 
-pub const THEME_COLORS_TOML: &str = include_str!("../theme_colors.toml");
+pub const THEME_COLORS_TOML: &str = include_str!("assets/theme_colors.toml");
 
 #[cfg(target_os = "windows")]
 pub const EMBEDDED_TRAINEDDATA_BYTES: &[u8] = include_bytes!(env!("OCR_EMBEDDED_TRAINEDDATA_PATH"));
@@ -69,7 +69,6 @@ pub const EMBEDDED_TRAINEDDATA_BYTES: &[u8] = include_bytes!(env!("OCR_EMBEDDED_
 pub const EMBEDDED_TRAINEDDATA_FILENAME: &str = env!("OCR_EMBEDDED_TRAINEDDATA_FILENAME");
 
 // ── API endpoints ─────────────────────────────────────────────────────────────
-
 
 // ── Custom dictionary items (not in the remote API) ───────────────────────────
 

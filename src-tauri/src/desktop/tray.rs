@@ -6,18 +6,39 @@ use tauri::{
     App, AppHandle, Manager, Window, WindowEvent,
 };
 
-use crate::{market_account, store_ext::SettingsExt};
+use crate::{market::account as market_account, store_ext::SettingsExt};
 
 const HIDE_TO_TRAY_KEY: &str = "hide_to_tray_on_close";
 
 pub fn init(app: &App) -> tauri::Result<()> {
     let menu = Menu::new(app)?;
     #[cfg(target_os = "linux")]
-    menu.append(&MenuItem::with_id(app, "open", "Open Artus", true, None::<&str>)?)?;
-    menu.append(&MenuItem::with_id(app, "restart", "Restart Artus", true, None::<&str>)?)?;
-    menu.append(&MenuItem::with_id(app, "quit", "Quit Artus", true, None::<&str>)?)?;
+    menu.append(&MenuItem::with_id(
+        app,
+        "open",
+        "Open Artus",
+        true,
+        None::<&str>,
+    )?)?;
+    menu.append(&MenuItem::with_id(
+        app,
+        "restart",
+        "Restart Artus",
+        true,
+        None::<&str>,
+    )?)?;
+    menu.append(&MenuItem::with_id(
+        app,
+        "quit",
+        "Quit Artus",
+        true,
+        None::<&str>,
+    )?)?;
 
-    let icon = app.default_window_icon().cloned().ok_or(tauri::Error::FailedToReceiveMessage)?;
+    let icon = app
+        .default_window_icon()
+        .cloned()
+        .ok_or(tauri::Error::FailedToReceiveMessage)?;
     TrayIconBuilder::new()
         .icon(icon)
         .tooltip("Artus")
@@ -46,7 +67,11 @@ pub fn init(app: &App) -> tauri::Result<()> {
 
 pub fn show_artus(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("artus") {
-        if let Err(error) = window.show().and_then(|_| window.unminimize()).and_then(|_| window.set_focus()) {
+        if let Err(error) = window
+            .show()
+            .and_then(|_| window.unminimize())
+            .and_then(|_| window.set_focus())
+        {
             log::warn!("could not show Artus: {error}");
         }
     }

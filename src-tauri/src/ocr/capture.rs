@@ -20,13 +20,13 @@ use super::{
     ENABLE_OCR_DICTIONARY_MAPPING, MAX_OCR_DICTIONARY_MATCH_THRESHOLD,
     MIN_OCR_DICTIONARY_MATCH_THRESHOLD, OCR_WHITELIST, PASS_TEXT_TO_FRONTEND,
 };
+use crate::desktop::layer_shell;
+use crate::desktop::window_watcher::is_warframe_process;
 use crate::error::{AppError, AppResult};
-use crate::layer_shell;
 use crate::ocr::preprocessing::CheckmarkMatch;
 use crate::ocr::DEFAULT_OCR_CHECKMARK_MATCH_THRESHOLD;
 use crate::state::AppState;
 use crate::store_ext::SettingsExt;
-use crate::window_watcher::is_warframe_process;
 
 // ── Captured window metadata ──────────────────────────────────────────────────
 
@@ -120,7 +120,7 @@ fn capture_active_window_with_mode_inner<R: Runtime>(
 
     #[cfg(target_os = "windows")]
     if !is_manual && !is_mastery_add {
-        crate::relic_auto_add::record_rewards(
+        crate::relics::auto_add::record_rewards(
             run_sequence,
             capture.x,
             capture.y,
@@ -710,7 +710,7 @@ fn position_and_show_overlay<R: Runtime>(
         .warframe_focused
         .load(std::sync::atomic::Ordering::Acquire)
     {
-        crate::hotkeys::register_escape_hotkey(app);
+        crate::desktop::hotkeys::register_escape_hotkey(app);
     }
 
     Ok(used_layer_shell)
@@ -722,7 +722,7 @@ fn show_overlay_processing<R: Runtime>(
     app: &AppHandle<R>,
     capture: &CapturedWindow,
 ) -> AppResult<()> {
-    crate::hotkeys::unregister_overlay_hotkeys(app);
+    crate::desktop::hotkeys::unregister_overlay_hotkeys(app);
     position_and_show_overlay(app, capture)?;
 
     app.emit("ocr_processing", ())
@@ -783,7 +783,7 @@ fn show_overlay<R: Runtime>(
     .map_err(|err| AppError::msg(format!("failed to emit OCR result: {err}")))?;
 
     if controls_enabled && !words.is_empty() {
-        crate::hotkeys::register_overlay_hotkeys(app);
+        crate::desktop::hotkeys::register_overlay_hotkeys(app);
     }
 
     info!("overlay show + emit: {:?}", t.elapsed());
@@ -841,8 +841,8 @@ pub fn hide_overlay<R: Runtime>(app: &AppHandle<R>) -> AppResult<()> {
 
     if let Some(overlay) = app.get_webview_window("overlay") {
         let _ = app.emit("ocr_clear", ());
-        crate::hotkeys::unregister_overlay_hotkeys(app);
-        crate::hotkeys::unregister_escape_hotkey(app);
+        crate::desktop::hotkeys::unregister_overlay_hotkeys(app);
+        crate::desktop::hotkeys::unregister_escape_hotkey(app);
 
         let sequence = app
             .state::<AppState>()

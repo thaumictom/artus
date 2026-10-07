@@ -9,7 +9,11 @@ use tauri::{AppHandle, Emitter, Manager};
 use crate::error::{AppError, AppResult};
 use crate::{market, ocr, state::AppState};
 
-pub const USER_AGENT: &str = concat!("Artus/", env!("CARGO_PKG_VERSION"), " (+https://github.com/thaumictom/artus)");
+pub const USER_AGENT: &str = concat!(
+    "Artus/",
+    env!("CARGO_PKG_VERSION"),
+    " (+https://github.com/thaumictom/artus)"
+);
 const WFM_ITEMS: &str = "https://api.thaumictom.de/warframe/v2/wfm-items";
 const TRADEABLE_ITEMS: &str = "https://api.thaumictom.de/warframe/v2/tradeable-items";
 const MARKET_ITEMS: &str = "https://api.warframe.market/v2/items";
@@ -38,23 +42,39 @@ pub fn clear_session_caches(app: &AppHandle) -> AppResult<()> {
 
 pub fn cached_wfm_item(state: &AppState, slug: &str) -> AppResult<Value> {
     let catalogs = state.catalogs.lock()?;
-    let base = slug.strip_suffix("_intact").or_else(|| slug.strip_suffix("_radiant")).unwrap_or(slug);
-    catalogs.wfm_by_slug.get(slug).or_else(|| catalogs.wfm_by_slug.get(base))
+    let base = slug
+        .strip_suffix("_intact")
+        .or_else(|| slug.strip_suffix("_radiant"))
+        .unwrap_or(slug);
+    catalogs
+        .wfm_by_slug
+        .get(slug)
+        .or_else(|| catalogs.wfm_by_slug.get(base))
         .cloned()
         .ok_or_else(|| AppError::msg(format!("market item unavailable: {slug}")))
 }
 
 pub fn cached_market_item(state: &AppState, slug: &str) -> AppResult<Value> {
     let catalogs = state.catalogs.lock()?;
-    let base = slug.strip_suffix("_intact").or_else(|| slug.strip_suffix("_radiant")).unwrap_or(slug);
-    catalogs.market_by_slug.get(slug).or_else(|| catalogs.market_by_slug.get(base))
+    let base = slug
+        .strip_suffix("_intact")
+        .or_else(|| slug.strip_suffix("_radiant"))
+        .unwrap_or(slug);
+    catalogs
+        .market_by_slug
+        .get(slug)
+        .or_else(|| catalogs.market_by_slug.get(base))
         .cloned()
         .ok_or_else(|| AppError::msg(format!("market item unavailable: {slug}")))
 }
 
 fn fetch(client: &reqwest::blocking::Client, url: &str, key: &str) -> AppResult<Value> {
     let value: Value = client.get(url).send()?.error_for_status()?.json()?;
-    if value.get(key).and_then(Value::as_array).is_none_or(Vec::is_empty) {
+    if value
+        .get(key)
+        .and_then(Value::as_array)
+        .is_none_or(Vec::is_empty)
+    {
         return Err(AppError::msg(format!("invalid catalog from {url}")));
     }
     Ok(value)
@@ -128,7 +148,9 @@ pub fn refresh_catalogs(app: &AppHandle) -> AppResult<()> {
             let mut by_slug = HashMap::new();
             for item in value["data"].as_array().into_iter().flatten() {
                 if let (Some(slug), Some(id)) = (item["slug"].as_str(), item["id"].as_str()) {
-                    if id.is_empty() { continue; }
+                    if id.is_empty() {
+                        continue;
+                    }
                     by_slug.insert(slug.to_owned(), item.clone());
                 }
             }
@@ -144,15 +166,21 @@ pub fn refresh_catalogs(app: &AppHandle) -> AppResult<()> {
     }
 
     if fetched {
-        let timestamp = SystemTime::now().duration_since(UNIX_EPOCH)
-            .map_err(AppError::msg)?.as_millis() as u64;
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_err(AppError::msg)?
+            .as_millis() as u64;
         state.catalogs.lock()?.last_fetched_at = Some(timestamp);
         if let Err(error) = app.emit("api_catalogs_fetched", timestamp) {
             log::warn!("could not notify windows of catalog fetch: {error}");
         }
     }
 
-    if errors.is_empty() { Ok(()) } else { Err(AppError::msg(errors.join("; "))) }
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(AppError::msg(errors.join("; ")))
+    }
 }
 
 pub fn start_refresh_loop(app: AppHandle) {
@@ -178,8 +206,8 @@ pub fn get_api_catalogs_last_fetched(app: AppHandle) -> AppResult<Option<u64>> {
 pub async fn refresh_api_catalogs(app: AppHandle) -> AppResult<()> {
     let handle = app.clone();
     let catalogs = tauri::async_runtime::spawn_blocking(move || refresh_catalogs(&handle));
-    let wiki = crate::wiki_offerings::refresh_offerings(&app).await;
-    let oracle = crate::oracle::refresh_bounties(&app).await;
+    let wiki = crate::data::wiki_offerings::refresh_offerings(&app).await;
+    let oracle = crate::data::oracle::refresh_bounties(&app).await;
     let catalogs = catalogs
         .await
         .map_err(AppError::msg)

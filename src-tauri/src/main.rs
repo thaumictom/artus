@@ -3,33 +3,15 @@
     windows_subsystem = "windows"
 )]
 
-mod api;
-mod developer_console;
+mod app;
+mod data;
+mod desktop;
 mod error;
-mod hotkeys;
-mod layer_shell;
 mod market;
-mod market_account;
-mod market_notifications;
 mod ocr;
-#[cfg(any(target_os = "windows", target_os = "linux"))]
-mod relic_reward_capture;
-#[cfg(target_os = "windows")]
-mod relic_rewards;
-#[cfg(target_os = "windows")]
-mod relic_auto_add;
-#[cfg(any(target_os = "windows", target_os = "linux"))]
-mod relic_visual_detection;
-mod setup;
+mod relics;
 mod state;
 mod store_ext;
-mod tray;
-mod updater;
-mod window_size;
-mod window_watcher;
-mod worldstate;
-mod oracle;
-mod wiki_offerings;
 
 #[cfg(target_os = "linux")]
 use std::env;
@@ -48,40 +30,42 @@ fn main() {
     tauri::Builder::default()
         // A second launch forwards to this instance before running any other setup.
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            tray::show_artus(app);
+            desktop::tray::show_artus(app);
         }))
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_notification::init())
-        .plugin(tauri_plugin_updater::Builder::new()
-            .header("User-Agent", api::USER_AGENT)
-            .expect("updater user agent")
-            .build())
+        .plugin(
+            tauri_plugin_updater::Builder::new()
+                .header("User-Agent", data::api::USER_AGENT)
+                .expect("updater user agent")
+                .build(),
+        )
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(
             GlobalShortcutBuilder::new()
                 .with_handler(|app, shortcut, event| {
-                    hotkeys::on_shortcut(app, shortcut, event.state);
+                    desktop::hotkeys::on_shortcut(app, shortcut, event.state);
                 })
                 .build(),
         )
         .manage(AppState::default())
-        .setup(move |app| setup::init(app, is_wayland))
+        .setup(move |app| app::setup::init(app, is_wayland))
         .on_window_event(|window, event| {
-            window_size::handle_window_event(window, event);
-            tray::handle_window_event(window, event);
+            desktop::window_size::handle_window_event(window, event);
+            desktop::tray::handle_window_event(window, event);
         })
         .invoke_handler(tauri::generate_handler![
-            developer_console::set_developer_console_enabled,
-            hotkeys::get_hotkey,
-            hotkeys::set_hotkey,
-            hotkeys::set_overlay_listing_dialog_open,
+            app::developer_console::set_developer_console_enabled,
+            desktop::hotkeys::get_hotkey,
+            desktop::hotkeys::set_hotkey,
+            desktop::hotkeys::set_overlay_listing_dialog_open,
             ocr::get_ocr_themes,
             ocr::capture::show_relic_add_toast,
             #[cfg(target_os = "windows")]
-            relic_auto_add::get_relic_selection_developer_image,
-            updater::check_for_update,
-            updater::download_and_relaunch_update,
+            relics::auto_add::get_relic_selection_developer_image,
+            app::updater::check_for_update,
+            app::updater::download_and_relaunch_update,
             market::get_cached_market_item,
             market::get_cached_wfm_item,
             market::get_market_dictionary,
@@ -90,35 +74,35 @@ fn main() {
             market::get_tradeable_today_statistics,
             market::get_cached_market_items,
             market::get_ocr_market_items,
-            api::refresh_api_catalogs,
-            api::get_api_catalogs_last_fetched,
-            wiki_offerings::get_wiki_offerings,
-            oracle::get_oracle_bounties,
+            data::api::refresh_api_catalogs,
+            data::api::get_api_catalogs_last_fetched,
+            data::wiki_offerings::get_wiki_offerings,
+            data::oracle::get_oracle_bounties,
             market::get_market_orders,
             market::get_market_statistics,
-            market_account::market_login,
-            market_account::market_logout,
-            market_account::market_session,
-            market_account::market_authenticated,
-            market_account::market_set_status,
-            market_account::market_schedule_invisible,
-            market_account::market_top_orders,
-            market_account::market_my_orders,
-            market_account::market_item_details,
-            market_account::market_create_listing,
-            market_account::market_update_listing,
-            market_account::market_set_listing_visibility,
-            market_account::market_close_listing_one,
-            market_account::market_delete_listing,
-            market_notifications::start_market_notification_socket,
-            market_notifications::stop_market_notification_socket,
-            worldstate::get_world_state
+            market::account::market_login,
+            market::account::market_logout,
+            market::account::market_session,
+            market::account::market_authenticated,
+            market::account::market_set_status,
+            market::account::market_schedule_invisible,
+            market::account::market_top_orders,
+            market::account::market_my_orders,
+            market::account::market_item_details,
+            market::account::market_create_listing,
+            market::account::market_update_listing,
+            market::account::market_set_listing_visibility,
+            market::account::market_close_listing_one,
+            market::account::market_delete_listing,
+            market::notifications::start_market_notification_socket,
+            market::notifications::stop_market_notification_socket,
+            data::worldstate::get_world_state
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|app, event| {
             if let tauri::RunEvent::Exit = event {
-                if let Err(error) = api::clear_session_caches(app) {
+                if let Err(error) = data::api::clear_session_caches(app) {
                     log::warn!("could not clear session API caches on exit: {error}");
                 }
             }
@@ -127,7 +111,7 @@ fn main() {
 
 #[cfg(target_os = "linux")]
 fn apply_wayland_workarounds() -> bool {
-    let is_wayland = layer_shell::is_wayland_session();
+    let is_wayland = desktop::layer_shell::is_wayland_session();
 
     if is_wayland && env::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").is_none() {
         // Safety: runs before Tauri starts and before any worker threads are spawned.

@@ -58,7 +58,7 @@ Read more: https://support.warframe.com/hc/en-us/articles/360030014351-Third-Par
 
 OCR can be triggered manually with a hotkey. Automatic relic reward detection can use Warframe's Windows debug output or an optional experimental visual detector on Windows and Linux. It does not read or modify EE.log or other game files, and it does not attach to the game process.
 
-The code for this feature can be read here: [src-tauri/src/relic_rewards.rs](src-tauri/src/relic_rewards.rs)
+The code for this feature can be read here: [src-tauri/src/relics/dbwin.rs](src-tauri/src/relics/dbwin.rs)
 
 ### AI Usage
 

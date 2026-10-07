@@ -5,7 +5,10 @@ use serde::Serialize;
 use tauri::{AppHandle, Runtime};
 use tauri_plugin_updater::UpdaterExt;
 
-use crate::{error::{AppError, AppResult}, market_account};
+use crate::{
+    error::{AppError, AppResult},
+    market::account as market_account,
+};
 
 /// Payload sent to the frontend when an update is available.
 #[derive(Debug, Clone, Serialize)]

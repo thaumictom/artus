@@ -74,7 +74,7 @@ struct CheckmarkTemplate {
 pub fn remove_checkmarks(image: &mut GrayImage, threshold: f64) -> Vec<CheckmarkMatch> {
     static TEMPLATES: OnceLock<Vec<CheckmarkTemplate>> = OnceLock::new();
     let templates = TEMPLATES.get_or_init(|| {
-        let template = image::load_from_memory(include_bytes!("../checkmark_template_3.png"))
+        let template = image::load_from_memory(include_bytes!("assets/checkmark_template_3.png"))
             .expect("invalid checkmark template")
             .into_rgba8();
         // Transparent pixels in this cutout are background, not black pixels.
@@ -227,7 +227,7 @@ mod checkmark_tests {
 
     #[test]
     fn erases_checkmark_without_erasing_other_pixels() {
-        let template = image::load_from_memory(include_bytes!("../checkmark_template.png"))
+        let template = image::load_from_memory(include_bytes!("assets/checkmark_template.png"))
             .unwrap()
             .into_luma8();
         let mut image = GrayImage::from_pixel(60, 40, image::Luma([255]));

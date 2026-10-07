@@ -9,7 +9,7 @@ use log::{error, info, warn};
 use tauri::{AppHandle, Manager, Runtime};
 
 use crate::ocr;
-use crate::relic_reward_capture;
+use crate::relics::capture as relic_reward_capture;
 use crate::store_ext::SettingsExt;
 
 // ── Log markers ───────────────────────────────────────────────────────────────
@@ -38,10 +38,10 @@ fn process_developer_message<R: Runtime>(app: &AppHandle<R>, message: &str) {
 
     if message.contains(SCREEN_SHUTDOWN_MARKER) {
         info!("detected relic reward screen shutdown via DBWIN, hiding overlay");
-        let added = crate::relic_auto_add::finish(app);
+        let added = crate::relics::auto_add::finish(app);
         let _ = ocr::hide_overlay(app);
         if let Some(name) = added {
-            crate::relic_auto_add::show_added_feedback(app, name);
+            crate::relics::auto_add::show_added_feedback(app, name);
         }
     } else if message.contains(GOT_REWARDS_MARKER) {
         trigger_relic_capture(app);
@@ -56,7 +56,7 @@ fn trigger_relic_capture<R: Runtime>(app: &AppHandle<R>) {
                 .overlay_sequence
                 .lock()
             {
-                crate::relic_auto_add::begin(app, *sequence);
+                crate::relics::auto_add::begin(app, *sequence);
             }
         }
     }
@@ -185,7 +185,9 @@ mod windows_developer_output {
         let already_exists = unsafe { GetLastError() == ERROR_ALREADY_EXISTS };
         let handle = OwnedHandle(handle);
         if already_exists {
-            Err(format!("{name} is already owned by another developer listener"))
+            Err(format!(
+                "{name} is already owned by another developer listener"
+            ))
         } else {
             Ok(handle)
         }
