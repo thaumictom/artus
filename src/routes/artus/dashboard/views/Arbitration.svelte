@@ -113,7 +113,7 @@
 	</p>{/if}
 <div class="flex flex-wrap justify-between gap-2 -mt-1 text-muted-foreground text-sm">
 	<p>
-		Schedule and tiers from <a
+		Source: <a
 			href="https://browse.wf/arbys"
 			class="hover:underline"
 			onclick={(event) => {
@@ -123,9 +123,9 @@
 		>
 			browse.wf
 		</a>
-		, MIT License © 2025 Calamity, Inc.
+		· MIT License © 2025 Calamity, Inc.
 	</p>
-	<p>Tier ratings credit the Arbitration Goons.</p>
+	<p>Tier ratings by Arbitration Goons</p>
 </div>
 <hr class="my-6 border-surface" />
 
