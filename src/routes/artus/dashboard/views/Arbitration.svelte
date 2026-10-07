@@ -13,10 +13,13 @@
 
 	type NodeKey = keyof typeof nodeDetails;
 	type ScheduleEntry = { startsAt: number; nodeKey: NodeKey };
-	const schedule: ScheduleEntry[] = scheduleText.trim().split(/\r?\n/).map((line) => {
-		const [timestamp, nodeKey] = line.split(',');
-		return { startsAt: Number(timestamp) * 1000, nodeKey: nodeKey as NodeKey };
-	});
+	const schedule: ScheduleEntry[] = scheduleText
+		.trim()
+		.split(/\r?\n/)
+		.map((line) => {
+			const [timestamp, nodeKey] = line.split(',');
+			return { startsAt: Number(timestamp) * 1000, nodeKey: nodeKey as NodeKey };
+		});
 	const columns: TableColumn[] = [
 		{ key: 'startsAt', label: 'Starts', class: 'whitespace-nowrap w-48' },
 		{ key: 'mission', label: 'Mission', class: 'whitespace-nowrap' },
@@ -31,7 +34,11 @@
 	}));
 	type Rank = (typeof rankOptions)[number]['value'];
 	const startsFormat = new Intl.DateTimeFormat(undefined, {
-		weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+		weekday: 'short',
+		month: 'short',
+		day: 'numeric',
+		hour: '2-digit',
+		minute: '2-digit',
 	});
 
 	function firstAfter(timestamp: number): number {
@@ -64,34 +71,93 @@
 	}
 	let arbitration = $derived(oracleBounties.snapshot?.arbitration);
 	let current = $derived(arbitration && arbitration.expiry > localNow ? arbitration : null);
-	let rows: ViewRow[] = $derived(current ? [{ title: current.node, description: [current.missionType, current.faction].filter(Boolean).join(' · ') }] : []);
+	let rows: ViewRow[] = $derived(
+		current
+			? [
+					{
+						title: current.node,
+						description: [current.missionType, current.faction].filter(Boolean).join(' · '),
+					},
+				]
+			: [],
+	);
 </script>
 
-<p class="text-muted-foreground text-xs">
-	Schedule and tiers from browse.wf, MIT License © 2025 Calamity, Inc. Tier ratings credit the Arbitration Goons.
-</p>
-<ViewPanel title="Arbitration" {rows} now={localNow} headerSummary="Current Arbitration"
+<ViewPanel
+	title="Arbitration"
+	{rows}
+	now={localNow}
+	headerSummary="Current Arbitration"
 	expiry={current ? new Date(current.expiry) : undefined}
-	empty={oracleBounties.loading ? 'Loading current Arbitration…' : 'Arbitration is unavailable. Automatic retries are limited to once every five minutes.'}>
+	empty={oracleBounties.loading
+		? 'Loading current Arbitration…'
+		: 'Arbitration is unavailable. Automatic retries are limited to once every five minutes.'}
+>
 	{#snippet headerAction()}
-		<Button variant="link" size="none" href="https://browse.wf/arbys" class="inline-flex items-center gap-2 text-sm"
-			onclick={(event) => { event.preventDefault(); void openSchedule(); }}>
+		<Button
+			variant="link"
+			size="none"
+			href="https://browse.wf/arbys"
+			class="inline-flex items-center gap-2 text-sm"
+			onclick={(event) => {
+				event.preventDefault();
+				void openSchedule();
+			}}
+		>
 			browse.wf <Icon icon="lucide:external-link" class="size-4" />
 		</Button>
 	{/snippet}
 </ViewPanel>
-{#if linkError}<p role="status" class="mt-3 text-sm text-danger">Could not open the Arbitration schedule.</p>{/if}
+{#if linkError}<p role="status" class="text-danger text-sm">
+		Could not open the Arbitration schedule.
+	</p>{/if}
+<div class="flex flex-wrap justify-between gap-2 -mt-1 text-muted-foreground text-sm">
+	<p>
+		Schedule and tiers from <a
+			href="https://browse.wf/arbys"
+			class="hover:underline"
+			onclick={(event) => {
+				event.preventDefault();
+				void openSchedule();
+			}}
+		>
+			browse.wf
+		</a>
+		, MIT License © 2025 Calamity, Inc.
+	</p>
+	<p>Tier ratings credit the Arbitration Goons.</p>
+</div>
+<hr class="my-6 border-surface" />
 
-<section class="mt-6 flex flex-col gap-3" aria-label="Upcoming Arbitrations">
-	<h2 class="text-lg font-semibold">Upcoming Arbitrations</h2>
+<section class="flex flex-col gap-3" aria-label="Upcoming Arbitrations">
+	<h2 class="font-semibold text-lg">Upcoming Arbitrations</h2>
 	<div class="flex flex-col gap-1">
 		<div class="font-semibold text-muted-foreground text-sm">Rank</div>
-		<ToggleGroup label="Filter Arbitration ranks" options={rankOptions} bind:value={selectedRanks} />
+		<ToggleGroup
+			label="Filter Arbitration ranks"
+			options={rankOptions}
+			bind:value={selectedRanks}
+		/>
 	</div>
-	{#snippet arbitrationRow(entry: ScheduleEntry, index: number, measureRow: (element: HTMLTableRowElement) => void)}
+	{#snippet arbitrationRow(
+		entry: ScheduleEntry,
+		index: number,
+		measureRow: (element: HTMLTableRowElement) => void,
+	)}
 		{@const detail = nodeDetails[entry.nodeKey]}
-		<tr data-index={index} use:measureRow class="hover:bg-surface/30 border-border-secondary border-t">
-			<td class="p-3 whitespace-nowrap"><time datetime={new Date(entry.startsAt).toISOString()} title={new Date(entry.startsAt).toLocaleString()}>{startsFormat.format(entry.startsAt)}</time></td>
+		<tr
+			data-index={index}
+			use:measureRow
+			class="hover:bg-surface/30 border-border-secondary border-t"
+		>
+			<td class="p-3 whitespace-nowrap">
+				<time
+					datetime={new Date(entry.startsAt).toISOString()}
+					title={new Date(entry.startsAt).toLocaleString()}
+				>
+					{startsFormat.format(entry.startsAt)}
+				</time>
+			</td>
 			<td class="p-3">{detail.mission}</td>
 			<td class="p-3 text-muted-foreground">{detail.planet}</td>
 			<td class="p-3 text-muted-foreground">{detail.node}</td>
@@ -99,9 +165,15 @@
 			<td class="p-3 font-semibold">{detail.tier}</td>
 		</tr>
 	{/snippet}
-	<Table {columns} rows={upcoming} rowKey={(entry) => String(entry.startsAt)} renderRow={arbitrationRow}
-		minWidth="760px" virtualize
+	<Table
+		{columns}
+		rows={upcoming}
+		rowKey={(entry) => String(entry.startsAt)}
+		renderRow={arbitrationRow}
+		minWidth="760px"
+		virtualize
 		emptyMessage={selectedRanks.length === rankOptions.length
 			? 'No more Arbitrations in the downloaded schedule.'
-			: 'No upcoming Arbitrations match the selected ranks.'} />
+			: 'No upcoming Arbitrations match the selected ranks.'}
+	/>
 </section>

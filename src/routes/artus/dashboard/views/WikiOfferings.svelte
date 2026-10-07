@@ -21,7 +21,8 @@
 	} from '$lib/wiki-offerings';
 	import type { DashboardViewProps } from './view-types';
 
-	let { source, now }: Pick<DashboardViewProps, 'world' | 'now'> & { source: WikiSource } = $props();
+	let { source, now }: Pick<DashboardViewProps, 'world' | 'now'> & { source: WikiSource } =
+		$props();
 	let data = $state<WikiOfferings | null>(null);
 	let loading = $state(false);
 	let error = $state('');
@@ -39,7 +40,10 @@
 		data?.observedAt != null && data.observedAt >= rotation.start && data.observedAt <= now,
 	);
 	const needsRefresh = $derived(
-		!data?.items.length || !sameRotation || !batchMatches || (source === 'acrithis' && !reportCurrent),
+		!data?.items.length ||
+			!sameRotation ||
+			!batchMatches ||
+			(source === 'acrithis' && !reportCurrent),
 	);
 	const rows = $derived<WikiOffering[]>(
 		source === 'coda' && (!batchMatches || !sameRotation)
@@ -102,7 +106,9 @@
 		loading = true;
 		error = '';
 		try {
-			const result = wikiOfferingsSchema.parse(await invoke('get_wiki_offerings', { source: requestedSource }));
+			const result = wikiOfferingsSchema.parse(
+				await invoke('get_wiki_offerings', { source: requestedSource }),
+			);
 			if (mounted && id === request) data = result;
 		} catch (cause) {
 			if (mounted && id === request) error = String(cause);
@@ -131,8 +137,12 @@
 	});
 	$effect(() => {
 		if (!mounted) return;
-		if (source !== currentSource || (!loading && needsRefresh &&
-			(rotation.start !== requestedRotation || now - requestedAt >= WIKI_RETRY_INTERVAL))) {
+		if (
+			source !== currentSource ||
+			(!loading &&
+				needsRefresh &&
+				(rotation.start !== requestedRotation || now - requestedAt >= WIKI_RETRY_INTERVAL))
+		) {
 			if (source !== currentSource) data = null;
 			currentSource = source;
 			void load();
@@ -150,12 +160,12 @@
 			</div>
 		</td>
 		{#if source !== 'acrithis'}
-			<td class="px-3 py-3.5">{item.element ?? 'Not reported'}</td>
+			<td class="px-3 py-3.5">{item.element ?? '—'}</td>
 			<td class={`px-3 py-3.5 tabular-nums text-right ${bonusColor(item.bonus)}`}>
-				{item.bonus != null ? `${item.bonus.toFixed(1)}%` : 'Not reported'}
+				{item.bonus != null ? `${item.bonus.toFixed(1)}%` : '—'}
 			</td>
 			<td class="px-3 py-3.5 tabular-nums text-right">
-				{maximumFusions(item.bonus) ?? 'Not reported'}
+				{maximumFusions(item.bonus) ?? '—'}
 			</td>
 		{/if}
 	</tr>
@@ -163,11 +173,17 @@
 
 {#snippet header(column: TableColumn)}
 	{#if column.key === 'bonus'}
-		<Tooltip class="inline-flex items-center gap-1.5 uppercase hover:text-foreground" triggerProps={{ 'aria-label': 'About weapon bonuses' }}>
+		<Tooltip
+			class="inline-flex items-center gap-1.5 hover:text-foreground uppercase"
+			triggerProps={{ 'aria-label': 'About weapon bonuses' }}
+		>
 			{column.label}
 			<Icon icon="lucide:info" class="size-3.5" aria-hidden="true" />
 			{#snippet content()}
-				<p class="font-normal normal-case tracking-normal">Bonus is the weapon’s extra damage. Max fusions estimates how many Valence Fusions are needed to reach 60%. Bonuses of 58% or higher round up to 60%.</p>
+				<p class="font-normal normal-case tracking-normal">
+					Bonus is the weapon’s extra damage. Max fusions estimates how many Valence Fusions are
+					needed to reach 60%. Bonuses of 58% or higher round up to 60%.
+				</p>
 			{/snippet}
 		</Tooltip>
 	{:else}{column.label}{/if}
