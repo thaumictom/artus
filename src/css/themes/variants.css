@@ -1,4 +1,4 @@
-/* Tune darkness and saturation by Tailwind shade for the Warframe app themes. */
+/* Palette roles stay shared; each theme only supplies Tailwind shade tokens. */
 @layer base {
 	/* Saturation: 0% grayscale, 50% palette color, 100% double chroma. Default stays unchanged. */
 	:root {
@@ -27,13 +27,16 @@
 		--theme-desature-950: 40%;
 	}
 
-	html.theme-stalker {
+	/* Warframe themes share shade-based darkness and saturation. */
+	html:is(.theme-stalker, .theme-high-contrast, .theme-baruuk, .theme-fortuna, .theme-corpus) {
+		--app-accent-desature: var(--theme-desature-400);
+		--app-accent-darken: var(--theme-darken-400);
 		--theme-background: color-mix(
 			in oklch,
 			color-mix(
 				in oklch,
-				oklch(from var(--color-red-950) l 0 h),
-				oklch(from var(--color-red-950) l calc(c * 2) h) var(--theme-desature-950)
+				oklch(from var(--app-palette-950) l 0 h),
+				oklch(from var(--app-palette-950) l calc(c * 2) h) var(--theme-desature-950)
 			),
 			black var(--theme-darken-950)
 		);
@@ -41,8 +44,8 @@
 			in oklch,
 			color-mix(
 				in oklch,
-				oklch(from var(--color-red-900) l 0 h),
-				oklch(from var(--color-red-900) l calc(c * 2) h) var(--theme-desature-900)
+				oklch(from var(--app-palette-900) l 0 h),
+				oklch(from var(--app-palette-900) l calc(c * 2) h) var(--theme-desature-900)
 			),
 			black var(--theme-darken-900)
 		);
@@ -50,8 +53,8 @@
 			in oklch,
 			color-mix(
 				in oklch,
-				oklch(from var(--color-red-800) l 0 h),
-				oklch(from var(--color-red-800) l calc(c * 2) h) var(--theme-desature-800)
+				oklch(from var(--app-palette-800) l 0 h),
+				oklch(from var(--app-palette-800) l calc(c * 2) h) var(--theme-desature-800)
 			),
 			black var(--theme-darken-800)
 		);
@@ -59,8 +62,8 @@
 			in oklch,
 			color-mix(
 				in oklch,
-				oklch(from var(--color-red-700) l 0 h),
-				oklch(from var(--color-red-700) l calc(c * 2) h) var(--theme-desature-700)
+				oklch(from var(--app-palette-700) l 0 h),
+				oklch(from var(--app-palette-700) l calc(c * 2) h) var(--theme-desature-700)
 			),
 			black var(--theme-darken-700)
 		);
@@ -68,8 +71,8 @@
 			in oklch,
 			color-mix(
 				in oklch,
-				oklch(from var(--color-red-50) l 0 h),
-				oklch(from var(--color-red-50) l calc(c * 2) h) var(--theme-desature-50)
+				oklch(from var(--app-palette-50) l 0 h),
+				oklch(from var(--app-palette-50) l calc(c * 2) h) var(--theme-desature-50)
 			),
 			black var(--theme-darken-50)
 		);
@@ -77,8 +80,8 @@
 			in oklch,
 			color-mix(
 				in oklch,
-				oklch(from var(--color-red-100) l 0 h),
-				oklch(from var(--color-red-100) l calc(c * 2) h) var(--theme-desature-100)
+				oklch(from var(--app-palette-100) l 0 h),
+				oklch(from var(--app-palette-100) l calc(c * 2) h) var(--theme-desature-100)
 			),
 			black var(--theme-darken-100)
 		);
@@ -86,8 +89,8 @@
 			in oklch,
 			color-mix(
 				in oklch,
-				oklch(from var(--color-red-200) l 0 h),
-				oklch(from var(--color-red-200) l calc(c * 2) h) var(--theme-desature-200)
+				oklch(from var(--app-palette-200) l 0 h),
+				oklch(from var(--app-palette-200) l calc(c * 2) h) var(--theme-desature-200)
 			),
 			black var(--theme-darken-200)
 		);
@@ -95,8 +98,8 @@
 			in oklch,
 			color-mix(
 				in oklch,
-				oklch(from var(--color-red-300) l 0 h),
-				oklch(from var(--color-red-300) l calc(c * 2) h) var(--theme-desature-300)
+				oklch(from var(--app-palette-300) l 0 h),
+				oklch(from var(--app-palette-300) l calc(c * 2) h) var(--theme-desature-300)
 			),
 			black var(--theme-darken-300)
 		);
@@ -104,456 +107,177 @@
 			in oklch,
 			color-mix(
 				in oklch,
-				oklch(from var(--color-red-500) l 0 h),
-				oklch(from var(--color-red-500) l calc(c * 2) h) var(--theme-desature-500)
+				oklch(from var(--app-accent-base) l 0 h),
+				oklch(from var(--app-accent-base) l calc(c * 2) h) var(--app-accent-desature)
 			),
-			black var(--theme-darken-500)
+			black var(--app-accent-darken)
 		);
 		--theme-accent-foreground: var(--theme-background);
+	}
+
+	html.theme-stalker {
+		--app-palette-50: var(--color-red-50);
+		--app-palette-100: var(--color-red-100);
+		--app-palette-200: var(--color-red-200);
+		--app-palette-300: var(--color-red-300);
+		--app-palette-700: var(--color-red-700);
+		--app-palette-800: var(--color-red-800);
+		--app-palette-900: var(--color-red-900);
+		--app-palette-950: var(--color-red-950);
+		--app-accent-base: var(--color-red-500);
+		--app-accent-desature: var(--theme-desature-500);
+		--app-accent-darken: var(--theme-darken-500);
 	}
 
 	html.theme-high-contrast {
-		--theme-background: color-mix(
-			in oklch,
-			color-mix(
-				in oklch,
-				oklch(from var(--color-sky-950) l 0 h),
-				oklch(from var(--color-sky-950) l calc(c * 2) h) var(--theme-desature-950)
-			),
-			black var(--theme-darken-950)
-		);
-		--theme-surface: color-mix(
-			in oklch,
-			color-mix(
-				in oklch,
-				oklch(from var(--color-sky-900) l 0 h),
-				oklch(from var(--color-sky-900) l calc(c * 2) h) var(--theme-desature-900)
-			),
-			black var(--theme-darken-900)
-		);
-		--theme-elevated: color-mix(
-			in oklch,
-			color-mix(
-				in oklch,
-				oklch(from var(--color-sky-800) l 0 h),
-				oklch(from var(--color-sky-800) l calc(c * 2) h) var(--theme-desature-800)
-			),
-			black var(--theme-darken-800)
-		);
-		--theme-muted: color-mix(
-			in oklch,
-			color-mix(
-				in oklch,
-				oklch(from var(--color-sky-700) l 0 h),
-				oklch(from var(--color-sky-700) l calc(c * 2) h) var(--theme-desature-700)
-			),
-			black var(--theme-darken-700)
-		);
-		--theme-foreground: color-mix(
-			in oklch,
-			color-mix(
-				in oklch,
-				oklch(from var(--color-sky-50) l 0 h),
-				oklch(from var(--color-sky-50) l calc(c * 2) h) var(--theme-desature-50)
-			),
-			black var(--theme-darken-50)
-		);
-		--theme-surface-foreground: color-mix(
-			in oklch,
-			color-mix(
-				in oklch,
-				oklch(from var(--color-sky-100) l 0 h),
-				oklch(from var(--color-sky-100) l calc(c * 2) h) var(--theme-desature-100)
-			),
-			black var(--theme-darken-100)
-		);
-		--theme-elevated-foreground: color-mix(
-			in oklch,
-			color-mix(
-				in oklch,
-				oklch(from var(--color-sky-200) l 0 h),
-				oklch(from var(--color-sky-200) l calc(c * 2) h) var(--theme-desature-200)
-			),
-			black var(--theme-darken-200)
-		);
-		--theme-muted-foreground: color-mix(
-			in oklch,
-			color-mix(
-				in oklch,
-				oklch(from var(--color-sky-300) l 0 h),
-				oklch(from var(--color-sky-300) l calc(c * 2) h) var(--theme-desature-300)
-			),
-			black var(--theme-darken-300)
-		);
-		--theme-accent: color-mix(
-			in oklch,
-			color-mix(
-				in oklch,
-				oklch(from var(--color-yellow-300) l 0 h),
-				oklch(from var(--color-yellow-300) l calc(c * 2) h) var(--theme-desature-300)
-			),
-			black var(--theme-darken-300)
-		);
-		--theme-accent-foreground: var(--theme-background);
+		--app-palette-50: var(--color-sky-50);
+		--app-palette-100: var(--color-sky-100);
+		--app-palette-200: var(--color-sky-200);
+		--app-palette-300: var(--color-sky-300);
+		--app-palette-700: var(--color-sky-700);
+		--app-palette-800: var(--color-sky-800);
+		--app-palette-900: var(--color-sky-900);
+		--app-palette-950: var(--color-sky-950);
+		--app-accent-base: var(--color-yellow-300);
+		--app-accent-desature: var(--theme-desature-300);
+		--app-accent-darken: var(--theme-darken-300);
 	}
 
 	html.theme-baruuk {
-		--theme-background: color-mix(
-			in oklch,
-			color-mix(
-				in oklch,
-				oklch(from var(--color-amber-950) l 0 h),
-				oklch(from var(--color-amber-950) l calc(c * 2) h) var(--theme-desature-950)
-			),
-			black var(--theme-darken-950)
-		);
-		--theme-surface: color-mix(
-			in oklch,
-			color-mix(
-				in oklch,
-				oklch(from var(--color-amber-900) l 0 h),
-				oklch(from var(--color-amber-900) l calc(c * 2) h) var(--theme-desature-900)
-			),
-			black var(--theme-darken-900)
-		);
-		--theme-elevated: color-mix(
-			in oklch,
-			color-mix(
-				in oklch,
-				oklch(from var(--color-amber-800) l 0 h),
-				oklch(from var(--color-amber-800) l calc(c * 2) h) var(--theme-desature-800)
-			),
-			black var(--theme-darken-800)
-		);
-		--theme-muted: color-mix(
-			in oklch,
-			color-mix(
-				in oklch,
-				oklch(from var(--color-amber-700) l 0 h),
-				oklch(from var(--color-amber-700) l calc(c * 2) h) var(--theme-desature-700)
-			),
-			black var(--theme-darken-700)
-		);
-		--theme-foreground: color-mix(
-			in oklch,
-			color-mix(
-				in oklch,
-				oklch(from var(--color-amber-50) l 0 h),
-				oklch(from var(--color-amber-50) l calc(c * 2) h) var(--theme-desature-50)
-			),
-			black var(--theme-darken-50)
-		);
-		--theme-surface-foreground: color-mix(
-			in oklch,
-			color-mix(
-				in oklch,
-				oklch(from var(--color-amber-100) l 0 h),
-				oklch(from var(--color-amber-100) l calc(c * 2) h) var(--theme-desature-100)
-			),
-			black var(--theme-darken-100)
-		);
-		--theme-elevated-foreground: color-mix(
-			in oklch,
-			color-mix(
-				in oklch,
-				oklch(from var(--color-amber-200) l 0 h),
-				oklch(from var(--color-amber-200) l calc(c * 2) h) var(--theme-desature-200)
-			),
-			black var(--theme-darken-200)
-		);
-		--theme-muted-foreground: color-mix(
-			in oklch,
-			color-mix(
-				in oklch,
-				oklch(from var(--color-amber-300) l 0 h),
-				oklch(from var(--color-amber-300) l calc(c * 2) h) var(--theme-desature-300)
-			),
-			black var(--theme-darken-300)
-		);
-		--theme-accent: color-mix(
-			in oklch,
-			color-mix(
-				in oklch,
-				oklch(from var(--color-amber-400) l 0 h),
-				oklch(from var(--color-amber-400) l calc(c * 2) h) var(--theme-desature-400)
-			),
-			black var(--theme-darken-400)
-		);
-		--theme-accent-foreground: var(--theme-background);
+		--app-palette-50: var(--color-amber-50);
+		--app-palette-100: var(--color-amber-100);
+		--app-palette-200: var(--color-amber-200);
+		--app-palette-300: var(--color-amber-300);
+		--app-palette-700: var(--color-amber-700);
+		--app-palette-800: var(--color-amber-800);
+		--app-palette-900: var(--color-amber-900);
+		--app-palette-950: var(--color-amber-950);
+		--app-accent-base: var(--color-amber-400);
 	}
 
 	html.theme-fortuna {
-		--theme-background: color-mix(
-			in oklch,
-			color-mix(
-				in oklch,
-				oklch(from var(--color-blue-950) l 0 h),
-				oklch(from var(--color-blue-950) l calc(c * 2) h) var(--theme-desature-950)
-			),
-			black var(--theme-darken-950)
-		);
-		--theme-surface: color-mix(
-			in oklch,
-			color-mix(
-				in oklch,
-				oklch(from var(--color-blue-900) l 0 h),
-				oklch(from var(--color-blue-900) l calc(c * 2) h) var(--theme-desature-900)
-			),
-			black var(--theme-darken-900)
-		);
-		--theme-elevated: color-mix(
-			in oklch,
-			color-mix(
-				in oklch,
-				oklch(from var(--color-blue-800) l 0 h),
-				oklch(from var(--color-blue-800) l calc(c * 2) h) var(--theme-desature-800)
-			),
-			black var(--theme-darken-800)
-		);
-		--theme-muted: color-mix(
-			in oklch,
-			color-mix(
-				in oklch,
-				oklch(from var(--color-blue-700) l 0 h),
-				oklch(from var(--color-blue-700) l calc(c * 2) h) var(--theme-desature-700)
-			),
-			black var(--theme-darken-700)
-		);
-		--theme-foreground: color-mix(
-			in oklch,
-			color-mix(
-				in oklch,
-				oklch(from var(--color-blue-50) l 0 h),
-				oklch(from var(--color-blue-50) l calc(c * 2) h) var(--theme-desature-50)
-			),
-			black var(--theme-darken-50)
-		);
-		--theme-surface-foreground: color-mix(
-			in oklch,
-			color-mix(
-				in oklch,
-				oklch(from var(--color-blue-100) l 0 h),
-				oklch(from var(--color-blue-100) l calc(c * 2) h) var(--theme-desature-100)
-			),
-			black var(--theme-darken-100)
-		);
-		--theme-elevated-foreground: color-mix(
-			in oklch,
-			color-mix(
-				in oklch,
-				oklch(from var(--color-blue-200) l 0 h),
-				oklch(from var(--color-blue-200) l calc(c * 2) h) var(--theme-desature-200)
-			),
-			black var(--theme-darken-200)
-		);
-		--theme-muted-foreground: color-mix(
-			in oklch,
-			color-mix(
-				in oklch,
-				oklch(from var(--color-blue-300) l 0 h),
-				oklch(from var(--color-blue-300) l calc(c * 2) h) var(--theme-desature-300)
-			),
-			black var(--theme-darken-300)
-		);
-		--theme-accent: color-mix(
-			in oklch,
-			color-mix(
-				in oklch,
-				oklch(from var(--color-fuchsia-400) l 0 h),
-				oklch(from var(--color-fuchsia-400) l calc(c * 2) h) var(--theme-desature-400)
-			),
-			black var(--theme-darken-400)
-		);
-		--theme-accent-foreground: var(--theme-background);
+		--app-palette-50: var(--color-blue-50);
+		--app-palette-100: var(--color-blue-100);
+		--app-palette-200: var(--color-blue-200);
+		--app-palette-300: var(--color-blue-300);
+		--app-palette-700: var(--color-blue-700);
+		--app-palette-800: var(--color-blue-800);
+		--app-palette-900: var(--color-blue-900);
+		--app-palette-950: var(--color-blue-950);
+		--app-accent-base: var(--color-fuchsia-400);
 	}
 
 	html.theme-corpus {
-		--theme-background: color-mix(
-			in oklch,
-			color-mix(
-				in oklch,
-				oklch(from var(--color-cyan-950) l 0 h),
-				oklch(from var(--color-cyan-950) l calc(c * 2) h) var(--theme-desature-950)
-			),
-			black var(--theme-darken-950)
-		);
-		--theme-surface: color-mix(
-			in oklch,
-			color-mix(
-				in oklch,
-				oklch(from var(--color-cyan-900) l 0 h),
-				oklch(from var(--color-cyan-900) l calc(c * 2) h) var(--theme-desature-900)
-			),
-			black var(--theme-darken-900)
-		);
-		--theme-elevated: color-mix(
-			in oklch,
-			color-mix(
-				in oklch,
-				oklch(from var(--color-cyan-800) l 0 h),
-				oklch(from var(--color-cyan-800) l calc(c * 2) h) var(--theme-desature-800)
-			),
-			black var(--theme-darken-800)
-		);
-		--theme-muted: color-mix(
-			in oklch,
-			color-mix(
-				in oklch,
-				oklch(from var(--color-cyan-700) l 0 h),
-				oklch(from var(--color-cyan-700) l calc(c * 2) h) var(--theme-desature-700)
-			),
-			black var(--theme-darken-700)
-		);
-		--theme-foreground: color-mix(
-			in oklch,
-			color-mix(
-				in oklch,
-				oklch(from var(--color-cyan-50) l 0 h),
-				oklch(from var(--color-cyan-50) l calc(c * 2) h) var(--theme-desature-50)
-			),
-			black var(--theme-darken-50)
-		);
-		--theme-surface-foreground: color-mix(
-			in oklch,
-			color-mix(
-				in oklch,
-				oklch(from var(--color-cyan-100) l 0 h),
-				oklch(from var(--color-cyan-100) l calc(c * 2) h) var(--theme-desature-100)
-			),
-			black var(--theme-darken-100)
-		);
-		--theme-elevated-foreground: color-mix(
-			in oklch,
-			color-mix(
-				in oklch,
-				oklch(from var(--color-cyan-200) l 0 h),
-				oklch(from var(--color-cyan-200) l calc(c * 2) h) var(--theme-desature-200)
-			),
-			black var(--theme-darken-200)
-		);
-		--theme-muted-foreground: color-mix(
-			in oklch,
-			color-mix(
-				in oklch,
-				oklch(from var(--color-cyan-300) l 0 h),
-				oklch(from var(--color-cyan-300) l calc(c * 2) h) var(--theme-desature-300)
-			),
-			black var(--theme-darken-300)
-		);
-		--theme-accent: color-mix(
-			in oklch,
-			color-mix(
-				in oklch,
-				oklch(from var(--color-cyan-400) l 0 h),
-				oklch(from var(--color-cyan-400) l calc(c * 2) h) var(--theme-desature-400)
-			),
-			black var(--theme-darken-400)
-		);
+		--app-palette-50: var(--color-cyan-50);
+		--app-palette-100: var(--color-cyan-100);
+		--app-palette-200: var(--color-cyan-200);
+		--app-palette-300: var(--color-cyan-300);
+		--app-palette-700: var(--color-cyan-700);
+		--app-palette-800: var(--color-cyan-800);
+		--app-palette-900: var(--color-cyan-900);
+		--app-palette-950: var(--color-cyan-950);
+		--app-accent-base: var(--color-cyan-400);
+	}
+
+	/* Neutral themes use Default's mist shade roles without color adjustment. */
+	html:is(.theme-slate, .theme-gray, .theme-zinc, .theme-neutral, .theme-stone, .theme-taupe, .theme-mauve, .theme-olive) {
+		--theme-background: var(--app-palette-900);
+		--theme-surface: var(--app-palette-800);
+		--theme-elevated: var(--app-palette-700);
+		--theme-muted: var(--app-palette-600);
+		--theme-foreground: var(--app-palette-50);
+		--theme-surface-foreground: var(--app-palette-100);
+		--theme-elevated-foreground: var(--app-palette-200);
+		--theme-muted-foreground: var(--app-palette-400);
+		--theme-accent: var(--color-emerald-500);
 		--theme-accent-foreground: var(--theme-background);
 	}
 
-	/* Use the same shade roles as Default's mist palette. */
 	html.theme-slate {
-		--theme-background: var(--color-slate-900);
-		--theme-surface: var(--color-slate-800);
-		--theme-elevated: var(--color-slate-700);
-		--theme-muted: var(--color-slate-600);
-		--theme-foreground: var(--color-slate-50);
-		--theme-surface-foreground: var(--color-slate-100);
-		--theme-elevated-foreground: var(--color-slate-200);
-		--theme-muted-foreground: var(--color-slate-400);
-		--theme-accent: var(--color-emerald-500);
-		--theme-accent-foreground: var(--theme-background);
+		--app-palette-50: var(--color-slate-50);
+		--app-palette-100: var(--color-slate-100);
+		--app-palette-200: var(--color-slate-200);
+		--app-palette-400: var(--color-slate-400);
+		--app-palette-600: var(--color-slate-600);
+		--app-palette-700: var(--color-slate-700);
+		--app-palette-800: var(--color-slate-800);
+		--app-palette-900: var(--color-slate-900);
 	}
 
 	html.theme-gray {
-		--theme-background: var(--color-gray-900);
-		--theme-surface: var(--color-gray-800);
-		--theme-elevated: var(--color-gray-700);
-		--theme-muted: var(--color-gray-600);
-		--theme-foreground: var(--color-gray-50);
-		--theme-surface-foreground: var(--color-gray-100);
-		--theme-elevated-foreground: var(--color-gray-200);
-		--theme-muted-foreground: var(--color-gray-400);
-		--theme-accent: var(--color-emerald-500);
-		--theme-accent-foreground: var(--theme-background);
+		--app-palette-50: var(--color-gray-50);
+		--app-palette-100: var(--color-gray-100);
+		--app-palette-200: var(--color-gray-200);
+		--app-palette-400: var(--color-gray-400);
+		--app-palette-600: var(--color-gray-600);
+		--app-palette-700: var(--color-gray-700);
+		--app-palette-800: var(--color-gray-800);
+		--app-palette-900: var(--color-gray-900);
 	}
 
 	html.theme-zinc {
-		--theme-background: var(--color-zinc-900);
-		--theme-surface: var(--color-zinc-800);
-		--theme-elevated: var(--color-zinc-700);
-		--theme-muted: var(--color-zinc-600);
-		--theme-foreground: var(--color-zinc-50);
-		--theme-surface-foreground: var(--color-zinc-100);
-		--theme-elevated-foreground: var(--color-zinc-200);
-		--theme-muted-foreground: var(--color-zinc-400);
-		--theme-accent: var(--color-emerald-500);
-		--theme-accent-foreground: var(--theme-background);
+		--app-palette-50: var(--color-zinc-50);
+		--app-palette-100: var(--color-zinc-100);
+		--app-palette-200: var(--color-zinc-200);
+		--app-palette-400: var(--color-zinc-400);
+		--app-palette-600: var(--color-zinc-600);
+		--app-palette-700: var(--color-zinc-700);
+		--app-palette-800: var(--color-zinc-800);
+		--app-palette-900: var(--color-zinc-900);
 	}
 
 	html.theme-neutral {
-		--theme-background: var(--color-neutral-900);
-		--theme-surface: var(--color-neutral-800);
-		--theme-elevated: var(--color-neutral-700);
-		--theme-muted: var(--color-neutral-600);
-		--theme-foreground: var(--color-neutral-50);
-		--theme-surface-foreground: var(--color-neutral-100);
-		--theme-elevated-foreground: var(--color-neutral-200);
-		--theme-muted-foreground: var(--color-neutral-400);
-		--theme-accent: var(--color-emerald-500);
-		--theme-accent-foreground: var(--theme-background);
+		--app-palette-50: var(--color-neutral-50);
+		--app-palette-100: var(--color-neutral-100);
+		--app-palette-200: var(--color-neutral-200);
+		--app-palette-400: var(--color-neutral-400);
+		--app-palette-600: var(--color-neutral-600);
+		--app-palette-700: var(--color-neutral-700);
+		--app-palette-800: var(--color-neutral-800);
+		--app-palette-900: var(--color-neutral-900);
 	}
 
 	html.theme-stone {
-		--theme-background: var(--color-stone-900);
-		--theme-surface: var(--color-stone-800);
-		--theme-elevated: var(--color-stone-700);
-		--theme-muted: var(--color-stone-600);
-		--theme-foreground: var(--color-stone-50);
-		--theme-surface-foreground: var(--color-stone-100);
-		--theme-elevated-foreground: var(--color-stone-200);
-		--theme-muted-foreground: var(--color-stone-400);
-		--theme-accent: var(--color-emerald-500);
-		--theme-accent-foreground: var(--theme-background);
+		--app-palette-50: var(--color-stone-50);
+		--app-palette-100: var(--color-stone-100);
+		--app-palette-200: var(--color-stone-200);
+		--app-palette-400: var(--color-stone-400);
+		--app-palette-600: var(--color-stone-600);
+		--app-palette-700: var(--color-stone-700);
+		--app-palette-800: var(--color-stone-800);
+		--app-palette-900: var(--color-stone-900);
 	}
 
 	html.theme-taupe {
-		--theme-background: var(--color-taupe-900);
-		--theme-surface: var(--color-taupe-800);
-		--theme-elevated: var(--color-taupe-700);
-		--theme-muted: var(--color-taupe-600);
-		--theme-foreground: var(--color-taupe-50);
-		--theme-surface-foreground: var(--color-taupe-100);
-		--theme-elevated-foreground: var(--color-taupe-200);
-		--theme-muted-foreground: var(--color-taupe-400);
-		--theme-accent: var(--color-emerald-500);
-		--theme-accent-foreground: var(--theme-background);
+		--app-palette-50: var(--color-taupe-50);
+		--app-palette-100: var(--color-taupe-100);
+		--app-palette-200: var(--color-taupe-200);
+		--app-palette-400: var(--color-taupe-400);
+		--app-palette-600: var(--color-taupe-600);
+		--app-palette-700: var(--color-taupe-700);
+		--app-palette-800: var(--color-taupe-800);
+		--app-palette-900: var(--color-taupe-900);
 	}
 
 	html.theme-mauve {
-		--theme-background: var(--color-mauve-900);
-		--theme-surface: var(--color-mauve-800);
-		--theme-elevated: var(--color-mauve-700);
-		--theme-muted: var(--color-mauve-600);
-		--theme-foreground: var(--color-mauve-50);
-		--theme-surface-foreground: var(--color-mauve-100);
-		--theme-elevated-foreground: var(--color-mauve-200);
-		--theme-muted-foreground: var(--color-mauve-400);
-		--theme-accent: var(--color-emerald-500);
-		--theme-accent-foreground: var(--theme-background);
+		--app-palette-50: var(--color-mauve-50);
+		--app-palette-100: var(--color-mauve-100);
+		--app-palette-200: var(--color-mauve-200);
+		--app-palette-400: var(--color-mauve-400);
+		--app-palette-600: var(--color-mauve-600);
+		--app-palette-700: var(--color-mauve-700);
+		--app-palette-800: var(--color-mauve-800);
+		--app-palette-900: var(--color-mauve-900);
 	}
 
 	html.theme-olive {
-		--theme-background: var(--color-olive-900);
-		--theme-surface: var(--color-olive-800);
-		--theme-elevated: var(--color-olive-700);
-		--theme-muted: var(--color-olive-600);
-		--theme-foreground: var(--color-olive-50);
-		--theme-surface-foreground: var(--color-olive-100);
-		--theme-elevated-foreground: var(--color-olive-200);
-		--theme-muted-foreground: var(--color-olive-400);
-		--theme-accent: var(--color-emerald-500);
-		--theme-accent-foreground: var(--theme-background);
+		--app-palette-50: var(--color-olive-50);
+		--app-palette-100: var(--color-olive-100);
+		--app-palette-200: var(--color-olive-200);
+		--app-palette-400: var(--color-olive-400);
+		--app-palette-600: var(--color-olive-600);
+		--app-palette-700: var(--color-olive-700);
+		--app-palette-800: var(--color-olive-800);
+		--app-palette-900: var(--color-olive-900);
 	}
 }
