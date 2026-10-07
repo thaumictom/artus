@@ -13,6 +13,7 @@
 
 	type NodeKey = keyof typeof nodeDetails;
 	type ScheduleEntry = { startsAt: number; nodeKey: NodeKey };
+	type TableEntry = { kind: 'date'; startsAt: number } | { kind: 'mission'; entry: ScheduleEntry };
 	const schedule: ScheduleEntry[] = scheduleText
 		.trim()
 		.split(/\r?\n/)
@@ -21,7 +22,7 @@
 			return { startsAt: Number(timestamp) * 1000, nodeKey: nodeKey as NodeKey };
 		});
 	const columns: TableColumn[] = [
-		{ key: 'startsAt', label: 'Starts', class: 'whitespace-nowrap w-48' },
+		{ key: 'startsAt', label: 'Time', class: 'whitespace-nowrap w-24' },
 		{ key: 'mission', label: 'Mission', class: 'whitespace-nowrap' },
 		{ key: 'planet', label: 'Planet' },
 		{ key: 'node', label: 'Node' },
@@ -33,13 +34,23 @@
 		label: rank,
 	}));
 	type Rank = (typeof rankOptions)[number]['value'];
-	const startsFormat = new Intl.DateTimeFormat(undefined, {
-		weekday: 'short',
-		month: 'short',
+	const dateFormat = new Intl.DateTimeFormat(undefined, {
+		weekday: 'long',
+		year: 'numeric',
+		month: 'long',
 		day: 'numeric',
+	});
+	const timeFormat = new Intl.DateTimeFormat(undefined, {
 		hour: '2-digit',
 		minute: '2-digit',
 	});
+	function daysUntil(timestamp: number, now: number): number {
+		const date = new Date(timestamp);
+		const today = new Date(now);
+		const targetDay = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+		const currentDay = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+		return (targetDay - currentDay) / 86_400_000;
+	}
 
 	function firstAfter(timestamp: number): number {
 		let low = 0;
@@ -54,12 +65,25 @@
 
 	let { localNow }: DashboardViewProps = $props();
 	let currentHour = $derived(Math.floor(localNow / 3_600_000));
-	let selectedRanks = $state<Rank[]>(rankOptions.map(({ value }) => value));
+	let selectedRanks = $state<Rank[]>(['S', 'A']);
 	let upcoming = $derived(
 		schedule
 			.slice(firstAfter(currentHour * 3_600_000))
 			.filter((entry) => selectedRanks.some((rank) => rank === nodeDetails[entry.nodeKey].tier)),
 	);
+	let tableRows = $derived.by(() => {
+		const rows: TableEntry[] = [];
+		let previousDate = '';
+		for (const entry of upcoming) {
+			const date = new Date(entry.startsAt).toDateString();
+			if (date !== previousDate) {
+				rows.push({ kind: 'date', startsAt: entry.startsAt });
+				previousDate = date;
+			}
+			rows.push({ kind: 'mission', entry });
+		}
+		return rows;
+	});
 	let linkError = $state(false);
 	async function openSchedule() {
 		try {
@@ -76,7 +100,7 @@
 			? [
 					{
 						title: current.node,
-						description: [current.missionType, current.faction].filter(Boolean).join(' · '),
+						description: [current.missionType, current.faction].filter(Boolean).join(' • '),
 					},
 				]
 			: [],
@@ -140,35 +164,62 @@
 		/>
 	</div>
 	{#snippet arbitrationRow(
-		entry: ScheduleEntry,
+		row: TableEntry,
 		index: number,
 		measureRow: (element: HTMLTableRowElement) => void,
 	)}
-		{@const detail = nodeDetails[entry.nodeKey]}
-		<tr
-			data-index={index}
-			use:measureRow
-			class="hover:bg-surface/30 border-border-secondary border-t"
-		>
-			<td class="p-3 whitespace-nowrap">
-				<time
-					datetime={new Date(entry.startsAt).toISOString()}
-					title={new Date(entry.startsAt).toLocaleString()}
+		{#if row.kind === 'date'}
+			{@const daysAway = daysUntil(row.startsAt, localNow)}
+			<tr data-index={index} use:measureRow class="border-border-secondary border-t">
+				<td
+					colspan={columns.length}
+					class="bg-surface/50 px-3 py-2 font-medium text-muted-foreground text-sm"
 				>
-					{startsFormat.format(entry.startsAt)}
-				</time>
-			</td>
-			<td class="p-3">{detail.mission}</td>
-			<td class="p-3 text-muted-foreground">{detail.planet}</td>
-			<td class="p-3 text-muted-foreground">{detail.node}</td>
-			<td class="p-3 text-muted-foreground">{detail.faction}</td>
-			<td class="p-3 font-semibold">{detail.tier}</td>
-		</tr>
+					<time datetime={new Date(row.startsAt).toISOString()}>
+						{dateFormat.format(row.startsAt)}
+					</time>
+					{#if daysAway > 0}<span class="font-normal">
+							&nbsp;·&nbsp;&nbsp;in {daysAway}
+							{daysAway === 1 ? 'day' : 'days'}
+						</span>{/if}
+				</td>
+			</tr>
+		{:else}
+			{@const entry = row.entry}
+			{@const detail = nodeDetails[entry.nodeKey]}
+			<tr
+				data-index={index}
+				use:measureRow
+				class="hover:bg-surface/30 border-border-secondary border-t"
+			>
+				<td class="p-3 whitespace-nowrap">
+					<time
+						datetime={new Date(entry.startsAt).toISOString()}
+						title={new Date(entry.startsAt).toLocaleString()}
+					>
+						{timeFormat.format(entry.startsAt)}
+					</time>
+				</td>
+				<td class="p-3">{detail.mission}</td>
+				<td class="p-3 text-muted-foreground">{detail.planet}</td>
+				<td class="p-3 text-muted-foreground">{detail.node}</td>
+				<td class="p-3 text-muted-foreground">{detail.faction}</td>
+				<td
+					class="p-3 font-semibold"
+					class:text-accent={detail.tier === 'S'}
+					class:text-foreground={detail.tier === 'A'}
+					class:text-muted-foreground={detail.tier !== 'S' && detail.tier !== 'A'}
+				>
+					{detail.tier}
+				</td>
+			</tr>
+		{/if}
 	{/snippet}
 	<Table
 		{columns}
-		rows={upcoming}
-		rowKey={(entry) => String(entry.startsAt)}
+		rows={tableRows}
+		rowKey={(row) =>
+			row.kind === 'date' ? `date-${row.startsAt}` : `mission-${row.entry.startsAt}`}
 		renderRow={arbitrationRow}
 		minWidth="760px"
 		virtualize
