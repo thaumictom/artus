@@ -1,7 +1,7 @@
 # Artus
 
 > [!CAUTION]
-> This project is in a very early alpha stage and is under heavy, active development. Expect bugs, crashes, or missing features.
+> This project is a beta stage and under heavy, active development. Expect bugs, crashes, or missing features.
 
 <div align="center">
   <img src="img/showcase.png" alt="Dashboard Showcase">
