@@ -117,7 +117,7 @@
 	{@const sessionDelta = word.slug ? (sessionDeltaBySlug.get(word.slug) ?? 0) : 0}
 	{@const showOwnership = !isCustom || ownedCount > 0 || sessionDelta !== 0}
 	{@const listing = word.slug ? listingBySlug.get(word.slug) : undefined}
-	<!-- Bounding box for debugging -->
+	<!-- Bounding box for developer inspection -->
 	{#if showBoundingBoxes}
 		<div
 			in:fade={{ duration: 200 }}

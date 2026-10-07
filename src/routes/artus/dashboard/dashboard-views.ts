@@ -145,12 +145,12 @@ const viewGroups = [
 	{
 		label: 'Unused',
 		views: [...unusedViews],
-		debugOnly: true,
+		developerOnly: true,
 	},
-] satisfies { label: string; views: DashboardView[]; debugOnly?: boolean }[];
+] satisfies { label: string; views: DashboardView[]; developerOnly?: boolean }[];
 
 export const dashboardViewGroups = viewGroups.map((group) => ({
 	label: group.label,
-	debugOnly: 'debugOnly' in group && group.debugOnly === true,
+	developerOnly: 'developerOnly' in group && group.developerOnly === true,
 	views: group.views.map((value) => dashboardViews.find((view) => view.value === value)!),
 }));

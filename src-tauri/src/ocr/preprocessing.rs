@@ -363,14 +363,14 @@ pub fn identify_mod_type(
     }
 }
 
-/// Encodes a grayscale image as PNG bytes (used for the debug image overlay).
+/// Encodes a grayscale image as PNG bytes (used for the developer image overlay).
 pub fn gray_to_png_bytes(gray: &GrayImage) -> AppResult<Vec<u8>> {
     let mut bytes = Vec::new();
     let mut cursor = Cursor::new(&mut bytes);
     DynamicImage::ImageLuma8(gray.clone())
         .write_to(&mut cursor, ImageFormat::Png)
         .map_err(|err| {
-            crate::error::AppError::msg(format!("failed to encode debug image: {err}"))
+            crate::error::AppError::msg(format!("failed to encode developer image: {err}"))
         })?;
     Ok(bytes)
 }

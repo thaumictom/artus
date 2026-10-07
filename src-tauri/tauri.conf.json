@@ -14,6 +14,7 @@
 			{
 				"title": "artus",
 				"label": "artus",
+				"devtools": false,
 				"url": "/artus",
 				"width": 800,
 				"height": 600,
@@ -25,6 +26,7 @@
 			{
 				"title": "artus-overlay",
 				"label": "overlay",
+				"devtools": false,
 				"url": "/overlay",
 				"width": 800,
 				"height": 600,

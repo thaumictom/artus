@@ -33,7 +33,6 @@ use crate::error::AppResult;
 
 // ── Feature flags ─────────────────────────────────────────────────────────────
 
-pub const PASS_IMAGE_TO_FRONTEND: bool = true;
 pub const PASS_TEXT_TO_FRONTEND: bool = false;
 pub const ENABLE_MORPHOLOGY: bool = true;
 pub const ENABLE_OCR_DICTIONARY_MAPPING: bool = true;
@@ -179,9 +178,9 @@ pub struct OcrPayload {
     pub controls_enabled: bool,
 }
 
-/// Debug image sent to the dashboard for visual inspection.
+/// Developer image sent to the dashboard for visual inspection.
 #[derive(Debug, Clone, Serialize)]
-pub struct OcrDebugImagePayload {
+pub struct OcrDeveloperImagePayload {
     pub png_bytes: Vec<u8>,
     pub width: u32,
     pub height: u32,

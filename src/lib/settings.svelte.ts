@@ -58,7 +58,8 @@ type Config = {
 	dashboard_view_favorites: string[];
 	dashboard_navigation_width: number;
 	show_unused_dashboard_views: boolean;
-	show_debug_settings: boolean;
+	show_developer_settings: boolean;
+	developer_console_enabled: boolean;
 	desktop_notifications_enabled: boolean;
 	hide_to_tray_on_close: boolean;
 	hide_donate_button: boolean;
@@ -150,8 +151,9 @@ export const config = $state({
 	quicklist_price_strategy: 'undercut_at_or_above_median' as QuicklistStrategy,
 	capture_mods: false,
 
-	// Debug settings
-	show_debug_settings: false as boolean,
+	// Developer settings
+	developer_console_enabled: false as boolean,
+	show_developer_settings: false as boolean,
 	show_unused_dashboard_views: false,
 	show_ocr_bounding_boxes: false,
 	ocr_checkmark_match_threshold: 0.8,
@@ -180,6 +182,7 @@ export function loadSettings() {
 		const savedEntries = await store.entries();
 		for (const [key, val] of savedEntries) {
 			if (key in config) {
+				if (key === 'developer_console_enabled' && typeof val !== 'boolean') continue;
 				if (key === 'app_theme_custom_enabled' && typeof val !== 'boolean') continue;
 				if (key === 'app_theme_custom_colors' && val !== null && !isCustomTheme(val)) continue;
 				// Obsolete theme names are ignored rather than mapped to a current theme.

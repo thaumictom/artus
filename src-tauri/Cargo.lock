@@ -245,6 +245,7 @@ dependencies = [
  "tokio",
  "tokio-tungstenite",
  "toml 0.8.2",
+ "webkit2gtk",
  "windows 0.62.2",
  "xcap",
 ]

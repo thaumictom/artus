@@ -5,7 +5,7 @@
 	import MetaInformation from './categories/MetaInformation.svelte';
 	import OverlaySettings from './categories/OverlaySettings.svelte';
 	import OverlayBehaviour from './categories/OverlayBehaviour.svelte';
-	import DebugSettings from './categories/DebugSettings.svelte';
+	import DeveloperSettings from './categories/DeveloperSettings.svelte';
 	import Maintenance from './categories/Maintenance.svelte';
 	import NotificationSettings from './categories/NotificationSettings.svelte';
 	import AppBehaviour from './categories/AppBehaviour.svelte';
@@ -23,11 +23,11 @@
 		{ name: 'Overlay Behaviour', component: OverlayBehaviour },
 		{ name: 'Quicklist', component: Quicklist },
 		{ name: 'Maintenance', component: Maintenance },
-		{ name: 'Developer', component: DebugSettings },
+		{ name: 'Developer', component: DeveloperSettings },
 		{ name: 'About', component: MetaInformation },
 	].map((section) => ({ ...section, id: kebabCase(section.name) }));
 	let sections = $derived(
-		allSections.filter((section) => section.id !== 'developer' || config.show_debug_settings),
+		allSections.filter((section) => section.id !== 'developer' || config.show_developer_settings),
 	);
 
 	let activeSection = $state(allSections[0].id);
@@ -55,10 +55,10 @@
 		document.getElementById(id)?.scrollIntoView({ behavior: 'instant', block: 'start' });
 	}
 
-	function setDebugVisibility(visible: boolean) {
-		if (config.show_debug_settings === visible) return;
-		config.show_debug_settings = visible;
-		void updateSetting('show_debug_settings');
+	function setDeveloperVisibility(visible: boolean) {
+		if (config.show_developer_settings === visible) return;
+		config.show_developer_settings = visible;
+		void updateSetting('show_developer_settings');
 	}
 </script>
 
@@ -88,7 +88,7 @@
 								aria-current={activeSection === section.id ? 'location' : undefined}
 								onclick={(event) => {
 									if (section.id === 'developer' && event.detail === 2) {
-										setDebugVisibility(false);
+										setDeveloperVisibility(false);
 										scrollToSection('about');
 										return;
 									}
@@ -112,7 +112,7 @@
 						<h1 class="pb-4 font-bold text-xl scroll-mt-16" {id}>{name}</h1>
 						{#if id === 'about'}
 							<MetaInformation
-								onVersionTripleClick={() => setDebugVisibility(!config.show_debug_settings)}
+								onVersionTripleClick={() => setDeveloperVisibility(!config.show_developer_settings)}
 							/>
 						{:else}
 							<Component />

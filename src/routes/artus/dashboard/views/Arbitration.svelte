@@ -115,7 +115,7 @@
 	expiry={current ? new Date(current.expiry) : undefined}
 	empty={oracleBounties.loading
 		? 'Loading current Arbitration…'
-		: 'Arbitration is unavailable. Automatic retries are limited to once every five minutes.'}
+		: 'Arbitration data is currently unavailable.'}
 >
 	{#snippet headerAction()}
 		<Button

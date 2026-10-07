@@ -23,7 +23,7 @@
 {#if isWindows}
 	<CommonSetting
 		title="Automatic relic reward detection"
-		description="Use Windows debugging tool to detect the relic reward screen."
+		description="Use Windows developer inspection tool to detect the relic reward screen."
 	>
 		<Switch
 			id="relic-reward-detection-toggle"

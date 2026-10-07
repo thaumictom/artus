@@ -4,6 +4,7 @@
 )]
 
 mod api;
+mod developer_console;
 mod error;
 mod hotkeys;
 mod layer_shell;
@@ -71,13 +72,14 @@ fn main() {
             tray::handle_window_event(window, event);
         })
         .invoke_handler(tauri::generate_handler![
+            developer_console::set_developer_console_enabled,
             hotkeys::get_hotkey,
             hotkeys::set_hotkey,
             hotkeys::set_overlay_listing_dialog_open,
             ocr::get_ocr_themes,
             ocr::capture::show_relic_add_toast,
             #[cfg(target_os = "windows")]
-            relic_auto_add::get_relic_selection_debug_image,
+            relic_auto_add::get_relic_selection_developer_image,
             updater::check_for_update,
             updater::download_and_relaunch_update,
             market::get_cached_market_item,

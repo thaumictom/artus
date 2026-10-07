@@ -25,13 +25,13 @@ const REWARD_CAPTURE_DELAY: Duration = Duration::from_millis(500);
 pub fn spawn_dbwin_listener<R: Runtime + 'static>(app: AppHandle<R>) {
     if let Err(err) = std::thread::Builder::new()
         .name("warframe-dbwin-listener".into())
-        .spawn(move || windows_debug_output::run(app))
+        .spawn(move || windows_developer_output::run(app))
     {
         error!("failed to spawn DBWIN listener: {err}");
     }
 }
 
-fn process_debug_message<R: Runtime>(app: &AppHandle<R>, message: &str) {
+fn process_developer_message<R: Runtime>(app: &AppHandle<R>, message: &str) {
     if !app.get_setting_bool("relic_reward_detection", false) {
         return;
     }
@@ -62,7 +62,7 @@ fn trigger_relic_capture<R: Runtime>(app: &AppHandle<R>) {
     }
 }
 
-mod windows_debug_output {
+mod windows_developer_output {
     use super::*;
     use std::ffi::OsStr;
     use std::slice;
@@ -185,7 +185,7 @@ mod windows_debug_output {
         let already_exists = unsafe { GetLastError() == ERROR_ALREADY_EXISTS };
         let handle = OwnedHandle(handle);
         if already_exists {
-            Err(format!("{name} is already owned by another debug listener"))
+            Err(format!("{name} is already owned by another developer listener"))
         } else {
             Ok(handle)
         }
@@ -211,7 +211,7 @@ mod windows_debug_output {
 
             let listener = match DbwinListener::create() {
                 Ok(listener) => {
-                    info!("listening for real-time Warframe debug output via DBWIN");
+                    info!("listening for real-time Warframe developer output via DBWIN");
                     unavailable_logged = false;
                     listener
                 }
@@ -237,7 +237,7 @@ mod windows_debug_output {
                         }
 
                         if is_warframe_process(&system, process_id) {
-                            process_debug_message(&app, &message);
+                            process_developer_message(&app, &message);
                         }
                     }
                     Ok(None) => {}
@@ -250,7 +250,7 @@ mod windows_debug_output {
 
             // Drop all DBWIN handles promptly when the setting is disabled.
             drop(listener);
-            info!("stopped real-time Warframe debug output listener");
+            info!("stopped real-time Warframe developer output listener");
         }
     }
 }

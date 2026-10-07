@@ -12,7 +12,7 @@
 	} from '$lib/notifications.svelte';
 	import { config, loadSettings, updateSetting } from '$lib/settings.svelte';
 	import { loadMarketSession } from '$lib/market-account.svelte';
-	import { ocrDebug } from '$lib/ocr-debug.svelte';
+	import { ocrDeveloper } from '$lib/ocr-developer.svelte';
 	import { initializeMarketNotifications } from '$lib/market-notifications.svelte';
 	import { marketNavigation, openMarketNotificationTarget } from '$lib/market-navigation.svelte';
 	import {
@@ -48,7 +48,7 @@
 	type UpdateAvailablePayload = {
 		version: string;
 	};
-	type OcrDebugImagePayload = {
+	type OcrDeveloperImagePayload = {
 		png_bytes: number[];
 		width: number;
 		height: number;
@@ -147,28 +147,35 @@
 
 	let showUpdatePrompt = $derived(Boolean(updateVersion) && !dismissedUpdatePrompt);
 	const NOTIFICATION_REFRESH_INTERVAL_MS = 3 * 60_000;
+	$effect(() => {
+		if (config.show_developer_settings) return;
+		if (ocrDeveloper.imageUrl) URL.revokeObjectURL(ocrDeveloper.imageUrl);
+		ocrDeveloper.imageUrl = null;
+		ocrDeveloper.width = 0;
+		ocrDeveloper.height = 0;
+	});
 
 	onMount(() => {
 		showContent = true;
 		let disposed = false;
-		let unlistenDebug: (() => void) | undefined;
+		let unlistenDeveloper: (() => void) | undefined;
 		let stopWarframeItems: (() => void) | undefined;
 		let startupTimer: ReturnType<typeof setTimeout> | undefined;
 		let updateTimer: ReturnType<typeof setTimeout> | undefined;
-		void listen<OcrDebugImagePayload>('ocr_debug_image', ({ payload }) => {
-			if (disposed) return;
-			if (ocrDebug.imageUrl) URL.revokeObjectURL(ocrDebug.imageUrl);
-			ocrDebug.imageUrl = URL.createObjectURL(
+		void listen<OcrDeveloperImagePayload>('ocr_developer_image', ({ payload }) => {
+			if (disposed || !config.show_developer_settings) return;
+			if (ocrDeveloper.imageUrl) URL.revokeObjectURL(ocrDeveloper.imageUrl);
+			ocrDeveloper.imageUrl = URL.createObjectURL(
 				new Blob([new Uint8Array(payload.png_bytes)], { type: 'image/png' }),
 			);
-			ocrDebug.width = payload.width;
-			ocrDebug.height = payload.height;
+			ocrDeveloper.width = payload.width;
+			ocrDeveloper.height = payload.height;
 		})
 			.then((unlisten) => {
 				if (disposed) unlisten();
-				else unlistenDebug = unlisten;
+				else unlistenDeveloper = unlisten;
 			})
-			.catch((error) => console.error('Could not listen for OCR debug images:', error));
+			.catch((error) => console.error('Could not listen for OCR developer images:', error));
 		// Side buttons are reported as buttons 3 (Back) and 4 (Forward).
 		function preventSideButtonDefault(event: MouseEvent) {
 			if (event.button === 3 || event.button === 4) event.preventDefault();
@@ -210,9 +217,9 @@
 			cancelAnimationFrame(startupFrame);
 			clearTimeout(startupTimer);
 			clearTimeout(updateTimer);
-			unlistenDebug?.();
-			if (ocrDebug.imageUrl) URL.revokeObjectURL(ocrDebug.imageUrl);
-			ocrDebug.imageUrl = null;
+			unlistenDeveloper?.();
+			if (ocrDeveloper.imageUrl) URL.revokeObjectURL(ocrDeveloper.imageUrl);
+			ocrDeveloper.imageUrl = null;
 			window.removeEventListener('mousedown', preventSideButtonDefault, true);
 			window.removeEventListener('mouseup', handleSideButton, true);
 			window.removeEventListener('auxclick', preventSideButtonDefault, true);

@@ -8,7 +8,7 @@
 
 <CommonSetting
 	title="OCR bounding boxes"
-	description="If enabled, draws red bounding boxes around detected text on the overlay for debugging"
+	description="If enabled, draws red bounding boxes around detected text on the overlay for developer inspection"
 	labelProps={{ for: mainSetting }}
 >
 	<Switch

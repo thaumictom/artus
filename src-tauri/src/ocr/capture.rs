@@ -14,12 +14,11 @@ use xcap::Window;
 use super::{
     apply_morphology, binary_target_filter, gray_to_png_bytes, group_words,
     map_mastery_words_to_dictionary, map_words_to_dictionary, resolve_tessdata,
-    OcrDebugImagePayload, OcrPayload, OcrTextPayload, OcrWord,
+    OcrDeveloperImagePayload, OcrPayload, OcrTextPayload, OcrWord,
     DEFAULT_MASTERY_DICTIONARY_MATCH_THRESHOLD, DEFAULT_OCR_DICTIONARY_MAPPING_ENABLED,
     DEFAULT_OCR_DICTIONARY_MATCH_THRESHOLD, DEFAULT_OCR_TARGET_RGB, DEFAULT_OVERLAY_DURATION_SECS,
     ENABLE_OCR_DICTIONARY_MAPPING, MAX_OCR_DICTIONARY_MATCH_THRESHOLD,
-    MIN_OCR_DICTIONARY_MATCH_THRESHOLD, OCR_WHITELIST, PASS_IMAGE_TO_FRONTEND,
-    PASS_TEXT_TO_FRONTEND,
+    MIN_OCR_DICTIONARY_MATCH_THRESHOLD, OCR_WHITELIST, PASS_TEXT_TO_FRONTEND,
 };
 use crate::error::{AppError, AppResult};
 use crate::layer_shell;
@@ -103,7 +102,7 @@ fn capture_active_window_with_mode_inner<R: Runtime>(
 
     let (filtered, upscale_factor, checkmarks) =
         preprocess_capture(app, &capture, is_manual, is_mastery_add);
-    emit_debug_image(app, &filtered, upscale_factor);
+    emit_developer_image(app, &filtered, upscale_factor);
     let quantities = if is_mastery_add {
         Vec::new()
     } else {
@@ -293,15 +292,16 @@ fn preprocess_capture<R: Runtime>(
     (upscaled, upscale_factor, checkmarks)
 }
 
-// ── Step 3: Debug image ───────────────────────────────────────────────────────
+// ── Step 3: Developer image ───────────────────────────────────────────────────────
 
-/// Optionally encodes and emits the filtered image to the dashboard for debugging.
-fn emit_debug_image<R: Runtime>(
+/// Optionally encodes and emits the filtered image to the dashboard for developer inspection.
+fn emit_developer_image<R: Runtime>(
     app: &AppHandle<R>,
     filtered: &image::GrayImage,
     upscale_amount: u32,
 ) {
-    if !PASS_IMAGE_TO_FRONTEND {
+    // Skip PNG encoding and IPC entirely while Developer settings are hidden.
+    if !app.get_setting_bool("show_developer_settings", false) {
         return;
     }
 
@@ -310,8 +310,8 @@ fn emit_debug_image<R: Runtime>(
         Ok(png_bytes) => {
             if let Some(dashboard) = app.get_webview_window("artus") {
                 let _ = dashboard.emit(
-                    "ocr_debug_image",
-                    OcrDebugImagePayload {
+                    "ocr_developer_image",
+                    OcrDeveloperImagePayload {
                         png_bytes,
                         width: filtered.width(),
                         height: filtered.height(),
@@ -319,9 +319,9 @@ fn emit_debug_image<R: Runtime>(
                     },
                 );
             }
-            info!("debug image encode + emit: {:?}", t.elapsed());
+            info!("developer image encode + emit: {:?}", t.elapsed());
         }
-        Err(err) => error!("failed to encode debug image: {err}"),
+        Err(err) => error!("failed to encode developer image: {err}"),
     }
 }
 

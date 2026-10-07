@@ -3,7 +3,7 @@
 	import { listen } from '@tauri-apps/api/event';
 	import { platform } from '@tauri-apps/plugin-os';
 	import { onMount } from 'svelte';
-	import { ocrDebug } from '$lib/ocr-debug.svelte';
+	import { ocrDeveloper } from '$lib/ocr-developer.svelte';
 	import { config, updateSetting } from '$lib/settings.svelte';
 	import Dialog from '$lib/components/Dialog.svelte';
 	import Button from '$lib/components/Button.svelte';
@@ -27,6 +27,21 @@
 		status: string;
 	};
 	const isWindows = platform() === 'windows';
+	let savingDeveloperConsole = $state(false);
+	let developerConsoleError = $state(false);
+	async function setDeveloperConsole(enabled: boolean) {
+		savingDeveloperConsole = true;
+		try {
+			await invoke('set_developer_console_enabled', { enabled });
+			config.developer_console_enabled = enabled;
+			developerConsoleError = false;
+		} catch (error) {
+			console.error('Could not update developer console:', error);
+			developerConsoleError = true;
+		} finally {
+			savingDeveloperConsole = false;
+		}
+	}
 	let relicImageUrl = $state<string | null>(null);
 	let relicImageSize = $state<{ width: number; height: number } | null>(null);
 	let relicSelectedSlot = $state<number | null>(null);
@@ -45,9 +60,13 @@
 		async function refreshRelicImage() {
 			const request = ++requestId;
 			try {
-				const image = await invoke<RelicSelectionImage | null>('get_relic_selection_debug_image');
+				const image = await invoke<RelicSelectionImage | null>(
+					'get_relic_selection_developer_image',
+				);
 				if (disposed || request !== requestId || !image) return;
-				const nextUrl = URL.createObjectURL(new Blob([new Uint8Array(image.png_bytes)], { type: 'image/png' }));
+				const nextUrl = URL.createObjectURL(
+					new Blob([new Uint8Array(image.png_bytes)], { type: 'image/png' }),
+				);
 				if (relicImageUrl) URL.revokeObjectURL(relicImageUrl);
 				relicImageUrl = nextUrl;
 				relicImageSize = { width: image.width, height: image.height };
@@ -78,9 +97,9 @@
 {#snippet imageTrigger()}
 	<button class="block w-full cursor-zoom-in" aria-label="Enlarge OCR image">
 		<img
-			src={ocrDebug.imageUrl ?? ''}
+			src={ocrDeveloper.imageUrl ?? ''}
 			alt="Latest black and white OCR input"
-			class="w-full rounded border border-border [image-rendering:pixelated]"
+			class="border border-border rounded w-full [image-rendering:pixelated]"
 		/>
 	</button>
 {/snippet}
@@ -91,14 +110,17 @@
 
 {#snippet relicImageTrigger()}
 	<button class="block w-full cursor-zoom-in" aria-label="Enlarge relic selection capture">
-		<span class="relative block">
+		<span class="block relative">
 			<img
 				src={relicImageUrl ?? ''}
 				alt="Last binary filtered relic selection strip"
-				class="w-full border border-border [image-rendering:pixelated]"
+				class="border border-border w-full [image-rendering:pixelated]"
 			/>
 			{#each relicRewardEdges as [, edge]}
-				<span class="pointer-events-none absolute top-0 bottom-0 border-l border-amber-500" style:left={`${edge / (relicImageSize?.width ?? 1) * 100}%`}></span>
+				<span
+					class="top-0 bottom-0 absolute border-amber-500 border-l pointer-events-none"
+					style:left={`${(edge / (relicImageSize?.width ?? 1)) * 100}%`}
+				></span>
 			{/each}
 		</span>
 	</button>
@@ -108,6 +130,21 @@
 {#snippet relicImageDescription()}Scroll to inspect the full-size filtered image.{/snippet}
 
 <div class="flex flex-col">
+	<CommonSetting
+		title="Enable developer console"
+		description="Allow webview developer tools. Use Ctrl+Shift+I to open them."
+		labelProps={{ for: 'developer-console-enabled' }}
+	>
+		<Switch
+			id="developer-console-enabled"
+			checked={config.developer_console_enabled}
+			disabled={savingDeveloperConsole}
+			onCheckedChange={setDeveloperConsole}
+		/>
+	</CommonSetting>
+	{#if developerConsoleError}<p role="alert" class="p-4 text-danger text-sm">
+			Could not update the developer console. Try again.
+		</p>{/if}
 	<CommonSetting
 		title="Show unused dashboard views"
 		description="Show the Unused group and its pinned views in dashboard navigation. These views may have no useful information yet."
@@ -137,18 +174,31 @@
 			bind:value={config.ocr_checkmark_match_threshold}
 		>
 			{#snippet thumbLabel({ value })}
-				{Math.round((typeof value === 'number' ? value : config.ocr_checkmark_match_threshold) * 100)}%
+				{Math.round(
+					(typeof value === 'number' ? value : config.ocr_checkmark_match_threshold) * 100,
+				)}%
 			{/snippet}
 		</Slider>
 		<p class="text-muted-foreground text-base">
 			Current confidence: {Math.round(config.ocr_checkmark_match_threshold * 100)}%
 		</p>
 	</CommonSetting>
-	<div>
+	<CommonSetting
+		title="Hide donate button"
+		description="Hide the Donate button in the app header."
+		labelProps={{ for: 'hide_donate_button' }}
+	>
+		<Switch
+			id="hide_donate_button"
+			onCheckedChange={() => updateSetting('hide_donate_button')}
+			bind:checked={config.hide_donate_button}
+		/>
+	</CommonSetting>
+	<div class="p-4 border border-border-secondary">
 		<h2 class="mb-2 font-medium">Last OCR image</h2>
-		{#if ocrDebug.imageUrl}
+		{#if ocrDeveloper.imageUrl}
 			<p class="mb-2 text-muted-foreground text-base">
-				{ocrDebug.width} × {ocrDebug.height} pixels
+				{ocrDeveloper.width} × {ocrDeveloper.height} pixels
 			</p>
 			<Dialog
 				trigger={imageTrigger}
@@ -157,9 +207,9 @@
 				dialogClose={imageClose}
 				contentProps={{ class: 'w-[calc(100vw-2rem)] h-[calc(100vh-2rem)]' }}
 			>
-				<div class="min-h-0 overflow-auto px-6">
+				<div class="px-6 min-h-0 overflow-auto">
 					<img
-						src={ocrDebug.imageUrl}
+						src={ocrDeveloper.imageUrl}
 						alt="Latest black and white OCR input at full size"
 						class="max-w-none [image-rendering:pixelated]"
 					/>
@@ -172,7 +222,7 @@
 		{/if}
 	</div>
 	{#if isWindows}
-		<div>
+		<div class="-mt-px p-4 border border-border-secondary">
 			<h2 class="mb-2 font-medium">Last filtered relic selection capture</h2>
 			{#if relicImageUrl}
 				<p class="mb-2 text-muted-foreground text-base">
@@ -185,7 +235,9 @@
 				</p>
 				<p class="mb-2 text-muted-foreground text-base">
 					OCR right edges:
-					{relicRewardEdges.map(([name, edge], index) => `${index + 1}: ${name} x=${Math.round(edge)}`).join(' · ')}
+					{relicRewardEdges
+						.map(([name, edge], index) => `${index + 1}: ${name} x=${Math.round(edge)}`)
+						.join(' · ')}
 				</p>
 				<p class="mb-2 text-muted-foreground text-base">{relicStatus}</p>
 				<Dialog
@@ -195,7 +247,7 @@
 					dialogClose={imageClose}
 					contentProps={{ class: 'w-[calc(100vw-2rem)] h-[calc(100vh-2rem)]' }}
 				>
-					<div class="min-h-0 overflow-auto px-6">
+					<div class="px-6 min-h-0 overflow-auto">
 						<div class="relative w-max">
 							<img
 								src={relicImageUrl}
@@ -203,25 +255,19 @@
 								class="max-w-none [image-rendering:pixelated]"
 							/>
 							{#each relicRewardEdges as [, edge]}
-								<span class="pointer-events-none absolute top-0 bottom-0 border-l border-amber-500" style:left={`${edge / (relicImageSize?.width ?? 1) * 100}%`}></span>
+								<span
+									class="top-0 bottom-0 absolute border-amber-500 border-l pointer-events-none"
+									style:left={`${(edge / (relicImageSize?.width ?? 1)) * 100}%`}
+								></span>
 							{/each}
 						</div>
 					</div>
 				</Dialog>
 			{:else}
-				<p class="text-muted-foreground text-base">No relic selection strip has been captured yet.</p>
+				<p class="text-muted-foreground text-base">
+					No relic selection strip has been captured yet.
+				</p>
 			{/if}
 		</div>
 	{/if}
-	<CommonSetting
-		title="Hide donate button"
-		description="Hide the Donate button in the app header."
-		labelProps={{ for: 'hide_donate_button' }}
-	>
-		<Switch
-			id="hide_donate_button"
-			onCheckedChange={() => updateSetting('hide_donate_button')}
-			bind:checked={config.hide_donate_button}
-		/>
-	</CommonSetting>
 </div>

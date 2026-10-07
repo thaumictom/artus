@@ -4,6 +4,7 @@ use log::error;
 use tauri::{App, Manager};
 
 use crate::state::AppState;
+use crate::store_ext::SettingsExt;
 use crate::{api, hotkeys, layer_shell, ocr, window_watcher};
 
 #[cfg(target_os = "windows")]
@@ -14,6 +15,16 @@ use crate::relic_visual_detection;
 /// Called by Tauri during startup to configure windows, load data, and spawn
 /// background tasks.
 pub fn init(app: &mut App, is_wayland: bool) -> Result<(), Box<dyn std::error::Error>> {
+    // Config disables developer tools during window creation; restore only an explicit opt-in.
+    let developer_console_enabled = app.handle().get_setting_bool("developer_console_enabled", false);
+    if developer_console_enabled {
+        let handle = app.handle().clone();
+        tauri::async_runtime::spawn(async move {
+            if let Err(error) = crate::developer_console::apply(&handle, true).await {
+                error!("could not enable developer console: {error}");
+            }
+        });
+    }
     crate::window_size::restore_artus_size(app);
     crate::tray::init(app)?;
     let overlay = app

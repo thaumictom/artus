@@ -59,7 +59,7 @@ struct LastCapture {
 }
 
 #[derive(Serialize)]
-pub struct RelicSelectionDebugImage {
+pub struct RelicSelectionDeveloperImage {
     png_bytes: Vec<u8>,
     width: u32,
     height: u32,
@@ -73,7 +73,12 @@ pub struct RelicSelectionDebugImage {
 }
 
 #[tauri::command]
-pub fn get_relic_selection_debug_image() -> Result<Option<RelicSelectionDebugImage>, String> {
+pub fn get_relic_selection_developer_image(
+    app: AppHandle,
+) -> Result<Option<RelicSelectionDeveloperImage>, String> {
+    if !app.get_setting_bool("show_developer_settings", false) {
+        return Ok(None);
+    }
     let guard = LAST_CAPTURE
         .get_or_init(|| Mutex::new(None))
         .lock()
@@ -85,7 +90,7 @@ pub fn get_relic_selection_debug_image() -> Result<Option<RelicSelectionDebugIma
     DynamicImage::ImageLuma8(capture.image.clone())
         .write_to(&mut bytes, ImageFormat::Png)
         .map_err(|err| format!("failed to encode relic selection image: {err}"))?;
-    Ok(Some(RelicSelectionDebugImage {
+    Ok(Some(RelicSelectionDeveloperImage {
         png_bytes: bytes.into_inner(),
         width: capture.image.width(),
         height: capture.image.height(),
@@ -164,26 +169,30 @@ pub fn begin<R: Runtime + 'static>(app: &AppHandle<R>, sequence: u64) {
                             current.width,
                             current.ocr_width,
                         );
-                        if let Ok(mut last) = LAST_CAPTURE.get_or_init(|| Mutex::new(None)).lock() {
-                            *last = Some(LastCapture {
-                                sequence,
-                                image: filtered,
-                                selected_slot: matched,
-                                cluster_x: cluster.map(|cluster| cluster.x.round() as u32),
-                                matched_item: matched
-                                    .map(|index| current.rewards[index].text.clone()),
-                                reward_count: current.rewards.len(),
-                                ocr_word_count: current.ocr_word_count,
-                                reward_edges: current
-                                    .rewards
-                                    .iter()
-                                    .filter_map(|word| {
-                                        strip_right_edge(word, current.width, current.ocr_width)
-                                            .map(|edge| (word.text.clone(), edge))
-                                    })
-                                    .collect(),
-                                status: "Sampling reward selection".into(),
-                            });
+                        if app.get_setting_bool("show_developer_settings", false) {
+                            if let Ok(mut last) =
+                                LAST_CAPTURE.get_or_init(|| Mutex::new(None)).lock()
+                            {
+                                *last = Some(LastCapture {
+                                    sequence,
+                                    image: filtered,
+                                    selected_slot: matched,
+                                    cluster_x: cluster.map(|cluster| cluster.x.round() as u32),
+                                    matched_item: matched
+                                        .map(|index| current.rewards[index].text.clone()),
+                                    reward_count: current.rewards.len(),
+                                    ocr_word_count: current.ocr_word_count,
+                                    reward_edges: current
+                                        .rewards
+                                        .iter()
+                                        .filter_map(|word| {
+                                            strip_right_edge(word, current.width, current.ocr_width)
+                                                .map(|edge| (word.text.clone(), edge))
+                                        })
+                                        .collect(),
+                                    status: "Sampling reward selection".into(),
+                                });
+                            }
                         }
                         if let Some(index) = matched {
                             current.last_selection =
@@ -271,7 +280,9 @@ pub fn finish<R: Runtime>(app: &AppHandle<R>) -> Option<String> {
             capture.status = result;
         }
     }
-    let _ = app.emit("relic_selection_capture_ready", ());
+    if app.get_setting_bool("show_developer_settings", false) {
+        let _ = app.emit("relic_selection_capture_ready", ());
+    }
     added_name
 }
 

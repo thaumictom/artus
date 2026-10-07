@@ -43,7 +43,7 @@
 	let pinnedSelection: DashboardView | null = null;
 	let pinnedValues = $derived(config.dashboard_view_favorites);
 	let visibleGroups = $derived(dashboardViewGroups.filter((group) =>
-		!group.debugOnly || config.show_unused_dashboard_views,
+		!group.developerOnly || config.show_unused_dashboard_views,
 	));
 	let pinnedViews = $derived(
 		[...dashboardViews]
@@ -94,7 +94,7 @@
 	}
 
 	function savePins(values: DashboardView[]) {
-		// Editing visible pins must preserve pins hidden by the Debug toggle.
+		// Editing visible pins must preserve pins hidden by the Developer toggle.
 		const hiddenPins = config.dashboard_view_favorites.filter((value) =>
 			!isDashboardViewVisible(value, config.show_unused_dashboard_views),
 		);
