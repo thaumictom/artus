@@ -1,6 +1,6 @@
 /* Palette roles stay shared; each theme only supplies Tailwind shade tokens. */
 @layer base {
-	/* Saturation: 0% grayscale, 50% palette color, 100% double chroma. Default stays unchanged. */
+	/* Saturation: 0% grayscale, 50% palette color, 100% double chroma. Neutral palettes stay unchanged. */
 	:root {
 		--theme-darken-50: 0%;
 		--theme-darken-100: 0%;
@@ -28,7 +28,7 @@
 	}
 
 	/* Warframe themes share shade-based darkness and saturation. */
-	html:is(.theme-stalker, .theme-high-contrast, .theme-baruuk, .theme-fortuna, .theme-corpus) {
+	:is(.theme-stalker, .theme-high-contrast, .theme-baruuk, .theme-fortuna, .theme-corpus) {
 		--app-accent-desature: var(--theme-desature-400);
 		--app-accent-darken: var(--theme-darken-400);
 		--theme-background: color-mix(
@@ -115,7 +115,7 @@
 		--theme-accent-foreground: var(--theme-background);
 	}
 
-	html.theme-stalker {
+	.theme-stalker {
 		--app-palette-50: var(--color-red-50);
 		--app-palette-100: var(--color-red-100);
 		--app-palette-200: var(--color-red-200);
@@ -129,7 +129,7 @@
 		--app-accent-darken: var(--theme-darken-500);
 	}
 
-	html.theme-high-contrast {
+	.theme-high-contrast {
 		--app-palette-50: var(--color-sky-50);
 		--app-palette-100: var(--color-sky-100);
 		--app-palette-200: var(--color-sky-200);
@@ -143,7 +143,7 @@
 		--app-accent-darken: var(--theme-darken-300);
 	}
 
-	html.theme-baruuk {
+	.theme-baruuk {
 		--app-palette-50: var(--color-amber-50);
 		--app-palette-100: var(--color-amber-100);
 		--app-palette-200: var(--color-amber-200);
@@ -155,7 +155,7 @@
 		--app-accent-base: var(--color-amber-400);
 	}
 
-	html.theme-fortuna {
+	.theme-fortuna {
 		--app-palette-50: var(--color-blue-50);
 		--app-palette-100: var(--color-blue-100);
 		--app-palette-200: var(--color-blue-200);
@@ -167,7 +167,7 @@
 		--app-accent-base: var(--color-fuchsia-400);
 	}
 
-	html.theme-corpus {
+	.theme-corpus {
 		--app-palette-50: var(--color-cyan-50);
 		--app-palette-100: var(--color-cyan-100);
 		--app-palette-200: var(--color-cyan-200);
@@ -179,8 +179,8 @@
 		--app-accent-base: var(--color-cyan-400);
 	}
 
-	/* Neutral themes use Default's mist shade roles without color adjustment. */
-	html:is(.theme-slate, .theme-gray, .theme-zinc, .theme-neutral, .theme-stone, .theme-taupe, .theme-mauve, .theme-olive) {
+	/* Reverse the full shade scale in light mode, keeping the accent text dark. */
+	:is(.theme-slate, .theme-gray, .theme-zinc, .theme-neutral, .theme-stone, .theme-taupe, .theme-mauve, .theme-mist, .theme-olive) {
 		--theme-background: var(--app-palette-900);
 		--theme-surface: var(--app-palette-800);
 		--theme-elevated: var(--app-palette-700);
@@ -189,95 +189,276 @@
 		--theme-surface-foreground: var(--app-palette-100);
 		--theme-elevated-foreground: var(--app-palette-200);
 		--theme-muted-foreground: var(--app-palette-400);
-		--theme-accent: var(--color-emerald-500);
-		--theme-accent-foreground: var(--theme-background);
+		--theme-accent: var(--app-neutral-accent, var(--color-emerald-500));
+		--theme-accent-foreground: var(--app-palette-900);
 	}
 
-	html.theme-slate {
+	:is(.theme-slate, .theme-gray, .theme-zinc, .theme-neutral, .theme-stone, .theme-taupe, .theme-mauve, .theme-mist, .theme-olive)[data-theme-mode="light"] {
+		--theme-background: var(--app-palette-100);
+		--theme-surface: var(--app-palette-200);
+		--theme-elevated: var(--app-palette-300);
+		--theme-muted: var(--app-palette-400);
+		--theme-foreground: var(--app-palette-950);
+		--theme-surface-foreground: var(--app-palette-900);
+		--theme-elevated-foreground: var(--app-palette-800);
+		--theme-muted-foreground: var(--app-palette-600);
+	}
+
+	.theme-slate {
 		--app-palette-50: var(--color-slate-50);
 		--app-palette-100: var(--color-slate-100);
 		--app-palette-200: var(--color-slate-200);
+		--app-palette-300: var(--color-slate-300);
 		--app-palette-400: var(--color-slate-400);
+		--app-palette-500: var(--color-slate-500);
 		--app-palette-600: var(--color-slate-600);
 		--app-palette-700: var(--color-slate-700);
 		--app-palette-800: var(--color-slate-800);
 		--app-palette-900: var(--color-slate-900);
+		--app-palette-950: var(--color-slate-950);
 	}
 
-	html.theme-gray {
+	.theme-gray {
 		--app-palette-50: var(--color-gray-50);
 		--app-palette-100: var(--color-gray-100);
 		--app-palette-200: var(--color-gray-200);
+		--app-palette-300: var(--color-gray-300);
 		--app-palette-400: var(--color-gray-400);
+		--app-palette-500: var(--color-gray-500);
 		--app-palette-600: var(--color-gray-600);
 		--app-palette-700: var(--color-gray-700);
 		--app-palette-800: var(--color-gray-800);
 		--app-palette-900: var(--color-gray-900);
+		--app-palette-950: var(--color-gray-950);
 	}
 
-	html.theme-zinc {
+	.theme-zinc {
 		--app-palette-50: var(--color-zinc-50);
 		--app-palette-100: var(--color-zinc-100);
 		--app-palette-200: var(--color-zinc-200);
+		--app-palette-300: var(--color-zinc-300);
 		--app-palette-400: var(--color-zinc-400);
+		--app-palette-500: var(--color-zinc-500);
 		--app-palette-600: var(--color-zinc-600);
 		--app-palette-700: var(--color-zinc-700);
 		--app-palette-800: var(--color-zinc-800);
 		--app-palette-900: var(--color-zinc-900);
+		--app-palette-950: var(--color-zinc-950);
 	}
 
-	html.theme-neutral {
+	.theme-neutral {
 		--app-palette-50: var(--color-neutral-50);
 		--app-palette-100: var(--color-neutral-100);
 		--app-palette-200: var(--color-neutral-200);
+		--app-palette-300: var(--color-neutral-300);
 		--app-palette-400: var(--color-neutral-400);
+		--app-palette-500: var(--color-neutral-500);
 		--app-palette-600: var(--color-neutral-600);
 		--app-palette-700: var(--color-neutral-700);
 		--app-palette-800: var(--color-neutral-800);
 		--app-palette-900: var(--color-neutral-900);
+		--app-palette-950: var(--color-neutral-950);
 	}
 
-	html.theme-stone {
+	.theme-stone {
 		--app-palette-50: var(--color-stone-50);
 		--app-palette-100: var(--color-stone-100);
 		--app-palette-200: var(--color-stone-200);
+		--app-palette-300: var(--color-stone-300);
 		--app-palette-400: var(--color-stone-400);
+		--app-palette-500: var(--color-stone-500);
 		--app-palette-600: var(--color-stone-600);
 		--app-palette-700: var(--color-stone-700);
 		--app-palette-800: var(--color-stone-800);
 		--app-palette-900: var(--color-stone-900);
+		--app-palette-950: var(--color-stone-950);
 	}
 
-	html.theme-taupe {
+	.theme-taupe {
 		--app-palette-50: var(--color-taupe-50);
 		--app-palette-100: var(--color-taupe-100);
 		--app-palette-200: var(--color-taupe-200);
+		--app-palette-300: var(--color-taupe-300);
 		--app-palette-400: var(--color-taupe-400);
+		--app-palette-500: var(--color-taupe-500);
 		--app-palette-600: var(--color-taupe-600);
 		--app-palette-700: var(--color-taupe-700);
 		--app-palette-800: var(--color-taupe-800);
 		--app-palette-900: var(--color-taupe-900);
+		--app-palette-950: var(--color-taupe-950);
 	}
 
-	html.theme-mauve {
+	.theme-mauve {
 		--app-palette-50: var(--color-mauve-50);
 		--app-palette-100: var(--color-mauve-100);
 		--app-palette-200: var(--color-mauve-200);
+		--app-palette-300: var(--color-mauve-300);
 		--app-palette-400: var(--color-mauve-400);
+		--app-palette-500: var(--color-mauve-500);
 		--app-palette-600: var(--color-mauve-600);
 		--app-palette-700: var(--color-mauve-700);
 		--app-palette-800: var(--color-mauve-800);
 		--app-palette-900: var(--color-mauve-900);
+		--app-palette-950: var(--color-mauve-950);
 	}
 
-	html.theme-olive {
+	.theme-mist {
+		--app-palette-50: var(--color-mist-50);
+		--app-palette-100: var(--color-mist-100);
+		--app-palette-200: var(--color-mist-200);
+		--app-palette-300: var(--color-mist-300);
+		--app-palette-400: var(--color-mist-400);
+		--app-palette-500: var(--color-mist-500);
+		--app-palette-600: var(--color-mist-600);
+		--app-palette-700: var(--color-mist-700);
+		--app-palette-800: var(--color-mist-800);
+		--app-palette-900: var(--color-mist-900);
+		--app-palette-950: var(--color-mist-950);
+	}
+
+	.theme-olive {
 		--app-palette-50: var(--color-olive-50);
 		--app-palette-100: var(--color-olive-100);
 		--app-palette-200: var(--color-olive-200);
+		--app-palette-300: var(--color-olive-300);
 		--app-palette-400: var(--color-olive-400);
+		--app-palette-500: var(--color-olive-500);
 		--app-palette-600: var(--color-olive-600);
 		--app-palette-700: var(--color-olive-700);
 		--app-palette-800: var(--color-olive-800);
 		--app-palette-900: var(--color-olive-900);
+		--app-palette-950: var(--color-olive-950);
+	}
+
+	.theme-accent-red {
+		--app-accent-400: var(--color-red-400);
+		--app-accent-500: var(--color-red-500);
+		--app-accent-600: var(--color-red-600);
+		--app-neutral-accent: var(--app-accent-500);
+	}
+
+	.theme-accent-orange {
+		--app-accent-400: var(--color-orange-400);
+		--app-accent-500: var(--color-orange-500);
+		--app-accent-600: var(--color-orange-600);
+		--app-neutral-accent: var(--app-accent-500);
+	}
+
+	.theme-accent-amber {
+		--app-accent-400: var(--color-amber-400);
+		--app-accent-500: var(--color-amber-500);
+		--app-accent-600: var(--color-amber-600);
+		--app-neutral-accent: var(--app-accent-500);
+	}
+
+	.theme-accent-yellow {
+		--app-accent-400: var(--color-yellow-400);
+		--app-accent-500: var(--color-yellow-500);
+		--app-accent-600: var(--color-yellow-600);
+		--app-neutral-accent: var(--app-accent-500);
+	}
+
+	.theme-accent-lime {
+		--app-accent-400: var(--color-lime-400);
+		--app-accent-500: var(--color-lime-500);
+		--app-accent-600: var(--color-lime-600);
+		--app-neutral-accent: var(--app-accent-500);
+	}
+
+	.theme-accent-green {
+		--app-accent-400: var(--color-green-400);
+		--app-accent-500: var(--color-green-500);
+		--app-accent-600: var(--color-green-600);
+		--app-neutral-accent: var(--app-accent-500);
+	}
+
+	.theme-accent-emerald {
+		--app-accent-400: var(--color-emerald-400);
+		--app-accent-500: var(--color-emerald-500);
+		--app-accent-600: var(--color-emerald-600);
+		--app-neutral-accent: var(--app-accent-500);
+	}
+
+	.theme-accent-teal {
+		--app-accent-400: var(--color-teal-400);
+		--app-accent-500: var(--color-teal-500);
+		--app-accent-600: var(--color-teal-600);
+		--app-neutral-accent: var(--app-accent-500);
+	}
+
+	.theme-accent-cyan {
+		--app-accent-400: var(--color-cyan-400);
+		--app-accent-500: var(--color-cyan-500);
+		--app-accent-600: var(--color-cyan-600);
+		--app-neutral-accent: var(--app-accent-500);
+	}
+
+	.theme-accent-sky {
+		--app-accent-400: var(--color-sky-400);
+		--app-accent-500: var(--color-sky-500);
+		--app-accent-600: var(--color-sky-600);
+		--app-neutral-accent: var(--app-accent-500);
+	}
+
+	.theme-accent-blue {
+		--app-accent-400: var(--color-blue-400);
+		--app-accent-500: var(--color-blue-500);
+		--app-accent-600: var(--color-blue-600);
+		--app-neutral-accent: var(--app-accent-500);
+	}
+
+	.theme-accent-indigo {
+		--app-accent-400: var(--color-indigo-400);
+		--app-accent-500: var(--color-indigo-500);
+		--app-accent-600: var(--color-indigo-600);
+		--app-neutral-accent: var(--app-accent-500);
+	}
+
+	.theme-accent-violet {
+		--app-accent-400: var(--color-violet-400);
+		--app-accent-500: var(--color-violet-500);
+		--app-accent-600: var(--color-violet-600);
+		--app-neutral-accent: var(--app-accent-500);
+	}
+
+	.theme-accent-purple {
+		--app-accent-400: var(--color-purple-400);
+		--app-accent-500: var(--color-purple-500);
+		--app-accent-600: var(--color-purple-600);
+		--app-neutral-accent: var(--app-accent-500);
+	}
+
+	.theme-accent-fuchsia {
+		--app-accent-400: var(--color-fuchsia-400);
+		--app-accent-500: var(--color-fuchsia-500);
+		--app-accent-600: var(--color-fuchsia-600);
+		--app-neutral-accent: var(--app-accent-500);
+	}
+
+	.theme-accent-pink {
+		--app-accent-400: var(--color-pink-400);
+		--app-accent-500: var(--color-pink-500);
+		--app-accent-600: var(--color-pink-600);
+		--app-neutral-accent: var(--app-accent-500);
+	}
+
+	.theme-accent-rose {
+		--app-accent-400: var(--color-rose-400);
+		--app-accent-500: var(--color-rose-500);
+		--app-accent-600: var(--color-rose-600);
+		--app-neutral-accent: var(--app-accent-500);
+	}
+
+	/* Scope the chosen shade on both the window and each independent preview. */
+	[data-accent-shade='400'] {
+		--app-neutral-accent: var(--app-accent-400);
+	}
+
+	[data-accent-shade='500'] {
+		--app-neutral-accent: var(--app-accent-500);
+	}
+
+	[data-accent-shade='600'] {
+		--app-neutral-accent: var(--app-accent-600);
 	}
 }

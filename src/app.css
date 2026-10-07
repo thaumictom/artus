@@ -57,7 +57,8 @@ body {
 }
 
 @layer base {
-	:root {
+	/* Keep fallback tokens less specific than palette scopes, including previews. */
+	:where(:root) {
 		--ease-dialog-shell: cubic-bezier(0.19, 1, 0.22, 1);
 		--ease-alert-transition: cubic-bezier(0.81, 0, 0.78, 0);
 		--theme-background: var(--color-mist-900);
@@ -178,11 +179,6 @@ body {
 		transform 600ms var(--ease-dialog-shell),
 		border-radius 600ms ease-in-out,
 		clip-path 600ms ease-in-out;
-}
-
-html.artus-document:not(.artus-theme-ready) .artus-app-shell {
-	background-color: #22292b;
-	color: var(--color-mist-50);
 }
 
 html.artus-document body {

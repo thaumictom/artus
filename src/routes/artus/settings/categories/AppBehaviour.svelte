@@ -28,12 +28,6 @@
 		/>
 	</CommonSetting>
 	<CommonSetting
-		title="Keybinds"
-		description="Configure screenshot, navigation, and inventory shortcuts."
-	>
-		<Button class="shrink-0" onclick={() => (keybindDialogOpen = true)}>Edit keybinds</Button>
-	</CommonSetting>
-	<CommonSetting
 		title="Hide to tray when closing the app"
 		description="Keep Artus running in the tray when you close its window. Use the tray menu to restart or quit."
 	>
@@ -45,6 +39,12 @@
 				void updateSetting('hide_to_tray_on_close');
 			}}
 		/>
+	</CommonSetting>
+	<CommonSetting
+		title="Keybinds"
+		description="Configure screenshot, navigation, and inventory shortcuts."
+	>
+		<Button class="shrink-0" onclick={() => (keybindDialogOpen = true)}>Edit keybinds</Button>
 	</CommonSetting>
 </div>
 

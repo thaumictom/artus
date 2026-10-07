@@ -1,6 +1,7 @@
 // src/lib/settings.svelte.ts
 import { LazyStore } from '@tauri-apps/plugin-store';
-import { isAppTheme, type AppTheme } from '$lib/app-themes';
+import { isCustomTheme, type CustomTheme } from '$lib/custom-theme';
+import { isAppTheme, isThemeMode, isAccentColor, isAccentShade, type AppTheme, type ThemeMode, type AccentColor, type AccentShade } from '$lib/app-themes';
 import { isQuicklistStrategy, type QuicklistStrategy } from '$lib/quicklist';
 
 const store = new LazyStore('settings.json');
@@ -37,7 +38,13 @@ export const defaultNotificationRules = (): NotificationRules => ({
 });
 
 type Config = {
+	app_theme_custom_enabled: boolean;
+	app_theme_custom_colors: CustomTheme | null;
 	app_theme: AppTheme;
+	app_theme_mode: ThemeMode;
+	app_theme_accent: AccentColor;
+	app_theme_accent_shade: AccentShade;
+	overlay_opposite_theme: boolean;
 	full_width_content: boolean;
 	sidebar_open: boolean;
 	hotkeys: {
@@ -89,9 +96,15 @@ type Config = {
 	threshold_15: [number, number];
 };
 
-// 1. Define the reactive state globally
+// Fresh settings use dark Mist with Emerald 500; valid saved values load unchanged.
 export const config = $state({
-	app_theme: 'default' as AppTheme,
+	app_theme_custom_enabled: false as boolean,
+	app_theme_custom_colors: null as CustomTheme | null,
+	app_theme: 'mist' as AppTheme,
+	app_theme_mode: 'dark' as ThemeMode,
+	app_theme_accent: 'emerald' as AccentColor,
+	app_theme_accent_shade: '500' as AccentShade,
+	overlay_opposite_theme: false as boolean,
 	full_width_content: false as boolean,
 	sidebar_open: false as boolean,
 	hotkeys: {
@@ -167,7 +180,14 @@ export function loadSettings() {
 		const savedEntries = await store.entries();
 		for (const [key, val] of savedEntries) {
 			if (key in config) {
+				if (key === 'app_theme_custom_enabled' && typeof val !== 'boolean') continue;
+				if (key === 'app_theme_custom_colors' && val !== null && !isCustomTheme(val)) continue;
+				// Obsolete theme names are ignored rather than mapped to a current theme.
 				if (key === 'app_theme' && !isAppTheme(val)) continue;
+				if (key === 'app_theme_mode' && !isThemeMode(val)) continue;
+				if (key === 'app_theme_accent' && !isAccentColor(val)) continue;
+				if (key === 'app_theme_accent_shade' && !isAccentShade(val)) continue;
+				if (key === 'overlay_opposite_theme' && typeof val !== 'boolean') continue;
 				if (key === 'quicklist_price_strategy' && !isQuicklistStrategy(val)) continue;
 				// @ts-ignore
 				config[key] = val;
@@ -195,7 +215,13 @@ export function loadSettings() {
 
 export function watchAppTheme() {
 	return store.onChange<unknown>((key, value) => {
+		if (key === 'app_theme_custom_enabled' && typeof value === 'boolean') config.app_theme_custom_enabled = value;
+		if (key === 'app_theme_custom_colors' && (value === null || isCustomTheme(value))) config.app_theme_custom_colors = value;
 		if (key === 'app_theme' && isAppTheme(value)) config.app_theme = value;
+		if (key === 'app_theme_mode' && isThemeMode(value)) config.app_theme_mode = value;
+		if (key === 'app_theme_accent' && isAccentColor(value)) config.app_theme_accent = value;
+		if (key === 'app_theme_accent_shade' && isAccentShade(value)) config.app_theme_accent_shade = value;
+		if (key === 'overlay_opposite_theme' && typeof value === 'boolean') config.overlay_opposite_theme = value;
 	});
 }
 

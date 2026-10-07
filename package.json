@@ -44,6 +44,7 @@
 		"overlayscrollbars-svelte": "^0.5.5",
 		"paneforge": "^1.0.2",
 		"reflect-metadata": "0.2.2",
+		"svelte-awesome-color-picker": "^4.1.3",
 		"svelte-sonner": "^1.1.1",
 		"svelteplot": "^0.14.2",
 		"tailwindcss": "^4.2.4",

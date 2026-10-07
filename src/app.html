@@ -10,7 +10,11 @@
       }
     </script>
     <style>
-      html.artus-document, html.artus-document body:not(:has(.artus-app-shell)) { background: #22292b !important; color-scheme: dark; }
+      /* Keep the desktop backdrop themed while the overlay stays transparent. */
+      html.artus-document,
+      html.artus-document body:not(:has(.artus-app-shell)) {
+        background: var(--theme-background, #22292b) !important;
+      }
     </style>
     <title>Tauri + SvelteKit + Typescript App</title>
     %sveltekit.head%
