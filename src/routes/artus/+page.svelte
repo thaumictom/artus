@@ -356,6 +356,8 @@
 			<div class="flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden" in:startupFly>
 				{#if activeSection === 'dashboard'}
 					<DashboardMain />
+				{:else if activeSection === 'settings'}
+					<SettingsMain />
 				{:else}
 					<MainContent>
 						{#if activeSection === 'mastery'}

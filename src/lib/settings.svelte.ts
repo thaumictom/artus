@@ -51,6 +51,7 @@ type Config = {
 	dashboard_view_favorites: string[];
 	dashboard_navigation_width: number;
 	show_unused_dashboard_views: boolean;
+	show_debug_settings: boolean;
 	desktop_notifications_enabled: boolean;
 	hide_to_tray_on_close: boolean;
 	hide_donate_button: boolean;
@@ -133,10 +134,11 @@ export const config = $state({
 	show_max_rank_prices: true as boolean,
 	show_max_rank_mod_prices: false as boolean,
 	quicklist_hide_first: false as boolean,
-	quicklist_price_strategy: 'median' as QuicklistStrategy,
+	quicklist_price_strategy: 'undercut_at_or_above_median' as QuicklistStrategy,
 	capture_mods: false,
 
 	// Debug settings
+	show_debug_settings: false as boolean,
 	show_unused_dashboard_views: false,
 	show_ocr_bounding_boxes: false,
 	ocr_checkmark_match_threshold: 0.8,

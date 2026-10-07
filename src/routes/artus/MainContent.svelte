@@ -5,7 +5,13 @@
 
 	const scrollbarTheme = 'os-theme-light';
 
-	let { children }: { children: Snippet } = $props();
+	let {
+		children,
+		onScroll,
+	}: {
+		children: Snippet;
+		onScroll?: (scrollElement: HTMLElement) => void;
+	} = $props();
 </script>
 
 <div class="relative flex-1 min-w-0 min-h-0">
@@ -17,6 +23,9 @@
 		<OverlayScrollbarsComponent
 			defer
 			options={{ scrollbars: { theme: scrollbarTheme, autoHide: 'move' } }}
+			events={onScroll
+				? { scroll: (instance) => onScroll(instance.elements().scrollOffsetElement) }
+				: undefined}
 			class="w-full h-full"
 		>
 			<div class="pr-4 min-h-full" class:full-width={config.full_width_content}>

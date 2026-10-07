@@ -205,7 +205,7 @@
 				<div class="group/pinned-header flex justify-between items-center gap-2 p-3 pt-4">
 					<h2
 						id="pinned-views-heading"
-						class="px-3 font-semibold text-muted-foreground text-xs uppercase tracking-widest"
+						class="px-3 py-1 font-semibold text-muted-foreground text-xs uppercase tracking-widest"
 					>
 						Pinned
 					</h2>
