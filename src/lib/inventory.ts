@@ -1,7 +1,5 @@
-import { LazyStore } from '@tauri-apps/plugin-store';
-
-// All inventory readers and writers in a window use the same loaded store.
-export const inventoryStore = new LazyStore('inventory.json');
+import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 
 export type InventoryItem = {
 	name: string;
@@ -19,6 +17,12 @@ export type InventoryOcrWord = {
 	ducats?: number;
 };
 
+export type InventorySnapshot = {
+	revision: number;
+	items: InventoryItem[];
+	newSlugs: string[];
+};
+
 export function inventoryNameKey(name: string) {
 	return name.trim().replace(/\s+/g, ' ').toLowerCase();
 }
@@ -30,155 +34,54 @@ export function inventoryMarketSlug(item: InventoryItem) {
 		: item.slug;
 }
 
-let latestSave: Promise<void> = Promise.resolve();
+// These are IPC view models. Rust owns quantities, persistence and mutation ordering.
+export function getInventorySnapshot() {
+	return invoke<InventorySnapshot>('inventory_snapshot');
+}
 
+export function watchInventory(listener: (snapshot: InventorySnapshot) => void) {
+	return listen<InventorySnapshot>('inventory_changed', ({ payload }) => listener(payload));
+}
+
+type QuantityResult = { snapshot: InventorySnapshot; applied: Record<string, number> };
 type OcrQuantityChange = { word: InventoryOcrWord; delta: number } | { word: InventoryOcrWord; quantity: number };
 
+async function applyOcrQuantities(changes: OcrQuantityChange[]) {
+	const result = await invoke<QuantityResult>('inventory_change_ocr_quantities', { changes });
+	return new Map(Object.entries(result.applied));
+}
+
 export function changeOcrItemQuantities(changes: { word: InventoryOcrWord; delta: number }[]) {
-	return saveOcrItemQuantities(changes);
+	return applyOcrQuantities(changes);
 }
 
 export function setOcrItemQuantities(changes: { word: InventoryOcrWord; quantity: number }[]) {
-	return saveOcrItemQuantities(changes);
+	return applyOcrQuantities(changes);
 }
 
-function saveOcrItemQuantities(changes: OcrQuantityChange[]) {
-	const save = latestSave.catch(() => undefined).then(async () => {
-		const applied = new Map<string, number>();
-		if (!changes.some((change) => change.word.slug && !change.word.is_custom &&
-			('delta' in change
-				? Number.isSafeInteger(change.delta) && change.delta !== 0
-				: Number.isSafeInteger(change.quantity) && change.quantity > 0))) {
-			return applied;
-		}
-		const store = inventoryStore;
-		const [savedItems, savedSlugs] = await Promise.all([
-			store.get<InventoryItem[]>('items'),
-			store.get<string[]>('newSlugs'),
-		]);
-		const items = savedItems ?? [];
-		const newSlugs = Array.isArray(savedSlugs) ? savedSlugs : [];
-		for (const change of changes) {
-			const { word } = change;
-			// Custom dictionary entries are recognizable rewards, not inventory items.
-			if (!word.slug || word.is_custom) continue;
-			if ('delta' in change && (!Number.isSafeInteger(change.delta) || change.delta === 0)) continue;
-			if ('quantity' in change && (!Number.isSafeInteger(change.quantity) || change.quantity <= 0)) continue;
-			const existing = items.find((item) =>
-				item.slug
-					? item.slug === word.slug
-					: inventoryNameKey(item.name) === inventoryNameKey(word.text),
-			);
-			const previous = existing?.quantity ?? 0;
-			const next = 'quantity' in change ? change.quantity : Math.max(0, previous + change.delta);
-			const actual = next - previous;
-			if (actual === 0) continue;
-			if (existing) {
-				if (next === 0) {
-					items.splice(items.indexOf(existing), 1);
-					const newSlugIndex = newSlugs.indexOf(word.slug);
-					if (newSlugIndex !== -1) newSlugs.splice(newSlugIndex, 1);
-				} else {
-					existing.quantity = next;
-					existing.slug ??= word.slug;
-					existing.ducats ??= word.ducats;
-				}
-			} else {
-				if (!newSlugs.includes(word.slug)) newSlugs.push(word.slug);
-				items.push({
-					name: word.text,
-					slug: word.slug,
-					isCustom: word.is_custom,
-					quantity: next,
-					ducats: word.ducats,
-				});
-			}
-			applied.set(word.slug, (applied.get(word.slug) ?? 0) + actual);
-		}
-		if (applied.size === 0) return applied;
-		await store.set('items', items);
-		await store.set('newSlugs', newSlugs);
-		await store.save();
-		return applied;
+export async function addInventoryItem(word: InventoryOcrWord, quantity: number) {
+	await invoke<InventorySnapshot>('inventory_add_item', { word, quantity });
+}
+
+export async function changeInventoryRowQuantity(item: InventoryItem, delta: number) {
+	await invoke<InventorySnapshot>('inventory_change_row_quantity', {
+		slug: item.slug ?? null, name: item.name, isCustom: item.isCustom ?? false, delta,
 	});
-	latestSave = save.then(() => undefined);
-	return save;
+}
+
+export async function dismissNewInventoryItems() {
+	await invoke<InventorySnapshot>('inventory_dismiss_new_items');
 }
 
 export function removeOneMarketInventoryItem(slug: string | undefined, name: string) {
 	return changeMarketInventoryQuantity(slug, name, -1);
 }
 
-export function changeMarketInventoryQuantity(slug: string | undefined, name: string, delta: number) {
-	if (!Number.isSafeInteger(delta) || delta === 0) return Promise.resolve();
-	const save = latestSave.catch(() => undefined).then(async () => {
-		const store = inventoryStore;
-		const [savedItems, savedSlugs] = await Promise.all([
-			store.get<InventoryItem[]>('items'),
-			store.get<string[]>('newSlugs'),
-		]);
-		const items = savedItems ?? [];
-		const matches = (candidate: InventoryItem) =>
-			!candidate.isCustom &&
-			(slug && inventoryMarketSlug(candidate) === slug ||
-				!candidate.slug && inventoryNameKey(candidate.name) === inventoryNameKey(name));
-		let item = items.find((candidate) => matches(candidate) && (delta > 0 || candidate.quantity > 0));
-		const newSlugs = Array.isArray(savedSlugs) ? savedSlugs : [];
-		if (!item && delta < 0) throw new Error(`No ${name} remains in inventory`);
-		if (!item) {
-			if (!slug) throw new Error(`Cannot add ${name} to inventory without a market item`);
-			item = { name, slug, quantity: delta };
-			items.push(item);
-			if (!newSlugs.includes(slug)) newSlugs.push(slug);
-		} else {
-			const next = item.quantity + delta;
-			if (next < 0) throw new Error(`No ${name} remains in inventory`);
-			item.quantity = next;
-			if (next === 0) {
-				items.splice(items.indexOf(item), 1);
-				if (item.slug) {
-					const stillOwned = items.some((candidate) => !candidate.isCustom && inventoryMarketSlug(candidate) === slug && candidate.quantity > 0);
-					if (!stillOwned) {
-						const slugIndex = newSlugs.indexOf(item.slug);
-						if (slugIndex !== -1) newSlugs.splice(slugIndex, 1);
-					}
-				}
-			}
-		}
-		await store.set('items', items);
-		await store.set('newSlugs', newSlugs);
-		await store.save();
-	});
-	latestSave = save.then(() => undefined);
-	return save;
+export async function changeMarketInventoryQuantity(slug: string | undefined, name: string, delta: number) {
+	if (!Number.isSafeInteger(delta) || delta === 0) return;
+	await invoke<InventorySnapshot>('inventory_change_market_quantity', { slug: slug ?? null, name, delta });
 }
 
-export function trackInventorySave(save: Promise<void>) {
-	latestSave = save;
-}
-
-export function waitForInventorySave() {
-	return latestSave;
-}
-
-export function saveInventoryItems(items: InventoryItem[], newSlugs: string[]) {
-	const save = latestSave.catch(() => undefined).then(async () => {
-		await inventoryStore.set('items', items);
-		await inventoryStore.set('newSlugs', newSlugs);
-		await inventoryStore.save();
-	});
-	trackInventorySave(save);
-	return save;
-}
-
-export function resetInventory() {
-	const previousSave = latestSave;
-	const reset = previousSave.catch(() => undefined).then(async () => {
-		const store = inventoryStore;
-		await store.set('items', [] as InventoryItem[]);
-		await store.set('newSlugs', [] as string[]);
-		await store.save();
-	});
-	trackInventorySave(reset);
-	return reset;
+export async function resetInventory() {
+	await invoke<InventorySnapshot>('inventory_reset');
 }

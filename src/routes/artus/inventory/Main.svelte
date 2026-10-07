@@ -9,7 +9,9 @@
 	import {
 		inventoryMarketSlug,
 		inventoryNameKey,
-		saveInventoryItems,
+		addInventoryItem,
+		changeInventoryRowQuantity,
+		dismissNewInventoryItems,
 		type InventoryItem,
 	} from '$lib/inventory';
 	import { mastery } from '$lib/mastery.svelte';
@@ -138,26 +140,8 @@
 
 	function addSelectedItem() {
 		if (!canAddItem || !selectedAddItem) return;
-		const slug = selectedAddItem.value;
-		const existing = data.find(
-			(item) =>
-				!item.isCustom &&
-				(item.slug === slug ||
-					(!item.slug && inventoryNameKey(item.name) === inventoryNameKey(selectedAddItem.label))),
-		);
-		if (existing) {
-			existing.quantity += addQuantity;
-			existing.slug ??= slug;
-			existing.ducats ??= selectedAddItem.ducats;
-		} else {
-			data.push({
-				name: selectedAddItem.label,
-				slug,
-				quantity: addQuantity,
-				ducats: selectedAddItem.ducats,
-			});
-		}
-		saveInventory();
+		void addInventoryItem({ text: selectedAddItem.label, slug: selectedAddItem.value, ducats: selectedAddItem.ducats }, addQuantity)
+			.catch((error) => console.error('Could not save inventory:', error));
 		selectedAddSlug = '';
 		addQuantity = 1;
 		addOpen = false;
@@ -228,23 +212,14 @@
 		listingItem = item;
 	}
 
-	function saveInventory() {
-		void saveInventoryItems($state.snapshot(data), [...newSlugs])
+	function updateQuantity(item: InventoryItem, delta: number) {
+		void changeInventoryRowQuantity(item, delta)
 			.catch((error) => console.error('Could not save inventory:', error));
 	}
 
-	function updateQuantity(item: InventoryItem, delta: number) {
-		item.quantity += delta;
-		if (item.quantity <= 0) {
-			inventory.items = data.filter((entry) => entry !== item);
-			if (item.slug) inventory.newSlugs = newSlugs.filter((slug) => slug !== item.slug);
-		}
-		saveInventory();
-	}
-
 	function dismissNewDots() {
-		inventory.newSlugs = [];
-		saveInventory();
+		void dismissNewInventoryItems()
+			.catch((error) => console.error('Could not save inventory:', error));
 	}
 
 	function setSort(key: string) {

@@ -7,6 +7,7 @@ mod app;
 mod data;
 mod desktop;
 mod error;
+mod inventory;
 mod market;
 mod ocr;
 mod relics;
@@ -50,12 +51,20 @@ fn main() {
                 .build(),
         )
         .manage(AppState::default())
+        .manage(inventory::InventoryService::default())
         .setup(move |app| app::setup::init(app, is_wayland))
         .on_window_event(|window, event| {
             desktop::window_size::handle_window_event(window, event);
             desktop::tray::handle_window_event(window, event);
         })
         .invoke_handler(tauri::generate_handler![
+            inventory::inventory_snapshot,
+            inventory::inventory_change_ocr_quantities,
+            inventory::inventory_add_item,
+            inventory::inventory_change_row_quantity,
+            inventory::inventory_change_market_quantity,
+            inventory::inventory_dismiss_new_items,
+            inventory::inventory_reset,
             app::developer_console::set_developer_console_enabled,
             desktop::hotkeys::get_hotkey,
             desktop::hotkeys::set_hotkey,

@@ -6,10 +6,9 @@ use std::time::{Duration, Instant};
 use image::{DynamicImage, GrayImage, ImageFormat, RgbaImage};
 use log::{info, warn};
 use serde::Serialize;
-use serde_json::{json, Value};
+use serde_json::json;
 use std::io::Cursor;
 use tauri::{AppHandle, Emitter, Runtime};
-use tauri_plugin_store::StoreExt;
 use windows::Win32::Foundation::HWND;
 use windows::Win32::Graphics::Gdi::{
     BitBlt, CreateCompatibleBitmap, CreateCompatibleDC, DeleteDC, DeleteObject, GetDIBits,
@@ -295,98 +294,7 @@ pub fn show_added_feedback<R: Runtime + 'static>(app: &AppHandle<R>, name: Strin
 }
 
 fn add_reward_to_inventory<R: Runtime>(app: &AppHandle<R>, word: &OcrWord) -> Result<(), String> {
-    if word.is_custom == Some(true) {
-        return Err("custom dictionary rewards cannot be added to inventory".to_string());
-    }
-    let store = app.store("inventory.json").map_err(|err| err.to_string())?;
-    let mut items: Vec<Value> = store
-        .get("items")
-        .map(serde_json::from_value)
-        .transpose()
-        .map_err(|err| err.to_string())?
-        .unwrap_or_default();
-    let mut new_slugs: Vec<String> = store
-        .get("newSlugs")
-        .map(serde_json::from_value)
-        .transpose()
-        .map_err(|err| err.to_string())?
-        .unwrap_or_default();
-    apply_reward_to_items(&mut items, &mut new_slugs, word)?;
-    store.set("items", json!(items));
-    store.set("newSlugs", json!(new_slugs));
-    store.save().map_err(|err| err.to_string())
-}
-
-fn apply_reward_to_items(
-    items: &mut Vec<Value>,
-    new_slugs: &mut Vec<String>,
-    word: &OcrWord,
-) -> Result<(), String> {
-    let slug = word
-        .slug
-        .as_deref()
-        .ok_or("selected reward has no item slug")?;
-    let name_key = |name: &str| {
-        name.split_whitespace()
-            .collect::<Vec<_>>()
-            .join(" ")
-            .to_lowercase()
-    };
-    let existing = items.iter_mut().find(|item| {
-        item.get("slug").and_then(Value::as_str).map_or_else(
-            || {
-                item.get("name")
-                    .and_then(Value::as_str)
-                    .is_some_and(|name| name_key(name) == name_key(&word.text))
-            },
-            |saved_slug| saved_slug == slug,
-        )
-    });
-    if let Some(existing) = existing {
-        let quantity = existing
-            .get("quantity")
-            .and_then(Value::as_u64)
-            .ok_or("existing inventory quantity is invalid")?;
-        let next = quantity
-            .checked_add(1)
-            .ok_or("inventory quantity overflow")?;
-        let object = existing
-            .as_object_mut()
-            .ok_or("existing inventory item is invalid")?;
-        object.insert("quantity".into(), json!(next));
-        object.entry("slug").or_insert_with(|| json!(slug));
-        if let Some(price) = word.market_median.filter(|price| price.is_finite()) {
-            object.insert("marketMedian".into(), json!(price));
-            if let Some(fallback) = word.market_median_from_current_offers {
-                object.insert("marketMedianUsesOfferFallback".into(), json!(fallback));
-            }
-        }
-        if let Some(ducats) = word.ducats {
-            object.entry("ducats").or_insert_with(|| json!(ducats));
-        }
-    } else {
-        let mut item = json!({ "name": word.text, "slug": slug, "quantity": 1 });
-        let object = item
-            .as_object_mut()
-            .expect("new inventory item is an object");
-        if let Some(custom) = word.is_custom {
-            object.insert("isCustom".into(), json!(custom));
-        }
-        if let Some(price) = word.market_median.filter(|price| price.is_finite()) {
-            object.insert("marketMedian".into(), json!(price));
-            if let Some(fallback) = word.market_median_from_current_offers {
-                object.insert("marketMedianUsesOfferFallback".into(), json!(fallback));
-            }
-        }
-        if let Some(ducats) = word.ducats {
-            object.insert("ducats".into(), json!(ducats));
-        }
-        items.push(item);
-        if !new_slugs.iter().any(|saved| saved == slug) {
-            new_slugs.push(slug.to_string());
-        }
-    }
-    Ok(())
+    crate::inventory::add_relic_reward(app, word).map_err(|error| error.to_string())
 }
 
 fn resolve_selection(current: Session) -> Option<OcrWord> {

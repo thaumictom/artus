@@ -9,7 +9,7 @@
 	import { quicklistPrice } from '$lib/quicklist';
 	import { GetOrdersResponseSchema } from '$lib/schemas';
 	import { fetchMarketListings } from '$lib/market-listings';
-	import { changeOcrItemQuantities, inventoryMarketSlug, inventoryNameKey, setOcrItemQuantities, type InventoryItem } from '$lib/inventory';
+	import { changeOcrItemQuantities, getInventorySnapshot, watchInventory, inventoryMarketSlug, inventoryNameKey, setOcrItemQuantities, type InventoryItem, type InventorySnapshot } from '$lib/inventory';
 	import CreateListing from '../artus/inventory/CreateListing.svelte';
 	import type { EditableListing, Listing, ListingChange } from '../artus/listings/types';
 	import OverlayItem from './components/OverlayItem.svelte';
@@ -53,7 +53,7 @@
 	let quicklistFeedbackTimer: ReturnType<typeof setTimeout> | undefined;
 	let quicklistRequest = 0;
 	const masteryStore = new LazyStore('mastery.json');
-	const inventoryStore = new LazyStore('inventory.json');
+	let inventoryRevision = -1;
 	let masteryReadSequence = 0;
 	let inventoryReadSequence = 0;
 	const visualRows = $derived(groupVisualRows(words));
@@ -516,11 +516,16 @@
 
 	async function refreshInventory(sequence: number) {
 		try {
-			const items = await inventoryStore.get<InventoryItem[]>('items');
-			if (sequence === inventoryReadSequence) updateOwnedCounts(items ?? []);
+			const snapshot = await getInventorySnapshot();
+			if (sequence === inventoryReadSequence) applyInventorySnapshot(snapshot);
 		} catch (error) {
 			console.error('Could not read overlay inventory:', error);
 		}
+	}
+	function applyInventorySnapshot(snapshot: InventorySnapshot) {
+		if (snapshot.revision < inventoryRevision) return;
+		inventoryRevision = snapshot.revision;
+		updateOwnedCounts(snapshot.items);
 	}
 
 	onMount(() => {
@@ -552,15 +557,15 @@
 				.catch((error) => console.error('Could not read market session state:', error));
 		});
 		void refreshMasteredSlugs(masteryReadSequence);
-		void refreshInventory(inventoryReadSequence);
-		inventoryStore
-			.onChange<InventoryItem[]>((key, value) => {
-				if (key === 'items') {
-					inventoryReadSequence++;
-					updateOwnedCounts(Array.isArray(value) ? value : []);
-				}
-			})
-			.then(registerCleanup);
+		watchInventory((snapshot) => {
+			if (!disposed) applyInventorySnapshot(snapshot);
+		}).then((stop) => {
+			registerCleanup(stop);
+			if (!disposed) void refreshInventory(inventoryReadSequence);
+		}).catch((error) => {
+			console.error('Could not observe overlay inventory:', error);
+			if (!disposed) void refreshInventory(inventoryReadSequence);
+		});
 
 		listen('ocr_processing', () => {
 			cancelListingLookup();

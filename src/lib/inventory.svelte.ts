@@ -1,59 +1,47 @@
-import { inventoryStore, waitForInventorySave, type InventoryItem } from '$lib/inventory';
+import { getInventorySnapshot, watchInventory, type InventoryItem, type InventorySnapshot } from '$lib/inventory';
 
+// Per-window read-only projection of committed Rust state; UI drafts live in components.
 export const inventory = $state({
 	items: [] as InventoryItem[],
 	newSlugs: [] as string[],
 	ready: false,
 	error: '',
 });
-
 let generation = 0;
-let itemsRevision = 0;
-let slugsRevision = 0;
-let readRequest = 0;
+let revision = -1;
+
+function applySnapshot(snapshot: InventorySnapshot) {
+	if (snapshot.revision < revision) return;
+	revision = snapshot.revision;
+	inventory.items = snapshot.items;
+	inventory.newSlugs = snapshot.newSlugs;
+	inventory.ready = true;
+	inventory.error = '';
+}
 
 export async function reloadInventory() {
 	const current = generation;
-	const request = ++readRequest;
 	try {
-		await waitForInventorySave().catch(() => undefined);
-		const itemsAtRead = itemsRevision;
-		const slugsAtRead = slugsRevision;
-		const [items, newSlugs] = await Promise.all([
-			inventoryStore.get<InventoryItem[]>('items'),
-			inventoryStore.get<string[]>('newSlugs'),
-		]);
-		if (current !== generation || request !== readRequest) return;
-		// A store event arriving during these reads carries the newer value.
-		if (itemsAtRead === itemsRevision) inventory.items = items ?? [];
-		if (slugsAtRead === slugsRevision) inventory.newSlugs = newSlugs ?? [];
-		inventory.ready = true;
-		inventory.error = '';
+		const snapshot = await getInventorySnapshot();
+		if (current === generation) applySnapshot(snapshot);
 	} catch (error) {
-		if (current !== generation || request !== readRequest) return;
+		if (current !== generation) return;
 		inventory.error = 'Could not load inventory.';
 		console.error('Could not load shared inventory:', error);
 	}
 }
 
-/** Owned by the window's shared item context, independent of the active tab. */
+/** Owned by this window's item context, independent of the active tab. */
 export function initializeInventory() {
 	const current = ++generation;
 	let unlisten: (() => void) | undefined;
-	void inventoryStore.onChange<unknown>((key, value) => {
-		if (current !== generation) return;
-		if (key === 'items' && Array.isArray(value)) {
-			itemsRevision++;
-			inventory.items = value as InventoryItem[];
-		}
-		if (key === 'newSlugs' && Array.isArray(value)) {
-			slugsRevision++;
-			inventory.newSlugs = value as string[];
-		}
+	void watchInventory((snapshot) => {
+		if (current === generation) applySnapshot(snapshot);
 	}).then((stop) => {
 		if (current !== generation) stop();
 		else {
 			unlisten = stop;
+			// Subscribe first; the revision protects against an event overtaking this read.
 			void reloadInventory();
 		}
 	}).catch((error) => {
