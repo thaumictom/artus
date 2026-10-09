@@ -9,7 +9,7 @@ export type AppLocation = {
 const initialLocation: AppLocation = {
 	section: 'dashboard',
 	marketSlug: '',
-	dashboardView: 'fissures',
+	dashboardView: 'Home',
 };
 
 export const appNavigation = $state({

@@ -42,12 +42,10 @@ import SteelPath from './views/SteelPath.svelte';
 import PrimeResurgence from './views/PrimeResurgence.svelte';
 import ClanInitiative from './views/ClanInitiative.svelte';
 import CommunityCampaign from './views/CommunityCampaign.svelte';
-import WorldCycles from './views/WorldCycles.svelte';
 import Home from './views/Home.svelte';
 
 export const dashboardViews = [
 	{ value: 'Home', label: 'Home', component: Home },
-	{ value: 'WorldCycles', label: 'World Cycles', component: WorldCycles },
 	{ value: 'fissures', label: 'Fissure Missions', component: FissureMissions },
 	{ value: 'news', label: 'News', component: News },
 	{
@@ -128,7 +126,7 @@ export function isDashboardViewVisible(view: string, showUnused: boolean): boole
 const viewGroups = [
 	{
 		label: 'General',
-		views: ['Home', 'WorldCycles', 'news', 'Events', 'Alerts', 'fissures', 'Arbitration', 'Invasions'],
+		views: ['Home', 'news', 'Events', 'Alerts', 'fissures', 'Arbitration', 'Invasions'],
 	},
 	{
 		label: 'Daily & Weekly',

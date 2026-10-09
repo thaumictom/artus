@@ -41,7 +41,7 @@
 
 	$effect(() => {
 		if (settingsReady && !isDashboardViewVisible(activeView, config.show_unused_dashboard_views)) {
-			navigateTo('dashboard', '', 'fissures');
+			navigateTo('dashboard', '', 'Home');
 		}
 	});
 
@@ -122,7 +122,7 @@
 	{/snippet}
 	<MainContent>
 		<div class="p-6 lg:p-8 min-h-full">
-			<div class="flex flex-col gap-6 mx-auto w-full max-w-3xl page-width">
+			<div class="flex flex-col gap-6 mx-auto w-full {activeView === 'Home' ? '' : 'max-w-3xl'} page-width">
 				{#if dashboard.world}
 					<div class="flex flex-col gap-4 scroll-mt-6" bind:this={liveViewsElement}>
 						{#if ActiveView}

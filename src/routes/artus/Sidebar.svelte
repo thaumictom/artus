@@ -170,7 +170,7 @@
 {#snippet navLabel(section: Sections[string])}
 	<div class="px-2.5 w-full min-w-0 h-full group-data-[state=active]:text-accent cursor-pointer">
 		<div
-			class="flex items-center gap-2.5 hover:bg-elevated/50 group-data-[state=active]:bg-accent/10! py-2.5 rounded-md transition-colors duration-200"
+			class="flex items-center gap-2.5 hover:bg-elevated/50 group-data-[state=active]:bg-accent/10! py-2.5 rounded-md transition-colors duration-200 ease-out"
 		>
 			<span
 				data-sidebar-indicator

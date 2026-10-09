@@ -73,7 +73,7 @@
 				</Button.Root>
 			</div>
 			<div
-				class="flex-1 pr-6 pl-5 font-expanded font-black text-accent text-sm text-center uppercase transition-colors duration-600"
+				class="flex-1 pr-6 pl-5 font-expanded font-black text-accent text-sm text-center uppercase transition-colors duration-600 ease-out"
 			>
 				Artus
 			</div>
